@@ -1,5 +1,4 @@
--Q externals/QuantumLib qlib
-
+-R . VyZX
 
 externals/QuantumLib/Prelim.v
 externals/QuantumLib/RealAux.v
@@ -10,5 +9,4 @@ externals/QuantumLib/Quantum.v
 externals/QuantumLib/Dirac.v
 externals/QuantumLib/Proportional.v
 
--R . VyZX
 AdjMatrix.v

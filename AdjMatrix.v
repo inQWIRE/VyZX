@@ -1,7 +1,10 @@
 Set Implicit Arguments.
 
 Require Import Lists.List.
+Require Import externals.QuantumLib.Complex.
 Import ListNotations.
+
+Local Open Scope nat_scope.
 
 Inductive Edge : Set :=
 | None : Edge
@@ -20,7 +23,7 @@ Definition isEdge (e : Edge) : bool :=
   | H => true
   end.
 
-Fixpoint isWalk {n} (l : list nat) (A : AdjMatrix n) (source sink : nat) : bool :=
+Fixpoint isWalk {n : nat} (l : list nat) (A : AdjMatrix n) (source sink : nat) : bool :=
   match l with
   | [] => true
   | a :: l' => (isEdge (A source a)) && (isWalk l' A a sink)
@@ -29,8 +32,9 @@ Fixpoint isWalk {n} (l : list nat) (A : AdjMatrix n) (source sink : nat) : bool 
 Inductive ConnectedGraph : Type :=
   | CG (n : nat) (A : AdjMatrix n) : (forall (source sink : nat), (source <> sink) -> (source <= n) -> (source <= n) -> exists l, isWalk l A source sink = true) -> ConnectedGraph.
 
-Definition EqAdj (n : nat) (A B : AdjMatrix n) : forall (a b : nat), (a <= n) -> (b <= n) -> (A a b) = (B a b).
+Inductive EqAdj : Type :=
+   | PointWiseEqAdj (n : nat) (A B : AdjMatrix n) : forall (a b : nat), (a <= n) -> (b <= n) -> (A a b) = (B a b) -> EqAdj.
 
-Definition NodeWeightMap (n : nat) := nat -> C. (*TODO: Fix import of C*)
+Definition NodeWeightMap (n : nat) := nat -> C.
 
 
