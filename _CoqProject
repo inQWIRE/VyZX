@@ -1,0 +1,14 @@
+-Q externals/QuantumLib qlib
+
+
+externals/QuantumLib/Prelim.v
+externals/QuantumLib/RealAux.v
+externals/QuantumLib/Complex.v
+externals/QuantumLib/Matrix.v
+externals/QuantumLib/VecSet.v
+externals/QuantumLib/Quantum.v
+externals/QuantumLib/Dirac.v
+externals/QuantumLib/Proportional.v
+
+-R . VyZX
+AdjMatrix.v
