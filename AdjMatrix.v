@@ -1,7 +1,7 @@
 Set Implicit Arguments.
 
 Require Import Lists.List.
-(*Require Import externals.QuantumLib.Complex.*)
+Require Import externals.QuantumLib.Complex.
 Import ListNotations.
 
 Local Open Scope nat_scope.
