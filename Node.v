@@ -1,9 +1,9 @@
-Require Import externals.QuantumLib.Complex.
+Require Export Reals.
 
 Inductive Node : Set :=
 | Terminus : Node
-| X_Spider : C -> Node
-| Z_Spider : C -> Node.
+| X_Spider : R -> Node
+| Z_Spider : R -> Node.
 
 Definition isSpider (v : Node) : bool :=
 match v with
@@ -12,7 +12,7 @@ match v with
 end.
 
 Definition isSpiderP (v : Node) : Prop :=
-exists c, v = X_Spider c \/ v = Z_Spider c.
+exists r, v = X_Spider r \/ v = Z_Spider r.
 
 Definition isNotTerminus (v : Node) : Prop :=
 v <> Terminus.
@@ -29,8 +29,8 @@ Proof.
 intros.
 destruct v.
 - discriminate.
-- exists c. left. trivial.
-- exists c. right. trivial.
+- exists r. left. trivial.
+- exists r. right. trivial.
 Qed.
 
 Definition NodeMap (n : nat) := nat -> Node.
