@@ -16,12 +16,31 @@ Definition AdjMatrix (n : nat) := nat -> nat -> Edge.
 Definition StartNode := 0.
 Definition EndNode := 1.
 
+Definition isEdgeP (e : Edge) : Prop :=
+  e = E \/ e = H.
+
+Definition notNoneP (e : Edge) : Prop :=
+  e <> None.
+
 Definition isEdge (e : Edge) : bool :=
   match e with
   | None => false
   | E => true
   | H => true
   end.
+
+Lemma isEdgePropToBool (e : Edge) : isEdgeP e -> isEdge e = true.
+Proof.
+  intro H; destruct H; rewrite H0; reflexivity.
+Qed.
+
+Lemma isEdgeBoolToProp (e : Edge) : isEdge e = true -> isEdgeP e.
+Proof.
+  intro H; destruct e.
+  - discriminate H.
+  - left; reflexivity.
+  - right; reflexivity.
+Qed.
 
 Fixpoint isWalk {n : nat} (l : list nat) (A : AdjMatrix n) (source sink : nat) : bool :=
   match l with
