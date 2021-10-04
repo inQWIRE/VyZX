@@ -53,7 +53,3 @@ Inductive ConnectedGraph : Type :=
 
 Inductive EqAdj : Type :=
    | PointWiseEqAdj (n : nat) (A B : AdjMatrix n) : forall (a b : nat), (a <= n) -> (b <= n) -> (A a b) = (B a b) -> EqAdj.
-
-Definition NodeWeightMap (n : nat) := nat -> C.
-
-
