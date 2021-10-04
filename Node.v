@@ -1,3 +1,4 @@
+Require Import externals.QuantumLib.Complex.
 
 Inductive Node : Set :=
 | Terminus : Node
@@ -19,8 +20,8 @@ v <> Terminus.
 Lemma isSpiderPropToBool (v : Node) : isSpiderP v -> isSpider v = true.
 Proof.
 intros.
-destruct H0.
-destruct H0; rewrite H0; trivial.
+destruct H.
+destruct H; rewrite H; trivial.
 Qed.
 
 Lemma isSpiderBoolToProp (v : Node) : isSpider v = true -> isSpiderP v.
