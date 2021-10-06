@@ -1,13 +1,15 @@
 Require Export Reals.
 
 Inductive Node : Set :=
-| Terminus : Node
+| Source : nat -> Node 
+| Sink : nat -> Node
 | X_Spider : R -> Node
 | Z_Spider : R -> Node.
 
 Definition isSpider (v : Node) : bool :=
 match v with
-| Terminus => false
+| Source _ => false
+| Sink _ => false
 | _ => true
 end.
 
@@ -15,7 +17,7 @@ Definition isSpiderP (v : Node) : Prop :=
 exists r, v = X_Spider r \/ v = Z_Spider r.
 
 Definition isNotTerminus (v : Node) : Prop :=
-v <> Terminus.
+forall n, v <> Source n /\ v <> Sink n.
 
 Lemma isSpiderPropToBool (v : Node) : isSpiderP v -> isSpider v = true.
 Proof.
@@ -27,10 +29,9 @@ Qed.
 Lemma isSpiderBoolToProp (v : Node) : isSpider v = true -> isSpiderP v.
 Proof.
 intros.
-destruct v.
-- discriminate.
+destruct v; try discriminate (* Source/Sink *).
 - exists r. left. trivial.
 - exists r. right. trivial.
 Qed.
 
-Definition NodeMap (n : nat) := nat -> Node.
+Definition NodeMap (n : nat) : Type := nat -> Node.
