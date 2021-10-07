@@ -13,8 +13,6 @@ Inductive Edge : Set :=
 
 Definition AdjMatrix (n : nat) := nat -> nat -> Edge.
 
-Definition StartNode := 0.
-Definition EndNode := 1.
 
 Definition isEdgeP (e : Edge) : Prop :=
   e = E \/ e = H.
