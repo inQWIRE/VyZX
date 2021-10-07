@@ -3,9 +3,11 @@ Require Export AdjMatrix.
 Require Import Relations.
 Require Import RelationClasses.
 
-Definition SourceMap (nsrc : nat) : Type := nat -> nat. (* Represents source index -> node that is pointed to *)
+Definition SourceMap (nsrc : nat) : Type := nat -> option nat. (* Represents source index -> node that is pointed to *)
 
-Definition SinkMap (nsink : nat) : Type := nat -> nat. (* Represents node that is exiting -> sink iindex*)
+Definition SinkMap (nsink : nat) : Type := nat -> option nat. (* Represents node sink index ->  node that points to sink *)
+
+(* The option types are used for easier ZX fusion, i.e. None corresponds to a src/sink still being available *)
 
 Inductive ZXDiagram : Type := 
   | ZX {n nsrc nsink} (adj : AdjMatrix n) (nmap : NodeMap n) (srcmap : SourceMap nsrc) (sinkmap : SinkMap nsink): ZXDiagram.
