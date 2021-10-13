@@ -104,8 +104,8 @@ Definition spiderSemantics (zx : ZXDiagram) nodeIdx :=
   let n := getInputCount zx nodeIdx in
   let m := getOutputCount zx nodeIdx in
   match v with
-  | X_Spider α => spiderSemanticsImpl zx (bra 0) (bra 1) (ket 0) (ket 1) α n m
-  | Z_Spider α => spiderSemanticsImpl zx (hadamard × (bra 0)) (hadamard × (bra 1)) (hadamard × (ket 0)) (hadamard × (ket 1)) α n m
+  | Z_Spider α => spiderSemanticsImpl zx (bra 0) (bra 1) (ket 0) (ket 1) α n m
+  | X_Spider α => spiderSemanticsImpl zx (hadamard × (bra 0)) (hadamard × (bra 1)) (hadamard × (ket 0)) (hadamard × (ket 1)) α n m
   end.
 
 
