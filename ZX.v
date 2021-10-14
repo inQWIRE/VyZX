@@ -1,112 +1,67 @@
-Require Export Node.
-Require Export AdjMatrix.
-Require Import Relations.
-Require Import RelationClasses.
+Require Import Coq.Vectors.Fin.
 Require Import externals.QuantumLib.Quantum.
 
-Definition SourceMap (nsrc : nat) : Type := nat -> 
-                                            option nat. 
-(* Represents source index -> node that is pointed to *)
+Definition permutation (n : nat) := list((Fin.t n) * (Fin.t n)).
 
-Definition SinkMap (nsink : nat) : Type :=  nat -> 
-                                            option nat. 
-(* Represents node sink index ->  node that points to sink *)
+Definition perm_to_mat {n} (σ : permutation n) : Square (2 ^ n) := I (2 ^ n) (*TODO*).
 
-(* The option types are used for easier ZX fusion,
-   i.e. None corresponds to a src/sink still being 
-   available *)
+Theorem WF_permutation : forall n (σ : permutation n), WF_Matrix (perm_to_mat σ).
+Proof.
+  intros.
+  apply WF_I. 
+Qed.
 
-Definition emptySourceMap {n : nat} : SourceMap n :=
-  fun _ => None.
+Global Hint Resolve WF_permutation : wf_db.
 
-Definition emptySinkMap {n : nat} : SourceMap n :=
-  fun _ => None.
 
-Inductive ZXDiagram : Type := 
-  | ZX {n nsrc nsink} (adj : AdjMatrix n) (nmap : NodeMap n) (srcmap : SourceMap nsrc) 
-        (sinkmap : SinkMap nsink): ZXDiagram.
+Local Open Scope R_scope.
+Inductive ZX : nat -> nat -> Type :=
+  | Wire : ZX 1 1
+  | X_Spider {nIn nOut} (α : R) : ZX nIn nOut
+  | Z_Spider {nIn nOut} (α : R) : ZX nIn nOut
+  | Cap : ZX 0 2
+  | Cup : ZX 2 0
+  | Stack {nIn0 nIn1 nOut0 nOut1} (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1) :
+      ZX (nIn0 + nIn1) (nOut0 + nOut1)
+  | Compose {nIn nMid nOut} (zx0 : ZX nIn nMid) (σ : permutation nMid) 
+     (zx1 : ZX nMid nOut) : ZX nIn nOut.
+Local Close Scope R_scope.
 
-Definition getZXSize (zx : ZXDiagram) :=
-  match zx with
-  | @ZX n _ _ _ _ _ _ => n
-  end.
-
-Definition getZXSrcSize (zx : ZXDiagram) :=
-  match zx with
-  | @ZX _ nsrc _ _ _ _ _ => nsrc
-  end.
-
-Definition getZXSinkSize (zx : ZXDiagram) :=
-  match zx with
-  | @ZX _ _ nsink _ _ _ _ => nsink
-  end.
-
-Definition getZXAdj (zx : ZXDiagram) := 
-  match zx with 
-  | ZX a _ _ _=> a 
-  end.
-
-Definition getZXNMap (zx : ZXDiagram) := 
-  match zx with 
-  | ZX _ nmap _ _  => nmap
-  end.
-
-Definition getZXSrcMap (zx : ZXDiagram) := 
-  match zx with 
-  | ZX _ _ srcmap _ => srcmap
-  end.
-
-Definition getZXSinkMap (zx : ZXDiagram) := 
-  match zx with 
-  | ZX _ _ _ sinkmap => sinkmap
-  end.
-
-Definition isConnected (map : nat -> option nat) nodeIdx srcIdx := 
-  match (map srcIdx) with
-  | None => false
-  | Some nodeIdx' => nodeIdx =? nodeIdx
-  end.
-Transparent isConnected.
-
-Fixpoint getSourceSinkConnectionHelper (map : nat -> option nat) nodeIdx n : nat := 
-  match n with
-  | 0 => if isConnected map nodeIdx 0 then 1 else 0
-  | S n' => (if isConnected map nodeIdx n then 1 else 0) + (getSourceSinkConnectionHelper map nodeIdx n')
-  end.
-
-Definition getSourceInput (zx : ZXDiagram) nodeIdx := getSourceSinkConnectionHelper (getZXSrcMap zx) nodeIdx (getZXSrcSize zx).
-
-Definition getInputCount (zx : ZXDiagram) nodeIdx := 
-  let v := getZXNMap zx nodeIdx in
-  let adj := (getZXAdj zx) in
-  let adjSize := getZXSize zx in
-  ((getSourceInput zx nodeIdx) + (@colSum adjSize nodeIdx adj))%nat.
-
-Definition getSinkOutput (zx : ZXDiagram) nodeIdx := getSourceSinkConnectionHelper (getZXSinkMap zx) nodeIdx (getZXSinkSize zx).
-
-Definition getOutputCount (zx : ZXDiagram) nodeIdx := 
-  let v := getZXNMap zx nodeIdx in
-  let adj := (getZXAdj zx) in
-  let adjSize := getZXSize zx in
-  ((getSinkOutput zx nodeIdx) + (@rowSum adjSize nodeIdx adj))%nat.
-
-Definition braKetNM (bra: Matrix 2 1) (ket : Vector 2) n m : Matrix (2^n) (2^m) := 
+Definition bra_ket_NM (bra: Matrix 2 1) (ket : Vector 2) {n m} : Matrix (2 ^ n) (2 ^ m) := 
   (n ⨂ ket) × (m ⨂ bra).
-Transparent braKetNM.  
+Transparent bra_ket_NM. 
 
-Local Open Scope matrix_scope.
-Definition spiderSemanticsImpl (zx : ZXDiagram) (bra0 bra1 : Matrix 2 1) (ket0 ket1 : Vector 2) (α : R) (n m : nat) : Matrix (2 ^ n) (2 ^ m) :=
-  (braKetNM bra0 ket0 n m) .+ (Cexp α) .* (braKetNM bra1 ket1 n m). 
-Transparent spiderSemanticsImpl. 
+Definition Spider_Semantics_Impl (bra0 bra1 : Matrix 2 1) (ket0 ket1 : Vector 2) (α : R) {n m : nat} : Matrix (2 ^ n) (2 ^ m) :=
+  (bra_ket_NM bra0 ket0) .+ (Cexp α) .* (bra_ket_NM bra1 ket1). 
+Transparent Spider_Semantics_Impl.
 
-Definition spiderSemantics (zx : ZXDiagram) nodeIdx := 
-  let v := getZXNMap zx nodeIdx in
-  let n := getInputCount zx nodeIdx in
-  let m := getOutputCount zx nodeIdx in
-  match v with
-  | Z_Spider α => spiderSemanticsImpl zx (bra 0) (bra 1) (ket 0) (ket 1) α n m
-  | X_Spider α => spiderSemanticsImpl zx (hadamard × (bra 0)) (hadamard × (bra 1)) (hadamard × (ket 0)) (hadamard × (ket 1)) α n m
+Fixpoint ZX_semantics {nIn nOut} (zx : ZX nIn nOut) : Matrix (2 ^ nIn) (2 ^ nOut) := 
+  match zx with
+  | Wire => I 2
+  | X_Spider α => Spider_Semantics_Impl (hadamard × (bra 0)) (hadamard × (bra 1)) (hadamard × (ket 0)) (hadamard × (ket 1)) α
+  | Z_Spider α => Spider_Semantics_Impl (bra 0) (bra 1) (ket 0) (ket 1) α
+  | Cap => list2D_to_matrix [[C1;C0;C0;C1]]
+  | Cup => list2D_to_matrix [[C1];[C0];[C0];[C1]]  
+  | Stack zx0 zx1 => (ZX_semantics zx0) ⊗ (ZX_semantics zx1)
+  | Compose zx0 σ zx1 => (ZX_semantics zx0) × (perm_to_mat σ) × (ZX_semantics zx1)
   end.
-
-
-Local Close Scope matrix_scope.
+  
+Theorem WF_ZX : forall nIn nOut (zx : ZX nIn nOut), WF_Matrix (ZX_semantics zx).
+Proof.
+  intros.
+  induction zx; try (simpl; auto 10 with wf_db).
+  - unfold Spider_Semantics_Impl, bra_ket_NM; try apply WF_plus; try apply WF_scale; apply WF_mult; try auto with wf_db.
+    + admit. (*TODO: Figure out why this does not work*)
+    + admit.
+  - unfold Spider_Semantics_Impl, bra_ket_NM; try apply WF_plus; try apply WF_scale; apply WF_mult; try auto with wf_db.
+    + admit. (*TODO: Figure out why this does not work*)
+    + admit.
+  - apply WF_list2D_to_matrix.
+    + easy.
+    + intros.
+      simpl in H; destruct H; try discriminate; try (subst; easy).
+  - apply WF_list2D_to_matrix.
+    + easy.
+    + intros.
+      simpl in H; repeat destruct H; try discriminate; try (subst; easy).
+Admitted.
