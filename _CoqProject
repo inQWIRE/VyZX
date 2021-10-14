@@ -9,6 +9,4 @@ externals/QuantumLib/Quantum.v
 externals/QuantumLib/Dirac.v
 externals/QuantumLib/Proportional.v
 
-AdjMatrix.v
-Node.v
 ZX.v
