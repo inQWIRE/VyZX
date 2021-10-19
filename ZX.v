@@ -1,5 +1,6 @@
 Require Import Coq.Vectors.Fin.
 Require Import externals.QuantumLib.Quantum.
+Require Import externals.QuantumLib.Proportional.
 
 Definition permutation (n : nat) := list((Fin.t n) * (Fin.t n)).
 
@@ -26,8 +27,7 @@ Inductive ZX : nat -> nat -> Type :=
   | Stack {nIn0 nIn1 nOut0 nOut1} (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1) :
       ZX (nIn0 + nIn1) (nOut0 + nOut1)
   | Compose {nIn nMid nOut} (zx0 : ZX nIn nMid) (σ : permutation nMid) 
-     (zx1 : ZX nMid nOut) : ZX nIn nOut
-  | Scale {nIn nOut} (c : C) (zx : ZX nIn nOut) : ZX nIn nOut.
+     (zx1 : ZX nMid nOut) : ZX nIn nOut.
 Local Close Scope R_scope.
 
 Definition Direct_Compose {nIn nMid nOut} (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut) := Compose zx0 (trivial_permutation nMid) zx1.
@@ -49,7 +49,6 @@ Fixpoint ZX_semantics {nIn nOut} (zx : ZX nIn nOut) : Matrix (2 ^ nOut) (2 ^ nIn
   | Cap => list2D_to_matrix [[C1];[C0];[C0];[C1]]  
   | Stack zx0 zx1 => (ZX_semantics zx0) ⊗ (ZX_semantics zx1)
   | Compose zx0 σ zx1 => (ZX_semantics zx1) × (perm_to_mat σ) × (ZX_semantics zx0)
-  | Scale c zx => c .*  (ZX_semantics zx)
   end.
   
 Theorem WF_ZX : forall nIn nOut (zx : ZX nIn nOut), WF_Matrix (ZX_semantics zx).
@@ -75,22 +74,27 @@ Proof.
     apply id_kron.
 Qed.
 
-Definition ZX_H := Scale (Cexp (PI / 4)) (Direct_Compose (@Z_Spider 1 1 (PI/2)) (Direct_Compose (@X_Spider 1 1 (PI/2)) (@Z_Spider 1 1 (PI/2)))).
+Definition ZX_H := (Direct_Compose (@Z_Spider 1 1 (PI/2)) (Direct_Compose (@X_Spider 1 1 (PI/2)) (@Z_Spider 1 1 (PI/2)))).
 
-Lemma ZX_H_is_H : ZX_semantics ZX_H = hadamard.
+Lemma ZX_H_is_H : ZX_semantics ZX_H ∝ hadamard.
 Proof.
   simpl.
   unfold Spider_Semantics_Impl, bra_ket_MN, perm_to_mat.
-  (* just a matter of solving C eqns*)
-  admit.
-Admitted.
+  exists (PI/4)%R.
+  solve_matrix; 
+  field_simplify_eq [Cexp_PI2 Cexp_PI4 Ci2 Csqrt2_sqrt2_inv Csqrt2_inv]; 
+  try apply c_proj_eq; try simpl; try R_field_simplify; try reflexivity; (try split; try apply RtoC_neq; try apply sqrt2_neq_0; try auto).
+Qed.
 
-Definition ZX_CNOT_l := Scale ((√ 2)%R) (Direct_Compose (Stack (@Z_Spider 1 2 0%R) Wire) (Stack Wire (@X_Spider 2 1 0%R))).
+Definition ZX_CNOT_l := (Direct_Compose (Stack (@Z_Spider 1 2 0%R) Wire) (Stack Wire (@X_Spider 2 1 0%R))).
 
-Lemma ZX_CNOT_is_cnot : ZX_semantics ZX_CNOT_l = cnot.
+Lemma ZX_CNOT_is_cnot : ZX_semantics ZX_CNOT_l ∝ cnot.
 Proof.
   simpl.
   unfold Spider_Semantics_Impl, bra_ket_MN, perm_to_mat.
+  destruct_m_eq'.
+  by_cell.
+  simpl.
     (* just a matter of solving C eqns*) simpl.
   admit.
 Admitted.
