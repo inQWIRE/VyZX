@@ -5,8 +5,8 @@ Require Import externals.QuantumLib.Proportional.
 Local Open Scope R_scope.
 Inductive ZX : nat -> nat -> Type :=
   | Empty : ZX 0 0
-  | X_Spider {nIn nOut} (α : R) : ZX nIn nOut
-  | Z_Spider {nIn nOut} (α : R) : ZX nIn nOut
+  | X_Spider nIn nOut (α : R) : ZX nIn nOut
+  | Z_Spider nIn nOut (α : R) : ZX nIn nOut
   | Cap : ZX 0 2
   | Cup : ZX 2 0
   | Stack {nIn0 nIn1 nOut0 nOut1} (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1) :
@@ -26,8 +26,8 @@ Fixpoint ZX_semantics {nIn nOut} (zx : ZX nIn nOut) :
   Matrix (2 ^ nOut) (2 ^nIn) := 
   match zx with
   | Empty => I 1
-  | X_Spider α => Spider_Semantics_Impl (hadamard × (ket 0))† (hadamard × (ket 1))† (hadamard × (ket 0)) (hadamard × (ket 1)) α
-  | Z_Spider α => Spider_Semantics_Impl (bra 0) (bra 1) (ket 0) (ket 1) α
+  | X_Spider _ _ α => Spider_Semantics_Impl (hadamard × (ket 0))† (hadamard × (ket 1))† (hadamard × (ket 0)) (hadamard × (ket 1)) α
+  | Z_Spider _ _ α => Spider_Semantics_Impl (bra 0) (bra 1) (ket 0) (ket 1) α
   | Cup => list2D_to_matrix [[C1;C0;C0;C1]]
   | Cap => list2D_to_matrix [[C1];[C0];[C0];[C1]]  
   | Stack zx0 zx1 => (ZX_semantics zx0) ⊗ (ZX_semantics zx1)
@@ -58,7 +58,7 @@ Fixpoint nStack {nIn nOut} (zx : ZX nIn nOut) n : ZX (n * nIn) (n * nOut) :=
 
 Global Hint Resolve WF_ZX : wf_db.
 
-Definition Wire : ZX 1 1 := Z_Spider 0.
+Definition Wire : ZX 1 1 := Z_Spider _ _ 0.
 
 Lemma bra_ket_id : ket 0 × bra 0 .+ ket 1 × bra 1 = I 2.
 Proof. solve_matrix. Qed.
