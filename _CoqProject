@@ -10,4 +10,5 @@ externals/QuantumLib/Dirac.v
 externals/QuantumLib/Proportional.v
 
 ZX.v
-ComplexSemantics.v
+Gates.v 
+Rules.v 
