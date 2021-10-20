@@ -60,6 +60,9 @@ Global Hint Resolve WF_ZX : wf_db.
 
 Definition Wire : ZX 1 1 := Z_Spider 0.
 
+Lemma bra_ket_id : ket 0 × bra 0 .+ ket 1 × bra 1 = I 2.
+Proof. solve_matrix. Qed.
+
 Theorem wire_identity_semantics : ZX_semantics Wire = I 2.
 Proof.
   simpl.
@@ -67,10 +70,9 @@ Proof.
   rewrite Cexp_0.
   rewrite Mscale_1_l.
   unfold kron_n.
-  repeat rewrite kron_1_l; 
-  try auto with wf_db.
-  admit.
-Admitted.
+  repeat rewrite kron_1_l; try auto with wf_db.
+  apply bra_ket_id.
+Qed.
 
 Global Opaque Wire.
 
