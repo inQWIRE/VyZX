@@ -138,9 +138,32 @@ Proof.
   reflexivity.
 Qed.
 
-Definition ZX_CNOT_l : ZX 2 2 := (Direct_Compose (Stack (@Z_Spider 1 2 0%R) Wire) (Stack Wire (@X_Spider 2 1 0%R))).
-Definition ZX_CNOT_r : ZX 2 2 := (Direct_Compose (Stack Wire (@X_Spider 1 2 0%R)) (Stack (@Z_Spider 2 1 0%R) Wire)).
+Definition ZX_CNOT_l : ZX 2 2 := (Compose (Stack (@Z_Spider 1 2 0%R) Wire) (Stack Wire (@X_Spider 2 1 0%R))).
+Definition ZX_CNOT_r : ZX 2 2 := (Compose (Stack Wire (@X_Spider 1 2 0%R)) (Stack (@Z_Spider 2 1 0%R) Wire)).
+
+Open Scope R_scope.
+Lemma ZX_CNOT_l_is_cnot : ZX_semantics ZX_CNOT_l = (/ √ 2)%C .* cnot.
+Proof.
+  simpl.
+  unfold Spider_Semantics_Impl, bra_ket_MN.
+  rewrite wire_identity_semantics.
+  rewrite Cexp_0.
+  solve_matrix.
+Qed.
+
+Lemma ZX_CNOT_r_is_cnot : ZX_semantics ZX_CNOT_r = (/ √ 2)%C .* cnot.
+Proof.
+  simpl.
+  unfold Spider_Semantics_Impl, bra_ket_MN.
+  rewrite wire_identity_semantics.
+  rewrite Cexp_0.
+  solve_matrix.
+Qed.
 
 Lemma ZX_CNOT_equiv : ZX_semantics ZX_CNOT_l = ZX_semantics ZX_CNOT_r.
 Proof.
-Admitted.
+  rewrite ZX_CNOT_l_is_cnot.
+  rewrite <- ZX_CNOT_r_is_cnot.
+  reflexivity.
+Qed.
+
