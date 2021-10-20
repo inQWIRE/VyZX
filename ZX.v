@@ -72,7 +72,7 @@ Proof.
   admit.
 Admitted.
 
-Opaque Wire.
+Global Opaque Wire.
 
 Global Hint Resolve wire_identity_semantics : zx_sem_db.
 

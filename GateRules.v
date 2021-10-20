@@ -1,7 +1,6 @@
 Require Import externals.QuantumLib.Quantum.
 Require Export ZX.
 Require Export Gates.
-Require Export Rules.
 
 
 Lemma ZX_H_is_H : ZX_semantics ZX_H = Cexp (PI/4)%R .* hadamard.
@@ -30,7 +29,6 @@ Proof.
   reflexivity.
 Qed.
 
-
 Local Open Scope R_scope.
 Lemma ZX_CNOT_l_is_cnot : ZX_semantics ZX_CNOT_l = (/ √ 2)%C .* cnot.
 Proof.
@@ -54,6 +52,7 @@ Lemma ZX_CNOT_equiv : ZX_semantics ZX_CNOT_l = ZX_semantics ZX_CNOT_r.
 Proof.
   rewrite ZX_CNOT_l_is_cnot.
   rewrite <- ZX_CNOT_r_is_cnot.
+  reflexivity.
 Qed.
 
 Local Close Scope R_scope.
