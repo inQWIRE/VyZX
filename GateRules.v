@@ -55,4 +55,21 @@ Proof.
   reflexivity.
 Qed.
 
+Notation ZX_CNOT_is_cnot := ZX_CNOT_l_is_cnot.
+
+
+Lemma ZX_SWAP_is_swap : ZX_semantics ZX_SWAP = (/ 2 * / √ 2)%C .* swap.
+Proof.
+  Opaque ZX_CNOT.
+  simpl.
+  rewrite ZX_CNOT_is_cnot.
+  rewrite wire_identity_semantics.
+  unfold Spider_Semantics_Impl, bra_ket_MN.
+  rewrite Cexp_0.
+  solve_matrix.
+  simpl.
+  Search (√ 2).
+  all : field_simplify_eq [Csqrt2_sqrt]; try reflexivity; split; nonzero.
+Qed.
+
 Local Close Scope R_scope.
