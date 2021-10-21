@@ -128,3 +128,56 @@ Proof.
     simpl;
     auto).
 Qed.
+Theorem inverse_Z_Spider : forall nIn nOut α, ZX_semantics (Z_Spider nIn nOut α) = (ZX_semantics (Z_Spider nOut nIn (-α)))†.
+Proof.
+  intros.
+  simpl.
+  unfold Spider_Semantics_Impl.
+  unfold bra_ket_MN.
+  rewrite Mplus_adjoint, Mscale_adj.
+  rewrite 2 Mmult_adjoint.
+  rewrite 2 kron_n_adjoint; try auto with wf_db.
+  rewrite Cexp_conj_neg.
+  rewrite Ropp_involutive.
+  assert ((ket 0)† = bra 0) as Hket0 by reflexivity.
+  assert ((ket 1)† = bra 1) as Hket1 by reflexivity.
+  assert ((bra 0)† = ket 0) as Hbra0 by apply adjoint_involutive.
+  assert ((bra 1)† = ket 1) as Hbra1 by apply adjoint_involutive.
+  apply Mplus_simplify; (* We need to unfortunately split the proof here due to restore_dims not dealing with .* *)
+    try apply Mscale_simplify; 
+    try restore_dims;
+    try rewrite kron_n_adjoint; try auto with wf_db;
+    try rewrite Hket0;
+    try rewrite Hket1;
+    try rewrite Hbra0;
+    try rewrite Hbra1;
+    reflexivity.
+Qed.
+
+Theorem inverse_X_Spider : forall nIn nOut α, ZX_semantics (X_Spider nIn nOut α) = (ZX_semantics (X_Spider nOut nIn (-α)))†.
+Proof.
+  intros.
+  simpl.
+  unfold Spider_Semantics_Impl.
+  unfold bra_ket_MN.
+  rewrite Mplus_adjoint, Mscale_adj.
+  repeat rewrite Mmult_adjoint.
+  repeat rewrite <- kron_n_mult.
+  rewrite Cexp_conj_neg.
+  rewrite Ropp_involutive.
+  assert ((ket 0)† = bra 0) as Hket0 by reflexivity.
+  assert ((ket 1)† = bra 1) as Hket1 by reflexivity.
+  assert ((bra 0)† = ket 0) as Hbra0 by apply adjoint_involutive.
+  assert ((bra 1)† = ket 1) as Hbra1 by apply adjoint_involutive.
+  apply Mplus_simplify; (* We need to unfortunately split the proof here due to restore_dims not dealing with .* *)
+    try apply Mscale_simplify; 
+    try restore_dims;
+    try repeat rewrite Mmult_adjoint;
+    try repeat rewrite kron_n_adjoint; try auto with wf_db;
+    try rewrite Hket0;
+    try rewrite Hket1;
+    try rewrite Hbra0;
+    try rewrite Hbra1;
+    try repeat rewrite hadamard_sa;
+    reflexivity.
+Qed.
