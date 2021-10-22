@@ -28,6 +28,26 @@ Proof.
   reflexivity.
 Qed.
 
+Local Transparent ZX_Z.
+Local Transparent ZX_X.
+Lemma ZX_X_is_X : ZX_semantics ZX_X = σx.
+Proof.
+  simpl.
+  unfold Spider_Semantics_Impl, bra_ket_MN.
+  rewrite Cexp_PI.
+  solve_matrix.
+Qed.
+
+Lemma ZX_Z_is_Z : ZX_semantics ZX_Z = σz.
+Proof.
+  simpl.
+  unfold Spider_Semantics_Impl, bra_ket_MN.
+  rewrite Cexp_PI.
+  solve_matrix.
+Qed.
+Local Opaque ZX_Z.
+Local Opaque ZX_X.
+
 Local Open Scope R_scope.
 Local Transparent ZX_CNOT_l. 
 Local Transparent ZX_CNOT_r.
