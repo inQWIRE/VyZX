@@ -39,15 +39,7 @@ Proof.
   repeat rewrite Mscale_1_l.
   repeat rewrite Mmult_1_r; try auto with wf_db.
   solve_matrix.
-  C_field_simplify; try lca.
-  (* Prove √ 2 <> 0 *)
-  unfold RtoC.
-  unfold not.
-  intro Hcontra.
-  apply pair_equal_spec in Hcontra.
-  destruct Hcontra.
-  contradict H.
-  apply sqrt2_neq_0.
+  C_field_simplify; try lca; try apply Csqrt2_neq_0.
 Qed. 
 
 Theorem Scalar_X_alpha_Z_PI_sqrt_2 : forall α, (ZX_semantics (Compose (X_Spider 0 1 α) (Z_Spider 1 0 PI))) = (√2 * Cexp(α)) .* I 1.
@@ -62,14 +54,6 @@ Proof.
   repeat rewrite Mscale_1_l.
   repeat rewrite Mmult_1_r; try auto with wf_db.
   solve_matrix.
-  C_field_simplify; try lca.
-  (* Prove √ 2 <> 0 *)
-  unfold RtoC.
-  unfold not.
-  intro Hcontra.
-  apply pair_equal_spec in Hcontra.
-  destruct Hcontra.
-  contradict H.
-  apply sqrt2_neq_0.
+  C_field_simplify; try lca; try apply Csqrt2_neq_0.
 Qed. 
 
