@@ -45,8 +45,18 @@ Proof.
   rewrite Cexp_PI.
   solve_matrix.
 Qed.
+
 Local Opaque ZX_Z.
 Local Opaque ZX_X.
+
+Local Transparent ZX_Y.
+Lemma ZX_Y_is_Y : ZX_semantics ZX_Y = -Ci .* σy.
+Proof.
+  simpl.
+  rewrite ZX_X_is_X, ZX_Z_is_Z.
+  solve_matrix.
+Qed.
+Local Opaque ZX_Y.
 
 Local Open Scope R_scope.
 Local Transparent ZX_CNOT_l. 
