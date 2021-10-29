@@ -2,6 +2,9 @@ Require Import Coq.Vectors.Fin.
 Require Import externals.QuantumLib.Quantum.
 Require Import externals.QuantumLib.Proportional.
 
+Declare Scope ZX_scope.
+Local Open Scope ZX_scope.
+
 Local Open Scope R_scope.
 Inductive ZX : nat -> nat -> Type :=
   | Empty : ZX 0 0
@@ -92,3 +95,5 @@ Proof.
       rewrite double_mult.
       reflexivity.
 Qed.
+
+Local Close Scope ZX_scope.

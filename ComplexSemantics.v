@@ -1,6 +1,7 @@
 Require Export ZX.
 Require Import externals.QuantumLib.Quantum.
 
+Local Open Scope ZX_scope.
 
 Definition braKetNM (bra: Matrix 2 1) (ket : Vector 2) n m : Matrix (2^n) (2^m) := 
   (n ⨂ ket) × (m ⨂ bra).
@@ -22,3 +23,4 @@ Definition spiderSemantics (zx : ZXDiagram) nodeIdx :=
 
 
 Local Close Scope matrix_scope.
+Local Close Scope ZX_scope.

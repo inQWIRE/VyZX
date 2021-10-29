@@ -1,6 +1,8 @@
 Require Import externals.QuantumLib.Quantum.
 Require Export ZX.
 
+Local Open Scope ZX_scope.
+
 Theorem Scalar_Z_general : forall α, (ZX_semantics (Z_Spider 0 0 α)) = (1 + Cexp(α)) .* I 1.
 Proof.
   intros.
@@ -57,3 +59,4 @@ Proof.
   C_field_simplify; try lca; try apply Csqrt2_neq_0.
 Qed. 
 
+Local Close Scope ZX_scope.

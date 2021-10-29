@@ -3,6 +3,8 @@ Require Export ZX.
 Require Export Gates.
 Require Export GateRules.
 
+Local Open Scope ZX_scope.
+
 Lemma Z_0_eq_X_0 : ZX_semantics (Z_Spider 1 1 0) = ZX_semantics (X_Spider 1 1 0).
 Proof.
   simpl.
@@ -43,6 +45,20 @@ Proof.
   rewrite wire_identity_semantics.
   solve_matrix.
 Qed.
+
+Theorem inverse_angle_Z : forall  α nIn nOut, ZX_semantics(Compose (Z_Spider nIn 1 α) (Z_Spider 1 nOut (-α))) = ZX_semantics (Z_Spider nIn nOut 0).
+Proof.
+  intros α nIn; induction nIn; intro nOut; induction nOut.
+  - simpl; unfold Spider_Semantics_Impl, bra_ket_MN; simpl; Msimpl.
+    rewrite Cexp_0.
+    rewrite Mmult_plus_distr_r.
+    rewrite 2 Mmult_plus_distr_l.
+    Msimpl.
+    solve_matrix.
+    rewrite Cexp_mul_neg_l.
+    lca.
+  - simpl.
+Abort.
 
 Theorem Hopf_rule_Z_X : ZX_semantics (Compose (Z_Spider 1 2 0) (X_Spider 2 1 0)) = (/ C2) .* ZX_semantics (Compose (Z_Spider 1 0 0) (X_Spider 0 1 0)).
 Proof.
@@ -181,3 +197,5 @@ Proof.
     try repeat rewrite hadamard_sa;
     reflexivity.
 Qed.
+
+Local Close Scope ZX_scope.

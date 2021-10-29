@@ -1,6 +1,8 @@
 Require Import externals.QuantumLib.Quantum.
 Require Export ZX.
 
+Local Open Scope ZX_scope.
+
 Theorem ket_plus_state : ZX_semantics (Z_Spider 0 1 0) = √ 2 .* hadamard × (ket 0).
 Proof.
   simpl.
@@ -69,3 +71,4 @@ Proof.
   C_field_simplify; try lca; try apply Csqrt2_neq_0.
 Qed.
 
+Local Close Scope ZX_scope.

@@ -2,6 +2,8 @@ Require Import externals.QuantumLib.Quantum.
 Require Export ZX.
 Require Export Gates.
 
+Local Open Scope ZX_scope.
+
 Local Transparent ZX_H.
 Lemma ZX_H_is_H : ZX_semantics ZX_H = Cexp (PI/4)%R .* hadamard.
 Proof.
@@ -107,3 +109,4 @@ Qed.
 Local Opaque ZX_SWAP.
 
 Local Close Scope R_scope.
+Local Close Scope ZX_scope.

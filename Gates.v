@@ -1,6 +1,8 @@
 Require Import externals.QuantumLib.Quantum.
 Require Export ZX.
 
+Local Open Scope ZX_scope.
+
 Definition ZX_H := 
     (Compose 
         (Z_Spider 1 1 (PI/2)) 
@@ -58,3 +60,5 @@ Definition ZX_SWAP : ZX 2 2 :=
             ZX_FLIPPED_CNOT
             ZX_CNOT)).
 Global Opaque ZX_SWAP.
+
+Local Close Scope ZX_scope.
