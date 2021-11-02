@@ -1,10 +1,11 @@
 Require Import externals.QuantumLib.Quantum.
 Require Export ZX.
+Require Export Scalars.
 
 Local Open Scope ZX_scope.
 
 Definition proportional {nIn nOut} (zx0 zx1 : ZX nIn nOut) :=
-  exists c c' θ, ZX_semantics zx0 = ((√2)^c* (1/((√2)^c')))%R * Cexp θ .* ZX_semantics zx1.
+  exists c c' θ, ZX_semantics zx0 = ((√ 2) ^ c * (1 / ((√ 2) ^ c')))%R * Cexp θ .* ZX_semantics zx1.
 
 Infix "∝" := proportional (at level 70).
 
@@ -40,12 +41,11 @@ Qed.
 Lemma proportional_trans : forall {m n} (zx0 zx1 zx2 : ZX m n), 
   zx0 ∝ zx1 -> zx1 ∝ zx2 -> zx0 ∝ zx2.
 Proof.
-  intros. 
+  intros.
   destruct H as [c01 H].
   destruct H as [c'01 H].
   destruct H as [θ01 H01].
-  destruct H0 as [c12 H0].
-  destruct H0 as [c'12 H0].
+  destruct H0 as [c12 H0].  destruct H0 as [c'12 H0].
   destruct H0 as [θ12 H12].
   unfold proportional.
   exists (c01 + c12)%nat.
@@ -98,12 +98,75 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma proportional_C2 : forall nIn nOut (zx0 zx1 : ZX nIn nOut) c2 c12 csqrt2 c1sqrt2 θ, ZX_semantics zx0 = (2 ^ c2 * (1 / (2 ^ c12)) * (√ 2) ^ csqrt2 * (1 / ((√ 2) ^ c1sqrt2)))%R * Cexp θ .* ZX_semantics zx1 -> zx0 ∝ zx1.
+Proof.
+  intros.
+  unfold proportional.
+  exists (2 * c2 + csqrt2)%nat.
+  exists (2 * c12 + c1sqrt2)%nat.
+  exists θ.
+  rewrite H.
+  apply Mscale_simplify; try easy.
+  apply Cmult_simplify; try easy.
+  rewrite <- pow2_sqrt2.
+  rewrite <- pow_mult.
+  rewrite <- pow_mult.
+  repeat rewrite pow2_sqrt2.
+  replace (√ 2 ^ (2 * c2) * (1 / √ 2 ^ (2 * c12)) * √ 2 ^ csqrt2 * (1 / √ 2 ^ c1sqrt2))%R with (√ 2 ^ (2 * c2) * √ 2 ^ csqrt2 * (1 / √ 2 ^ (2 * c12)) *  (1 / √ 2 ^ c1sqrt2))%R by lra.
+  rewrite <- Rdef_pow_add.
+  rewrite Rmult_assoc.
+  rewrite Rmult_div; try apply sqrt2_pow_n_neq_0.
+  rewrite Rmult_1_l.
+  rewrite <- Rdef_pow_add.
+  reflexivity.
+Qed.
+
+Definition build_prop_constants c c' θ := (Stack (Stack (Scalar_Cexp_alpha_times_sqrt_2 θ) (Scalar_1_div_sqrt_2)) (Stack (nStack Scalar_sqrt_2 c) (nStack Scalar_1_div_sqrt_2 c'))).
+
+Theorem ZX_prop_explicit_eq : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut) c c' θ,  ZX_semantics zx0 = ((√ 2) ^ c * (1 / ((√ 2) ^ c')))%R * Cexp θ .* ZX_semantics zx1-> ZX_semantics zx0 = ZX_semantics (Stack (build_prop_constants c c' θ) zx1).
+Proof.
+  intros nIn nOut zx0 zx1 c c' θ H.
+  generalize dependent c'.
+  induction c; simpl; intros; induction c'; simpl.
+  - Msimpl.
+    rewrite Scalar_X_alpha_Z_PI_sqrt_2.
+    rewrite Scalar_X_Z_triple_1_sqrt_2.
+    rewrite H.
+    Msimpl. 
+    rewrite Mscale_kron_dist_r.
+    Msimpl.
+    rewrite Mscale_assoc.
+    rewrite Mscale_kron_dist_l.
+    rewrite kron_1_l; try auto with wf_db.
+    replace (1 * (1 / √ 2 ^ 0))%R with 1%R.
+    replace (C1 / √ 2 * (√ 2 * Cexp θ)) with (Cexp θ).
+    rewrite Cmult_1_l.
+    reflexivity.
+    C_field_simplify; try reflexivity; try apply Csqrt2_neq_0.
+    R_field_simplify; try reflexivity.
+  - simpl.
+    Msimpl.
+    rewrite Scalar_X_Z_triple_1_sqrt_2.
+    simpl.
+Admitted. (* TODO *)
+
+Theorem ZX_prop_eq : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut), zx0 ∝ zx1 -> exists (zxconst : ZX 0 0), ZX_semantics zx0 = ZX_semantics (Stack zxconst zx1).
+Proof.
+  intros nIn nOut zx0 zx1 H.
+  unfold proportional in H.
+  destruct H as [c H].
+  destruct H as [c' H].
+  destruct H as [θ H].
+  replace 0%nat with (c * 0 + c' * 0)%nat by lia.
+  exists (build_prop_constants c c' θ).
+  apply ZX_prop_explicit_eq.
+  assumption.
+Qed.
+
 Add Parametric Relation (nIn nOut : nat) : (ZX nIn nOut ) (@proportional nIn nOut)
   reflexivity proved by proportional_refl
   symmetry proved by proportional_symm
   transitivity proved by proportional_trans
   as uc_equiv_rel.
-
-Local Close Scope ZX_scope.
 
 Local Close Scope ZX_scope.
