@@ -94,7 +94,6 @@ Proof.
   rewrite Cexp_0.
   rewrite Cmult_1_l.
   C_field_simplify; try lca; split; try apply Csqrt2_neq_0.
-  Search (_ <> _%C -> _ <> _).
   apply C0_fst_neq.
   simpl.
   auto.
@@ -117,6 +116,12 @@ Proof.
       * rewrite mult_0_r.
         rewrite Nat.pow_0_r.
         reflexivity.
+Qed.
+
+Lemma Scalar_kron : forall c c', (c .* (I 1)) ⊗ (c' .* (I 1)) = c * c' .* I 1.
+Proof.
+  intros.
+  solve_matrix.
 Qed.
 
 Local Close Scope ZX_scope.
