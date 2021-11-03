@@ -98,6 +98,12 @@ Proof.
   reflexivity.
 Qed.
 
+Add Parametric Relation (nIn nOut : nat) : (ZX nIn nOut ) (@proportional nIn nOut)
+  reflexivity proved by proportional_refl
+  symmetry proved by proportional_symm
+  transitivity proved by proportional_trans
+  as uc_equiv_rel.
+
 Lemma proportional_C2 : forall nIn nOut (zx0 zx1 : ZX nIn nOut) c2 c12 csqrt2 c1sqrt2 θ, ZX_semantics zx0 = (2 ^ c2 * (1 / (2 ^ c12)) * (√ 2) ^ csqrt2 * (1 / ((√ 2) ^ c1sqrt2)))%R * Cexp θ .* ZX_semantics zx1 -> zx0 ∝ zx1.
 Proof.
   intros.
@@ -126,29 +132,42 @@ Definition build_prop_constants c c' θ := (Stack (Stack (Scalar_Cexp_alpha_time
 Theorem ZX_prop_explicit_eq : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut) c c' θ,  ZX_semantics zx0 = ((√ 2) ^ c * (1 / ((√ 2) ^ c')))%R * Cexp θ .* ZX_semantics zx1-> ZX_semantics zx0 = ZX_semantics (Stack (build_prop_constants c c' θ) zx1).
 Proof.
   intros nIn nOut zx0 zx1 c c' θ H.
-  generalize dependent c'.
-  induction c; simpl; intros; induction c'; simpl.
-  - Msimpl.
-    rewrite Scalar_X_alpha_Z_PI_sqrt_2.
-    rewrite Scalar_X_Z_triple_1_sqrt_2.
-    rewrite H.
-    Msimpl. 
-    rewrite Mscale_kron_dist_r.
-    Msimpl.
-    rewrite Mscale_assoc.
-    rewrite Mscale_kron_dist_l.
-    rewrite kron_1_l; try auto with wf_db.
-    replace (1 * (1 / √ 2 ^ 0))%R with 1%R.
-    replace (C1 / √ 2 * (√ 2 * Cexp θ)) with (Cexp θ).
-    rewrite Cmult_1_l.
-    reflexivity.
-    C_field_simplify; try reflexivity; try apply Csqrt2_neq_0.
-    R_field_simplify; try reflexivity.
-  - simpl.
-    Msimpl.
-    rewrite Scalar_X_Z_triple_1_sqrt_2.
-    simpl.
-Admitted. (* TODO *)
+  unfold build_prop_constants.
+  simpl.
+  rewrite Scalar_X_alpha_Z_PI_sqrt_2.
+  rewrite Scalar_X_Z_triple_1_sqrt_2.
+  rewrite (Scalar_n_stack Scalar_sqrt_2 (√ 2) c); try exact Scalar_X_alpha_Z_0_sqrt_2.
+  rewrite (Scalar_n_stack Scalar_1_div_sqrt_2 (C1 / √ 2) c'); try exact Scalar_X_Z_triple_1_sqrt_2.
+  rewrite H.
+  rewrite Scalar_kron.
+  repeat rewrite Mscale_kron_dist_r.
+  repeat rewrite Mscale_kron_dist_l.
+  repeat rewrite Mscale_assoc.
+  replace (2 ^ (c * 0 + c' * 0))%nat with 1%nat; try rewrite 2 mult_0_r; try rewrite plus_0_l; try repeat rewrite Nat.pow_0_r; try reflexivity. (* Magic to fix dims *)
+  Msimpl.
+  rewrite Scalar_kron.
+  repeat rewrite Mscale_assoc.
+  rewrite Mscale_kron_dist_l.
+  Msimpl.
+  repeat rewrite mult_1_l.
+  apply Mscale_simplify; try reflexivity.
+  C_field_simplify; try apply Csqrt2_neq_0.
+  rewrite RtoC_mult.
+  rewrite <- RtoC_pow.
+  rewrite RtoC_div; try apply pow_nonzero; try apply sqrt2_neq_0.
+  rewrite <- RtoC_pow.
+  C_field_simplify; try apply Cpow_nonzero; try apply sqrt2_neq_0; try apply Csqrt2_neq_0.
+  rewrite Cdiv_unfold.
+  rewrite Cmult_1_l.
+  replace (√ 2 ^ c * Cexp θ * √ 2 ^ c' * (/ √ 2) ^ c') with ((√ 2 ^ c * √ 2 ^ c' * (/ √ 2) ^ c') * Cexp θ) by lca.
+  apply Cmult_simplify; try reflexivity.
+  rewrite <- Cmult_assoc.
+  replace (√ 2 ^ c' * (/ √ 2) ^ c') with C1.
+  lca.
+  rewrite Cpow_inv; try apply Csqrt2_neq_0; try intros; try apply Cpow_nonzero; try apply sqrt2_neq_0.
+  rewrite Cinv_r; try apply Cpow_nonzero; try apply sqrt2_neq_0.
+  reflexivity.
+Qed.
 
 Theorem ZX_prop_eq : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut), zx0 ∝ zx1 -> exists (zxconst : ZX 0 0), ZX_semantics zx0 = ZX_semantics (Stack zxconst zx1).
 Proof.
@@ -162,11 +181,5 @@ Proof.
   apply ZX_prop_explicit_eq.
   assumption.
 Qed.
-
-Add Parametric Relation (nIn nOut : nat) : (ZX nIn nOut ) (@proportional nIn nOut)
-  reflexivity proved by proportional_refl
-  symmetry proved by proportional_symm
-  transitivity proved by proportional_trans
-  as uc_equiv_rel.
 
 Local Close Scope ZX_scope.
