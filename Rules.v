@@ -5,6 +5,27 @@ Require Export GateRules.
 
 Local Open Scope ZX_scope.
 
+Lemma ZX_Stack_assoc : forall nIn1 nIn2 nIn3 nOut1 nOut2 nOut3 
+                              (zx1 : ZX nIn1 nOut1) (zx2 : ZX nIn2 nOut2) (zx3 : ZX nIn3 nOut3),
+                              ZX_semantics (Stack zx1 (Stack zx2 zx3)) = ZX_semantics (Stack (Stack zx1 zx2) zx3).
+Proof.
+  intros.
+  simpl.
+  restore_dims.
+  rewrite <- kron_assoc; try auto with wf_db.
+Qed.
+
+Lemma ZX_Stack_Compose_distr : forall nIn1 nMid12 nIn3 nOut2 nMid34 nOut4 
+                                      (zx1 : ZX nIn1 nMid12) (zx2 : ZX nMid12 nOut2) (zx3 : ZX nIn3 nMid34) (zx4 : ZX nMid34 nOut4),
+                                      ZX_semantics (Stack (Compose zx1 zx2) (Compose zx3 zx4)) = ZX_semantics (Compose (Stack zx1 zx3) (Stack zx2 zx4)).
+Proof.
+  intros. 
+  simpl.
+  restore_dims.
+  rewrite kron_mixed_product.
+  reflexivity.
+Qed.
+
 Lemma Z_0_eq_X_0 : ZX_semantics (Z_Spider 1 1 0) = ZX_semantics (X_Spider 1 1 0).
 Proof.
   simpl.
