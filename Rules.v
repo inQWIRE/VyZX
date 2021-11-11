@@ -120,6 +120,102 @@ Proof.
   rewrite Cexp_add; try C_field_simplify; try lca; try (apply C0_fst_neq; simpl; auto).
 Qed.
 
+Lemma Z_commutes_through_swap_t : forall α, ZX_semantics (Compose (Stack (Z_Spider 1 1 α) Wire) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack Wire (Z_Spider 1 1 α))).
+Proof.
+  intros.
+  simpl.
+  unfold Spider_Semantics_Impl, bra_ket_MN.
+  rewrite ZX_SWAP_is_swap.
+  rewrite wire_identity_semantics.
+  simpl.
+  Msimpl.
+  solve_matrix.
+Qed.
+
+Lemma X_commutes_through_swap_t : forall α, ZX_semantics (Compose (Stack (X_Spider 1 1 α) Wire) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack Wire (X_Spider 1 1 α))).
+Proof.
+  intros.
+  simpl.
+  unfold Spider_Semantics_Impl, bra_ket_MN.
+  rewrite ZX_SWAP_is_swap.
+  rewrite wire_identity_semantics.
+  simpl.
+  Msimpl.
+  solve_matrix.
+Qed.
+
+Lemma Z_commutes_through_swap_b : forall α, ZX_semantics (Compose (Stack Wire (Z_Spider 1 1 α)) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack (Z_Spider 1 1 α) Wire)).
+Proof.
+  intros.
+  simpl.
+  unfold Spider_Semantics_Impl, bra_ket_MN.
+  rewrite ZX_SWAP_is_swap.
+  rewrite wire_identity_semantics.
+  simpl.
+  Msimpl.
+  solve_matrix.
+Qed.
+
+Lemma X_commutes_through_swap_b : forall α, ZX_semantics (Compose (Stack Wire (X_Spider 1 1 α)) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack (X_Spider 1 1 α) Wire)).
+Proof.
+  intros.
+  simpl.
+  unfold Spider_Semantics_Impl, bra_ket_MN.
+  rewrite ZX_SWAP_is_swap.
+  rewrite wire_identity_semantics.
+  simpl.
+  Msimpl.
+  solve_matrix.
+Qed.
+
+Lemma Spiders_commute_through_swap_b : forall (zx0 zx1 : ZX 1 1),
+                                       ZX_semantics (Compose (Stack Wire zx0) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack zx0 Wire)) ->      
+                                       ZX_semantics (Compose (Stack Wire zx1) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack zx1 Wire)) ->
+                                       ZX_semantics (Compose (Stack Wire (Compose zx0 zx1)) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack (Compose zx0 zx1) Wire)).
+Proof.
+  intros.
+  simpl.
+  replace (ZX_semantics Wire) with (ZX_semantics (Compose Wire Wire)) by (simpl; rewrite wire_identity_semantics; Msimpl; reflexivity).
+  restore_dims.
+  replace (ZX_semantics zx1 × ZX_semantics zx0) with (ZX_semantics (Compose zx0 zx1)) by reflexivity.
+  replace (ZX_semantics (Compose Wire Wire) ⊗ ZX_semantics (Compose zx0 zx1)) with (ZX_semantics (Stack (Compose Wire Wire) (Compose zx0 zx1))) by reflexivity.
+  replace (ZX_semantics (Compose zx0 zx1) ⊗ ZX_semantics (Compose Wire Wire)) with (ZX_semantics (Stack (Compose zx0 zx1) (Compose Wire Wire))) by reflexivity.
+  rewrite 2 ZX_Stack_Compose_distr.
+  simpl.
+  simpl in H.
+  simpl in H0.
+  rewrite <- Mmult_assoc.
+  rewrite H0.
+  rewrite Mmult_assoc.
+  rewrite H.
+  rewrite <- Mmult_assoc.
+  reflexivity.
+Qed.
+
+Lemma Spiders_commute_through_swap_t : forall (zx0 zx1 : ZX 1 1),
+                                       ZX_semantics (Compose (Stack zx0 Wire) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack Wire zx0)) ->      
+                                       ZX_semantics (Compose (Stack zx1 Wire) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack Wire zx1)) ->
+                                       ZX_semantics (Compose (Stack (Compose zx0 zx1) Wire) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack Wire (Compose zx0 zx1))).
+Proof.
+  intros.
+  simpl.
+  replace (ZX_semantics Wire) with (ZX_semantics (Compose Wire Wire)) by (simpl; rewrite wire_identity_semantics; Msimpl; reflexivity).
+  restore_dims.
+  replace (ZX_semantics zx1 × ZX_semantics zx0) with (ZX_semantics (Compose zx0 zx1)) by reflexivity.
+  replace (ZX_semantics (Compose Wire Wire) ⊗ ZX_semantics (Compose zx0 zx1)) with (ZX_semantics (Stack (Compose Wire Wire) (Compose zx0 zx1))) by reflexivity.
+  replace (ZX_semantics (Compose zx0 zx1) ⊗ ZX_semantics (Compose Wire Wire)) with (ZX_semantics (Stack (Compose zx0 zx1) (Compose Wire Wire))) by reflexivity.
+  rewrite 2 ZX_Stack_Compose_distr.
+  simpl.
+  simpl in H.
+  simpl in H0.
+  rewrite <- Mmult_assoc.
+  rewrite H0.
+  rewrite Mmult_assoc.
+  rewrite H.
+  rewrite <- Mmult_assoc.
+  reflexivity.
+Qed.
+
 Lemma Z_0_eq_X_0 : ZX_semantics (Z_Spider 1 1 0) = ZX_semantics (X_Spider 1 1 0).
 Proof.
   simpl.
