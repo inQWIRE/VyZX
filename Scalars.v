@@ -1,4 +1,5 @@
 Require Import externals.QuantumLib.Quantum.
+Require Import externals.QuantumLib.Dirac.
 Require Export ZX.
 
 Local Open Scope ZX_scope.
@@ -118,10 +119,24 @@ Proof.
         reflexivity.
 Qed.
 
+Hint Rewrite Scalar_X_Z_triple_1_sqrt_2 Scalar_X_alpha_Z_PI_sqrt_2 Scalar_X_alpha_Z_0_sqrt_2 Scalar_Z_PI_0 Scalar_Z_0_2 Scalar_Z_general : zx_scalar_db.
+
+Lemma Scalar_1_div_sqrt_2_sqrt_identity : ZX_semantics (Stack Scalar_1_div_sqrt_2 Scalar_sqrt_2) = ZX_semantics Empty.
+Proof.
+  simpl.
+  autorewrite with zx_scalar_db.
+  rewrite Mscale_kron_dist_r.
+  Msimpl.
+  rewrite Mscale_assoc.
+  solve_matrix.
+Qed.
+
 Lemma Scalar_kron : forall c c', (c .* (I 1)) ⊗ (c' .* (I 1)) = c * c' .* I 1.
 Proof.
   intros.
   solve_matrix.
 Qed.
+
+Hint Rewrite Scalar_1_div_sqrt_2_sqrt_identity Scalar_kron : zx_scalar_db.
 
 Local Close Scope ZX_scope.
