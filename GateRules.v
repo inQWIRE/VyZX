@@ -9,6 +9,8 @@ Lemma ZX_H_is_H : ZX_semantics ZX_H = Cexp (PI/4)%R .* hadamard.
 Proof.
   simpl.
   unfold Spider_Semantics_Impl, bra_ket_MN.
+  simpl.
+  Msimpl.
   solve_matrix; 
   field_simplify_eq [Cexp_PI2 Cexp_PI4 Ci2 Csqrt2_sqrt2_inv Csqrt2_inv]; 
   try apply c_proj_eq; try simpl; try R_field_simplify; try reflexivity; (try split; try apply RtoC_neq; try apply sqrt2_neq_0; try auto).
@@ -37,6 +39,8 @@ Proof.
   simpl.
   unfold Spider_Semantics_Impl, bra_ket_MN.
   rewrite Cexp_PI.
+  simpl.
+  Msimpl.
   solve_matrix.
 Qed.
 
@@ -45,6 +49,8 @@ Proof.
   simpl.
   unfold Spider_Semantics_Impl, bra_ket_MN.
   rewrite Cexp_PI.
+  simpl.
+  Msimpl.
   solve_matrix.
 Qed.
 
@@ -70,6 +76,8 @@ Proof.
   unfold Spider_Semantics_Impl, bra_ket_MN.
   rewrite wire_identity_semantics.
   rewrite Cexp_0.
+  simpl.
+  Msimpl.
   solve_matrix.
 Qed.
 
@@ -79,6 +87,8 @@ Proof.
   unfold Spider_Semantics_Impl, bra_ket_MN.
   rewrite wire_identity_semantics.
   rewrite Cexp_0.
+  simpl.
+  Msimpl.
   solve_matrix.
 Qed.
 
@@ -102,6 +112,8 @@ Proof.
   rewrite wire_identity_semantics.
   unfold Spider_Semantics_Impl, bra_ket_MN.
   rewrite Cexp_0.
+  simpl.
+  Msimpl.
   solve_matrix.
   simpl.
   all : field_simplify_eq [Csqrt2_sqrt]; try reflexivity; split; nonzero.
