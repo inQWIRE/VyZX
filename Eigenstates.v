@@ -24,6 +24,8 @@ Proof.
   simpl.
   unfold Spider_Semantics_Impl, bra_ket_MN.
   rewrite Cexp_0.
+  simpl.
+  Msimpl.
   solve_matrix.
   C_field_simplify; try reflexivity; try apply Csqrt2_neq_0.
 Qed.
@@ -33,6 +35,8 @@ Proof.
   simpl.
   unfold Spider_Semantics_Impl, bra_ket_MN.
   rewrite Cexp_PI.
+  simpl.
+  Msimpl.
   solve_matrix.
   C_field_simplify; try lca; try apply Csqrt2_neq_0.
 Qed.

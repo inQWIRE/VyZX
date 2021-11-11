@@ -77,7 +77,6 @@ Proof.
   rewrite wire_identity_semantics.
   rewrite Cexp_0.
   simpl.
-  Msimpl.
   solve_matrix.
 Qed.
 
@@ -88,7 +87,6 @@ Proof.
   rewrite wire_identity_semantics.
   rewrite Cexp_0.
   simpl.
-  Msimpl.
   solve_matrix.
 Qed.
 
