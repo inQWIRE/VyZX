@@ -26,6 +26,100 @@ Proof.
   reflexivity.
 Qed.
 
+Local Transparent nWire.
+Lemma nwire_identity : forall n, ZX_semantics (nWire n) = I (2 ^ n).
+Proof.
+  intros.
+  induction n.
+  - trivial.
+  - simpl.
+    rewrite IHn.
+    rewrite wire_identity_semantics.
+    rewrite id_kron.
+    rewrite <- plus_n_O.
+    rewrite double_mult.
+    reflexivity.
+Qed.
+Local Opaque nWire.
+
+Lemma wire_stack_identity : forall n, ZX_semantics (nStack Wire n) = I (2 ^ n).
+Proof.
+    intros.
+    induction n.
+    - trivial.
+    - simpl.
+      rewrite IHn.
+      rewrite wire_identity_semantics.
+      restore_dims.
+      rewrite id_kron.
+      rewrite <- plus_n_O.
+      rewrite double_mult.
+      reflexivity.
+Qed.
+
+Lemma nwire_r : forall nIn nOut (zx : ZX nIn nOut), ZX_semantics (Compose zx (nWire nOut)) = ZX_semantics zx.
+Proof.
+  intros.
+  simpl.
+  rewrite nwire_identity.
+  Msimpl.
+  reflexivity.
+Qed.
+
+Lemma nwire_l : forall nIn nOut (zx : ZX nIn nOut), ZX_semantics (Compose (nWire nIn) zx) = ZX_semantics zx.
+Proof.
+  intros.
+  simpl.
+  rewrite nwire_identity.
+  Msimpl.
+  reflexivity.
+Qed.
+
+Lemma stack_wire_pad_l_r : forall nIn0 nIn1 nOut0 nOut1 (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1), ZX_semantics (Stack zx0 zx1) = ZX_semantics (Stack (Compose (nWire nIn0) zx0) (Compose zx1 (nWire nOut1))).
+Proof.
+  intros.
+  simpl.
+  rewrite 2 nwire_identity. 
+  Msimpl.
+  reflexivity.
+Qed.
+
+Lemma stack_wire_pad_r_l : forall nIn0 nIn1 nOut0 nOut1 (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1), ZX_semantics (Stack zx0 zx1) = ZX_semantics (Stack (Compose zx0 (nWire nOut0)) (Compose (nWire nIn1) zx1)).
+Proof.
+  intros.
+  simpl.
+  rewrite 2 nwire_identity. 
+  Msimpl.
+  reflexivity.
+Qed.
+
+Lemma Z_spider_fusion : forall α β, (ZX_semantics (Compose (Z_Spider 1 1 α) (Z_Spider 1 1 β))) = ZX_semantics (Z_Spider 1 1 (α + β)).
+Proof.
+  intros.
+  simpl.
+  unfold Spider_Semantics_Impl, bra_ket_MN.
+  simpl; Msimpl.
+  rewrite Mmult_plus_distr_r, Mmult_plus_distr_l.
+  rewrite <- Mmult_assoc.
+  restore_dims.
+  solve_matrix.
+  rewrite Cexp_add.
+  lca.
+Qed.
+
+Lemma X_spider_fusion : forall α β, (ZX_semantics (Compose (X_Spider 1 1 α) (X_Spider 1 1 β))) = ZX_semantics (X_Spider 1 1 (α + β)).
+Proof.
+  intros.
+  simpl.
+  unfold Spider_Semantics_Impl, bra_ket_MN.
+  simpl; Msimpl.
+  rewrite Mmult_plus_distr_r, Mmult_plus_distr_l.
+  rewrite <- Mmult_assoc.
+  restore_dims.
+  solve_matrix;
+  rewrite Cexp_add; try C_field_simplify; try lca; try (apply C0_fst_neq; simpl; auto).
+Qed.
+
 Lemma Z_0_eq_X_0 : ZX_semantics (Z_Spider 1 1 0) = ZX_semantics (X_Spider 1 1 0).
 Proof.
   simpl.

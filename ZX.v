@@ -53,12 +53,6 @@ Proof.
       simpl in H; destruct H; try discriminate; try (subst; easy).
 Qed.
 
-Fixpoint nStack {nIn nOut} (zx : ZX nIn nOut) n : ZX (n * nIn) (n * nOut) :=
-  match n with
-  | 0 => Empty
-  | S n' => Stack zx (nStack zx n')
-  end.
-
 Global Hint Resolve WF_ZX : wf_db.
 
 Definition Wire : ZX 1 1 := Z_Spider _ _ 0.
@@ -81,19 +75,19 @@ Global Opaque Wire.
 
 Global Hint Resolve wire_identity_semantics : zx_sem_db.
 
-Lemma wire_stack_identity : forall n, ZX_semantics (nStack Wire n) = I (2 ^ n).
-Proof.
-    intros.
-    induction n.
-    - trivial.
-    - simpl.
-      rewrite IHn.
-      rewrite wire_identity_semantics.
-      restore_dims.
-      rewrite id_kron.
-      rewrite <- plus_n_O.
-      rewrite double_mult.
-      reflexivity.
-Qed.
+Fixpoint nStack {nIn nOut} (zx : ZX nIn nOut) n : ZX (n * nIn) (n * nOut) :=
+  match n with
+  | 0 => Empty
+  | S n' => Stack zx (nStack zx n')
+  end.
+
+Fixpoint nWire n : ZX n n :=
+  match n with
+  | 0 => Empty
+  | S n' => Stack Wire (nWire n')
+  end.
+
+Global Opaque nWire.
+
 
 Local Close Scope ZX_scope.
