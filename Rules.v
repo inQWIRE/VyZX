@@ -15,6 +15,17 @@ Proof.
   rewrite <- kron_assoc; try auto with wf_db.
 Qed.
 
+Lemma ZX_Compose_assoc : forall nIn nMid1 nMid2 nOut
+                              (zx1 : ZX nIn nMid1) (zx2 : ZX nMid1 nMid2) (zx3 : ZX nMid2 nOut),
+                              ZX_semantics (Compose zx1 (Compose zx2 zx3)) = ZX_semantics (Compose (Compose zx1 zx2) zx3).
+Proof.
+  intros.
+  simpl.
+  restore_dims.
+  rewrite Mmult_assoc.
+  reflexivity.
+Qed.
+
 Lemma ZX_Stack_Compose_distr : forall nIn1 nMid12 nIn3 nOut2 nMid34 nOut4 
                                       (zx1 : ZX nIn1 nMid12) (zx2 : ZX nMid12 nOut2) (zx3 : ZX nIn3 nMid34) (zx4 : ZX nMid34 nOut4),
                                       ZX_semantics (Stack (Compose zx1 zx2) (Compose zx3 zx4)) = ZX_semantics (Compose (Stack zx1 zx3) (Stack zx2 zx4)).
@@ -30,17 +41,42 @@ Local Transparent nWire.
 Lemma nwire_identity : forall n, ZX_semantics (nWire n) = I (2 ^ n).
 Proof.
   intros.
-  induction n.
-  - trivial.
-  - simpl.
-    rewrite IHn.
+  unfold nWire.
+  rewrite nStack1_n_kron.
     rewrite wire_identity_semantics.
-    rewrite id_kron.
-    rewrite <- plus_n_O.
-    rewrite double_mult.
-    reflexivity.
+  apply kron_n_I.
 Qed.
 Local Opaque nWire.
+
+Lemma nH_composition : forall n, ZX_semantics (Compose (nH n) (nH n)) = Cexp (PI / 2 * (INR n)) .* ZX_semantics (nWire n).
+Proof.
+  intros.
+  simpl.
+  rewrite nStack1_n_kron.
+  restore_dims.
+  rewrite kron_n_mult.
+  rewrite nwire_identity.
+  replace (ZX_semantics ZX_H × (ZX_semantics ZX_H)) with (ZX_semantics (Compose ZX_H ZX_H)) by reflexivity.
+  rewrite ZX_H_H_is_Wire.
+  rewrite Mscale_kron_n_distr_r.
+  rewrite wire_identity_semantics.
+  rewrite kron_n_I.
+  rewrite Cexp_pow.
+  reflexivity.
+Qed.
+
+Lemma nStack1_compose : forall (zx0 zx1 : ZX 1 1) n, ZX_semantics (nStack1 (Compose zx0 zx1) n) = ZX_semantics (Compose (nStack1 zx0 n) (nStack1 zx1 n)).
+Proof.
+  intros.
+  induction n.
+  - simpl. Msimpl. reflexivity.
+  - simpl.
+    rewrite IHn.
+    restore_dims.
+    rewrite kron_mixed_product.
+    simpl.
+    reflexivity.
+Qed. 
 
 Lemma wire_stack_identity : forall n, ZX_semantics (nStack Wire n) = I (2 ^ n).
 Proof.
@@ -91,6 +127,119 @@ Proof.
   rewrite 2 nwire_identity. 
   Msimpl.
   reflexivity.
+Qed.
+
+Lemma hadamard_color_change_Z : forall nIn nOut α, (ZX_semantics (Compose (nH nIn) (Z_Spider nIn nOut α))) = (Cexp (PI / 4 * (INR nIn - INR nOut))) .* ZX_semantics (Compose (X_Spider nIn nOut α) (nH nOut)).
+Proof.
+  intros.
+  simpl.
+  rewrite 2 nStack1_n_kron.
+  unfold Spider_Semantics_Impl, bra_ket_MN.
+  rewrite ZX_H_is_H.
+  repeat rewrite Mscale_kron_n_distr_r.
+  repeat rewrite Cexp_pow; simpl.
+  rewrite Mscale_mult_dist_r.
+  repeat rewrite Mmult_plus_distr_r.
+  repeat rewrite Mscale_mult_dist_l.
+  rewrite Mscale_assoc.
+  restore_dims.
+  rewrite <- Cexp_add.
+  rewrite <- Rmult_plus_distr_l.
+  replace ((INR nIn - INR nOut + INR nOut))%R with (INR nIn) by lra.
+  apply Mscale_simplify; try reflexivity.
+  repeat rewrite Mmult_assoc.
+  restore_dims.
+  repeat rewrite kron_n_mult.
+  rewrite Mmult_plus_distr_l.
+  rewrite <- Mmult_assoc.
+  repeat rewrite Mscale_mult_dist_r.
+  rewrite <- Mmult_assoc.
+  repeat rewrite kron_n_mult.
+  restore_dims.
+  repeat rewrite <- Mmult_assoc.
+  rewrite MmultHH.
+  Msimpl.
+  apply Mplus_simplify;
+    try (apply Mscale_simplify; try reflexivity);
+    apply Mmult_simplify; try reflexivity;
+                          try (rewrite hadamard_sa; unfold bra; reflexivity).
+Qed.
+
+Lemma hadamard_color_change_X : forall nIn nOut α, (ZX_semantics (Compose (nH nIn) (X_Spider nIn nOut α))) = (Cexp (PI / 4 * (INR nIn - INR nOut))) .* ZX_semantics (Compose (Z_Spider nIn nOut α) (nH nOut)).
+Proof.
+  intros.
+  simpl.
+  rewrite 2 nStack1_n_kron.
+  unfold Spider_Semantics_Impl, bra_ket_MN.
+  rewrite ZX_H_is_H.
+  repeat rewrite Mscale_kron_n_distr_r.
+  repeat rewrite Cexp_pow; simpl.
+  rewrite Mscale_mult_dist_r.
+  repeat rewrite Mmult_plus_distr_r.
+  repeat rewrite Mscale_mult_dist_l.
+  rewrite Mscale_assoc.
+  restore_dims.
+  rewrite <- Cexp_add.
+  rewrite <- Rmult_plus_distr_l.
+  replace ((INR nIn - INR nOut + INR nOut))%R with (INR nIn) by lra.
+  apply Mscale_simplify; try reflexivity.
+  repeat rewrite Mmult_assoc.
+  restore_dims.
+  repeat rewrite kron_n_mult.
+  rewrite Mmult_plus_distr_l.
+  rewrite <- Mmult_assoc.
+  repeat rewrite Mscale_mult_dist_r.
+  rewrite <- Mmult_assoc.
+  repeat rewrite kron_n_mult.
+  restore_dims.
+  repeat rewrite <- Mmult_assoc.
+  Msimpl.
+  rewrite hadamard_sa.
+  restore_dims.
+  repeat rewrite Mmult_assoc.
+  rewrite MmultHH.
+  Msimpl.
+  repeat rewrite <- Mmult_assoc.
+  apply Mplus_simplify;
+    try (apply Mscale_simplify; try reflexivity);
+    apply Mmult_simplify; try reflexivity;
+                          try (rewrite hadamard_sa; unfold bra; reflexivity).
+Qed.
+
+Lemma bi_hadamard_color_change_Z : forall nIn nOut α, (ZX_semantics (Compose (Compose (nH nIn) (Z_Spider nIn nOut α)) (nH nOut))) = (Cexp (PI / 4 * (INR nIn - INR nOut) + PI / 2 * INR nOut)) .* ZX_semantics (X_Spider nIn nOut α).
+Proof.
+  intros.
+  replace (ZX_semantics (Compose (Compose (nH nIn) (Z_Spider nIn nOut α)) (nH nOut))) with (ZX_semantics (nH nOut) × (ZX_semantics (Compose (nH nIn) (Z_Spider nIn nOut α)))) by reflexivity.
+  rewrite hadamard_color_change_Z.
+  rewrite Mscale_mult_dist_r.
+  replace (ZX_semantics (nH nOut) × ZX_semantics (Compose (X_Spider nIn nOut α) (nH nOut))) with (ZX_semantics (Compose (Compose (X_Spider nIn nOut α) (nH nOut)) (nH nOut))) by reflexivity.
+  rewrite <- ZX_Compose_assoc.
+  replace (ZX_semantics (Compose (X_Spider nIn nOut α) (Compose (nH nOut) (nH nOut)))) with (ZX_semantics (Compose (nH nOut) (nH nOut)) × (ZX_semantics (X_Spider nIn nOut α))) by reflexivity.
+  rewrite nH_composition.
+  rewrite Mscale_mult_dist_l.
+  rewrite Mscale_assoc.
+  rewrite Cexp_add.
+  apply Mscale_simplify; try reflexivity.
+  rewrite nwire_identity.
+  Msimpl; auto with wf_db.
+Qed.
+
+Lemma bi_hadamard_color_change_X : forall nIn nOut α, (ZX_semantics (Compose (Compose (nH nIn) (X_Spider nIn nOut α)) (nH nOut))) = (Cexp (PI / 4 * (INR nIn - INR nOut) + PI / 2 * INR nOut)) .* ZX_semantics (Z_Spider nIn nOut α).
+Proof.
+  intros.
+  replace (ZX_semantics (Compose (Compose (nH nIn) (X_Spider nIn nOut α)) (nH nOut))) with (ZX_semantics (nH nOut) × (ZX_semantics (Compose (nH nIn) (X_Spider nIn nOut α)))) by reflexivity.
+  rewrite hadamard_color_change_X.
+  rewrite Mscale_mult_dist_r.
+  replace (ZX_semantics (nH nOut) × ZX_semantics (Compose (Z_Spider nIn nOut α) (nH nOut))) with (ZX_semantics (Compose (Compose (Z_Spider nIn nOut α) (nH nOut)) (nH nOut))) by reflexivity.
+  rewrite <- ZX_Compose_assoc.
+  replace (ZX_semantics (Compose (Z_Spider nIn nOut α) (Compose (nH nOut) (nH nOut)))) with (ZX_semantics (Compose (nH nOut) (nH nOut)) × (ZX_semantics (Z_Spider nIn nOut α))) by reflexivity.
+  rewrite nH_composition.
+  rewrite Mscale_mult_dist_l.
+  rewrite Mscale_assoc.
+  rewrite Cexp_add.
+  apply Mscale_simplify; try reflexivity.
+  rewrite nwire_identity.
+  Msimpl; auto with wf_db.
 Qed.
 
 Lemma Z_spider_fusion : forall α β, (ZX_semantics (Compose (Z_Spider 1 1 α) (Z_Spider 1 1 β))) = ZX_semantics (Z_Spider 1 1 (α + β)).

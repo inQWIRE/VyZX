@@ -81,13 +81,25 @@ Fixpoint nStack {nIn nOut} (zx : ZX nIn nOut) n : ZX (n * nIn) (n * nOut) :=
   | S n' => Stack zx (nStack zx n')
   end.
 
-Fixpoint nWire n : ZX n n :=
+Fixpoint nStack1 (zx : ZX 1 1) n : ZX n n :=
   match n with
   | 0 => Empty
-  | S n' => Stack Wire (nWire n')
+  | S n' => Stack zx (nStack1 zx n')
   end.
 
-Global Opaque nWire.
+Lemma nStack1_n_kron : forall n (zx : ZX 1 1), ZX_semantics (nStack1 zx n) = n ⨂ ZX_semantics zx.
+Proof.
+  intros.
+  induction n.
+  - unfold nStack1. simpl. auto.
+  - simpl.
+    rewrite IHn.
+    Msimpl.
+    rewrite <- kron_n_assoc; auto with wf_db.
+Qed.
 
+Definition nWire := (nStack1 Wire).
+
+Global Opaque nWire.
 
 Local Close Scope ZX_scope.
