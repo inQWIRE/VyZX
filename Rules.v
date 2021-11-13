@@ -26,6 +26,16 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma ZX_semantics_Compose : forall nIn nMid nOut
+                                    (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
+                                    ZX_semantics (Compose zx0 zx1) = ZX_semantics zx1 × (ZX_semantics zx0).
+Proof. reflexivity. Qed.
+   
+Lemma ZX_semantics_Stack : forall nIn nMid nOut
+                                    (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
+                                    ZX_semantics (Stack zx0 zx1) = ZX_semantics zx0 ⊗ (ZX_semantics zx1).
+Proof. reflexivity. Qed.
+
 Lemma ZX_Stack_Compose_distr : forall nIn1 nMid12 nIn3 nOut2 nMid34 nOut4 
                                       (zx1 : ZX nIn1 nMid12) (zx2 : ZX nMid12 nOut2) (zx3 : ZX nIn3 nMid34) (zx4 : ZX nMid34 nOut4),
                                       ZX_semantics (Stack (Compose zx1 zx2) (Compose zx3 zx4)) = ZX_semantics (Compose (Stack zx1 zx3) (Stack zx2 zx4)).
@@ -209,12 +219,12 @@ Qed.
 Lemma bi_hadamard_color_change_Z : forall nIn nOut α, (ZX_semantics (Compose (Compose (nH nIn) (Z_Spider nIn nOut α)) (nH nOut))) = (Cexp (PI / 4 * (INR nIn - INR nOut) + PI / 2 * INR nOut)) .* ZX_semantics (X_Spider nIn nOut α).
 Proof.
   intros.
-  replace (ZX_semantics (Compose (Compose (nH nIn) (Z_Spider nIn nOut α)) (nH nOut))) with (ZX_semantics (nH nOut) × (ZX_semantics (Compose (nH nIn) (Z_Spider nIn nOut α)))) by reflexivity.
+  rewrite ZX_semantics_Compose.
   rewrite hadamard_color_change_Z.
   rewrite Mscale_mult_dist_r.
-  replace (ZX_semantics (nH nOut) × ZX_semantics (Compose (X_Spider nIn nOut α) (nH nOut))) with (ZX_semantics (Compose (Compose (X_Spider nIn nOut α) (nH nOut)) (nH nOut))) by reflexivity.
+  rewrite <- ZX_semantics_Compose.
   rewrite <- ZX_Compose_assoc.
-  replace (ZX_semantics (Compose (X_Spider nIn nOut α) (Compose (nH nOut) (nH nOut)))) with (ZX_semantics (Compose (nH nOut) (nH nOut)) × (ZX_semantics (X_Spider nIn nOut α))) by reflexivity.
+  rewrite ZX_semantics_Compose.
   rewrite nH_composition.
   rewrite Mscale_mult_dist_l.
   rewrite Mscale_assoc.
@@ -227,12 +237,12 @@ Qed.
 Lemma bi_hadamard_color_change_X : forall nIn nOut α, (ZX_semantics (Compose (Compose (nH nIn) (X_Spider nIn nOut α)) (nH nOut))) = (Cexp (PI / 4 * (INR nIn - INR nOut) + PI / 2 * INR nOut)) .* ZX_semantics (Z_Spider nIn nOut α).
 Proof.
   intros.
-  replace (ZX_semantics (Compose (Compose (nH nIn) (X_Spider nIn nOut α)) (nH nOut))) with (ZX_semantics (nH nOut) × (ZX_semantics (Compose (nH nIn) (X_Spider nIn nOut α)))) by reflexivity.
+  rewrite ZX_semantics_Compose.
   rewrite hadamard_color_change_X.
   rewrite Mscale_mult_dist_r.
-  replace (ZX_semantics (nH nOut) × ZX_semantics (Compose (Z_Spider nIn nOut α) (nH nOut))) with (ZX_semantics (Compose (Compose (Z_Spider nIn nOut α) (nH nOut)) (nH nOut))) by reflexivity.
+  rewrite <- ZX_semantics_Compose.
   rewrite <- ZX_Compose_assoc.
-  replace (ZX_semantics (Compose (Z_Spider nIn nOut α) (Compose (nH nOut) (nH nOut)))) with (ZX_semantics (Compose (nH nOut) (nH nOut)) × (ZX_semantics (Z_Spider nIn nOut α))) by reflexivity.
+  rewrite ZX_semantics_Compose.
   rewrite nH_composition.
   rewrite Mscale_mult_dist_l.
   rewrite Mscale_assoc.
