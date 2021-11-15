@@ -1,4 +1,5 @@
 Require Import externals.QuantumLib.Quantum.
+Require Import externals.QuantumLib.Dirac.
 Require Export ZX.
 Require Export Gates.
 Require Export GateRules.
@@ -53,7 +54,7 @@ Proof.
   intros.
   unfold nWire.
   rewrite nStack1_n_kron.
-    rewrite wire_identity_semantics.
+  rewrite wire_identity_semantics.
   apply kron_n_I.
 Qed.
 Local Opaque nWire.
@@ -252,7 +253,7 @@ Proof.
   Msimpl; auto with wf_db.
 Qed.
 
-Lemma Z_spider_fusion : forall α β, (ZX_semantics (Compose (Z_Spider 1 1 α) (Z_Spider 1 1 β))) = ZX_semantics (Z_Spider 1 1 (α + β)).
+Lemma Z_spider_fusion : forall nIn nOut α β, (ZX_semantics (Compose (Z_Spider nIn 1 α) (Z_Spider 1 nOut β))) = ZX_semantics (Z_Spider nIn nOut (α + β)).
 Proof.
   intros.
   simpl.
@@ -260,10 +261,73 @@ Proof.
   simpl; Msimpl.
   rewrite Mmult_plus_distr_r, Mmult_plus_distr_l.
   rewrite <- Mmult_assoc.
+  rewrite Mscale_mult_dist_r.
+  rewrite Mmult_plus_distr_l.
+  rewrite Mscale_mult_dist_r.
   restore_dims.
-  solve_matrix.
+  Msimpl.
+  rewrite <- Mplus_assoc.
+  rewrite Mplus_comm.
+  rewrite <- Mplus_assoc.
+  restore_dims.
+  Msimpl.
   rewrite Cexp_add.
-  lca.
+  repeat rewrite <- Mmult_assoc.
+  rewrite 2 Mscale_mult_dist_l.
+  rewrite Mscale_assoc.
+  rewrite (Mplus_comm _ _ (nOut ⨂ (ket 0) × nIn ⨂ (bra 0)) _).
+  repeat rewrite Mplus_assoc.
+  apply Mplus_simplify.
+  - apply Mscale_simplify; try reflexivity.
+    rewrite 2 Mmult_assoc.
+    apply Mmult_simplify; try reflexivity.
+    rewrite <- Mmult_assoc.
+    restore_dims.
+    replace (bra 1 × (ket 1)) with (I 1) by solve_matrix.
+    Msimpl.
+    reflexivity.
+  - rewrite <- Mplus_0_r.
+    apply Mplus_simplify.
+    + rewrite 2 Mmult_assoc.
+      apply Mmult_simplify; try reflexivity.
+      rewrite <- Mmult_assoc.
+      restore_dims. 
+      replace (bra 0 × (ket 0)) with (I 1) by solve_matrix.
+      Msimpl.
+      reflexivity.
+    + restore_dims.
+      replace ((nOut ⨂ (ket 0) × (bra 0) × (ket 1) × nIn ⨂ (bra 1))) with ((nOut ⨂ (ket 0) × ((bra 0) × (ket 1)) × nIn ⨂ (bra 1))).
+      rewrite bra0ket1.
+      rewrite Mmult_assoc.
+      restore_dims.
+      rewrite Mmult_0_l.
+      restore_dims.
+      rewrite Mmult_0_r.
+      rewrite Mscale_0_r.
+      rewrite Mplus_0_l.
+      rewrite Mmult_assoc.
+      rewrite Mscale_mult_dist_l.
+      rewrite <- Mmult_assoc.
+      restore_dims.
+      replace ((nOut ⨂ (ket 1) × (bra 1) × (ket 0) × nIn ⨂ (bra 0))) with ((nOut ⨂ (ket 1) × ((bra 1) × (ket 0)) × nIn ⨂ (bra 0))).
+      rewrite bra1ket0.
+      restore_dims.
+      rewrite Mmult_assoc.
+      rewrite Mmult_0_l.
+      restore_dims.
+      rewrite Mmult_0_r.
+      rewrite Mscale_0_r.
+      reflexivity.
+      rewrite 3 Mmult_assoc.
+      apply Mmult_simplify; try reflexivity.
+      restore_dims.
+      rewrite Mmult_assoc.
+      reflexivity.
+      rewrite 3 Mmult_assoc.
+      restore_dims.
+      apply Mmult_simplify; try reflexivity.
+      rewrite Mmult_assoc.
+      reflexivity.
 Qed.
 
 Lemma X_spider_fusion : forall α β, (ZX_semantics (Compose (X_Spider 1 1 α) (X_Spider 1 1 β))) = ZX_semantics (X_Spider 1 1 (α + β)).
