@@ -55,6 +55,26 @@ Qed.
 
 Global Hint Resolve WF_ZX : wf_db.
 
+Lemma ZX_Semantics_Stack_Empty_r : forall {nIn nOut} (zx : ZX nIn nOut),
+  ZX_semantics (Stack zx Empty) = ZX_semantics zx.
+Proof. intros; simpl; apply kron_1_r. Qed.
+  
+Lemma ZX_Semantics_Stack_Empty_l : forall {nIn nOut} (zx : ZX nIn nOut),
+  ZX_semantics (Stack Empty zx) = ZX_semantics zx.
+Proof. intros; simpl; apply kron_1_l. apply WF_ZX. Qed.
+
+Lemma ZX_Semantics_Compose_Empty_r : forall {nIn} (zx : ZX nIn 0),
+  ZX_semantics (Compose zx Empty) = ZX_semantics zx.
+Proof. intros; simpl; apply Mmult_1_l.
+Admitted.
+
+  
+Lemma ZX_Semantics_Compose_Empty_l : forall {nOut} (zx : ZX 0 nOut),
+  ZX_semantics (Compose Empty zx) = ZX_semantics zx.
+Proof. 
+  intros; simpl; apply Mmult_1_r. 
+Admitted.
+
 Definition Wire : ZX 1 1 := Z_Spider _ _ 0.
 
 Lemma bra_ket_id : ket 0 × bra 0 .+ ket 1 × bra 1 = I 2.
