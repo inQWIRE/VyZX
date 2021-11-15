@@ -632,4 +632,33 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma Z_1_1_Wire_Cup : forall α, 
+  ZX_semantics (Compose (Stack Wire (Z_Spider 1 1 α)) Cup) =
+  ZX_semantics (Compose (Stack (Z_Spider 1 1 α) Wire) Cup).
+Proof.
+  intros.
+  simpl.
+  unfold Spider_Semantics_Impl;
+  unfold bra_ket_MN.
+  rewrite wire_identity_semantics.
+  simpl.
+  rewrite 4 kron_1_l; try auto with wf_db.
+  solve_matrix.
+Qed.
+
+Lemma Z_1_1_Wire_Cap : forall α, 
+  ZX_semantics (Compose Cap (Stack Wire (Z_Spider 1 1 α))) =
+  ZX_semantics (Compose Cap (Stack (Z_Spider 1 1 α) Wire)).
+Proof.
+  intros.
+  simpl.
+  unfold Spider_Semantics_Impl;
+  unfold bra_ket_MN.
+  rewrite wire_identity_semantics.
+  simpl.
+  rewrite 4 kron_1_l; try auto with wf_db.
+  solve_matrix.
+Qed.
+
+
 Local Close Scope ZX_scope.
