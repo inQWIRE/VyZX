@@ -4,7 +4,7 @@ Require Export Scalars.
 
 Local Open Scope ZX_scope.
 
-Definition proportional {nIn nOut} (zx0 zx1 : ZX nIn nOut) :=
+Definition proportional {nIn0 nIn1 nOut0 nOut1} (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1) :=
   exists c c' θ, ZX_semantics zx0 = ((√ 2) ^ c * (1 / ((√ 2) ^ c')))%R * Cexp θ .* ZX_semantics zx1.
 
 Infix "∝" := proportional (at level 70).
@@ -38,7 +38,7 @@ Proof.
     + apply IHn.
 Qed.
 
-Lemma proportional_trans : forall {m n} (zx0 zx1 zx2 : ZX m n), 
+Lemma proportional_trans : forall {nIn0 nIn1 nIn2 nOut0 nOut1 nOut2} (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1) (zx2 : ZX nIn2 nOut2), 
   zx0 ∝ zx1 -> zx1 ∝ zx2 -> zx0 ∝ zx2.
 Proof.
   intros.
@@ -54,6 +54,7 @@ Proof.
   rewrite pow_add.
   rewrite H01.
   rewrite H12.
+  restore_dims.
   rewrite Mscale_assoc.
   apply Mscale_simplify; try easy.
   rewrite Cexp_add.
@@ -66,7 +67,7 @@ Proof.
   lca. 
 Qed.
 
-Lemma proportional_symm : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut), zx0 ∝ zx1 -> zx1 ∝ zx0.
+Lemma proportional_symm : forall {nIn0 nIn1 nOut0 nOut1} (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1), zx0 ∝ zx1 -> zx1 ∝ zx0.
 Proof.
   intros.
   destruct H as [c H].
@@ -78,6 +79,7 @@ Proof.
   exists (-θ)%R.
   rewrite H.
   replace (ZX_semantics zx1) with (1 .* ZX_semantics zx1) by apply Mscale_1_l.
+  restore_dims.
   rewrite 2 Mscale_assoc.
   apply Mscale_simplify; try easy.
   repeat rewrite RtoC_mult.
@@ -98,13 +100,13 @@ Proof.
   reflexivity.
 Qed.
 
-Add Parametric Relation (nIn nOut : nat) : (ZX nIn nOut ) (@proportional nIn nOut)
+Add Parametric Relation (nIn nOut : nat) : (ZX nIn nOut) (@proportional nIn nIn nOut nOut)
   reflexivity proved by proportional_refl
   symmetry proved by proportional_symm
   transitivity proved by proportional_trans
   as uc_equiv_rel.
 
-Lemma proportional_C2 : forall nIn nOut (zx0 zx1 : ZX nIn nOut) c2 c12 csqrt2 c1sqrt2 θ, ZX_semantics zx0 = (2 ^ c2 * (1 / (2 ^ c12)) * (√ 2) ^ csqrt2 * (1 / ((√ 2) ^ c1sqrt2)))%R * Cexp θ .* ZX_semantics zx1 -> zx0 ∝ zx1.
+Lemma proportional_C2 : forall nIn0 nIn1 nOut0 nOut1 (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1) c2 c12 csqrt2 c1sqrt2 θ, ZX_semantics zx0 = (2 ^ c2 * (1 / (2 ^ c12)) * (√ 2) ^ csqrt2 * (1 / ((√ 2) ^ c1sqrt2)))%R * Cexp θ .* ZX_semantics zx1 -> zx0 ∝ zx1.
 Proof.
   intros.
   unfold proportional.
@@ -112,6 +114,7 @@ Proof.
   exists (2 * c12 + c1sqrt2)%nat.
   exists θ.
   rewrite H.
+  restore_dims.
   apply Mscale_simplify; try easy.
   apply Cmult_simplify; try easy.
   rewrite <- pow2_sqrt2.
@@ -129,9 +132,9 @@ Qed.
 
 Definition build_prop_constants c c' θ := (Stack (Stack (Scalar_Cexp_alpha_times_sqrt_2 θ) (Scalar_1_div_sqrt_2)) (Stack (nStack Scalar_sqrt_2 c) (nStack Scalar_1_div_sqrt_2 c'))).
 
-Theorem ZX_prop_explicit_eq : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut) c c' θ,  ZX_semantics zx0 = ((√ 2) ^ c * (1 / ((√ 2) ^ c')))%R * Cexp θ .* ZX_semantics zx1-> ZX_semantics zx0 = ZX_semantics (Stack (build_prop_constants c c' θ) zx1).
+Theorem ZX_prop_explicit_eq : forall {nIn0 nIn1 nOut0 nOut1} (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1) c c' θ,  ZX_semantics zx0 = ((√ 2) ^ c * (1 / ((√ 2) ^ c')))%R * Cexp θ .* ZX_semantics zx1 -> ZX_semantics zx0 = ZX_semantics (Stack (build_prop_constants c c' θ) zx1).
 Proof.
-  intros nIn nOut zx0 zx1 c c' θ H.
+  intros nIn0 nIn1 nOut0 nOut1 zx0 zx1 c c' θ H.
   unfold build_prop_constants.
   simpl.
   rewrite Scalar_X_alpha_Z_PI_sqrt_2.
@@ -169,9 +172,9 @@ Proof.
   reflexivity.
 Qed.
 
-Theorem ZX_prop_eq : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut), zx0 ∝ zx1 -> exists (zxconst : ZX 0 0), ZX_semantics zx0 = ZX_semantics (Stack zxconst zx1).
+Theorem ZX_prop_eq : forall {nIn0 nIn1 nOut0 nOut1} (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1), zx0 ∝ zx1 -> exists (zxconst : ZX 0 0), ZX_semantics zx0 = ZX_semantics (Stack zxconst zx1).
 Proof.
-  intros nIn nOut zx0 zx1 H.
+  intros.
   unfold proportional in H.
   destruct H as [c H].
   destruct H as [c' H].
@@ -180,6 +183,18 @@ Proof.
   exists (build_prop_constants c c' θ).
   apply ZX_prop_explicit_eq.
   assumption.
+Qed.
+
+Theorem ZX_eq_prop : forall {nIn0 nIn1 nOut0 nOut1} (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1), ZX_semantics zx0 = (ZX_semantics zx1) -> zx0 ∝ zx1.
+Proof.
+  intros.
+  unfold proportional.
+  exists 0%nat.
+  exists 0%nat.
+  exists 0.
+  rewrite H.
+  rewrite Cexp_0.
+  lma.  
 Qed.
 
 Local Close Scope ZX_scope.
