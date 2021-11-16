@@ -65,15 +65,12 @@ Proof. intros; simpl; apply kron_1_l. apply WF_ZX. Qed.
 
 Lemma ZX_Semantics_Compose_Empty_r : forall {nIn} (zx : ZX nIn 0),
   ZX_semantics (Compose zx Empty) = ZX_semantics zx.
-Proof. intros; simpl; apply Mmult_1_l.
-Admitted.
+Proof. intros; simpl; apply Mmult_1_l; restore_dims; auto with wf_db. Qed.
 
   
 Lemma ZX_Semantics_Compose_Empty_l : forall {nOut} (zx : ZX 0 nOut),
   ZX_semantics (Compose Empty zx) = ZX_semantics zx.
-Proof. 
-  intros; simpl; apply Mmult_1_r. 
-Admitted.
+Proof. intros; simpl; apply Mmult_1_r; restore_dims; auto with wf_db. Qed.
 
 Definition Wire : ZX 1 1 := Z_Spider _ _ 0.
 
