@@ -10,7 +10,7 @@ Definition proportional_constructible {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX n
 
 
 Definition proportional {nIn nOut} (zx0 : ZX nIn nOut) (zx1: ZX nIn nOut) :=
-  exists c, c <> C0 /\ ZX_semantics zx0 =  c .* ZX_semantics zx1.
+  exists (c : C), ZX_semantics zx0 =  c .* ZX_semantics zx1 /\ c <> 0 .
 
 Infix "∝'" := proportional_constructible (at level 70).
 
@@ -21,8 +21,8 @@ Proof.
   exists 1.
   intros.
   split.
-  - apply C1_neq_C0.
   - lma.
+  - apply C1_neq_C0.
 Qed.
 
 Lemma proportional_symm : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut),
@@ -34,12 +34,12 @@ Proof.
   intros.
   destruct H.
   split.
-  - apply nonzero_div_nonzero.
-    apply H.
-  - rewrite H0.  
+  - rewrite H.  
     rewrite Mscale_assoc.
     rewrite Cinv_l; try lma.
-    apply H.
+    apply H0.
+  - apply nonzero_div_nonzero.
+    apply H0.
 Qed.
 
 Lemma proportional_trans : forall {nIn nOut} (zx0 zx1 zx2 : ZX nIn nOut),
@@ -52,11 +52,11 @@ Proof.
   destruct H0.
   exists (x * x0).
   split.
-  - apply Cmult_neq_0; try assumption. 
   - rewrite <- Mscale_assoc.
-    rewrite <- H2.
-    rewrite <- H1.
+    rewrite <- H0.
+    rewrite <- H.
     reflexivity.
+  - apply Cmult_neq_0; try assumption. 
 Qed.
 
 Add Parametric Relation (nIn nOut : nat) : (ZX nIn nOut) (@proportional nIn nOut)
@@ -75,9 +75,9 @@ Proof.
   destruct H; destruct H; destruct H0; destruct H0.
   exists (x * x0).
   split.
-  - apply Cmult_neq_0; try assumption.
-  - simpl; rewrite H1; rewrite H2.
+  - simpl; rewrite H; rewrite H0.
     lma.
+  - apply Cmult_neq_0; try assumption.
 Qed.
 
 Add Parametric Morphism (nIn0 nOut0 nIn1 nOut1 : nat)  : (@Stack nIn0 nIn1 nOut0 nOut1)
@@ -95,12 +95,12 @@ Proof.
   destruct H; destruct H; destruct H0; destruct H0.
   exists (x * x0).
   split.
-  - apply Cmult_neq_0; try assumption.
-  - simpl; rewrite H1; rewrite H2.
+  - simpl; rewrite H; rewrite H0.
     rewrite Mscale_mult_dist_r.
     rewrite Mscale_mult_dist_l.
     rewrite Mscale_assoc.
     reflexivity.
+  - apply Cmult_neq_0; try assumption.
 Qed.
 
 Add Parametric Morphism (nIn nMid nOut : nat)  : (@Compose nIn nMid nOut)
@@ -144,6 +144,7 @@ Proof.
   destruct H; destruct H; destruct H.
   exists ((√ 2 ^ x * (1 / √ 2 ^ x0))%R * Cexp x1).
   split.
+  - assumption.
   - apply Cmult_neq_0; try apply Cexp_nonzero.
     apply C0_fst_neq.
     simpl.
@@ -151,7 +152,6 @@ Proof.
     rewrite Rinv_pow; try apply sqrt2_neq_0.
     apply Rmult_integral_contrapositive_currified; 
       try apply pow_nonzero; try apply Rinv_neq_0_compat; apply sqrt2_neq_0.
-  - assumption.
 Qed.
 
 Lemma proportional_refl_c : forall {nIn nOut} (zx : ZX nIn nOut), zx ∝' zx.
