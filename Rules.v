@@ -22,17 +22,17 @@ Defined.
 Lemma ZXSemantics_Ignore_StackAssoc : 
   forall {nIn0 nIn1 nIn2 nOut0 nOut1 nOut2}
     (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1) (zx2 : ZX nIn2 nOut2),
-    ZX_semantics (StackAssocHelper (Stack (Stack zx0 zx1) zx2)) = ZX_semantics (Stack zx0 (Stack zx1 zx2)).
+    ZX_semantics (StackAssocHelper (Stack (Stack zx0 zx1) zx2)) = ZX_semantics (Stack (Stack zx0 zx1) zx2).
 Proof.
   intros.
   unfold StackAssocHelper.
   simpl; rewrite 2 Nat.add_assoc; simpl.
   restore_dims.
-  apply kron_assoc; try auto with wf_db.
+  reflexivity.
 Qed.
 
 Lemma ZX_Stack_assoc : 
-  forall nIn1 nIn2 nIn3 nOut1 nOut2 nOut3 
+  forall {nIn1 nIn2 nIn3 nOut1 nOut2 nOut3}
     (zx1 : ZX nIn1 nOut1) (zx2 : ZX nIn2 nOut2) (zx3 : ZX nIn3 nOut3),
     StackAssocHelper (Stack (Stack zx1 zx2) zx3) ∝ Stack zx1 (Stack zx2 zx3).
 Proof.
@@ -41,11 +41,21 @@ Proof.
   split; try apply C1_neq_C0.
   - rewrite ZXSemantics_Ignore_StackAssoc.
     rewrite Mscale_1_l.
+    simpl.
     restore_dims.
-    reflexivity. 
+    rewrite kron_assoc; try auto with wf_db.
 Qed.
 
-
+Lemma ZX_Stack_assoc_eq :
+forall nIn1 nIn2 nIn3 nOut1 nOut2 nOut3 
+  (zx1 : ZX nIn1 nOut1) (zx2 : ZX nIn2 nOut2) (zx3 : ZX nIn3 nOut3),
+  ZX_semantics (Stack (Stack zx1 zx2) zx3) = ZX_semantics (Stack zx1 (Stack zx2 zx3)).
+Proof.
+  intros.
+  simpl.
+  restore_dims.
+  rewrite kron_assoc; try auto with wf_db.
+Qed.
 
 Lemma ZX_Compose_assoc : forall nIn nMid1 nMid2 nOut
                               (zx1 : ZX nIn nMid1) (zx2 : ZX nMid1 nMid2) (zx3 : ZX nMid2 nOut),
