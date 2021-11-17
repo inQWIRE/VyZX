@@ -3,6 +3,7 @@ Require Import externals.QuantumLib.Dirac.
 Require Export ZX.
 Require Export Gates.
 Require Export GateRules.
+Require Export Proportional.
 
 Local Open Scope ZX_scope.
 

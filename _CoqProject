@@ -11,8 +11,8 @@ externals/QuantumLib/Proportional.v
 
 ZX.v
 Gates.v 
-GateRules.v
-Rules.v 
 Scalars.v
 Eigenstates.v
 Proportional.v
+GateRules.v
+Rules.v 
