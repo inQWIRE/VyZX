@@ -137,7 +137,6 @@ Proof.
     + apply IHn.
 Qed.
 
-(*
 Lemma prop_c_to_prop : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut),
   zx0 ∝' zx1 -> zx0 ∝ zx1.
 Proof.
@@ -145,9 +144,15 @@ Proof.
   destruct H; destruct H; destruct H.
   exists ((√ 2 ^ x * (1 / √ 2 ^ x0))%R * Cexp x1).
   split.
-  -  (*Here we need to convert the Real number to the appropriate complex number*)
+  - apply Cmult_neq_0; try apply Cexp_nonzero.
+    apply C0_fst_neq.
+    simpl.
+    replace (1 / √ 2 ^ x0)%R with (/ √ 2 ^ x0)%R by lra.
+    rewrite Rinv_pow; try apply sqrt2_neq_0.
+    apply Rmult_integral_contrapositive_currified; 
+      try apply pow_nonzero; try apply Rinv_neq_0_compat; apply sqrt2_neq_0.
   - assumption.
-Qed.*)
+Qed.
 
 Lemma proportional_refl_c : forall {nIn nOut} (zx : ZX nIn nOut), zx ∝' zx.
 Proof.
@@ -293,7 +298,7 @@ Proof.
   reflexivity.
 Qed.
 
-Theorem ZX_prop_eq : forall {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX nIn nOut), zx0 ∝' zx1 -> exists (zxconst : ZX 0 0), ZX_semantics zx0 = ZX_semantics (Stack zxconst zx1).
+Theorem ZX_c_prop_eq : forall {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX nIn nOut), zx0 ∝' zx1 -> exists (zxconst : ZX 0 0), ZX_semantics zx0 = ZX_semantics (Stack zxconst zx1).
 Proof.
   intros nIn nOut zx0 zx1 H.
   unfold proportional in H.
@@ -306,7 +311,7 @@ Proof.
   assumption.
 Qed.
 
-Theorem ZX_eq_prop : forall {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX nIn nOut), ZX_semantics zx0 = (ZX_semantics zx1) -> zx0 ∝' zx1.
+Theorem ZX_eq_c_prop : forall {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX nIn nOut), ZX_semantics zx0 = (ZX_semantics zx1) -> zx0 ∝' zx1.
 Proof.
   intros.
   unfold proportional.
@@ -315,7 +320,15 @@ Proof.
   exists 0.
   rewrite H.
   rewrite Cexp_0.
-  lma.  
+  lma.
+Qed.
+
+Theorem ZX_eq_prop : forall {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX nIn nOut), ZX_semantics zx0 = (ZX_semantics zx1) -> zx0 ∝ zx1.
+Proof.
+  intros.
+  apply prop_c_to_prop.
+  apply ZX_eq_c_prop.
+  assumption.
 Qed.
 
 Local Close Scope ZX_scope.
