@@ -6,26 +6,80 @@ Require Export GateRules.
 Require Export Proportional.
 
 Local Open Scope ZX_scope.
-
-Lemma ZX_Stack_assoc : forall nIn1 nIn2 nIn3 nOut1 nOut2 nOut3 
-                              (zx1 : ZX nIn1 nOut1) (zx2 : ZX nIn2 nOut2) (zx3 : ZX nIn3 nOut3),
-                              ZX_semantics (Stack zx1 (Stack zx2 zx3)) = ZX_semantics (Stack (Stack zx1 zx2) zx3).
+(* Needs to be fixed, types need to associate properly. 
+Lemma ZX_Stack_assoc : 
+  forall nIn1 nIn2 nIn3 nOut1 nOut2 nOut3 
+    (zx1 : ZX nIn1 nOut1) (zx2 : ZX nIn2 nOut2) (zx3 : ZX nIn3 nOut3),
+    Stack (Stack zx1 zx2) zx3 ∝ Stack zx1 (Stack zx2 zx3) .
 Proof.
   intros.
   simpl.
   restore_dims.
   rewrite <- kron_assoc; try auto with wf_db.
 Qed.
-
+*)
 Lemma ZX_Compose_assoc : forall nIn nMid1 nMid2 nOut
                               (zx1 : ZX nIn nMid1) (zx2 : ZX nMid1 nMid2) (zx3 : ZX nMid2 nOut),
-                              ZX_semantics (Compose zx1 (Compose zx2 zx3)) = ZX_semantics (Compose (Compose zx1 zx2) zx3).
+     Compose (Compose zx1 zx2) zx3 ∝ Compose zx1 (Compose zx2 zx3).
 Proof.
   intros.
   simpl.
-  restore_dims.
-  rewrite Mmult_assoc.
-  reflexivity.
+  exists 1.
+  split.
+  - simpl.
+    rewrite Mmult_assoc.
+    lma.
+  - apply C1_neq_C0.
+Qed.
+
+Lemma ZX_Semantics_Stack_Empty_l : forall {nIn nOut} (zx : ZX nIn nOut),
+  Stack Empty zx ∝ zx.
+Proof.
+  intros.
+  exists 1.
+  split.
+  - simpl.
+    rewrite kron_1_l; try auto with wf_db.
+    lma.
+  - apply C1_neq_C0.
+Qed.
+
+(* Needs to be fixed: dims not working well with stack.
+Lemma ZX_Semantics_Stack_Empty_r : forall {nIn nOut : nat} (zx : ZX nIn nOut),
+  Stack zx Empty ∝ zx.
+Proof.
+  induction nIn.
+  - intros.
+    unfold ZXFix.
+    simpl.
+simpl. unfold EmptyBelow. simpl. Admitted.
+*)
+
+Lemma ZX_Semantics_Compose_Empty_r : forall {nIn} (zx : ZX nIn 0),
+  Compose zx Empty ∝ zx.
+Proof. 
+  intros.
+  exists 1.
+  split.
+  - simpl. 
+    restore_dims.
+    rewrite Mmult_1_l; try auto with wf_db.
+    lma.
+  - apply C1_neq_C0.
+Qed.
+
+  
+Lemma ZX_Semantics_Compose_Empty_l : forall {nOut} (zx : ZX 0 nOut),
+  Compose Empty zx ∝ zx.
+Proof. 
+  intros.
+  exists 1.
+  split.
+  - simpl. 
+    restore_dims.
+    rewrite Mmult_1_r; try auto with wf_db.
+    lma.
+  - apply C1_neq_C0.
 Qed.
 
 Lemma ZX_semantics_Compose : forall nIn nMid nOut
@@ -60,9 +114,13 @@ Proof.
 Qed.
 Local Opaque nWire.
 
-Lemma nH_composition : forall n, ZX_semantics (Compose (nH n) (nH n)) = Cexp (PI / 2 * (INR n)) .* ZX_semantics (nWire n).
+
+(* Cexp (PI / 2 * (INR n)) *)
+Lemma nH_composition : forall n, Compose (nH n) (nH n) ∝ nWire n.
 Proof.
   intros.
+  apply prop_c_to_prop.
+  exists 0%nat; exists 0%nat; exists ((PI / 2 * (INR n))%R).
   simpl.
   rewrite nStack1_n_kron.
   restore_dims.
@@ -74,7 +132,7 @@ Proof.
   rewrite wire_identity_semantics.
   rewrite kron_n_I.
   rewrite Cexp_pow.
-  reflexivity.
+  lma.
 Qed.
 
 Lemma nStack1_compose : forall (zx0 zx1 : ZX 1 1) n, ZX_semantics (nStack1 (Compose zx0 zx1) n) = ZX_semantics (Compose (nStack1 zx0 n) (nStack1 zx1 n)).
@@ -105,22 +163,32 @@ Proof.
       reflexivity.
 Qed.
 
-Lemma nwire_r : forall nIn nOut (zx : ZX nIn nOut), ZX_semantics (Compose zx (nWire nOut)) = ZX_semantics zx.
+Lemma nwire_r : forall nIn nOut (zx : ZX nIn nOut), 
+  Compose zx (nWire nOut) ∝ zx.
 Proof.
   intros.
   simpl.
-  rewrite nwire_identity.
-  Msimpl.
-  reflexivity.
+  exists 1.
+  split.
+  - simpl.
+    rewrite nwire_identity.
+    Msimpl.
+    reflexivity.
+  - apply C1_neq_C0.
 Qed.
 
-Lemma nwire_l : forall nIn nOut (zx : ZX nIn nOut), ZX_semantics (Compose (nWire nIn) zx) = ZX_semantics zx.
+Lemma nwire_l : forall nIn nOut (zx : ZX nIn nOut), 
+  Compose (nWire nIn) zx ∝ zx.
 Proof.
   intros.
   simpl.
-  rewrite nwire_identity.
-  Msimpl.
-  reflexivity.
+  exists 1.
+  split.
+  - simpl.
+    rewrite nwire_identity.
+    Msimpl.
+    reflexivity.
+  - apply C1_neq_C0.
 Qed.
 
 Lemma stack_wire_pad_l_r : forall nIn0 nIn1 nOut0 nOut1 (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1), ZX_semantics (Stack zx0 zx1) = ZX_semantics (Stack (Compose (nWire nIn0) zx0) (Compose zx1 (nWire nOut1))).
@@ -141,117 +209,114 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma hadamard_color_change_Z : forall nIn nOut α, (ZX_semantics (Compose (nH nIn) (Z_Spider nIn nOut α))) = (Cexp (PI / 4 * (INR nIn - INR nOut))) .* ZX_semantics (Compose (X_Spider nIn nOut α) (nH nOut)).
+(*(Cexp (PI / 4 * (INR nIn - INR nOut)))*)
+Lemma hadamard_color_change_Z : forall nIn nOut α, Compose (nH nIn) (Z_Spider nIn nOut α) ∝ Compose (X_Spider nIn nOut α) (nH nOut).
 Proof.
   intros.
   simpl.
-  rewrite 2 nStack1_n_kron.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
-  rewrite ZX_H_is_H.
-  repeat rewrite Mscale_kron_n_distr_r.
-  repeat rewrite Cexp_pow; simpl.
-  rewrite Mscale_mult_dist_r.
-  repeat rewrite Mmult_plus_distr_r.
-  repeat rewrite Mscale_mult_dist_l.
-  rewrite Mscale_assoc.
-  restore_dims.
-  rewrite <- Cexp_add.
-  rewrite <- Rmult_plus_distr_l.
-  replace ((INR nIn - INR nOut + INR nOut))%R with (INR nIn) by lra.
-  apply Mscale_simplify; try reflexivity.
-  repeat rewrite Mmult_assoc.
-  restore_dims.
-  repeat rewrite kron_n_mult.
-  rewrite Mmult_plus_distr_l.
-  rewrite <- Mmult_assoc.
-  repeat rewrite Mscale_mult_dist_r.
-  rewrite <- Mmult_assoc.
-  repeat rewrite kron_n_mult.
-  restore_dims.
-  repeat rewrite <- Mmult_assoc.
-  rewrite MmultHH.
-  Msimpl.
-  apply Mplus_simplify;
-    try (apply Mscale_simplify; try reflexivity);
-    apply Mmult_simplify; try reflexivity;
-                          try (rewrite hadamard_sa; unfold bra; reflexivity).
+  exists (Cexp (PI / 4 * (INR nIn - INR nOut))).
+  split.
+  - simpl. 
+    rewrite 2 nStack1_n_kron.
+    unfold Spider_Semantics_Impl, bra_ket_MN.
+    rewrite ZX_H_is_H.
+    repeat rewrite Mscale_kron_n_distr_r.
+    repeat rewrite Cexp_pow; simpl.
+    rewrite Mscale_mult_dist_r.
+    repeat rewrite Mmult_plus_distr_r.
+    repeat rewrite Mscale_mult_dist_l.
+    rewrite Mscale_assoc.
+    restore_dims.
+    rewrite <- Cexp_add.
+    rewrite <- Rmult_plus_distr_l.
+    replace ((INR nIn - INR nOut + INR nOut))%R with (INR nIn) by lra.
+    apply Mscale_simplify; try reflexivity.
+    repeat rewrite Mmult_assoc.
+    restore_dims.
+    repeat rewrite kron_n_mult.
+    rewrite Mmult_plus_distr_l.
+    rewrite <- Mmult_assoc.
+    repeat rewrite Mscale_mult_dist_r.
+    rewrite <- Mmult_assoc.
+    repeat rewrite kron_n_mult.
+    restore_dims.
+    repeat rewrite <- Mmult_assoc.
+    rewrite MmultHH.
+    Msimpl.
+    apply Mplus_simplify;
+      try (apply Mscale_simplify; try reflexivity);
+      apply Mmult_simplify; try reflexivity;
+                            try (rewrite hadamard_sa; unfold bra; reflexivity).
+  - apply Cexp_nonzero.
 Qed.
 
-Lemma hadamard_color_change_X : forall nIn nOut α, (ZX_semantics (Compose (nH nIn) (X_Spider nIn nOut α))) = (Cexp (PI / 4 * (INR nIn - INR nOut))) .* ZX_semantics (Compose (Z_Spider nIn nOut α) (nH nOut)).
+(*(Cexp (PI / 4 * (INR nIn - INR nOut))) *)
+Lemma hadamard_color_change_X : forall nIn nOut α, Compose (nH nIn) (X_Spider nIn nOut α) ∝ Compose (Z_Spider nIn nOut α) (nH nOut).
 Proof.
   intros.
-  simpl.
-  rewrite 2 nStack1_n_kron.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
-  rewrite ZX_H_is_H.
-  repeat rewrite Mscale_kron_n_distr_r.
-  repeat rewrite Cexp_pow; simpl.
-  rewrite Mscale_mult_dist_r.
-  repeat rewrite Mmult_plus_distr_r.
-  repeat rewrite Mscale_mult_dist_l.
-  rewrite Mscale_assoc.
-  restore_dims.
-  rewrite <- Cexp_add.
-  rewrite <- Rmult_plus_distr_l.
-  replace ((INR nIn - INR nOut + INR nOut))%R with (INR nIn) by lra.
-  apply Mscale_simplify; try reflexivity.
-  repeat rewrite Mmult_assoc.
-  restore_dims.
-  repeat rewrite kron_n_mult.
-  rewrite Mmult_plus_distr_l.
-  rewrite <- Mmult_assoc.
-  repeat rewrite Mscale_mult_dist_r.
-  rewrite <- Mmult_assoc.
-  repeat rewrite kron_n_mult.
-  restore_dims.
-  repeat rewrite <- Mmult_assoc.
-  Msimpl.
-  rewrite hadamard_sa.
-  restore_dims.
-  repeat rewrite Mmult_assoc.
-  rewrite MmultHH.
-  Msimpl.
-  repeat rewrite <- Mmult_assoc.
-  apply Mplus_simplify;
-    try (apply Mscale_simplify; try reflexivity);
-    apply Mmult_simplify; try reflexivity;
-                          try (rewrite hadamard_sa; unfold bra; reflexivity).
+  exists (Cexp (PI / 4 * (INR nIn - INR nOut))).
+  split.
+  - simpl.
+    rewrite 2 nStack1_n_kron.
+    unfold Spider_Semantics_Impl, bra_ket_MN.
+    rewrite ZX_H_is_H.
+    repeat rewrite Mscale_kron_n_distr_r.
+    repeat rewrite Cexp_pow; simpl.
+    rewrite Mscale_mult_dist_r.
+    repeat rewrite Mmult_plus_distr_r.
+    repeat rewrite Mscale_mult_dist_l.
+    rewrite Mscale_assoc.
+    restore_dims.
+    rewrite <- Cexp_add.
+    rewrite <- Rmult_plus_distr_l.
+    replace ((INR nIn - INR nOut + INR nOut))%R with (INR nIn) by lra.
+    apply Mscale_simplify; try reflexivity.
+    repeat rewrite Mmult_assoc.
+    restore_dims.
+    repeat rewrite kron_n_mult.
+    rewrite Mmult_plus_distr_l.
+    rewrite <- Mmult_assoc.
+    repeat rewrite Mscale_mult_dist_r.
+    rewrite <- Mmult_assoc.
+    repeat rewrite kron_n_mult.
+    restore_dims.
+    repeat rewrite <- Mmult_assoc.
+    Msimpl.
+    rewrite hadamard_sa.
+    restore_dims.
+    repeat rewrite Mmult_assoc.
+    rewrite MmultHH.
+    Msimpl.
+    repeat rewrite <- Mmult_assoc.
+    apply Mplus_simplify;
+      try (apply Mscale_simplify; try reflexivity);
+      apply Mmult_simplify; try reflexivity;
+                            try (rewrite hadamard_sa; unfold bra; reflexivity).
+  - apply Cexp_nonzero.
 Qed.
 
-Lemma bi_hadamard_color_change_Z : forall nIn nOut α, (ZX_semantics (Compose (Compose (nH nIn) (Z_Spider nIn nOut α)) (nH nOut))) = (Cexp (PI / 4 * (INR nIn - INR nOut) + PI / 2 * INR nOut)) .* ZX_semantics (X_Spider nIn nOut α).
+Lemma bi_hadamard_color_change_Z : forall nIn nOut α, 
+  Compose (Compose (nH nIn) (Z_Spider nIn nOut α)) (nH nOut) ∝ 
+  X_Spider nIn nOut α.
 Proof.
   intros.
-  rewrite ZX_semantics_Compose.
   rewrite hadamard_color_change_Z.
-  rewrite Mscale_mult_dist_r.
-  rewrite <- ZX_semantics_Compose.
-  rewrite <- ZX_Compose_assoc.
-  rewrite ZX_semantics_Compose.
+  rewrite ZX_Compose_assoc.
   rewrite nH_composition.
-  rewrite Mscale_mult_dist_l.
-  rewrite Mscale_assoc.
-  rewrite Cexp_add.
-  apply Mscale_simplify; try reflexivity.
-  rewrite nwire_identity.
-  Msimpl; auto with wf_db.
+  rewrite nwire_r.
+  reflexivity.
 Qed.
 
-Lemma bi_hadamard_color_change_X : forall nIn nOut α, (ZX_semantics (Compose (Compose (nH nIn) (X_Spider nIn nOut α)) (nH nOut))) = (Cexp (PI / 4 * (INR nIn - INR nOut) + PI / 2 * INR nOut)) .* ZX_semantics (Z_Spider nIn nOut α).
+Lemma bi_hadamard_color_change_X : forall nIn nOut α, 
+  Compose (Compose (nH nIn) (X_Spider nIn nOut α)) (nH nOut) ∝ 
+  Z_Spider nIn nOut α.
 Proof.
   intros.
-  rewrite ZX_semantics_Compose.
   rewrite hadamard_color_change_X.
-  rewrite Mscale_mult_dist_r.
-  rewrite <- ZX_semantics_Compose.
-  rewrite <- ZX_Compose_assoc.
-  rewrite ZX_semantics_Compose.
+  rewrite ZX_Compose_assoc.
   rewrite nH_composition.
-  rewrite Mscale_mult_dist_l.
-  rewrite Mscale_assoc.
-  rewrite Cexp_add.
-  apply Mscale_simplify; try reflexivity.
-  rewrite nwire_identity.
-  Msimpl; auto with wf_db.
+  rewrite nwire_r.
+  reflexivity.
 Qed.
 
 Lemma Z_spider_fusion : forall nIn nOut α β, (ZX_semantics (Compose (Z_Spider nIn 1 α) (Z_Spider 1 nOut β))) = ZX_semantics (Z_Spider nIn nOut (α + β)).
@@ -661,5 +726,33 @@ Proof.
   solve_matrix.
 Qed.
 
+Fixpoint ColorSwap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
+  match zx with
+  | X_Spider n m α  => Z_Spider n m α
+  | Z_Spider n m α  => X_Spider n m α
+  | Stack zx1 zx2   => Stack (ColorSwap zx1) (ColorSwap zx2)
+  | Compose zx1 zx2 => Compose (ColorSwap zx1) (ColorSwap zx2)
+  | otherwise       => otherwise
+  end.
+  
+Lemma ColorSwap_proportional : forall {nIn nOut} (zx : ZX nIn nOut),
+  ColorSwap zx ∝ zx.
+Proof.
+  induction zx.
+  - reflexivity.
+  - simpl.
+    admit. (*Z spider \propto X spider*) (*Not true*)
+  - admit. (*X spider \propto Z spider*)
+  - reflexivity. 
+  - reflexivity.
+  - simpl.
+    rewrite IHzx1.
+    rewrite IHzx2.
+    reflexivity.
+  - simpl.
+    rewrite IHzx1.
+    rewrite IHzx2.
+    reflexivity.
+Admitted.
 
 Local Close Scope ZX_scope.
