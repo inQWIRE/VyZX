@@ -6,18 +6,47 @@ Require Export GateRules.
 Require Export Proportional.
 
 Local Open Scope ZX_scope.
-(* Needs to be fixed, types need to associate properly. 
+(* Fixed in a truly nightmarish way. Would need to add in StackAssocHelper
+somewhere to even use. Terrible. There must be a better way. *)
+
+Lemma StackAssocHelper :
+  forall {nIn0 nIn1 nIn2 nOut0 nOut1 nOut2}
+    (zx : ZX (nIn0 + nIn1 + nIn2) (nOut0 + nOut1 + nOut2)),
+    ZX (nIn0 + (nIn1 + nIn2)) (nOut0 + (nOut1 + nOut2)).
+Proof.
+  intros.
+  rewrite 2 plus_assoc.
+  apply zx.
+Defined.
+
+Lemma ZXSemantics_Ignore_StackAssoc : 
+  forall {nIn0 nIn1 nIn2 nOut0 nOut1 nOut2}
+    (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1) (zx2 : ZX nIn2 nOut2),
+    ZX_semantics (StackAssocHelper (Stack (Stack zx0 zx1) zx2)) = ZX_semantics (Stack zx0 (Stack zx1 zx2)).
+Proof.
+  intros.
+  unfold StackAssocHelper.
+  simpl; rewrite 2 Nat.add_assoc; simpl.
+  restore_dims.
+  apply kron_assoc; try auto with wf_db.
+Qed.
+
 Lemma ZX_Stack_assoc : 
   forall nIn1 nIn2 nIn3 nOut1 nOut2 nOut3 
     (zx1 : ZX nIn1 nOut1) (zx2 : ZX nIn2 nOut2) (zx3 : ZX nIn3 nOut3),
-    Stack (Stack zx1 zx2) zx3 ∝ Stack zx1 (Stack zx2 zx3) .
+    StackAssocHelper (Stack (Stack zx1 zx2) zx3) ∝ Stack zx1 (Stack zx2 zx3).
 Proof.
   intros.
-  simpl.
-  restore_dims.
-  rewrite <- kron_assoc; try auto with wf_db.
+  exists 1.
+  split; try apply C1_neq_C0.
+  - rewrite ZXSemantics_Ignore_StackAssoc.
+    rewrite Mscale_1_l.
+    restore_dims.
+    reflexivity. 
 Qed.
-*)
+
+
+
 Lemma ZX_Compose_assoc : forall nIn nMid1 nMid2 nOut
                               (zx1 : ZX nIn nMid1) (zx2 : ZX nMid1 nMid2) (zx3 : ZX nMid2 nOut),
      Compose (Compose zx1 zx2) zx3 ∝ Compose zx1 (Compose zx2 zx3).
@@ -135,16 +164,20 @@ Proof.
   lma.
 Qed.
 
-Lemma nStack1_compose : forall (zx0 zx1 : ZX 1 1) n, ZX_semantics (nStack1 (Compose zx0 zx1) n) = ZX_semantics (Compose (nStack1 zx0 n) (nStack1 zx1 n)).
+Lemma nStack1_compose : forall (zx0 zx1 : ZX 1 1) n, 
+  nStack1 (Compose zx0 zx1) n ∝ Compose (nStack1 zx0 n) (nStack1 zx1 n).
 Proof.
   intros.
+  exists 1.
+  split; try apply C1_neq_C0.
   induction n.
   - simpl. Msimpl. reflexivity.
   - simpl.
     rewrite IHn.
     restore_dims.
     rewrite kron_mixed_product.
-    simpl.
+    rewrite 2 Mscale_1_l.
+    rewrite ZX_semantics_Compose.
     reflexivity.
 Qed. 
 
@@ -191,21 +224,22 @@ Proof.
   - apply C1_neq_C0.
 Qed.
 
-Lemma stack_wire_pad_l_r : forall nIn0 nIn1 nOut0 nOut1 (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1), ZX_semantics (Stack zx0 zx1) = ZX_semantics (Stack (Compose (nWire nIn0) zx0) (Compose zx1 (nWire nOut1))).
+Lemma stack_wire_pad_l_r : 
+  forall nIn0 nIn1 nOut0 nOut1 (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1), 
+  Stack zx0 zx1 ∝ Stack (Compose (nWire nIn0) zx0) (Compose zx1 (nWire nOut1)).
 Proof.
   intros.
-  simpl.
-  rewrite 2 nwire_identity. 
-  Msimpl.
+  rewrite nwire_l.
+  rewrite nwire_r.
   reflexivity.
 Qed.
 
-Lemma stack_wire_pad_r_l : forall nIn0 nIn1 nOut0 nOut1 (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1), ZX_semantics (Stack zx0 zx1) = ZX_semantics (Stack (Compose zx0 (nWire nOut0)) (Compose (nWire nIn1) zx1)).
+Lemma stack_wire_pad_r_l : forall nIn0 nIn1 nOut0 nOut1 (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1), 
+  Stack zx0 zx1 ∝ Stack (Compose zx0 (nWire nOut0)) (Compose (nWire nIn1) zx1).
 Proof.
   intros.
-  simpl.
-  rewrite 2 nwire_identity. 
-  Msimpl.
+  rewrite nwire_l.
+  rewrite nwire_r.
   reflexivity.
 Qed.
 
@@ -735,24 +769,9 @@ Fixpoint ColorSwap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut :=
   | otherwise       => otherwise
   end.
   
-Lemma ColorSwap_proportional : forall {nIn nOut} (zx : ZX nIn nOut),
-  ColorSwap zx ∝ zx.
+Lemma ColorSwap_comp : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut),
+    zx0 ∝ zx1 -> ColorSwap zx0 ∝ ColorSwap zx1.
 Proof.
-  induction zx.
-  - reflexivity.
-  - simpl.
-    admit. (*Z spider \propto X spider*) (*Not true*)
-  - admit. (*X spider \propto Z spider*)
-  - reflexivity. 
-  - reflexivity.
-  - simpl.
-    rewrite IHzx1.
-    rewrite IHzx2.
-    reflexivity.
-  - simpl.
-    rewrite IHzx1.
-    rewrite IHzx2.
-    reflexivity.
 Admitted.
 
 Local Close Scope ZX_scope.
