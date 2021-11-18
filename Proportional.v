@@ -12,17 +12,17 @@ Definition proportional_constructible {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX n
 Definition proportional {nIn nOut} (zx0 : ZX nIn nOut) (zx1: ZX nIn nOut) :=
   exists (c : C), ZX_semantics zx0 =  c .* ZX_semantics zx1 /\ c <> 0 .
 
+Ltac prop_exist_non_zero c := exists c; split; try nonzero.
+
 Infix "∝'" := proportional_constructible (at level 70).
 
 Infix "∝" := proportional (at level 70).
 
 Lemma proportional_refl : forall {nIn nOut} (zx : ZX nIn nOut), zx ∝ zx.
 Proof.
-  exists 1.
+  prop_exist_non_zero 1.
   intros.
-  split.
-  - lma.
-  - apply C1_neq_C0.
+  lma.
 Qed.
 
 Lemma proportional_symm : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut),

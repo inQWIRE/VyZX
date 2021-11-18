@@ -63,24 +63,20 @@ Lemma ZX_Compose_assoc : forall nIn nMid1 nMid2 nOut
 Proof.
   intros.
   simpl.
-  exists 1.
-  split.
-  - simpl.
+  prop_exist_non_zero 1.
+  simpl.
     rewrite Mmult_assoc.
     lma.
-  - apply C1_neq_C0.
 Qed.
 
 Lemma ZX_Semantics_Stack_Empty_l : forall {nIn nOut} (zx : ZX nIn nOut),
   Stack Empty zx ∝ zx.
 Proof.
   intros.
-  exists 1.
-  split.
-  - simpl.
+  prop_exist_non_zero 1.
+  simpl.
     rewrite kron_1_l; try auto with wf_db.
     lma.
-  - apply C1_neq_C0.
 Qed.
 
 (* Needs to be fixed: dims not working well with stack.
@@ -98,13 +94,11 @@ Lemma ZX_Semantics_Compose_Empty_r : forall {nIn} (zx : ZX nIn 0),
   Compose zx Empty ∝ zx.
 Proof. 
   intros.
-  exists 1.
-  split.
-  - simpl. 
+  prop_exist_non_zero 1.
+  simpl.  
     restore_dims.
     rewrite Mmult_1_l; try auto with wf_db.
     lma.
-  - apply C1_neq_C0.
 Qed.
 
   
@@ -112,13 +106,11 @@ Lemma ZX_Semantics_Compose_Empty_l : forall {nOut} (zx : ZX 0 nOut),
   Compose Empty zx ∝ zx.
 Proof. 
   intros.
-  exists 1.
-  split.
-  - simpl. 
+  prop_exist_non_zero 1.
+  simpl. 
     restore_dims.
     rewrite Mmult_1_r; try auto with wf_db.
     lma.
-  - apply C1_neq_C0.
 Qed.
 
 Lemma ZX_semantics_Compose : forall nIn nMid nOut
@@ -137,8 +129,7 @@ Lemma ZX_Stack_Compose_distr :
     Stack (Compose zx1 zx2) (Compose zx3 zx4) ∝ Compose (Stack zx1 zx3) (Stack zx2 zx4).
 Proof.
   intros.
-  exists 1.
-  split; try apply C1_neq_C0. 
+  prop_exist_non_zero 1.
   simpl.
   restore_dims.
   rewrite kron_mixed_product.
@@ -683,9 +674,10 @@ Proof.
   intros.
   simpl.
   unfold_spider.
-  rewrite Mplus_adjoint, Mscale_adj.
-  rewrite 2 Mmult_adjoint.
-  rewrite 2 kron_n_adjoint; try auto with wf_db.
+  restore_dims.
+  rewrite Mscale_adj.
+  rewrite Mmult_adjoint.
+  rewrite 3 kron_n_adjoint; try auto with wf_db.
   rewrite Cexp_conj_neg.
   rewrite Ropp_involutive.
   assert ((ket 0)† = bra 0) as Hket0 by reflexivity.
@@ -738,8 +730,6 @@ Proof.
   simpl.
   unfold_spider.
   rewrite wire_identity_semantics.
-  simpl.
-  rewrite 4 kron_1_l; try auto with wf_db.
   solve_matrix.
 Qed.
 
@@ -751,8 +741,6 @@ Proof.
   simpl.
   unfold_spider.
   rewrite wire_identity_semantics.
-  simpl.
-  rewrite 4 kron_1_l; try auto with wf_db.
   solve_matrix.
 Qed.
 
