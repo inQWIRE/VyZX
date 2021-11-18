@@ -131,15 +131,18 @@ Lemma ZX_semantics_Stack : forall nIn nMid nOut
                                     ZX_semantics (Stack zx0 zx1) = ZX_semantics zx0 ⊗ (ZX_semantics zx1).
 Proof. reflexivity. Qed.
 
-Lemma ZX_Stack_Compose_distr : forall nIn1 nMid12 nIn3 nOut2 nMid34 nOut4 
-                                      (zx1 : ZX nIn1 nMid12) (zx2 : ZX nMid12 nOut2) (zx3 : ZX nIn3 nMid34) (zx4 : ZX nMid34 nOut4),
-                                      ZX_semantics (Stack (Compose zx1 zx2) (Compose zx3 zx4)) = ZX_semantics (Compose (Stack zx1 zx3) (Stack zx2 zx4)).
+Lemma ZX_Stack_Compose_distr : 
+  forall nIn1 nMid12 nIn3 nOut2 nMid34 nOut4 
+    (zx1 : ZX nIn1 nMid12) (zx2 : ZX nMid12 nOut2) (zx3 : ZX nIn3 nMid34) (zx4 : ZX nMid34 nOut4),
+    Stack (Compose zx1 zx2) (Compose zx3 zx4) ∝ Compose (Stack zx1 zx3) (Stack zx2 zx4).
 Proof.
-  intros. 
+  intros.
+  exists 1.
+  split; try apply C1_neq_C0. 
   simpl.
   restore_dims.
   rewrite kron_mixed_product.
-  reflexivity.
+  lma.
 Qed.
 
 Local Transparent nWire.
@@ -778,10 +781,83 @@ Fixpoint ColorSwap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut :=
   | Compose zx1 zx2 => Compose (ColorSwap zx1) (ColorSwap zx2)
   | otherwise       => otherwise
   end.
-  
-Lemma ColorSwap_comp : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut),
-    zx0 ∝ zx1 -> ColorSwap zx0 ∝ ColorSwap zx1.
+
+Lemma ColorSwap_self_inverse : forall {nIn nOut} (zx : ZX nIn nOut),
+  ColorSwap (ColorSwap zx) = zx.
 Proof.
+  intros; induction zx; try reflexivity.
+  - simpl.
+    rewrite IHzx1.
+    rewrite IHzx2.
+    reflexivity.
+  - simpl.
+    rewrite IHzx1.
+    rewrite IHzx2.
+    reflexivity.
+Qed.
+
+Definition BiHadamard {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
+  Compose (Compose (nH nIn) zx) (nH nOut).
+Transparent BiHadamard.
+
+Lemma nH_Plus_Stack : forall {n0 n1},
+    nH (n0 + n1) ∝ Stack (nH n0) (nH n1).
+Proof.
+  induction n0; intros.
+  - rewrite ZX_Semantics_Stack_Empty_l; reflexivity.
+  - simpl.
+    destruct (IHn0 n1); destruct H.
+    exists x; split; try assumption.
+    simpl.
+    rewrite H.
+    simpl.
+    rewrite Mscale_kron_dist_r.
+    restore_dims.
+    rewrite kron_assoc; try auto with wf_db.
+Qed.
+    
+
+Theorem ColorSwap_Lift : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut),
+  ColorSwap zx0 ∝ ColorSwap zx1 -> zx0 ∝ zx1.
+Proof.
+  intros.
+  replace zx1 with (ColorSwap (ColorSwap zx1)) by apply ColorSwap_self_inverse.
+  inversion H.
+Admitted.
+
+Lemma ColorSwap_isBiHadamard : forall {nIn nOut} (zx : ZX nIn nOut),
+    ColorSwap zx ∝ BiHadamard zx.
+Proof.
+  intros; unfold BiHadamard.
+  induction zx.
+  - rewrite 2 ZX_Semantics_Compose_Empty_l.
+    reflexivity.
+  - rewrite bi_hadamard_color_change_X.
+    reflexivity.
+  - rewrite bi_hadamard_color_change_Z.
+    reflexivity.
+  - rewrite ZX_Semantics_Compose_Empty_l.
+    unfold nH.
+    admit. 
+    (* Hard to do without the stack rules unless we go into the ZX equality. *)
+  - admit.
+    (* Same, but for cup. Would also need hadamards passing through caps and cups. *)
+  - simpl.
+    rewrite IHzx1.
+    rewrite IHzx2.
+    rewrite 2 nH_Plus_Stack.
+    rewrite 2 ZX_Stack_Compose_distr.
+    reflexivity.
+  - simpl.
+    rewrite IHzx1.
+    rewrite IHzx2.
+    rewrite 3 ZX_Compose_assoc.
+    replace (Compose (nH nMid) (Compose (nH nMid) (Compose zx2 (nH nOut)))) with (Compose (Compose (nH nMid) (nH nMid)) (Compose zx2 (nH nOut))).
+    + rewrite nH_composition.
+      rewrite nwire_l.
+      rewrite 2 ZX_Compose_assoc.
+      reflexivity.
+    + admit.
 Admitted.
 
 Local Close Scope ZX_scope.
