@@ -8,9 +8,7 @@ Local Transparent ZX_H.
 Lemma ZX_H_is_H : ZX_semantics ZX_H = Cexp (PI/4)%R .* hadamard.
 Proof.
   simpl.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
-  simpl.
-  Msimpl.
+  unfold_spider.
   solve_matrix; 
   field_simplify_eq [Cexp_PI2 Cexp_PI4 Ci2 Csqrt2_sqrt2_inv Csqrt2_inv]; 
   try apply c_proj_eq; try simpl; try R_field_simplify; try reflexivity; (try split; try apply RtoC_neq; try apply sqrt2_neq_0; try auto).
@@ -37,20 +35,16 @@ Local Transparent ZX_X.
 Lemma ZX_X_is_X : ZX_semantics ZX_X = σx.
 Proof.
   simpl.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
-  rewrite Cexp_PI.
-  simpl.
-  Msimpl.
+  unfold_spider.
+  autorewrite with Cexp_db.
   solve_matrix.
 Qed.
 
 Lemma ZX_Z_is_Z : ZX_semantics ZX_Z = σz.
 Proof.
   simpl.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
-  rewrite Cexp_PI.
-  simpl.
-  Msimpl.
+  unfold_spider.
+  autorewrite with Cexp_db.
   solve_matrix.
 Qed.
 
@@ -73,9 +67,9 @@ Local Transparent ZX_CNOT.
 Lemma ZX_CNOT_l_is_cnot : ZX_semantics ZX_CNOT_l = (/ √ 2)%C .* cnot.
 Proof.
   simpl.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
+  unfold_spider.
   rewrite wire_identity_semantics.
-  rewrite Cexp_0.
+  autorewrite with Cexp_db.
   simpl.
   solve_matrix.
 Qed.
@@ -83,9 +77,9 @@ Qed.
 Lemma ZX_CNOT_r_is_cnot : ZX_semantics ZX_CNOT_r = (/ √ 2)%C .* cnot.
 Proof.
   simpl.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
+  unfold_spider.
   rewrite wire_identity_semantics.
-  rewrite Cexp_0.
+  autorewrite with Cexp_db.
   simpl.
   solve_matrix.
 Qed.
@@ -108,10 +102,8 @@ Proof.
   simpl.
   rewrite ZX_CNOT_is_cnot.
   rewrite wire_identity_semantics.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
-  rewrite Cexp_0.
-  simpl.
-  Msimpl.
+  unfold_spider.
+  autorewrite with Cexp_db.
   solve_matrix.
   simpl.
   all : field_simplify_eq [Csqrt2_sqrt]; try reflexivity; split; nonzero.

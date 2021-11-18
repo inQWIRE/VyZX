@@ -10,9 +10,7 @@ Theorem Scalar_Z_general : forall α, (ZX_semantics (Scalar_1_plus_Cexp_alpha α
 Proof.
   intros.
   simpl.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
-  simpl.
-  rewrite Mmult_1_l; try auto with wf_db.
+  unfold_spider.
   rewrite Mscale_plus_distr_l.
   rewrite Mscale_1_l.
   reflexivity.
@@ -26,7 +24,7 @@ Theorem Scalar_Z_0_2 : (ZX_semantics Scalar_2) = 2 .* I 1.
 Proof.
   unfold Scalar_2.
   rewrite Scalar_Z_general.
-  rewrite Cexp_0.
+  autorewrite with Cexp_db.
   solve_matrix.
 Qed.
 
@@ -38,7 +36,7 @@ Theorem Scalar_Z_PI_0: (ZX_semantics Scalar_0) = 0 .* I 1.
 Proof.
   unfold Scalar_0.
   rewrite Scalar_Z_general.
-  rewrite Cexp_PI.
+  autorewrite with Cexp_db.
   solve_matrix.
 Qed.
 
@@ -50,9 +48,8 @@ Theorem Scalar_X_alpha_Z_0_sqrt_2 : (ZX_semantics Scalar_sqrt_2) = (√2) .* I 1
 Proof.
   intros.
   simpl.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
-  simpl.
-  rewrite Cexp_0.
+  unfold_spider.
+  autorewrite with Cexp_db.
   repeat rewrite Mmult_1_l; try auto with wf_db.
   repeat rewrite kron_1_l; try auto with wf_db.
   repeat rewrite Mscale_1_l.
@@ -69,9 +66,8 @@ Theorem Scalar_X_alpha_Z_PI_sqrt_2 : forall α, (ZX_semantics (Scalar_Cexp_alpha
 Proof.
   intros.
   simpl.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
-  simpl.
-  rewrite Cexp_PI.
+  unfold_spider.
+  autorewrite with Cexp_db.
   repeat rewrite Mmult_1_l; try auto with wf_db.
   repeat rewrite kron_1_l; try auto with wf_db.
   repeat rewrite Mscale_1_l.
@@ -88,11 +84,9 @@ Theorem Scalar_X_Z_triple_1_sqrt_2 : (ZX_semantics Scalar_1_div_sqrt_2) = (1 / �
 Proof.
   intros.
   simpl.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
-  simpl.
-  Msimpl.
+  unfold_spider.
   solve_matrix.
-  rewrite Cexp_0.
+  autorewrite with Cexp_db.
   rewrite Cmult_1_l.
   C_field_simplify; try lca; split; try apply Csqrt2_neq_0.
   apply C0_fst_neq.

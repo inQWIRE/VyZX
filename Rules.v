@@ -263,9 +263,9 @@ Proof.
   simpl.
   exists (Cexp (PI / 4 * (INR nIn - INR nOut))).
   split.
-  - simpl. 
+  - simpl.
     rewrite 2 nStack1_n_kron.
-    unfold Spider_Semantics_Impl, bra_ket_MN.
+    unfold_spider.
     rewrite ZX_H_is_H.
     repeat rewrite Mscale_kron_n_distr_r.
     repeat rewrite Cexp_pow; simpl.
@@ -305,7 +305,7 @@ Proof.
   split.
   - simpl.
     rewrite 2 nStack1_n_kron.
-    unfold Spider_Semantics_Impl, bra_ket_MN.
+    unfold_spider.
     rewrite ZX_H_is_H.
     repeat rewrite Mscale_kron_n_distr_r.
     repeat rewrite Cexp_pow; simpl.
@@ -370,8 +370,7 @@ Lemma Z_spider_fusion : forall nIn nOut α β, (ZX_semantics (Compose (Z_Spider 
 Proof.
   intros.
   simpl.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
-  simpl; Msimpl.
+  unfold_spider.
   rewrite Mmult_plus_distr_r, Mmult_plus_distr_l.
   rewrite <- Mmult_assoc.
   rewrite Mscale_mult_dist_r.
@@ -447,20 +446,19 @@ Lemma X_spider_fusion : forall α β, (ZX_semantics (Compose (X_Spider 1 1 α) (
 Proof.
   intros.
   simpl.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
-  simpl; Msimpl.
+  unfold_spider.
   rewrite Mmult_plus_distr_r, Mmult_plus_distr_l.
   rewrite <- Mmult_assoc.
   restore_dims.
   solve_matrix;
-  rewrite Cexp_add; try C_field_simplify; try lca; try (apply C0_fst_neq; simpl; auto).
+  autorewrite with Cexp_db; try C_field_simplify; try lca; try (apply C0_fst_neq; simpl; auto).
 Qed.
 
 Lemma Z_commutes_through_swap_t : forall α, ZX_semantics (Compose (Stack (Z_Spider 1 1 α) Wire) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack Wire (Z_Spider 1 1 α))).
 Proof.
   intros.
   simpl.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
+  unfold_spider.
   rewrite ZX_SWAP_is_swap.
   rewrite wire_identity_semantics.
   simpl.
@@ -472,7 +470,7 @@ Lemma X_commutes_through_swap_t : forall α, ZX_semantics (Compose (Stack (X_Spi
 Proof.
   intros.
   simpl.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
+  unfold_spider.
   rewrite ZX_SWAP_is_swap.
   rewrite wire_identity_semantics.
   simpl.
@@ -484,7 +482,7 @@ Lemma Z_commutes_through_swap_b : forall α, ZX_semantics (Compose (Stack Wire (
 Proof.
   intros.
   simpl.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
+  unfold_spider.
   rewrite ZX_SWAP_is_swap.
   rewrite wire_identity_semantics.
   simpl.
@@ -496,7 +494,7 @@ Lemma X_commutes_through_swap_b : forall α, ZX_semantics (Compose (Stack Wire (
 Proof.
   intros.
   simpl.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
+  unfold_spider.
   rewrite ZX_SWAP_is_swap.
   rewrite wire_identity_semantics.
   simpl.
@@ -555,10 +553,10 @@ Qed.
 Lemma Z_0_eq_X_0 : ZX_semantics (Z_Spider 1 1 0) = ZX_semantics (X_Spider 1 1 0).
 Proof.
   simpl.
-  unfold Spider_Semantics_Impl; unfold bra_ket_MN.
+  unfold_spider.
   unfold kron_n.
   repeat rewrite kron_1_l; try auto with wf_db.
-  rewrite Cexp_0.
+  autorewrite with Cexp_db.
   solve_matrix.
 Qed.
 
@@ -595,28 +593,18 @@ Qed.
 
 Theorem inverse_angle_Z : forall  α nIn nOut, ZX_semantics(Compose (Z_Spider nIn 1 α) (Z_Spider 1 nOut (-α))) = ZX_semantics (Z_Spider nIn nOut 0).
 Proof.
-  intros α nIn; induction nIn; intro nOut; induction nOut.
-  - simpl; unfold Spider_Semantics_Impl, bra_ket_MN; simpl; Msimpl.
-    rewrite Cexp_0.
-    rewrite Mmult_plus_distr_r.
-    rewrite 2 Mmult_plus_distr_l.
-    Msimpl.
-    solve_matrix.
-    rewrite Cexp_mul_neg_l.
-    lca.
-  - simpl.
+  intros.
 Abort.
 
 Theorem Hopf_rule_Z_X : ZX_semantics (Compose (Z_Spider 1 2 0) (X_Spider 2 1 0)) = (/ C2) .* ZX_semantics (Compose (Z_Spider 1 0 0) (X_Spider 0 1 0)).
 Proof.
   intros.
   simpl.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
-  simpl.
+  unfold_spider.
   repeat rewrite kron_1_l; try auto with wf_db.
   repeat rewrite Mmult1_l.
   repeat rewrite Mmult1_r.
-  repeat rewrite Cexp_0.
+  autorewrite with Cexp_db.
   repeat rewrite Mscale_1_l.
   solve_matrix.
 Qed.
@@ -625,12 +613,11 @@ Theorem Hopf_rule_X_Z : ZX_semantics (Compose (X_Spider 1 2 0) (Z_Spider 2 1 0))
 Proof.
   intros.
   simpl.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
-  simpl.
+  unfold_spider.
   repeat rewrite kron_1_l; try auto with wf_db.
   repeat rewrite Mmult1_l.
   repeat rewrite Mmult1_r.
-  repeat rewrite Cexp_0.
+  autorewrite with Cexp_db.
   repeat rewrite Mscale_1_l.
   solve_matrix.
 Qed.
@@ -644,8 +631,8 @@ Theorem BiAlgebra_rule_Z_X : ZX_semantics (Compose (Z_Spider 2 1 0) (X_Spider 1 
 Proof.
   simpl.
   rewrite ZX_SWAP_is_swap, wire_identity_semantics.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
-  rewrite Cexp_0.
+  unfold_spider.
+  autorewrite with Cexp_db.
   simpl.
   repeat rewrite kron_1_l; try auto with wf_db.
   repeat rewrite Mscale_1_l.
@@ -671,8 +658,8 @@ Theorem BiAlgebra_rule_X_Z : ZX_semantics (Compose (X_Spider 2 1 0) (Z_Spider 1 
 Proof.
   simpl.
   rewrite ZX_SWAP_is_swap, wire_identity_semantics.
-  unfold Spider_Semantics_Impl, bra_ket_MN.
-  rewrite Cexp_0.
+  unfold_spider.
+  autorewrite with Cexp_db.
   simpl.
   repeat rewrite kron_1_l; try auto with wf_db.
   repeat rewrite Mscale_1_l.
@@ -695,8 +682,7 @@ Theorem inverse_Z_Spider : forall nIn nOut α, ZX_semantics (Z_Spider nIn nOut �
 Proof.
   intros.
   simpl.
-  unfold Spider_Semantics_Impl.
-  unfold bra_ket_MN.
+  unfold_spider.
   rewrite Mplus_adjoint, Mscale_adj.
   rewrite 2 Mmult_adjoint.
   rewrite 2 kron_n_adjoint; try auto with wf_db.
@@ -721,9 +707,8 @@ Theorem inverse_X_Spider : forall nIn nOut α, ZX_semantics (X_Spider nIn nOut �
 Proof.
   intros.
   simpl.
-  unfold Spider_Semantics_Impl.
-  unfold bra_ket_MN.
-  rewrite Mplus_adjoint, Mscale_adj.
+  unfold_spider.
+  rewrite Mscale_adj.
   repeat rewrite Mmult_adjoint.
   repeat rewrite <- kron_n_mult.
   rewrite Cexp_conj_neg.
@@ -751,8 +736,7 @@ Lemma Z_1_1_Wire_Cup : forall α,
 Proof.
   intros.
   simpl.
-  unfold Spider_Semantics_Impl;
-  unfold bra_ket_MN.
+  unfold_spider.
   rewrite wire_identity_semantics.
   simpl.
   rewrite 4 kron_1_l; try auto with wf_db.
@@ -765,8 +749,7 @@ Lemma Z_1_1_Wire_Cap : forall α,
 Proof.
   intros.
   simpl.
-  unfold Spider_Semantics_Impl;
-  unfold bra_ket_MN.
+  unfold_spider.
   rewrite wire_identity_semantics.
   simpl.
   rewrite 4 kron_1_l; try auto with wf_db.

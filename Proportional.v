@@ -162,7 +162,7 @@ Proof.
   exists 0%nat.
   exists 0.
   simpl.
-  rewrite Cexp_0.
+  autorewrite with Cexp_db.
   replace ((1 * (1 / 1))%R * C1) with C1 by lca.
   rewrite Mscale_1_l.
   reflexivity.
@@ -186,7 +186,7 @@ Proof.
   rewrite H12.
   rewrite Mscale_assoc.
   apply Mscale_simplify; try easy.
-  rewrite Cexp_add.
+  autorewrite with Cexp_db.
   rewrite pow_add.
   replace 1%R with (1 * 1)%R by lra.
   rewrite <- Rmult_div; try apply sqrt2_pow_n_neq_0.
@@ -319,7 +319,7 @@ Proof.
   exists 0%nat.
   exists 0.
   rewrite H.
-  rewrite Cexp_0.
+  autorewrite with Cexp_db.
   lma.
 Qed.
 
