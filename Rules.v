@@ -65,8 +65,8 @@ Proof.
   simpl.
   prop_exist_non_zero 1.
   simpl.
-    rewrite Mmult_assoc.
-    lma.
+  rewrite Mmult_assoc.
+  lma.
 Qed.
 
 Lemma ZX_Semantics_Stack_Empty_l : forall {nIn nOut} (zx : ZX nIn nOut),
@@ -75,20 +75,42 @@ Proof.
   intros.
   prop_exist_non_zero 1.
   simpl.
-    rewrite kron_1_l; try auto with wf_db.
-    lma.
+  rewrite kron_1_l; try auto with wf_db.
+  lma.
 Qed.
 
-(* Needs to be fixed: dims not working well with stack.
-Lemma ZX_Semantics_Stack_Empty_r : forall {nIn nOut : nat} (zx : ZX nIn nOut),
+Global Hint Resolve Nat.add_0_r : test_db.
+
+Global Hint Resolve Nat.add_assoc : test_db.
+Obligation Tactic := auto with test_db.
+
+Program Lemma ZX_test : forall a b c (zx : ZX (a + b + c) (a + (b + c))) (zx' : ZX (a + (b + c)) (a + b + c)),
+  zx ∝ zx'.
+Proof.
+  intros.
+  unfold eq_rect.
+  destruct (eq_sym _).
+  destruct (Nat.add_assoc _ _ _).
+Abort.
+
+
+Program Lemma ZX_Semantics_Stack_Empty_r : forall {nIn nOut : nat} (zx : ZX nIn nOut),
   Stack zx Empty ∝ zx.
 Proof.
-  induction nIn.
-  - intros.
-    unfold ZXFix.
-    simpl.
-simpl. unfold EmptyBelow. simpl. Admitted.
-*)
+  intros.
+  unfold proportional.
+  restore_dims.
+  prop_exist_non_zero 1.
+  restore_dims.
+  simpl.
+  Msimpl.
+  restore_dims.
+  unfold eq_rect.
+  destruct (plus_n_O _).
+  destruct (plus_n_O _).
+  trivial.
+Qed.
+
 
 Lemma ZX_Semantics_Compose_Empty_r : forall {nIn} (zx : ZX nIn 0),
   Compose zx Empty ∝ zx.
@@ -96,9 +118,9 @@ Proof.
   intros.
   prop_exist_non_zero 1.
   simpl.  
-    restore_dims.
-    rewrite Mmult_1_l; try auto with wf_db.
-    lma.
+  restore_dims.
+  rewrite Mmult_1_l; try auto with wf_db.
+  lma.
 Qed.
 
   
@@ -108,9 +130,9 @@ Proof.
   intros.
   prop_exist_non_zero 1.
   simpl. 
-    restore_dims.
-    rewrite Mmult_1_r; try auto with wf_db.
-    lma.
+  restore_dims.
+  rewrite Mmult_1_r; try auto with wf_db.
+  lma.
 Qed.
 
 Lemma ZX_semantics_Compose : forall nIn nMid nOut
