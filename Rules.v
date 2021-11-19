@@ -885,7 +885,6 @@ Proof.
   solve_matrix.
 Qed.
 
-Transparent ZX_H.
 Lemma ColorSwap_isBiHadamard : forall {nIn nOut} (zx : ZX nIn nOut),
     ColorSwap zx ∝ BiHadamard zx.
 Proof.
