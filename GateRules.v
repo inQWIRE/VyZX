@@ -1,6 +1,7 @@
 Require Import externals.QuantumLib.Quantum.
 Require Export ZX.
 Require Export Gates.
+Require Export Proportional.
 
 Local Open Scope ZX_scope.
 
@@ -15,7 +16,7 @@ Proof.
 Qed.
 Local Opaque ZX_H.
 
-Lemma ZX_H_H_is_Wire : ZX_semantics (Compose ZX_H ZX_H) = Cexp (PI/2)%R .* ZX_semantics Wire.
+Lemma ZX_H_H_is_Wire_eq : ZX_semantics (Compose ZX_H ZX_H) = Cexp (PI/2)%R .* ZX_semantics Wire.
 Proof.
   simpl.
   rewrite wire_identity_semantics.
@@ -28,6 +29,14 @@ Proof.
   assert ((PI/4+PI/4 = PI/2)%R) as H by lra.
   rewrite H.
   reflexivity.
+Qed.
+
+Lemma ZX_H_H_is_Wire : (Compose ZX_H ZX_H) ∝ Wire.
+Proof.
+  eexists.
+  split.
+  apply ZX_H_H_is_Wire_eq.
+  nonzero.
 Qed.
 
 Local Transparent ZX_Z.
@@ -104,6 +113,7 @@ Proof.
   rewrite wire_identity_semantics.
   unfold_spider.
   autorewrite with Cexp_db.
+  Msimpl.
   solve_matrix.
   simpl.
   all : field_simplify_eq [Csqrt2_sqrt]; try reflexivity; split; nonzero.

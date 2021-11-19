@@ -167,7 +167,52 @@ Proof.
   rewrite wire_identity_semantics.
   apply kron_n_I.
 Qed.
+
+Lemma nWire_1_Wire : nWire 1 ∝ Wire.
+Proof.
+  unfold proportional.
+  prop_exist_non_zero 1.
+  rewrite nwire_identity.
+  rewrite wire_identity_semantics.
+  lma.
+Qed.
+
+Lemma nWire_Stack : forall n m, Stack (nWire n) (nWire m) ∝ nWire (n + m).
+Proof.
+  unfold proportional.
+  prop_exist_non_zero 1.
+  simpl.
+  rewrite 3 nwire_identity.
+  rewrite id_kron.
+  rewrite Nat.pow_add_r.
+  lma'.
+Qed.
+
+Lemma nWire_2_Stack_wire : nWire 2 ∝ Stack Wire Wire.
+Proof.
+  rewrite <- nWire_1_Wire.
+  symmetry.
+  apply nWire_Stack.
+Qed.
+
+Lemma nWire_Compose : forall n, Compose (nWire n) (nWire n) ∝ (nWire n).
+Proof.
+  intros.
+  unfold proportional.
+  prop_exist_non_zero 1.
+  simpl.
+  rewrite nwire_identity.
+  rewrite Mmult_1_l; try auto with wf_db.
+  lma.
+Qed.
+
+Lemma Wire_Compose : Compose Wire Wire ∝ Wire.
+Proof.
+  rewrite <- nWire_1_Wire.
+  apply nWire_Compose.
+Qed.
 Local Opaque nWire.
+
 
 
 (* Cexp (PI / 2 * (INR n)) *)
@@ -818,6 +863,29 @@ Proof.
   inversion H.
 Admitted.
 
+Lemma H_comm_cap : (Compose Cap (Stack ZX_H Wire)) ∝ (Compose Cap (Stack Wire ZX_H)).
+Proof.
+  unfold proportional.
+  prop_exist_non_zero 1.
+  Msimpl.
+  simpl.
+  rewrite wire_identity_semantics.
+  rewrite ZX_H_is_H.
+  solve_matrix.
+Qed.
+
+Lemma H_comm_cup : (Compose (Stack ZX_H Wire) Cup) ∝ (Compose (Stack Wire ZX_H) Cup).
+Proof.
+  unfold proportional.
+  prop_exist_non_zero 1.
+  Msimpl.
+  simpl.
+  rewrite wire_identity_semantics.
+  rewrite ZX_H_is_H.
+  solve_matrix.
+Qed.
+
+Transparent ZX_H.
 Lemma ColorSwap_isBiHadamard : forall {nIn nOut} (zx : ZX nIn nOut),
     ColorSwap zx ∝ BiHadamard zx.
 Proof.
@@ -831,10 +899,38 @@ Proof.
     reflexivity.
   - rewrite ZX_Semantics_Compose_Empty_l.
     unfold nH.
-    admit. 
-    (* Hard to do without the stack rules unless we go into the ZX equality. *)
-  - admit.
-    (* Same, but for cup. Would also need hadamards passing through caps and cups. *)
+    rewrite ZX_Semantics_Stack_Empty_r.
+    clear_eq_ctx.
+    simpl.
+    rewrite stack_wire_pad_l_r.
+    rewrite ZX_Stack_Compose_distr.
+    rewrite <- ZX_Compose_assoc.
+    rewrite nWire_1_Wire.
+    rewrite <- H_comm_cap.
+    rewrite ZX_Compose_assoc.
+    rewrite <- (ZX_Stack_Compose_distr _ _ _ _ _ _ ZX_H ZX_H _ _).
+    rewrite ZX_H_H_is_Wire.
+    rewrite Wire_Compose.
+    rewrite <- nWire_2_Stack_wire.
+    rewrite nwire_r.
+    reflexivity.
+  - rewrite ZX_Semantics_Compose_Empty_r.
+    unfold nH.
+    rewrite ZX_Semantics_Stack_Empty_r.
+    clear_eq_ctx.
+    simpl.
+    rewrite stack_wire_pad_l_r.
+    rewrite ZX_Stack_Compose_distr.
+    rewrite nWire_1_Wire.
+    rewrite ZX_Compose_assoc.
+    rewrite H_comm_cup.
+    rewrite <- ZX_Compose_assoc.
+    rewrite <- (ZX_Stack_Compose_distr _ _ _ _ _ _ Wire Wire ZX_H ZX_H).
+    rewrite ZX_H_H_is_Wire.
+    rewrite Wire_Compose.
+    rewrite <- nWire_2_Stack_wire.
+    rewrite nwire_l.
+    reflexivity.
   - simpl.
     rewrite IHzx1.
     rewrite IHzx2.
@@ -845,12 +941,11 @@ Proof.
     rewrite IHzx1.
     rewrite IHzx2.
     rewrite 3 ZX_Compose_assoc.
-    replace (Compose (nH nMid) (Compose (nH nMid) (Compose zx2 (nH nOut)))) with (Compose (Compose (nH nMid) (nH nMid)) (Compose zx2 (nH nOut))).
-    + rewrite nH_composition.
-      rewrite nwire_l.
-      rewrite 2 ZX_Compose_assoc.
-      reflexivity.
-    + admit.
-Admitted.
+    rewrite <- (ZX_Compose_assoc _ _ _ _ (nH nMid)).
+    rewrite nH_composition.
+    rewrite nwire_l.
+    rewrite 2 ZX_Compose_assoc.
+    reflexivity.
+Qed.
 
 Local Close Scope ZX_scope.
