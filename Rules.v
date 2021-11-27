@@ -838,7 +838,7 @@ Proof.
 Qed.
 
 Transparent Wire.
-Lemma wire_swap : ColorSwap Wire ∝ Wire.
+Lemma wire_colorswap : ColorSwap Wire ∝ Wire.
 Proof.
   unfold Wire.
   simpl.
@@ -847,8 +847,42 @@ Proof.
 Qed.
 Opaque Wire.
 
+
+Lemma swap_colorswap : ColorSwap ZX_SWAP ∝ ZX_SWAP.
+Proof.
+  rewrite ColorSwap_isBiHadamard.
+  prop_exist_non_zero (-1).
+  unfold BiHadamard.
+  simpl.
+  rewrite kron_1_r.
+  rewrite ZX_H_is_H.
+  rewrite ZX_SWAP_is_swap.
+  rewrite Mscale_kron_dist_l.
+  rewrite Mscale_kron_dist_r.
+  rewrite Mscale_assoc.
+  rewrite <- Cexp_add.
+  rewrite Mscale_mult_dist_l.
+  rewrite 2 Mscale_mult_dist_r.
+  rewrite Mscale_assoc.
+  rewrite <- Cexp_add.
+  replace (PI / 4 + PI / 4 + (PI / 4 + PI / 4))%R with (PI)%R by (field_simplify;
+                                                                  unfold Rdiv;
+                                                                  rewrite Rmult_assoc;
+                                                                  rewrite Rmult_comm;
+                                                                  rewrite Rmult_assoc;
+                                                                  rewrite Rinv_l; try nonzero;
+                                                                  rewrite Rmult_1_r;
+                                                                  reflexivity).
+  rewrite Cexp_PI.
+  rewrite Mscale_mult_dist_l.
+  rewrite Mscale_mult_dist_r.
+  rewrite 2 Mscale_assoc.
+  replace (hadamard ⊗ hadamard × (swap × (hadamard ⊗ hadamard))) with swap by solve_matrix.
+  reflexivity.
+Qed.
+
 Ltac swap_colors := 
-  apply ColorSwap_lift; simpl; try rewrite wire_swap.
+  apply ColorSwap_lift; simpl; try rewrite wire_colorswap; try rewrite swap_colorswap.
 
 Ltac swap_colors_of proof := 
   intros; swap_colors; try apply proof.
