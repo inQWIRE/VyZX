@@ -96,7 +96,7 @@ Qed.
 
 Global Opaque Scalar_1_div_sqrt_2.
 
-Theorem Scalar_n_stack : forall (zx : ZX 0 0) c n, ZX_semantics zx = c .* I 1 -> ZX_semantics (nStack zx n) = c ^ n .* I 1.
+Theorem Scalar_n_stack : forall (zx : ZX 0 0) c n, ZX_semantics zx = c .* I 1 -> ZX_semantics (nStack n zx) = c ^ n .* I 1.
 Proof.
   intros.
   induction n.

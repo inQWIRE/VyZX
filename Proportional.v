@@ -12,7 +12,7 @@ Definition proportional_constructible {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX n
 Definition proportional {nIn nOut} (zx0 : ZX nIn nOut) (zx1: ZX nIn nOut) :=
   exists (c : C), ZX_semantics zx0 =  c .* ZX_semantics zx1 /\ c <> 0 .
 
-Ltac prop_exist_non_zero c := exists c; split; try nonzero.
+Ltac prop_exist_non_zero c := exists c; split; try apply nonzero_div_nonzero; try nonzero.
 
 Infix "∝'" := proportional_constructible (at level 70).
 
@@ -80,10 +80,48 @@ Proof.
   - apply Cmult_neq_0; try assumption.
 Qed.
 
-Add Parametric Morphism (nIn0 nOut0 nIn1 nOut1 : nat)  : (@Stack nIn0 nIn1 nOut0 nOut1)
+Add Parametric Morphism (nIn0 nOut0 nIn1 nOut1 : nat) : (@Stack nIn0 nIn1 nOut0 nOut1)
   with signature (@proportional nIn0 nOut0) ==> (@proportional nIn1 nOut1) ==> 
                  (@proportional (nIn0 + nIn1) (nOut0 + nOut1)) as stack_mor.
 Proof. apply stack_compat; assumption. Qed.
+
+Lemma nStack_compat :
+  forall nIn nOut n,
+    forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
+    nStack n zx0 ∝ nStack n zx1.
+Proof.
+  intros.
+  induction n.
+  - reflexivity.
+  - simpl.
+    rewrite IHn.
+    rewrite H.
+    reflexivity.
+Qed.
+
+Add Parametric Morphism (nIn nOut n : nat) : (nStack n)
+  with signature (@proportional nIn nOut) ==> 
+                 (@proportional (n * nIn) (n * nOut)) as nstack_mor.
+Proof. apply nStack_compat. Qed.
+
+Lemma nStack1_compat :
+  forall n,
+    forall zx0 zx1 : ZX 1 1, zx0 ∝ zx1 ->
+    nStack1 n zx0 ∝ nStack1 n zx1.
+Proof.
+  intros.
+  induction n.
+  - reflexivity.
+  - simpl.
+    rewrite IHn.
+    rewrite H.
+    reflexivity.
+Qed. 
+
+Add Parametric Morphism (n : nat) : (nStack1 n)
+  with signature (@proportional 1 1) ==> 
+                 (@proportional n n) as nstack1_mor.
+Proof. apply nStack1_compat. Qed.
 
 Lemma compose_compat :
   forall nIn nMid nOut,
@@ -256,7 +294,7 @@ Proof.
   reflexivity.
 Qed.
 
-Definition build_prop_constants c c' θ := (Stack (Stack (Scalar_Cexp_alpha_times_sqrt_2 θ) (Scalar_1_div_sqrt_2)) (Stack (nStack Scalar_sqrt_2 c) (nStack Scalar_1_div_sqrt_2 c'))).
+Definition build_prop_constants c c' θ := (Stack (Stack (Scalar_Cexp_alpha_times_sqrt_2 θ) (Scalar_1_div_sqrt_2)) (Stack (nStack c Scalar_sqrt_2 ) (nStack c' Scalar_1_div_sqrt_2 ))).
 
 Theorem ZX_prop_explicit_eq : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut) c c' θ,  ZX_semantics zx0 = ((√ 2) ^ c * (1 / ((√ 2) ^ c')))%R * Cexp θ .* ZX_semantics zx1-> ZX_semantics zx0 = ZX_semantics (Stack (build_prop_constants c c' θ) zx1).
 Proof.

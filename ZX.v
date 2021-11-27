@@ -85,30 +85,29 @@ Global Opaque Wire.
 
 Global Hint Resolve wire_identity_semantics : zx_sem_db.
 
-Fixpoint nStack {nIn nOut} (zx : ZX nIn nOut) n : ZX (n * nIn) (n * nOut) :=
+Fixpoint nStack {nIn nOut} n (zx : ZX nIn nOut) : ZX (n * nIn) (n * nOut) :=
   match n with
   | 0 => Empty
-  | S n' => Stack zx (nStack zx n')
+  | S n' => Stack zx (nStack n' zx)
   end.
 
-Fixpoint nStack1 (zx : ZX 1 1) n : ZX n n :=
+Fixpoint nStack1 n (zx : ZX 1 1) : ZX n n :=
   match n with
   | 0 => Empty
-  | S n' => Stack zx (nStack1 zx n')
+  | S n' => Stack zx (nStack1 n' zx)
   end.
 
-Lemma nStack1_n_kron : forall n (zx : ZX 1 1), ZX_semantics (nStack1 zx n) = n ⨂ ZX_semantics zx.
+Lemma nStack1_n_kron : forall n (zx : ZX 1 1), ZX_semantics (nStack1 n zx) = n ⨂ ZX_semantics zx.
 Proof.
   intros.
   induction n.
-  - unfold nStack1. simpl. auto.
+  - unfold nStack. reflexivity.
   - simpl.
     rewrite IHn.
-    Msimpl.
     rewrite <- kron_n_assoc; auto with wf_db.
 Qed.
 
-Definition nWire := (nStack1 Wire).
+Definition nWire := fun n => nStack1 n Wire.
 
 Global Opaque nWire.
 

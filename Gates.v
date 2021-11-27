@@ -11,7 +11,7 @@ Definition ZX_H :=
             (Z_Spider 1 1 (PI/2)))).
 Global Opaque ZX_H.
 
-Notation nH := (nStack1 ZX_H).
+Notation nH := (fun n => nStack1 n ZX_H).
 
 Definition ZX_CNOT_l : ZX 2 2 := 
     (Compose 
