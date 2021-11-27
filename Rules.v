@@ -6,56 +6,6 @@ Require Export GateRules.
 Require Export Proportional.
 
 Local Open Scope ZX_scope.
-(* Fixed in a truly nightmarish way. Would need to add in StackAssocHelper
-somewhere to even use. Terrible. There must be a better way. *)
-
-Lemma StackAssocHelper :
-  forall {nIn0 nIn1 nIn2 nOut0 nOut1 nOut2}
-    (zx : ZX (nIn0 + nIn1 + nIn2) (nOut0 + nOut1 + nOut2)),
-    ZX (nIn0 + (nIn1 + nIn2)) (nOut0 + (nOut1 + nOut2)).
-Proof.
-  intros.
-  rewrite 2 plus_assoc.
-  apply zx.
-Defined.
-
-Lemma ZXSemantics_Ignore_StackAssoc : 
-  forall {nIn0 nIn1 nIn2 nOut0 nOut1 nOut2}
-    (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1) (zx2 : ZX nIn2 nOut2),
-    ZX_semantics (StackAssocHelper (Stack (Stack zx0 zx1) zx2)) = ZX_semantics (Stack (Stack zx0 zx1) zx2).
-Proof.
-  intros.
-  unfold StackAssocHelper.
-  simpl; rewrite 2 Nat.add_assoc; simpl.
-  restore_dims.
-  reflexivity.
-Qed.
-
-Lemma ZX_Stack_assoc : 
-  forall {nIn1 nIn2 nIn3 nOut1 nOut2 nOut3}
-    (zx1 : ZX nIn1 nOut1) (zx2 : ZX nIn2 nOut2) (zx3 : ZX nIn3 nOut3),
-    StackAssocHelper (Stack (Stack zx1 zx2) zx3) ∝ Stack zx1 (Stack zx2 zx3).
-Proof.
-  intros.
-  exists 1.
-  split; try apply C1_neq_C0.
-  - rewrite ZXSemantics_Ignore_StackAssoc.
-    rewrite Mscale_1_l.
-    simpl.
-    restore_dims.
-    rewrite kron_assoc; try auto with wf_db.
-Qed.
-
-Lemma ZX_Stack_assoc_eq :
-forall nIn1 nIn2 nIn3 nOut1 nOut2 nOut3 
-  (zx1 : ZX nIn1 nOut1) (zx2 : ZX nIn2 nOut2) (zx3 : ZX nIn3 nOut3),
-  ZX_semantics (Stack (Stack zx1 zx2) zx3) = ZX_semantics (Stack zx1 (Stack zx2 zx3)).
-Proof.
-  intros.
-  simpl.
-  restore_dims.
-  rewrite kron_assoc; try auto with wf_db.
-Qed.
 
 Lemma ZX_Compose_assoc : forall nIn nMid1 nMid2 nOut
                               (zx1 : ZX nIn nMid1) (zx2 : ZX nMid1 nMid2) (zx3 : ZX nMid2 nOut),
@@ -69,7 +19,7 @@ Proof.
   lma.
 Qed.
 
-Lemma ZX_Semantics_Stack_Empty_l : forall {nIn nOut} (zx : ZX nIn nOut),
+Lemma ZX_Stack_Empty_l : forall {nIn nOut} (zx : ZX nIn nOut),
   Stack Empty zx ∝ zx.
 Proof.
   intros.
@@ -84,65 +34,66 @@ Global Hint Resolve Nat.add_0_r : test_db.
 Global Hint Resolve Nat.add_assoc : test_db.
 Obligation Tactic := auto with test_db.
 
-Program Lemma ZX_test : forall a b c (zx : ZX (a + b + c) (a + (b + c))) (zx' : ZX (a + (b + c)) (a + b + c)),
-  zx ∝ zx'.
+Program Lemma ZX_Stack_assoc : 
+  forall {nIn1 nIn2 nIn3 nOut1 nOut2 nOut3}
+    (zx1 : ZX nIn1 nOut1) (zx2 : ZX nIn2 nOut2) (zx3 : ZX nIn3 nOut3),
+    Stack (Stack zx1 zx2) zx3 ∝ Stack zx1 (Stack zx2 zx3).
 Proof.
   intros.
-  unfold eq_rect.
-  destruct (eq_sym _).
-  destruct (Nat.add_assoc _ _ _).
-Abort.
+  prop_exist_non_zero 1.
+  destruct Nat.add_assoc.
+  destruct Nat.add_assoc.
+  simpl.
+  rewrite Mscale_1_l.
+  restore_dims.
+  rewrite kron_assoc; try auto with wf_db.
+Qed.
 
-
-Program Lemma ZX_Semantics_Stack_Empty_r : forall {nIn nOut : nat} (zx : ZX nIn nOut),
+Program Lemma ZX_Stack_Empty_r : forall {nIn nOut : nat} (zx : ZX nIn nOut),
   Stack zx Empty ∝ zx.
 Proof.
   intros.
-  unfold proportional.
-  restore_dims.
   prop_exist_non_zero 1.
-  restore_dims.
-  simpl.
   Msimpl.
-  restore_dims.
-  unfold eq_rect.
-  destruct (plus_n_O _).
-  destruct (plus_n_O _).
-  trivial.
+  destruct plus_n_O.
+  destruct plus_n_O.
+  apply kron_1_r.
 Qed.
 
-
-Lemma ZX_Semantics_Compose_Empty_r : forall {nIn} (zx : ZX nIn 0),
+Lemma ZX_Compose_Empty_r : forall {nIn} (zx : ZX nIn 0),
   Compose zx Empty ∝ zx.
 Proof. 
   intros.
   prop_exist_non_zero 1.
-  simpl.  
-  restore_dims.
-  rewrite Mmult_1_l; try auto with wf_db.
-  lma.
+  simpl.
+  Msimpl.
+  reflexivity.
 Qed.
-
   
-Lemma ZX_Semantics_Compose_Empty_l : forall {nOut} (zx : ZX 0 nOut),
+Lemma ZX_Compose_Empty_l : forall {nOut} (zx : ZX 0 nOut),
   Compose Empty zx ∝ zx.
 Proof. 
   intros.
   prop_exist_non_zero 1.
   simpl. 
-  restore_dims.
-  rewrite Mmult_1_r; try auto with wf_db.
-  lma.
+  Msimpl.
+  reflexivity.
 Qed.
+
+Ltac remove_empty := try repeat rewrite ZX_Compose_Empty_l;
+                     try repeat rewrite ZX_Compose_Empty_r;
+                     try repeat rewrite ZX_Stack_Empty_l;
+                     try repeat rewrite ZX_Stack_Empty_r;
+                     try clear_eq_ctx.
 
 Lemma ZX_semantics_Compose : forall nIn nMid nOut
                                     (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
-                                    ZX_semantics (Compose zx0 zx1) = ZX_semantics zx1 × (ZX_semantics zx0).
+  ZX_semantics (Compose zx0 zx1) = ZX_semantics zx1 × (ZX_semantics zx0).
 Proof. reflexivity. Qed.
    
 Lemma ZX_semantics_Stack : forall nIn nMid nOut
                                     (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
-                                    ZX_semantics (Stack zx0 zx1) = ZX_semantics zx0 ⊗ (ZX_semantics zx1).
+  ZX_semantics (Stack zx0 zx1) = ZX_semantics zx0 ⊗ (ZX_semantics zx1).
 Proof. reflexivity. Qed.
 
 Lemma ZX_Stack_Compose_distr : 
@@ -152,10 +103,11 @@ Lemma ZX_Stack_Compose_distr :
 Proof.
   intros.
   prop_exist_non_zero 1.
+  Msimpl.
   simpl.
   restore_dims.
   rewrite kron_mixed_product.
-  lma.
+  reflexivity.
 Qed.
 
 Local Transparent nWire.
@@ -170,7 +122,6 @@ Qed.
 
 Lemma nWire_1_Wire : nWire 1 ∝ Wire.
 Proof.
-  unfold proportional.
   prop_exist_non_zero 1.
   rewrite nwire_identity.
   rewrite wire_identity_semantics.
@@ -179,13 +130,13 @@ Qed.
 
 Lemma nWire_Stack : forall n m, Stack (nWire n) (nWire m) ∝ nWire (n + m).
 Proof.
-  unfold proportional.
+  intros.
   prop_exist_non_zero 1.
   simpl.
   rewrite 3 nwire_identity.
   rewrite id_kron.
   rewrite Nat.pow_add_r.
-  lma'.
+  lma.
 Qed.
 
 Lemma nWire_2_Stack_wire : nWire 2 ∝ Stack Wire Wire.
@@ -198,7 +149,6 @@ Qed.
 Lemma nWire_Compose : forall n, Compose (nWire n) (nWire n) ∝ (nWire n).
 Proof.
   intros.
-  unfold proportional.
   prop_exist_non_zero 1.
   simpl.
   rewrite nwire_identity.
@@ -211,60 +161,47 @@ Proof.
   rewrite <- nWire_1_Wire.
   apply nWire_Compose.
 Qed.
-Local Opaque nWire.
-
-
-
-(* Cexp (PI / 2 * (INR n)) *)
-Lemma nH_composition : forall n, Compose (nH n) (nH n) ∝ nWire n.
-Proof.
-  intros.
-  apply prop_c_to_prop.
-  exists 0%nat; exists 0%nat; exists ((PI / 2 * (INR n))%R).
-  simpl.
-  rewrite nStack1_n_kron.
-  restore_dims.
-  rewrite kron_n_mult.
-  rewrite nwire_identity.
-  replace (ZX_semantics ZX_H × (ZX_semantics ZX_H)) with (ZX_semantics (Compose ZX_H ZX_H)) by reflexivity.
-  rewrite ZX_H_H_is_Wire.
-  rewrite Mscale_kron_n_distr_r.
-  rewrite wire_identity_semantics.
-  rewrite kron_n_I.
-  rewrite Cexp_pow.
-  lma.
-Qed.
 
 Lemma nStack1_compose : forall (zx0 zx1 : ZX 1 1) n, 
-  nStack1 (Compose zx0 zx1) n ∝ Compose (nStack1 zx0 n) (nStack1 zx1 n).
+  nStack1 n (Compose zx0 zx1) ∝ Compose (nStack1 n zx0) (nStack1 n zx1).
 Proof.
   intros.
-  exists 1.
-  split; try apply C1_neq_C0.
   induction n.
-  - simpl. Msimpl. reflexivity.
+  - unfold nStack1.
+    symmetry.
+    apply ZX_Compose_Empty_l.
   - simpl.
+    rewrite <- (ZX_Stack_Compose_distr _ _ _ _ _ _ zx0 zx1).
     rewrite IHn.
-    restore_dims.
-    rewrite kron_mixed_product.
-    rewrite 2 Mscale_1_l.
-    rewrite ZX_semantics_Compose.
     reflexivity.
 Qed. 
 
-Lemma wire_stack_identity : forall n, ZX_semantics (nStack Wire n) = I (2 ^ n).
+
+Lemma nH_composition : forall n, 
+  Compose (nH n) (nH n) ∝ nWire n.
 Proof.
-    intros.
-    induction n.
-    - trivial.
-    - simpl.
-      rewrite IHn.
-      rewrite wire_identity_semantics.
-      restore_dims.
-      rewrite id_kron.
-      rewrite <- plus_n_O.
-      rewrite double_mult.
-      reflexivity.
+  intros.
+  rewrite <- nStack1_compose.
+  rewrite ZX_H_H_is_Wire.
+  reflexivity.
+Qed.
+
+Local Opaque nWire.
+
+Lemma wire_stack_identity : forall n, 
+  ZX_semantics (nStack n Wire) = I (2 ^ n).
+Proof.
+  intros.
+  induction n.
+  - reflexivity.
+  - simpl.
+    rewrite IHn.
+    rewrite wire_identity_semantics.
+    restore_dims.
+    rewrite id_kron.
+    rewrite <- plus_n_O.
+    rewrite double_mult.
+    reflexivity.
 Qed.
 
 Lemma nwire_r : forall nIn nOut (zx : ZX nIn nOut), 
@@ -272,13 +209,11 @@ Lemma nwire_r : forall nIn nOut (zx : ZX nIn nOut),
 Proof.
   intros.
   simpl.
-  exists 1.
-  split.
-  - simpl.
-    rewrite nwire_identity.
-    Msimpl.
-    reflexivity.
-  - apply C1_neq_C0.
+  prop_exist_non_zero 1.
+  simpl.
+  rewrite nwire_identity.
+  Msimpl.
+  reflexivity.
 Qed.
 
 Lemma nwire_l : forall nIn nOut (zx : ZX nIn nOut), 
@@ -286,13 +221,11 @@ Lemma nwire_l : forall nIn nOut (zx : ZX nIn nOut),
 Proof.
   intros.
   simpl.
-  exists 1.
-  split.
-  - simpl.
-    rewrite nwire_identity.
-    Msimpl.
-    reflexivity.
-  - apply C1_neq_C0.
+  prop_exist_non_zero 1.
+  simpl.
+  rewrite nwire_identity.
+  Msimpl.
+  reflexivity.
 Qed.
 
 Lemma stack_wire_pad_l_r : 
@@ -314,90 +247,81 @@ Proof.
   reflexivity.
 Qed.
 
-(*(Cexp (PI / 4 * (INR nIn - INR nOut)))*)
-Lemma hadamard_color_change_Z : forall nIn nOut α, Compose (nH nIn) (Z_Spider nIn nOut α) ∝ Compose (X_Spider nIn nOut α) (nH nOut).
+Lemma hadamard_color_change_Z : forall nIn nOut α, 
+  Compose (nH nIn) (Z_Spider nIn nOut α) ∝ Compose (X_Spider nIn nOut α) (nH nOut).
 Proof.
   intros.
+  prop_exist_non_zero (Cexp (PI / 4 * (INR nIn - INR nOut))).
   simpl.
-  exists (Cexp (PI / 4 * (INR nIn - INR nOut))).
-  split.
-  - simpl.
-    rewrite 2 nStack1_n_kron.
-    unfold_spider.
-    rewrite ZX_H_is_H.
-    repeat rewrite Mscale_kron_n_distr_r.
-    repeat rewrite Cexp_pow; simpl.
-    rewrite Mscale_mult_dist_r.
-    repeat rewrite Mmult_plus_distr_r.
-    repeat rewrite Mscale_mult_dist_l.
-    rewrite Mscale_assoc.
-    restore_dims.
-    rewrite <- Cexp_add.
-    rewrite <- Rmult_plus_distr_l.
-    replace ((INR nIn - INR nOut + INR nOut))%R with (INR nIn) by lra.
-    apply Mscale_simplify; try reflexivity.
-    repeat rewrite Mmult_assoc.
-    restore_dims.
-    repeat rewrite kron_n_mult.
-    rewrite Mmult_plus_distr_l.
-    rewrite <- Mmult_assoc.
-    repeat rewrite Mscale_mult_dist_r.
-    rewrite <- Mmult_assoc.
-    repeat rewrite kron_n_mult.
-    restore_dims.
-    repeat rewrite <- Mmult_assoc.
-    rewrite MmultHH.
-    Msimpl.
-    apply Mplus_simplify;
-      try (apply Mscale_simplify; try reflexivity);
-      apply Mmult_simplify; try reflexivity;
-                            try (rewrite hadamard_sa; unfold bra; reflexivity).
-  - apply Cexp_nonzero.
+  rewrite 2 nStack1_n_kron.
+  unfold_spider.
+  rewrite ZX_H_is_H.
+  repeat rewrite Mscale_kron_n_distr_r.
+  repeat rewrite Cexp_pow; simpl.
+  rewrite Mscale_mult_dist_r.
+  repeat rewrite Mmult_plus_distr_r.
+  repeat rewrite Mscale_mult_dist_l.
+  rewrite Mscale_assoc.
+  restore_dims.
+  rewrite <- Cexp_add.
+  rewrite <- Rmult_plus_distr_l.
+  replace ((INR nIn - INR nOut + INR nOut))%R with (INR nIn) by lra.
+  apply Mscale_simplify; try reflexivity.
+  repeat rewrite Mmult_assoc.
+  restore_dims.
+  repeat rewrite kron_n_mult.
+  rewrite Mmult_plus_distr_l.
+  rewrite <- Mmult_assoc.
+  repeat rewrite Mscale_mult_dist_r.
+  rewrite <- Mmult_assoc.
+  repeat rewrite kron_n_mult.
+  repeat rewrite <- Mmult_assoc.
+  rewrite MmultHH.
+  Msimpl.
+  apply Mplus_simplify;
+    try (apply Mscale_simplify; try reflexivity);
+    apply Mmult_simplify; try reflexivity;
+                          try (rewrite hadamard_sa; unfold bra; reflexivity).
 Qed.
 
-(*(Cexp (PI / 4 * (INR nIn - INR nOut))) *)
-Lemma hadamard_color_change_X : forall nIn nOut α, Compose (nH nIn) (X_Spider nIn nOut α) ∝ Compose (Z_Spider nIn nOut α) (nH nOut).
+Lemma hadamard_color_change_X : forall nIn nOut α, 
+  Compose (nH nIn) (X_Spider nIn nOut α) ∝ Compose (Z_Spider nIn nOut α) (nH nOut).
 Proof.
   intros.
-  exists (Cexp (PI / 4 * (INR nIn - INR nOut))).
-  split.
-  - simpl.
-    rewrite 2 nStack1_n_kron.
-    unfold_spider.
-    rewrite ZX_H_is_H.
-    repeat rewrite Mscale_kron_n_distr_r.
-    repeat rewrite Cexp_pow; simpl.
-    rewrite Mscale_mult_dist_r.
-    repeat rewrite Mmult_plus_distr_r.
-    repeat rewrite Mscale_mult_dist_l.
-    rewrite Mscale_assoc.
-    restore_dims.
-    rewrite <- Cexp_add.
-    rewrite <- Rmult_plus_distr_l.
-    replace ((INR nIn - INR nOut + INR nOut))%R with (INR nIn) by lra.
-    apply Mscale_simplify; try reflexivity.
-    repeat rewrite Mmult_assoc.
-    restore_dims.
-    repeat rewrite kron_n_mult.
-    rewrite Mmult_plus_distr_l.
-    rewrite <- Mmult_assoc.
-    repeat rewrite Mscale_mult_dist_r.
-    rewrite <- Mmult_assoc.
-    repeat rewrite kron_n_mult.
-    restore_dims.
-    repeat rewrite <- Mmult_assoc.
-    Msimpl.
-    rewrite hadamard_sa.
-    restore_dims.
-    repeat rewrite Mmult_assoc.
-    rewrite MmultHH.
-    Msimpl.
-    repeat rewrite <- Mmult_assoc.
-    apply Mplus_simplify;
-      try (apply Mscale_simplify; try reflexivity);
-      apply Mmult_simplify; try reflexivity;
-                            try (rewrite hadamard_sa; unfold bra; reflexivity).
-  - apply Cexp_nonzero.
+  prop_exist_non_zero (Cexp (PI / 4 * (INR nIn - INR nOut))).
+  simpl.
+  rewrite 2 nStack1_n_kron.
+  unfold_spider.
+  rewrite ZX_H_is_H.
+  repeat rewrite Mscale_kron_n_distr_r.
+  repeat rewrite Cexp_pow; simpl.
+  rewrite Mscale_mult_dist_r.
+  repeat rewrite Mmult_plus_distr_r.
+  repeat rewrite Mscale_mult_dist_l.
+  rewrite Mscale_assoc.
+  restore_dims.
+  rewrite <- Cexp_add.
+  rewrite <- Rmult_plus_distr_l.
+  replace ((INR nIn - INR nOut + INR nOut))%R with (INR nIn) by lra.
+  apply Mscale_simplify; try reflexivity.
+  repeat rewrite Mmult_assoc.
+  restore_dims.
+  repeat rewrite kron_n_mult.
+  rewrite Mmult_plus_distr_l.
+  rewrite <- Mmult_assoc.
+  repeat rewrite Mscale_mult_dist_r.
+  rewrite <- Mmult_assoc.
+  repeat rewrite kron_n_mult.
+  rewrite hadamard_sa.
+  restore_dims.
+  repeat rewrite Mmult_assoc.
+  rewrite MmultHH.
+  Msimpl.
+  repeat rewrite <- Mmult_assoc.
+  apply Mplus_simplify;
+    try (apply Mscale_simplify; try reflexivity);
+    apply Mmult_simplify; try reflexivity;
+                          try (rewrite hadamard_sa; unfold bra; reflexivity).
 Qed.
 
 Lemma bi_hadamard_color_change_Z : forall nIn nOut α, 
@@ -424,8 +348,11 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma Z_spider_fusion : forall nIn nOut α β, (ZX_semantics (Compose (Z_Spider nIn 1 α) (Z_Spider 1 nOut β))) = ZX_semantics (Z_Spider nIn nOut (α + β)).
+Lemma Z_spider_1_1_fusion : forall nIn nOut α β, 
+  Compose (Z_Spider nIn 1 α) (Z_Spider 1 nOut β) ∝
+  Z_Spider nIn nOut (α + β).
 Proof.
+  prop_exist_non_zero 1.
   intros.
   simpl.
   unfold_spider.
@@ -500,21 +427,13 @@ Proof.
       reflexivity.
 Qed.
 
-Lemma X_spider_fusion : forall α β, (ZX_semantics (Compose (X_Spider 1 1 α) (X_Spider 1 1 β))) = ZX_semantics (X_Spider 1 1 (α + β)).
+Lemma Z_commutes_through_swap_t : forall α, 
+  Compose (Stack (Z_Spider 1 1 α) Wire) ZX_SWAP ∝ 
+  Compose ZX_SWAP (Stack Wire (Z_Spider 1 1 α)).
 Proof.
   intros.
-  simpl.
-  unfold_spider.
-  rewrite Mmult_plus_distr_r, Mmult_plus_distr_l.
-  rewrite <- Mmult_assoc.
-  restore_dims.
-  solve_matrix;
-  autorewrite with Cexp_db; try C_field_simplify; try lca; try (apply C0_fst_neq; simpl; auto).
-Qed.
-
-Lemma Z_commutes_through_swap_t : forall α, ZX_semantics (Compose (Stack (Z_Spider 1 1 α) Wire) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack Wire (Z_Spider 1 1 α))).
-Proof.
-  intros.
+  prop_exist_non_zero 1.
+  rewrite Mscale_1_l.
   simpl.
   unfold_spider.
   rewrite ZX_SWAP_is_swap.
@@ -524,9 +443,12 @@ Proof.
   solve_matrix.
 Qed.
 
-Lemma X_commutes_through_swap_t : forall α, ZX_semantics (Compose (Stack (X_Spider 1 1 α) Wire) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack Wire (X_Spider 1 1 α))).
+Lemma Z_commutes_through_swap_b : forall α, 
+  Compose (Stack Wire (Z_Spider 1 1 α)) ZX_SWAP ∝ 
+  Compose ZX_SWAP (Stack (Z_Spider 1 1 α) Wire).
 Proof.
   intros.
+  prop_exist_non_zero 1.
   simpl.
   unfold_spider.
   rewrite ZX_SWAP_is_swap.
@@ -536,21 +458,12 @@ Proof.
   solve_matrix.
 Qed.
 
-Lemma Z_commutes_through_swap_b : forall α, ZX_semantics (Compose (Stack Wire (Z_Spider 1 1 α)) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack (Z_Spider 1 1 α) Wire)).
+Lemma X_commutes_through_swap_b : forall α, 
+  Compose (Stack Wire (X_Spider 1 1 α)) ZX_SWAP ∝ 
+  Compose ZX_SWAP (Stack (X_Spider 1 1 α) Wire).
 Proof.
   intros.
-  simpl.
-  unfold_spider.
-  rewrite ZX_SWAP_is_swap.
-  rewrite wire_identity_semantics.
-  simpl.
-  Msimpl.
-  solve_matrix.
-Qed.
-
-Lemma X_commutes_through_swap_b : forall α, ZX_semantics (Compose (Stack Wire (X_Spider 1 1 α)) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack (X_Spider 1 1 α) Wire)).
-Proof.
-  intros.
+  prop_exist_non_zero 1.
   simpl.
   unfold_spider.
   rewrite ZX_SWAP_is_swap.
@@ -561,89 +474,79 @@ Proof.
 Qed.
 
 Lemma Spiders_commute_through_swap_b : forall (zx0 zx1 : ZX 1 1),
-                                       ZX_semantics (Compose (Stack Wire zx0) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack zx0 Wire)) ->      
-                                       ZX_semantics (Compose (Stack Wire zx1) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack zx1 Wire)) ->
-                                       ZX_semantics (Compose (Stack Wire (Compose zx0 zx1)) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack (Compose zx0 zx1) Wire)).
+  Compose (Stack Wire zx0) ZX_SWAP ∝ Compose ZX_SWAP (Stack zx0 Wire) ->      
+  Compose (Stack Wire zx1) ZX_SWAP ∝ Compose ZX_SWAP (Stack zx1 Wire) ->
+  Compose (Stack Wire (Compose zx0 zx1)) ZX_SWAP ∝ 
+  Compose ZX_SWAP (Stack (Compose zx0 zx1) Wire).
 Proof.
   intros.
-  simpl.
-  replace (ZX_semantics Wire) with (ZX_semantics (Compose Wire Wire)) by (simpl; rewrite wire_identity_semantics; Msimpl; reflexivity).
-  restore_dims.
-  replace (ZX_semantics zx1 × ZX_semantics zx0) with (ZX_semantics (Compose zx0 zx1)) by reflexivity.
-  replace (ZX_semantics (Compose Wire Wire) ⊗ ZX_semantics (Compose zx0 zx1)) with (ZX_semantics (Stack (Compose Wire Wire) (Compose zx0 zx1))) by reflexivity.
-  replace (ZX_semantics (Compose zx0 zx1) ⊗ ZX_semantics (Compose Wire Wire)) with (ZX_semantics (Stack (Compose zx0 zx1) (Compose Wire Wire))) by reflexivity.
+  rewrite <- Wire_Compose.
   rewrite 2 ZX_Stack_Compose_distr.
-  simpl.
-  simpl in H.
-  simpl in H0.
-  rewrite <- Mmult_assoc.
+  rewrite ZX_Compose_assoc.
   rewrite H0.
-  rewrite Mmult_assoc.
+  rewrite <- ZX_Compose_assoc.
   rewrite H.
-  rewrite <- Mmult_assoc.
+  rewrite <- ZX_Compose_assoc.
   reflexivity.
 Qed.
 
 Lemma Spiders_commute_through_swap_t : forall (zx0 zx1 : ZX 1 1),
-                                       ZX_semantics (Compose (Stack zx0 Wire) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack Wire zx0)) ->      
-                                       ZX_semantics (Compose (Stack zx1 Wire) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack Wire zx1)) ->
-                                       ZX_semantics (Compose (Stack (Compose zx0 zx1) Wire) ZX_SWAP) = ZX_semantics (Compose ZX_SWAP (Stack Wire (Compose zx0 zx1))).
+  Compose (Stack zx0 Wire) ZX_SWAP ∝ Compose ZX_SWAP (Stack Wire zx0) ->      
+  Compose (Stack zx1 Wire) ZX_SWAP ∝ Compose ZX_SWAP (Stack Wire zx1) ->
+  Compose (Stack (Compose zx0 zx1) Wire) ZX_SWAP ∝ 
+  Compose ZX_SWAP (Stack Wire (Compose zx0 zx1)).
 Proof.
   intros.
-  simpl.
-  replace (ZX_semantics Wire) with (ZX_semantics (Compose Wire Wire)) by (simpl; rewrite wire_identity_semantics; Msimpl; reflexivity).
-  restore_dims.
-  replace (ZX_semantics zx1 × ZX_semantics zx0) with (ZX_semantics (Compose zx0 zx1)) by reflexivity.
-  replace (ZX_semantics (Compose Wire Wire) ⊗ ZX_semantics (Compose zx0 zx1)) with (ZX_semantics (Stack (Compose Wire Wire) (Compose zx0 zx1))) by reflexivity.
-  replace (ZX_semantics (Compose zx0 zx1) ⊗ ZX_semantics (Compose Wire Wire)) with (ZX_semantics (Stack (Compose zx0 zx1) (Compose Wire Wire))) by reflexivity.
-  rewrite 2 ZX_Stack_Compose_distr.
-  simpl.
-  simpl in H.
-  simpl in H0.
-  rewrite <- Mmult_assoc.
+  rewrite <- Wire_Compose.
+  rewrite ZX_Stack_Compose_distr.
+  rewrite ZX_Compose_assoc.
   rewrite H0.
-  rewrite Mmult_assoc.
+  rewrite <- ZX_Compose_assoc.
   rewrite H.
-  rewrite <- Mmult_assoc.
+  rewrite ZX_Compose_assoc.
+  rewrite ZX_Stack_Compose_distr.
   reflexivity.
 Qed.
 
-Lemma Z_0_eq_X_0 : ZX_semantics (Z_Spider 1 1 0) = ZX_semantics (X_Spider 1 1 0).
+Lemma Z_0_eq_X_0 : 
+  Z_Spider 1 1 0 ∝ X_Spider 1 1 0.
 Proof.
+  prop_exist_non_zero 1.
   simpl.
   unfold_spider.
-  unfold kron_n.
-  repeat rewrite kron_1_l; try auto with wf_db.
-  autorewrite with Cexp_db.
+  rewrite Cexp_0.
   solve_matrix.
 Qed.
 
-Theorem identity_removal_Z : ZX_semantics (Z_Spider 1 1 0) = ZX_semantics Wire.
+Theorem identity_removal_Z : Z_Spider 1 1 0 ∝ Wire.
 Proof.
   reflexivity.
 Qed.
 
-Theorem identity_removal_X : ZX_semantics (X_Spider 1 1 0) = ZX_semantics Wire.
+Theorem identity_removal_X : X_Spider 1 1 0 ∝ Wire.
 Proof.
   rewrite <- Z_0_eq_X_0.
   reflexivity.
 Qed.
 
-Theorem trivial_cap_cup : ZX_semantics (Compose Cap Cup) = C2 .* ZX_semantics Empty.
-Proof. simpl; solve_matrix. Qed.
+Theorem trivial_cap_cup : 
+  Compose Cap Cup ∝ Empty.
+Proof. prop_exist_non_zero 2; solve_matrix. Qed.
 
 Definition back_forth : ZX 1 1 := Compose (Stack Wire Cap) (Stack Cup Wire).
 
-Theorem back_forth_is_wire : ZX_semantics back_forth = ZX_semantics Wire.
-Proof. 
+Theorem back_forth_is_wire : back_forth ∝ Wire.
+Proof.
+  prop_exist_non_zero 1.
   simpl. 
   rewrite wire_identity_semantics.
   solve_matrix.
 Qed.
 
 Definition forth_back : ZX 1 1 := Compose (Stack Cap Wire) (Stack Wire Cup).
-Theorem forth_back_is_wire : ZX_semantics back_forth = ZX_semantics Wire.
+Theorem forth_back_is_wire : back_forth ∝ Wire.
 Proof.
+  prop_exist_non_zero 1.
   simpl. 
   rewrite wire_identity_semantics.
   solve_matrix.
@@ -654,29 +557,25 @@ Proof.
   intros.
 Abort.
 
-Theorem Hopf_rule_Z_X : ZX_semantics (Compose (Z_Spider 1 2 0) (X_Spider 2 1 0)) = (/ C2) .* ZX_semantics (Compose (Z_Spider 1 0 0) (X_Spider 0 1 0)).
+Theorem Hopf_rule_Z_X : 
+  Compose (Z_Spider 1 2 0) (X_Spider 2 1 0) ∝ Compose (Z_Spider 1 0 0) (X_Spider 0 1 0).
 Proof.
-  intros.
+  prop_exist_non_zero (/C2).
   simpl.
   unfold_spider.
-  repeat rewrite kron_1_l; try auto with wf_db.
-  repeat rewrite Mmult1_l.
-  repeat rewrite Mmult1_r.
-  autorewrite with Cexp_db.
-  repeat rewrite Mscale_1_l.
+  rewrite Cexp_0.
+  rewrite 4 Mscale_1_l.
   solve_matrix.
 Qed.
 
-Theorem Hopf_rule_X_Z : ZX_semantics (Compose (X_Spider 1 2 0) (Z_Spider 2 1 0)) = (/ C2) .* ZX_semantics (Compose (X_Spider 1 0 0) (Z_Spider 0 1 0)).
+Theorem Hopf_rule_X_Z : 
+  Compose (X_Spider 1 2 0) (Z_Spider 2 1 0) ∝ Compose (X_Spider 1 0 0) (Z_Spider 0 1 0).
 Proof.
-  intros.
+  prop_exist_non_zero (/C2).
   simpl.
   unfold_spider.
-  repeat rewrite kron_1_l; try auto with wf_db.
-  repeat rewrite Mmult1_l.
-  repeat rewrite Mmult1_r.
-  autorewrite with Cexp_db.
-  repeat rewrite Mscale_1_l.
+  rewrite Cexp_0.
+  rewrite 4 Mscale_1_l.
   solve_matrix.
 Qed.
 
@@ -685,8 +584,10 @@ Local Definition Bi_Alg_SWAP_Stack : ZX 4 4 := Stack Wire (Stack ZX_SWAP Wire).
 Local Definition Bi_Alg_Z_Stack_1_2 : ZX 4 2 := Stack (Z_Spider 2 1 0) (Z_Spider 2 1 0).
 Definition Bi_Alg_Z_X := Compose Bi_Alg_X_Stack_2_1 (Compose Bi_Alg_SWAP_Stack Bi_Alg_Z_Stack_1_2).
 
-Theorem BiAlgebra_rule_Z_X : ZX_semantics (Compose (Z_Spider 2 1 0) (X_Spider 1 2 0)) = (C2 * C2) .* ZX_semantics Bi_Alg_Z_X.
+Theorem BiAlgebra_rule_Z_X : 
+  Compose (Z_Spider 2 1 0) (X_Spider 1 2 0) ∝ Bi_Alg_Z_X.
 Proof.
+  prop_exist_non_zero 4.
   simpl.
   rewrite ZX_SWAP_is_swap, wire_identity_semantics.
   unfold_spider.
@@ -789,28 +690,6 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma Z_1_1_Wire_Cup : forall α, 
-  ZX_semantics (Compose (Stack Wire (Z_Spider 1 1 α)) Cup) =
-  ZX_semantics (Compose (Stack (Z_Spider 1 1 α) Wire) Cup).
-Proof.
-  intros.
-  simpl.
-  unfold_spider.
-  rewrite wire_identity_semantics.
-  solve_matrix.
-Qed.
-
-Lemma Z_1_1_Wire_Cap : forall α, 
-  ZX_semantics (Compose Cap (Stack Wire (Z_Spider 1 1 α))) =
-  ZX_semantics (Compose Cap (Stack (Z_Spider 1 1 α) Wire)).
-Proof.
-  intros.
-  simpl.
-  unfold_spider.
-  rewrite wire_identity_semantics.
-  solve_matrix.
-Qed.
-
 Fixpoint ColorSwap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
   match zx with
   | X_Spider n m α  => Z_Spider n m α
@@ -838,11 +717,11 @@ Definition BiHadamard {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut :=
   Compose (Compose (nH nIn) zx) (nH nOut).
 Transparent BiHadamard.
 
-Lemma nH_Plus_Stack : forall {n0 n1},
-    nH (n0 + n1) ∝ Stack (nH n0) (nH n1).
+Lemma nH_Plus_Stack : forall {n0 n1 : nat},
+    nH (n0 + n1)%nat ∝ Stack (nH n0) (nH n1).
 Proof.
   induction n0; intros.
-  - rewrite ZX_Semantics_Stack_Empty_l; reflexivity.
+  - rewrite ZX_Stack_Empty_l; reflexivity.
   - simpl.
     destruct (IHn0 n1); destruct H.
     exists x; split; try assumption.
@@ -853,15 +732,6 @@ Proof.
     restore_dims.
     rewrite kron_assoc; try auto with wf_db.
 Qed.
-    
-
-Theorem ColorSwap_Lift : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut),
-  ColorSwap zx0 ∝ ColorSwap zx1 -> zx0 ∝ zx1.
-Proof.
-  intros.
-  replace zx1 with (ColorSwap (ColorSwap zx1)) by apply ColorSwap_self_inverse.
-  inversion H.
-Admitted.
 
 Lemma H_comm_cap : (Compose Cap (Stack ZX_H Wire)) ∝ (Compose Cap (Stack Wire ZX_H)).
 Proof.
@@ -890,41 +760,39 @@ Lemma ColorSwap_isBiHadamard : forall {nIn nOut} (zx : ZX nIn nOut),
 Proof.
   intros; unfold BiHadamard.
   induction zx.
-  - rewrite 2 ZX_Semantics_Compose_Empty_l.
+  - rewrite 2 ZX_Compose_Empty_l.
     reflexivity.
   - rewrite bi_hadamard_color_change_X.
     reflexivity.
   - rewrite bi_hadamard_color_change_Z.
     reflexivity.
-  - rewrite ZX_Semantics_Compose_Empty_l.
-    unfold nH.
-    rewrite ZX_Semantics_Stack_Empty_r.
-    clear_eq_ctx.
+  - rewrite ZX_Compose_Empty_l.
     simpl.
+    rewrite ZX_Stack_Empty_r.
+    clear_eq_ctx.
     rewrite stack_wire_pad_l_r.
+    rewrite nWire_1_Wire.
     rewrite ZX_Stack_Compose_distr.
     rewrite <- ZX_Compose_assoc.
-    rewrite nWire_1_Wire.
     rewrite <- H_comm_cap.
     rewrite ZX_Compose_assoc.
-    rewrite <- (ZX_Stack_Compose_distr _ _ _ _ _ _ ZX_H ZX_H _ _).
+    rewrite  <- (ZX_Stack_Compose_distr _ _ _ _ _ _ ZX_H ZX_H).
     rewrite ZX_H_H_is_Wire.
     rewrite Wire_Compose.
     rewrite <- nWire_2_Stack_wire.
     rewrite nwire_r.
     reflexivity.
-  - rewrite ZX_Semantics_Compose_Empty_r.
-    unfold nH.
-    rewrite ZX_Semantics_Stack_Empty_r.
-    clear_eq_ctx.
+  - rewrite ZX_Compose_Empty_r.
     simpl.
+    rewrite ZX_Stack_Empty_r.
+    clear_eq_ctx.
     rewrite stack_wire_pad_l_r.
-    rewrite ZX_Stack_Compose_distr.
     rewrite nWire_1_Wire.
+    rewrite ZX_Stack_Compose_distr.
     rewrite ZX_Compose_assoc.
     rewrite H_comm_cup.
     rewrite <- ZX_Compose_assoc.
-    rewrite <- (ZX_Stack_Compose_distr _ _ _ _ _ _ Wire Wire ZX_H ZX_H).
+    rewrite <- (ZX_Stack_Compose_distr _ _ _ _ _ _ Wire Wire).
     rewrite ZX_H_H_is_Wire.
     rewrite Wire_Compose.
     rewrite <- nWire_2_Stack_wire.
@@ -946,5 +814,103 @@ Proof.
     rewrite 2 ZX_Compose_assoc.
     reflexivity.
 Qed.
+
+Lemma ColorSwap_comp : forall nIn nOut,
+  forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
+  ColorSwap zx0 ∝ ColorSwap zx1.
+Proof.
+  intros.
+  rewrite 2 ColorSwap_isBiHadamard.
+  unfold BiHadamard.
+  rewrite H.
+  reflexivity.
+Qed.
+
+Lemma ColorSwap_lift : forall nIn nOut (zx0 zx1 : ZX nIn nOut),
+  ColorSwap zx0 ∝ ColorSwap zx1 -> zx0 ∝ zx1.
+Proof.
+  intros.
+  rewrite <- ColorSwap_self_inverse with zx0.
+  rewrite <- ColorSwap_self_inverse.
+  rewrite ColorSwap_comp.
+  - reflexivity.
+  - assumption.
+Qed.
+
+Transparent Wire.
+Lemma wire_swap : ColorSwap Wire ∝ Wire.
+Proof.
+  unfold Wire.
+  simpl.
+  rewrite Z_0_eq_X_0.
+  reflexivity.
+Qed.
+Opaque Wire.
+
+Ltac swap_colors := 
+  apply ColorSwap_lift; simpl; try rewrite wire_swap.
+
+Ltac swap_colors_of proof := 
+  intros; swap_colors; try apply proof.
+
+Lemma ColorSwap_HadamardPass :forall {nIn nOut} (zx : ZX nIn nOut),
+  Compose (nH nIn) zx ∝ Compose (ColorSwap zx) (nH nOut).
+Proof.
+  intros.
+  rewrite ColorSwap_isBiHadamard.
+  unfold BiHadamard.
+  rewrite ZX_Compose_assoc.
+  rewrite <- nStack1_compose.
+  rewrite ZX_H_H_is_Wire.
+  rewrite nwire_r.
+  reflexivity.
+Qed.
+
+Lemma Z_1_1_Wire_Cup : forall α, 
+  Compose (Stack Wire (Z_Spider 1 1 α)) Cup ∝
+  Compose (Stack (Z_Spider 1 1 α) Wire) Cup.
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  rewrite Mscale_1_l.
+  simpl.
+  unfold_spider.
+  rewrite wire_identity_semantics.
+  solve_matrix.
+Qed.
+
+Lemma Z_1_1_Wire_Cap : forall α, 
+  Compose Cap (Stack Wire (Z_Spider 1 1 α)) ∝
+  Compose Cap (Stack (Z_Spider 1 1 α) Wire).
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  rewrite Mscale_1_l.
+  simpl.
+  unfold_spider.
+  rewrite wire_identity_semantics.
+  solve_matrix.
+Qed.
+
+Lemma X_1_1_Wire_Cup : forall α, 
+  Compose (Stack Wire (X_Spider 1 1 α)) Cup ∝
+  Compose (Stack (X_Spider 1 1 α) Wire) Cup.
+Proof.
+  swap_colors_of Z_1_1_Wire_Cup.
+Qed.
+
+Lemma X_1_1_Wire_Cap : forall α,
+Compose Cap (Stack Wire (X_Spider 1 1 α)) ∝
+Compose Cap (Stack (X_Spider 1 1 α) Wire).
+Proof.
+  swap_colors_of Z_1_1_Wire_Cap.
+Qed.
+
+Lemma X_spider_1_1_fusion : forall α β, 
+  Compose (X_Spider 1 1 α) (X_Spider 1 1 β) ∝ X_Spider 1 1 (α + β).
+Proof.
+  swap_colors_of Z_spider_1_1_fusion.
+Qed.
+
 
 Local Close Scope ZX_scope.
