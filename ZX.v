@@ -111,4 +111,108 @@ Definition nWire := fun n => nStack1 n Wire.
 
 Global Opaque nWire.
 
+Fixpoint Transpose {nIn nOut} (zx : ZX nIn nOut) : ZX nOut nIn :=
+  match zx with
+  | Empty => Empty
+  | Z_Spider mIn mOut α => Z_Spider mOut mIn α
+  | X_Spider mIn mOut α => X_Spider mOut mIn α
+  | Compose zx1 zx2     => Compose (Transpose zx2) (Transpose zx1)
+  | Stack zx1 zx2       => Stack (Transpose zx1) (Transpose zx2)
+  | Cap                 => Cup
+  | Cup                 => Cap
+  end.
+
+Lemma hadamard_self_transpose : hadamard ⊤ = hadamard.
+Proof. solve_matrix. Qed.
+
+Lemma ket0_transpose_bra0 : (ket 0) ⊤ = bra 0.
+Proof. solve_matrix. Qed.
+
+Lemma ket1_transpose_bra1 : (ket 1) ⊤ = bra 1.
+Proof. solve_matrix. Qed.
+
+Lemma bra0_transpose_ket0 : (bra 0) ⊤ = ket 0.
+Proof. solve_matrix. Qed.
+
+Lemma bra1_transpose_ket1 : (bra 1) ⊤ = ket 1.
+Proof. solve_matrix. Qed.
+
+Lemma bra1_adjoint_ket1 : (bra 1) † = ket 1.
+Proof. solve_matrix. Qed.
+
+Lemma ket1_adjoint_bra1 : (ket 1) † = bra 1.
+Proof. solve_matrix. Qed.
+
+Lemma bra0_adjoint_ket0 : (bra 0) † = ket 0.
+Proof. solve_matrix. Qed.
+
+Lemma ket0_adjoint_bra0 : (ket 0) † = bra 0.
+Proof. solve_matrix. Qed.
+
+Lemma kron_n_transpose : forall (m n o : nat) (A : Matrix m n),
+  (o ⨂ A)⊤ = o ⨂ (A⊤). 
+Proof. 
+  induction o; intros.
+  - apply id_transpose_eq.
+  - simpl; rewrite <- IHo; rewrite <- kron_transpose; reflexivity. 
+Qed.
+
+Lemma adjoint_transpose_comm : forall m n (A : Matrix m n),
+  A † ⊤ = A ⊤ †.
+Proof. reflexivity. Qed.
+
+Lemma Mmult_trans {n m o p} : forall (A : Matrix n m) (B : Matrix o p),
+  m = o -> (A × B) ⊤ = B ⊤ × A ⊤.
+Proof.
+  intros.
+  rewrite Mmult_transpose.
+  rewrite H in *.
+  reflexivity.
+Qed.
+
+Lemma ZX_semantics_Transpose_comm {nIn nOut} : forall (zx : ZX nIn nOut),
+  ZX_semantics (Transpose zx) = (ZX_semantics zx)⊤.
+Proof.
+  assert (Mmult_trans_dep : forall n m o p (A : Matrix n m) (B : Matrix o p), m = o -> (A × B) ⊤ = B ⊤ × A ⊤).
+    {
+      intros; rewrite Mmult_transpose; rewrite H in *; reflexivity.      
+    }
+  induction zx.
+  - Msimpl.
+    reflexivity.
+  - simpl.
+    unfold_spider.
+    rewrite Mplus_transpose.
+    rewrite Mscale_trans.
+    rewrite 2 Mmult_trans_dep; try (repeat rewrite Nat.pow_1_l; reflexivity).
+    repeat rewrite kron_n_transpose.
+    repeat rewrite Mmult_transpose.
+    repeat rewrite adjoint_transpose_comm.
+    repeat rewrite hadamard_self_transpose.
+    repeat rewrite hadamard_sa.
+    rewrite ket0_transpose_bra0.
+    rewrite ket1_transpose_bra1.
+    rewrite bra1_adjoint_ket1.
+    rewrite ket1_adjoint_bra1.
+    rewrite bra0_adjoint_ket0.
+    rewrite ket0_adjoint_bra0.
+    reflexivity.
+  - simpl.
+    unfold_spider.
+    rewrite Mplus_transpose.
+    rewrite Mscale_trans.
+    rewrite 2 Mmult_trans_dep; try (repeat rewrite Nat.pow_1_l; reflexivity).
+    repeat rewrite kron_n_transpose.
+    repeat rewrite Mmult_transpose.
+    rewrite ket0_transpose_bra0.
+    rewrite ket1_transpose_bra1.
+    rewrite bra1_transpose_ket1.
+    rewrite bra0_transpose_ket0.
+    reflexivity.
+  - simpl; solve_matrix.
+  - simpl; solve_matrix.
+  - simpl. rewrite IHzx1. rewrite IHzx2. restore_dims. rewrite <- kron_transpose. reflexivity.
+  - simpl. rewrite IHzx1. rewrite IHzx2. restore_dims. rewrite <- Mmult_transpose. reflexivity.
+Qed.
+
 Local Close Scope ZX_scope.

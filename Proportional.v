@@ -146,6 +146,22 @@ Add Parametric Morphism (nIn nMid nOut : nat)  : (@Compose nIn nMid nOut)
                  (@proportional nIn nOut) as compose_mor.
 Proof. apply compose_compat; assumption. Qed.
 
+Lemma transpose_compat : 
+  forall nIn nOut,
+    forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
+    Transpose zx0 ∝ Transpose zx1.
+Proof.
+  intros.
+  destruct H; destruct H; exists x; split; try assumption.
+  rewrite 2 ZX_semantics_Transpose_comm.
+  rewrite H.
+  rewrite Mscale_trans.
+  reflexivity.
+Qed.
+
+Add Parametric Morphism (nIn nOut : nat) : (@Transpose nIn nOut)
+  with signature (@proportional nIn nOut) ==> (@proportional nOut nIn) as transpose_mor.
+Proof. apply transpose_compat. Qed.
 
 Lemma sqrt2_pow_n_neq_0 : forall n : nat, (√ 2 ^ n <> 0)%R.
 Proof.
