@@ -177,10 +177,6 @@ Qed.
 Lemma ZX_semantics_Transpose_comm {nIn nOut} : forall (zx : ZX nIn nOut),
   ZX_semantics (Transpose zx) = (ZX_semantics zx)⊤.
 Proof.
-  assert (Mmult_trans_dep : forall n m o p (A : Matrix n m) (B : Matrix o p), m = o -> (A × B) ⊤ = B ⊤ × A ⊤).
-    {
-      intros; rewrite Mmult_transpose; rewrite H in *; reflexivity.      
-    }
   induction zx.
   - Msimpl.
     reflexivity.
@@ -188,7 +184,8 @@ Proof.
     unfold_spider.
     rewrite Mplus_transpose.
     rewrite Mscale_trans.
-    rewrite 2 Mmult_trans_dep; try (repeat rewrite Nat.pow_1_l; reflexivity).
+    restore_dims.
+    rewrite 2 Mmult_trans; try (repeat rewrite Nat.pow_1_l; reflexivity).
     repeat rewrite kron_n_transpose.
     repeat rewrite Mmult_transpose.
     repeat rewrite adjoint_transpose_comm.
@@ -205,7 +202,8 @@ Proof.
     unfold_spider.
     rewrite Mplus_transpose.
     rewrite Mscale_trans.
-    rewrite 2 Mmult_trans_dep; try (repeat rewrite Nat.pow_1_l; reflexivity).
+    restore_dims.
+    rewrite 2 Mmult_trans; try (repeat rewrite Nat.pow_1_l; reflexivity).
     repeat rewrite kron_n_transpose.
     repeat rewrite Mmult_transpose.
     rewrite ket0_transpose_bra0.
