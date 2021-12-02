@@ -163,6 +163,24 @@ Add Parametric Morphism (nIn nOut : nat) : (@Transpose nIn nOut)
   with signature (@proportional nIn nOut) ==> (@proportional nOut nIn) as transpose_mor.
 Proof. apply transpose_compat. Qed.
 
+Lemma colorswap_compat :
+  forall nIn nOut,
+    forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
+    ColorSwap zx0 ∝ ColorSwap zx1.
+Proof.
+  intros.
+  destruct H; destruct H; exists x; split; try assumption.
+  rewrite 2 ZX_semantics_Colorswap_comm.
+  rewrite H.
+  rewrite Mscale_mult_dist_r.
+  rewrite Mscale_mult_dist_l.
+  reflexivity.
+Qed.
+
+Add Parametric Morphism (nIn nOut : nat) : (@ColorSwap nIn nOut)
+  with signature (@proportional nIn nOut) ==> (@proportional nIn nOut) as colorswap_mor.
+Proof. apply colorswap_compat. Qed.
+
 Lemma sqrt2_pow_n_neq_0 : forall n : nat, (√ 2 ^ n <> 0)%R.
 Proof.
   intro n; induction n.

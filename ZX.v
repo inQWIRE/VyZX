@@ -57,6 +57,8 @@ Fixpoint ZX_semantics {nIn nOut} (zx : ZX nIn nOut) :
 
 Ltac unfold_spider := unfold Spider_semantics, bra_ket_MN; try (simpl; Msimpl).
 
+Ltac ZXunfold := simpl; Msimpl; unfold_spider; restore_dims.
+
 Theorem WF_ZX : forall nIn nOut (zx : ZX nIn nOut), WF_Matrix (ZX_semantics zx).
 Proof.
   intros.
@@ -110,6 +112,8 @@ Qed.
 Definition nWire := fun n => nStack1 n Wire.
 
 Global Opaque nWire.
+
+(* Definitions for transposes of ZX diagrams and a proof that its what we expect *)
 
 Fixpoint Transpose {nIn nOut} (zx : ZX nIn nOut) : ZX nOut nIn :=
   match zx with
@@ -213,6 +217,129 @@ Proof.
   - simpl; solve_matrix.
   - simpl. rewrite IHzx1. rewrite IHzx2. restore_dims. rewrite <- kron_transpose. reflexivity.
   - simpl. rewrite IHzx1. rewrite IHzx2. restore_dims. rewrite <- Mmult_transpose. reflexivity.
+Qed.
+
+Lemma kron_n_id : forall n, n ⨂ I 2 = I (2^n).
+Proof.
+  induction n.
+  - reflexivity.
+  - simpl.
+    rewrite IHn.
+    rewrite id_kron.
+    replace (2^n + (2^n + 0))%nat with (2^n*2)%nat by lia.
+    reflexivity.
+Qed.
+
+Lemma kron_n_m_split {o p} : forall n m (A : Matrix o p), 
+  WF_Matrix A -> (n + m) ⨂ A = n ⨂ A ⊗ m ⨂ A.
+Proof.
+  induction n.
+  - simpl. 
+    intros. 
+    rewrite kron_1_l; try auto with wf_db.
+  - intros.
+    simpl.
+    rewrite IHn; try auto.
+    restore_dims.
+    rewrite 2 kron_assoc; try auto with wf_db.
+    rewrite <- kron_n_assoc; try auto.
+    simpl.
+    restore_dims.
+    reflexivity.
+Qed.
+
+Fixpoint ColorSwap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
+  match zx with
+  | X_Spider n m α  => Z_Spider n m α
+  | Z_Spider n m α  => X_Spider n m α
+  | Stack zx1 zx2   => Stack (ColorSwap zx1) (ColorSwap zx2)
+  | Compose zx1 zx2 => Compose (ColorSwap zx1) (ColorSwap zx2)
+  | otherwise       => otherwise
+  end.
+
+Lemma ZX_semantics_Colorswap_comm {nIn nOut} : forall (zx : ZX nIn nOut),
+  ZX_semantics (ColorSwap zx) = nOut ⨂ hadamard × (ZX_semantics zx) × nIn ⨂ hadamard.
+Proof.
+  induction zx.
+  - ZXunfold; reflexivity.
+  - ZXunfold.
+    repeat rewrite Mmult_plus_distr_l.
+    repeat rewrite Mmult_plus_distr_r.
+    apply Mplus_simplify.
+    + rewrite 2 Mmult_assoc.
+      rewrite <- Mmult_assoc with (nOut ⨂ hadamard) _ _.
+      apply Mmult_simplify.
+      * rewrite kron_n_mult.
+        rewrite <- Mmult_assoc.
+        rewrite MmultHH.
+        rewrite Mmult_1_l; try auto with wf_db.
+      * restore_dims. 
+        rewrite kron_n_mult.
+        rewrite hadamard_sa.
+        rewrite Mmult_assoc.
+        rewrite MmultHH.
+        rewrite Mmult_1_r; try auto with wf_db.
+    + restore_dims.
+      rewrite Mscale_mult_dist_r.
+      rewrite Mscale_mult_dist_l.
+      apply Mscale_simplify; try reflexivity.
+      rewrite 2 Mmult_assoc.
+      rewrite <- Mmult_assoc with (nOut ⨂ hadamard) _ _.
+      apply Mmult_simplify.
+      * rewrite kron_n_mult.
+        rewrite <- Mmult_assoc.
+        rewrite MmultHH.
+        rewrite Mmult_1_l; try auto with wf_db.
+      * restore_dims.
+        rewrite kron_n_mult.
+        rewrite hadamard_sa.
+        rewrite Mmult_assoc.
+        rewrite MmultHH.
+        rewrite Mmult_1_r; try auto with wf_db.
+  - ZXunfold.
+    repeat rewrite Mmult_plus_distr_l.
+    repeat rewrite Mmult_plus_distr_r.
+    apply Mplus_simplify.
+    + rewrite 2 Mmult_assoc.
+      rewrite <- Mmult_assoc with (nOut ⨂ hadamard) _ _.
+      apply Mmult_simplify.
+      * rewrite kron_n_mult.
+        reflexivity.
+      * restore_dims. 
+        rewrite kron_n_mult.
+        rewrite hadamard_sa.
+        reflexivity.
+    + restore_dims.
+      rewrite Mscale_mult_dist_r.
+      rewrite Mscale_mult_dist_l.
+      apply Mscale_simplify; try reflexivity.
+      rewrite 2 Mmult_assoc.
+      rewrite <- Mmult_assoc with (nOut ⨂ hadamard) _ _.
+      apply Mmult_simplify.
+      * rewrite kron_n_mult.
+        reflexivity.
+      * restore_dims.
+        rewrite kron_n_mult.
+        rewrite hadamard_sa.
+        reflexivity.
+  - solve_matrix.
+  - solve_matrix.
+  - simpl.
+    rewrite IHzx1, IHzx2.
+    rewrite 2 kron_n_m_split; try auto with wf_db.
+    repeat rewrite <- kron_mixed_product.
+    restore_dims.
+    reflexivity.
+  - simpl.
+    rewrite IHzx1, IHzx2.
+    rewrite Mmult_assoc.
+    rewrite <- 2 Mmult_assoc with (nMid ⨂ hadamard) _ _.
+    rewrite kron_n_mult.
+    rewrite MmultHH.
+    rewrite kron_n_id.
+    rewrite Mmult_1_l; try auto with wf_db.
+    repeat rewrite Mmult_assoc.
+    reflexivity.
 Qed.
 
 Local Close Scope ZX_scope.

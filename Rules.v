@@ -690,15 +690,6 @@ Proof.
     reflexivity.
 Qed.
 
-Fixpoint ColorSwap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
-  match zx with
-  | X_Spider n m α  => Z_Spider n m α
-  | Z_Spider n m α  => X_Spider n m α
-  | Stack zx1 zx2   => Stack (ColorSwap zx1) (ColorSwap zx2)
-  | Compose zx1 zx2 => Compose (ColorSwap zx1) (ColorSwap zx2)
-  | otherwise       => otherwise
-  end.
-
 Lemma ColorSwap_self_inverse : forall {nIn nOut} (zx : ZX nIn nOut),
   ColorSwap (ColorSwap zx) = zx.
 Proof.
