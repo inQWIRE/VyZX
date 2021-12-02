@@ -165,18 +165,13 @@ Lemma adjoint_transpose_comm : forall m n (A : Matrix m n),
   A † ⊤ = A ⊤ †.
 Proof. reflexivity. Qed.
 
-Lemma Mmult_trans {n m o p} : forall (A : Matrix n m) (B : Matrix o p),
-  m = o -> (A × B) ⊤ = B ⊤ × A ⊤.
-Proof.
-  intros.
-  rewrite Mmult_transpose.
-  rewrite H in *.
-  reflexivity.
-Qed.
-
 Lemma ZX_semantics_Transpose_comm {nIn nOut} : forall (zx : ZX nIn nOut),
   ZX_semantics (Transpose zx) = (ZX_semantics zx)⊤.
 Proof.
+  assert (Mmult_trans_dep : forall n m o p (A : Matrix n m) (B : Matrix o p), m = o -> (A × B) ⊤ = B ⊤ × A ⊤).
+    {
+      intros; rewrite Mmult_transpose; rewrite H in *; reflexivity.      
+    }
   induction zx.
   - Msimpl.
     reflexivity.
@@ -185,7 +180,7 @@ Proof.
     rewrite Mplus_transpose.
     rewrite Mscale_trans.
     restore_dims.
-    rewrite 2 Mmult_trans; try (repeat rewrite Nat.pow_1_l; reflexivity).
+    rewrite 2 Mmult_trans_dep; try (repeat rewrite Nat.pow_1_l; reflexivity).
     repeat rewrite kron_n_transpose.
     repeat rewrite Mmult_transpose.
     repeat rewrite adjoint_transpose_comm.
@@ -203,7 +198,7 @@ Proof.
     rewrite Mplus_transpose.
     rewrite Mscale_trans.
     restore_dims.
-    rewrite 2 Mmult_trans; try (repeat rewrite Nat.pow_1_l; reflexivity).
+    rewrite 2 Mmult_trans_dep; try (repeat rewrite Nat.pow_1_l; reflexivity).
     repeat rewrite kron_n_transpose.
     repeat rewrite Mmult_transpose.
     rewrite ket0_transpose_bra0.
@@ -213,8 +208,8 @@ Proof.
     reflexivity.
   - simpl; solve_matrix.
   - simpl; solve_matrix.
-  - simpl. rewrite IHzx1. rewrite IHzx2. restore_dims. rewrite <- kron_transpose. reflexivity.
-  - simpl. rewrite IHzx1. rewrite IHzx2. restore_dims. rewrite <- Mmult_transpose. reflexivity.
+  - simpl; rewrite IHzx1, IHzx2; rewrite <- kron_transpose; reflexivity.
+  - simpl; rewrite IHzx1, IHzx2; rewrite <- Mmult_transpose; reflexivity.
 Qed.
 
 Lemma kron_n_id : forall n, n ⨂ I 2 = I (2^n).
