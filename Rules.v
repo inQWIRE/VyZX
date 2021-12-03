@@ -913,7 +913,7 @@ Qed.
 
 Lemma Z_1_1_Wire_Cap : forall α, 
   ⊂ ⟷ (— ↕ (Z_Spider 1 1 α)) ∝
-  ⊂ ((Z_Spider 1 1 α) ↕ —).
+  ⊂ ⟷ ((Z_Spider 1 1 α) ↕ —).
 Proof.
   intros.
   prop_exist_non_zero 1.
