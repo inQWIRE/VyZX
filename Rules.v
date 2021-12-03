@@ -162,6 +162,34 @@ Proof.
   apply nWire_Compose.
 Qed.
 
+Global Hint Resolve Nat.mul_1_r : test_db.
+
+Program Lemma nStack_1_nStack : forall n (zx : ZX 1 1), (n ↑ zx) ∝ (n ⇑ zx).
+Proof.
+  intros.
+  unfold eq_rect.
+  destruct (Nat.mul_1_r n).
+  induction n.
+  - reflexivity.
+  - simpl.
+    rewrite IHn.
+    reflexivity.
+Qed.
+
+Program Lemma nStack_nStack_1 : forall n (zx : ZX 1 1), (n ⇑ zx) ∝ (n ↑ zx).
+Proof.
+  intros.
+  symmetry.
+  unfold eq_sym.
+  unfold eq_rect.
+  destruct (Nat.mul_1_r n).
+  induction n.
+  - reflexivity.
+  - simpl.
+    rewrite IHn.
+    reflexivity.
+Qed. 
+
 Lemma nStack1_compose : forall (zx0 zx1 : ZX 1 1) n, 
   nStack1 n (Compose zx0 zx1) ∝ Compose (nStack1 n zx0) (nStack1 n zx1).
 Proof.
@@ -696,11 +724,11 @@ Fixpoint ColorSwap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut :=
   | otherwise       => otherwise
   end.
 
-Notation "∼ zx" := (ColorSwap zx) (at level 10). (* \sim *) 
-(* I'm not convinced of using \sim but I have no better symbol in mind so far *)
+Notation "∽ zx" := (ColorSwap zx) (at level 10). (* \backsim *) 
+(* I'm not convinced of using \backsim but I have no better symbol in mind so far *)
 
 Lemma ColorSwap_self_inverse : forall {nIn nOut} (zx : ZX nIn nOut),
-  ∼ (∼ zx) = zx. 
+  ∽ (∽ zx) = zx. 
 Proof.
   intros; induction zx; try reflexivity.
   - simpl.
@@ -756,7 +784,7 @@ Proof.
 Qed.
 
 Lemma ColorSwap_isBiHadamard : forall {nIn nOut} (zx : ZX nIn nOut),
-    ∼ zx ∝ BiHadamard zx.
+    ∽ zx ∝ BiHadamard zx.
 Proof.
   intros; unfold BiHadamard.
   induction zx.
@@ -815,7 +843,7 @@ Qed.
 
 Lemma ColorSwap_comp : forall nIn nOut,
   forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
-  ∼ zx0 ∝ ∼ zx1.
+  ∽ zx0 ∝ ∽ zx1.
 Proof.
   intros.
   rewrite 2 ColorSwap_isBiHadamard.
@@ -825,7 +853,7 @@ Proof.
 Qed.
 
 Lemma ColorSwap_lift : forall nIn nOut (zx0 zx1 : ZX nIn nOut),
-  ∼ zx0 ∝ ∼ zx1 -> zx0 ∝ zx1.
+  ∽ zx0 ∝ ∽ zx1 -> zx0 ∝ zx1.
 Proof.
   intros.
   rewrite <- ColorSwap_self_inverse with zx0.
@@ -845,8 +873,125 @@ Proof.
 Qed.
 Opaque Wire.
 
+Lemma empty_colorswap : ∽ ⦰ ∝ ⦰.
+Proof.
+  reflexivity.
+Qed.
 
-Lemma swap_colorswap : ∼ ⨉ ∝ ⨉.
+Lemma colorswap_eq_n_Stack : forall nIn nOut (zx : ZX nIn nOut) n, ∽ zx ∝ zx -> ∽ (n ⇑ zx) ∝ (n ⇑ zx).
+Proof.
+  intros.
+  induction n; simpl; try exact empty_colorswap.
+  rewrite IHn.
+  rewrite H.
+  reflexivity.
+Qed.
+
+Lemma colorswap_eq_n_Stack_1 : forall zx n, ∽ zx ∝ zx -> ∽ (n ↑ zx) ∝ (n ↑ zx).
+Proof.
+  intros.
+  induction n; simpl; try exact empty_colorswap.
+  rewrite IHn.
+  rewrite H.
+  reflexivity.
+Qed.
+
+Lemma nWire_colorswap : forall n, ∽ (n ↑ —) ∝ (n ↑ —).
+Proof.
+  intros.
+  apply colorswap_eq_n_Stack_1.
+  exact wire_colorswap.
+Qed.
+
+Lemma H_colorswap : ∽ □ ∝ □.
+Proof.
+  rewrite ColorSwap_isBiHadamard.
+  unfold BiHadamard.
+  simpl.
+  remove_empty.
+  rewrite ZX_H_H_is_Wire.
+  rewrite <- nWire_1_Wire.
+  rewrite nwire_l.
+  reflexivity.
+Qed.
+
+Local Transparent ZX_X ZX_Z ZX_Y.
+Lemma Z_colorswap_X : ∽ ZX_X ∝ ZX_Z.
+Proof.
+  unfold ZX_X, ZX_Z.
+  reflexivity.
+Qed.
+
+Lemma X_colorswap_Z : ∽ ZX_Z ∝ ZX_X.
+Proof.
+  unfold ZX_X, ZX_Z.
+  reflexivity.
+Qed.
+Local Opaque ZX_X ZX_Z.
+
+Lemma Y_colorswap : ∽ ZX_Y ∝ ZX_Y.
+Proof.
+  unfold ZX_Y.
+  simpl.
+  rewrite X_colorswap_Z, Z_colorswap_X.
+Local Transparent ZX_X ZX_Z.
+  prop_exist_non_zero (-1).
+  unfold ZX_X, ZX_Z.
+  simpl.
+  unfold_spider.
+  autorewrite with Cexp_db.
+  solve_matrix.
+Qed.
+Local Opaque ZX_X ZX_Z ZX_Y.
+
+Lemma nH_colorswap : forall n, ∽ (n ↑ □) ∝ (n ↑ □).
+Proof.
+  intros.
+  apply colorswap_eq_n_Stack_1.
+  exact H_colorswap.
+Qed.
+
+Lemma compose_colorswap : forall nIn nMid nOut (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
+  ∽ zx0 ∝ zx0 -> ∽ zx1 ∝ zx1 -> ∽ (zx0 ⟷ zx1) ∝ (zx0 ⟷ zx1).
+Proof.
+  intros.
+  simpl.
+  rewrite H, H0.
+  reflexivity.
+Qed.
+
+Lemma stack_colorswap : forall nIn nMid nOut (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
+  ∽ zx0 ∝ zx0 -> ∽ zx1 ∝ zx1 -> ∽ (zx0 ↕ zx1) ∝ (zx0 ↕ zx1).
+Proof.
+  intros.
+  simpl.
+  rewrite H, H0.
+  reflexivity.
+Qed.
+
+Lemma nStack1_colorswap : forall zx n ,
+  ∽ zx ∝ zx -> ∽ (n ↑ zx) ∝ (n ↑ zx).
+Proof.
+  intros.
+  subst.
+  induction n; simpl.
+  - exact empty_colorswap.
+  - rewrite H, IHn.
+    reflexivity.
+Qed.
+
+Lemma nStack_colorswap : forall nIn nOut (zx : ZX nIn nOut) n,
+  ∽ zx ∝ zx -> ∽ (n ⇑ zx) ∝ (n ⇑ zx).
+Proof.
+  intros.
+  subst.
+  induction n; simpl.
+  - exact empty_colorswap.
+  - rewrite H, IHn.
+    reflexivity.
+Qed.
+
+Lemma swap_colorswap : ∽ ⨉ ∝ ⨉.
 Proof.
   rewrite ColorSwap_isBiHadamard.
   prop_exist_non_zero (-1).
@@ -875,12 +1020,12 @@ Proof.
   rewrite Mscale_mult_dist_l.
   rewrite Mscale_mult_dist_r.
   rewrite 2 Mscale_assoc.
-  replace (hadamard ⊗ hadamard × (swap × (hadamard ⊗ hadamard))) with swap by solve_matrix.
-  reflexivity.
+  apply Mscale_simplify; try reflexivity.
+  solve_matrix.
 Qed.
 
 Ltac swap_colors := 
-  apply ColorSwap_lift; simpl; try rewrite wire_colorswap; try rewrite swap_colorswap.
+  apply ColorSwap_lift; simpl; try rewrite wire_colorswap; try rewrite H_colorswap; try rewrite nWire_colorswap; try rewrite nH_colorswap; try rewrite swap_colorswap.
 
 Ltac swap_colors_of proof := 
   intros; swap_colors; try apply proof.
