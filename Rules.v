@@ -50,7 +50,7 @@ Proof.
 Qed.
 
 Program Lemma ZX_Stack_Empty_r : forall {nIn nOut : nat} (zx : ZX nIn nOut),
-  Stack zx Empty ∝ zx.
+  zx ↕ ⦰ ∝ zx.
 Proof.
   intros.
   prop_exist_non_zero 1.
@@ -61,7 +61,7 @@ Proof.
 Qed.
 
 Lemma ZX_Compose_Empty_r : forall {nIn} (zx : ZX nIn 0),
-  Compose zx Empty ∝ zx.
+  zx ⟷ ⦰ ∝ zx.
 Proof. 
   intros.
   prop_exist_non_zero 1.
@@ -71,7 +71,7 @@ Proof.
 Qed.
   
 Lemma ZX_Compose_Empty_l : forall {nOut} (zx : ZX 0 nOut),
-  Compose Empty zx ∝ zx.
+  ⦰ ⟷ zx ∝ zx.
 Proof. 
   intros.
   prop_exist_non_zero 1.
@@ -83,8 +83,7 @@ Qed.
 Ltac remove_empty := try repeat rewrite ZX_Compose_Empty_l;
                      try repeat rewrite ZX_Compose_Empty_r;
                      try repeat rewrite ZX_Stack_Empty_l;
-                     try repeat rewrite ZX_Stack_Empty_r;
-                     try clear_eq_ctx.
+                     try (repeat rewrite ZX_Stack_Empty_r; try clear_eq_ctx).
 
 Lemma ZX_semantics_Compose : forall nIn nMid nOut
                                     (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
@@ -161,7 +160,8 @@ Proof.
   induction n.
   - unfold nStack1.
     symmetry.
-    apply ZX_Compose_Empty_l.
+    remove_empty.
+    reflexivity.
   - simpl.
     rewrite <- (ZX_Stack_Compose_distr _ _ _ _ _ _ zx0 zx1).
     rewrite IHn.
@@ -700,7 +700,7 @@ Lemma nH_Plus_Stack : forall {n0 n1 : nat},
     (n0 + n1)%nat ↑ □ ∝ (n0 ↑ □) ↕ (n1 ↑ □).
 Proof.
   induction n0; intros.
-  - rewrite ZX_Stack_Empty_l; reflexivity.
+  - remove_empty; reflexivity.
   - simpl.
     destruct (IHn0 n1); destruct H.
     exists x; split; try assumption.
@@ -739,16 +739,15 @@ Lemma ColorSwap_isBiHadamard : forall {nIn nOut} (zx : ZX nIn nOut),
 Proof.
   intros; unfold BiHadamard.
   induction zx.
-  - rewrite 2 ZX_Compose_Empty_l.
+  - remove_empty.
     reflexivity.
   - rewrite bi_hadamard_color_change_X.
     reflexivity.
   - rewrite bi_hadamard_color_change_Z.
     reflexivity.
-  - rewrite ZX_Compose_Empty_l.
+  - remove_empty.
     simpl.
-    rewrite ZX_Stack_Empty_r.
-    clear_eq_ctx.
+    remove_empty.
     rewrite stack_wire_pad_l_r.
     rewrite nWire_1_Wire.
     rewrite ZX_Stack_Compose_distr.
@@ -761,10 +760,9 @@ Proof.
     rewrite <- nWire_2_Stack_wire.
     rewrite nwire_r.
     reflexivity.
-  - rewrite ZX_Compose_Empty_r.
+  - remove_empty.
     simpl.
-    rewrite ZX_Stack_Empty_r.
-    clear_eq_ctx.
+    remove_empty.
     rewrite stack_wire_pad_l_r.
     rewrite nWire_1_Wire.
     rewrite ZX_Stack_Compose_distr.
