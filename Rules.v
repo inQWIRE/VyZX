@@ -9,7 +9,7 @@ Local Open Scope ZX_scope.
 
 Lemma ZX_Compose_assoc : forall nIn nMid1 nMid2 nOut
                               (zx1 : ZX nIn nMid1) (zx2 : ZX nMid1 nMid2) (zx3 : ZX nMid2 nOut),
-     Compose (Compose zx1 zx2) zx3 ∝ Compose zx1 (Compose zx2 zx3).
+     (zx1 ⟷ zx2) ⟷ zx3 ∝ zx1 ⟷ (zx2 ⟷ zx3).
 Proof.
   intros.
   simpl.
@@ -530,10 +530,10 @@ Proof.
 Qed.
 
 Theorem trivial_cap_cup : 
-  Compose Cap Cup ∝ Empty.
+  ⊂ ⟷ ⊃ ∝ Empty.
 Proof. prop_exist_non_zero 2; solve_matrix. Qed.
 
-Definition back_forth : ZX 1 1 := Compose (Stack Wire Cap) (Stack Cup Wire).
+Definition back_forth : ZX 1 1 := (≎ ↕ ⊃) ⟷ (⊂ ↕ ≎).
 
 Theorem back_forth_is_wire : back_forth ∝ Wire.
 Proof.

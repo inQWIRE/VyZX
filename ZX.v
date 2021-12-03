@@ -17,6 +17,12 @@ Inductive ZX : nat -> nat -> Type :=
   | Compose {nIn nMid nOut} (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut) : ZX nIn nOut.
 Local Close Scope R_scope.
 
+(* TODO: Notation for empty *)
+Notation "⊂" := Cap.
+Notation "⊃" := Cup.
+Infix "⟷" := Compose (left associativity, at level 65).
+Infix "↕" := Stack (left associativity, at level 65).
+
 Definition bra_ket_MN (bra: Matrix 1 2) (ket : Vector 2) {n m} : Matrix (2 ^ m) (2 ^ n) := 
   (m ⨂ ket) × (n ⨂ bra).
 Transparent bra_ket_MN. 
@@ -71,6 +77,9 @@ Qed.
 Global Hint Resolve WF_ZX : wf_db.
 
 Definition Wire : ZX 1 1 := Z_Spider _ _ 0.
+
+Notation "≎" := Wire. (*TODO: Other symbol? Maybe ∼*)
+
 
 Theorem wire_identity_semantics : ZX_semantics Wire = I 2.
 Proof.

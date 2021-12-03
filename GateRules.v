@@ -114,6 +114,11 @@ Proof.
   unfold_spider.
   autorewrite with Cexp_db.
   Msimpl.
+  rewrite hadamard_sa.
+  repeat rewrite Dirac.ket2bra.
+  restore_dims.
+  repeat rewrite <- kron_mixed_product.
+  repeat rewrite <- Mmult_assoc.
   solve_matrix.
   simpl.
   all : field_simplify_eq [Csqrt2_sqrt]; try reflexivity; split; nonzero.
