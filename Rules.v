@@ -687,8 +687,20 @@ Proof.
     reflexivity.
 Qed.
 
+Fixpoint ColorSwap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
+  match zx with
+  | X_Spider n m α  => Z_Spider n m α
+  | Z_Spider n m α  => X_Spider n m α
+  | zx1 ↕ zx2   => Stack (ColorSwap zx1) (ColorSwap zx2)
+  | zx1 ⟷ zx2 => Compose (ColorSwap zx1) (ColorSwap zx2)
+  | otherwise       => otherwise
+  end.
+
+Notation "∼ zx" := (ColorSwap zx) (at level 10). (* \sim *) 
+(* I'm not convinced of using \sim but I have no better symbol in mind so far *)
+
 Lemma ColorSwap_self_inverse : forall {nIn nOut} (zx : ZX nIn nOut),
-  ColorSwap (ColorSwap zx) = zx.
+  ∼ (∼ zx) = zx. 
 Proof.
   intros; induction zx; try reflexivity.
   - simpl.
@@ -744,7 +756,7 @@ Proof.
 Qed.
 
 Lemma ColorSwap_isBiHadamard : forall {nIn nOut} (zx : ZX nIn nOut),
-    ColorSwap zx ∝ BiHadamard zx.
+    ∼ zx ∝ BiHadamard zx.
 Proof.
   intros; unfold BiHadamard.
   induction zx.
@@ -803,7 +815,7 @@ Qed.
 
 Lemma ColorSwap_comp : forall nIn nOut,
   forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
-  ColorSwap zx0 ∝ ColorSwap zx1.
+  ∼ zx0 ∝ ∼ zx1.
 Proof.
   intros.
   rewrite 2 ColorSwap_isBiHadamard.
@@ -813,7 +825,7 @@ Proof.
 Qed.
 
 Lemma ColorSwap_lift : forall nIn nOut (zx0 zx1 : ZX nIn nOut),
-  ColorSwap zx0 ∝ ColorSwap zx1 -> zx0 ∝ zx1.
+  ∼ zx0 ∝ ∼ zx1 -> zx0 ∝ zx1.
 Proof.
   intros.
   rewrite <- ColorSwap_self_inverse with zx0.
@@ -834,7 +846,7 @@ Qed.
 Opaque Wire.
 
 
-Lemma swap_colorswap : ColorSwap ZX_SWAP ∝ ZX_SWAP.
+Lemma swap_colorswap : ∼ ⨉ ∝ ⨉.
 Proof.
   rewrite ColorSwap_isBiHadamard.
   prop_exist_non_zero (-1).
