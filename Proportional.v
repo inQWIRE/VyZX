@@ -69,7 +69,7 @@ Lemma stack_compat :
   forall nIn0 nOut0 nIn1 nOut1,
     forall zx0 zx1 : ZX nIn0 nOut0, zx0 ∝ zx1 ->
     forall zx2 zx3 : ZX nIn1 nOut1, zx2 ∝ zx3 ->
-    Stack zx0 zx2 ∝ Stack zx1 zx3.
+    zx0 ↕ zx2 ∝ zx1 ↕ zx3.
 Proof.
   intros.
   destruct H; destruct H; destruct H0; destruct H0.
@@ -88,7 +88,7 @@ Proof. apply stack_compat; assumption. Qed.
 Lemma nStack_compat :
   forall nIn nOut n,
     forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
-    nStack n zx0 ∝ nStack n zx1.
+    n ⇑ zx0 ∝ n ⇑ zx1.
 Proof.
   intros.
   induction n.
@@ -107,7 +107,7 @@ Proof. apply nStack_compat. Qed.
 Lemma nStack1_compat :
   forall n,
     forall zx0 zx1 : ZX 1 1, zx0 ∝ zx1 ->
-    nStack1 n zx0 ∝ nStack1 n zx1.
+    n ↑ zx0 ∝ n ↑ zx1.
 Proof.
   intros.
   induction n.
@@ -121,13 +121,13 @@ Qed.
 Add Parametric Morphism (n : nat) : (nStack1 n)
   with signature (@proportional 1 1) ==> 
                  (@proportional n n) as nstack1_mor.
-Proof. apply nStack1_compat. Qed.
+Proof. apply nStack1_compat. Qed. 
 
 Lemma compose_compat :
   forall nIn nMid nOut,
     forall zx0 zx1 : ZX nIn  nMid, zx0 ∝ zx1 ->
     forall zx2 zx3 : ZX nMid nOut, zx2 ∝ zx3 ->
-    Compose zx0 zx2 ∝ Compose zx1 zx3.
+    zx0 ⟷ zx2 ∝ zx1 ⟷ zx3.
 Proof.
   intros.
   destruct H; destruct H; destruct H0; destruct H0.

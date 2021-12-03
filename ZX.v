@@ -17,11 +17,11 @@ Inductive ZX : nat -> nat -> Type :=
   | Compose {nIn nMid nOut} (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut) : ZX nIn nOut.
 Local Close Scope R_scope.
 
-(* TODO: Notation for empty *)
-Notation "⊂" := Cap.
-Notation "⊃" := Cup.
-Infix "⟷" := Compose (left associativity, at level 65).
-Infix "↕" := Stack (left associativity, at level 65).
+Notation "⦰" := Empty. (* \revemptyset *)
+Notation "⊂" := Cap. (* \subset *)
+Notation "⊃" := Cup. (* \supset *)
+Infix "⟷" := Compose (left associativity, at level 40). (* \longleftrightarrow *)
+Infix "↕" := Stack (left associativity, at level 4). (* \updownarrow *)
 
 Definition bra_ket_MN (bra: Matrix 1 2) (ket : Vector 2) {n m} : Matrix (2 ^ m) (2 ^ n) := 
   (m ⨂ ket) × (n ⨂ bra).
@@ -52,13 +52,13 @@ Global Hint Resolve WF_Spider_semantics WF_bra_ket_MN : wf_db.
 Fixpoint ZX_semantics {nIn nOut} (zx : ZX nIn nOut) : 
   Matrix (2 ^ nOut) (2 ^nIn) := 
   match zx with
-  | Empty => I 1
+  | ⦰ => I 1
   | X_Spider _ _ α => Spider_semantics (hadamard × (ket 0))† (hadamard × (ket 1))† (hadamard × (ket 0)) (hadamard × (ket 1)) α
   | Z_Spider _ _ α => Spider_semantics (bra 0) (bra 1) (ket 0) (ket 1) α
-  | Cup => list2D_to_matrix [[C1;C0;C0;C1]]
-  | Cap => list2D_to_matrix [[C1];[C0];[C0];[C1]]  
-  | Stack zx0 zx1 => (ZX_semantics zx0) ⊗ (ZX_semantics zx1)
-  | Compose zx0 zx1 => (ZX_semantics zx1) × (ZX_semantics zx0)
+  | ⊃ => list2D_to_matrix [[C1;C0;C0;C1]]
+  | ⊂ => list2D_to_matrix [[C1];[C0];[C0];[C1]]  
+  | zx0 ↕ zx1 => (ZX_semantics zx0) ⊗ (ZX_semantics zx1)
+  | zx0 ⟷ zx1 => (ZX_semantics zx1) × (ZX_semantics zx0)
   end.
 
 Ltac unfold_spider := unfold Spider_semantics, bra_ket_MN; try (simpl; Msimpl).
@@ -78,10 +78,9 @@ Global Hint Resolve WF_ZX : wf_db.
 
 Definition Wire : ZX 1 1 := Z_Spider _ _ 0.
 
-Notation "≎" := Wire. (*TODO: Other symbol? Maybe ∼*)
+Notation "—" := Wire. (* \emdash *)
 
-
-Theorem wire_identity_semantics : ZX_semantics Wire = I 2.
+Theorem wire_identity_semantics : ZX_semantics — = I 2.
 Proof.
   simpl.
   unfold_spider.
@@ -98,27 +97,32 @@ Global Hint Resolve wire_identity_semantics : zx_sem_db.
 
 Fixpoint nStack {nIn nOut} n (zx : ZX nIn nOut) : ZX (n * nIn) (n * nOut) :=
   match n with
-  | 0 => Empty
-  | S n' => Stack zx (nStack n' zx)
+  | 0 => ⦰
+  | S n' => zx ↕ (nStack n' zx)
   end.
+
+Notation "n ⇑ zx" := (nStack n zx) (at level 40). (* \Uparrow - maybe change to ⇕ (\Updownarrow) *)
 
 Fixpoint nStack1 n (zx : ZX 1 1) : ZX n n :=
   match n with
-  | 0 => Empty
-  | S n' => Stack zx (nStack1 n' zx)
+  | 0 => ⦰
+  | S n' => zx ↕ (nStack1 n' zx)
   end.
 
-Lemma nStack1_n_kron : forall n (zx : ZX 1 1), ZX_semantics (nStack1 n zx) = n ⨂ ZX_semantics zx.
+Notation "n ↑ zx" := (nStack1 n zx) (at level 41). (* \uparrow - maybe change to ↕ (\updownarrow) *)
+
+Lemma nStack1_n_kron : forall n (zx : ZX 1 1), ZX_semantics (n ↑ zx) = n ⨂ ZX_semantics zx.
 Proof.
   intros.
   induction n.
   - unfold nStack. reflexivity.
   - simpl.
     rewrite IHn.
+    restore_dims.
     rewrite <- kron_n_assoc; auto with wf_db.
 Qed.
 
-Definition nWire := fun n => nStack1 n Wire.
+Definition nWire := fun n => n ↑ Wire.
 
 Global Opaque nWire.
 

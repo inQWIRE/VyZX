@@ -6,7 +6,7 @@ Require Export Proportional.
 Local Open Scope ZX_scope.
 
 Local Transparent ZX_H.
-Lemma ZX_H_is_H : ZX_semantics ZX_H = Cexp (PI/4)%R .* hadamard.
+Lemma ZX_H_is_H : ZX_semantics □ = Cexp (PI/4)%R .* hadamard.
 Proof.
   simpl.
   unfold_spider.
@@ -16,7 +16,7 @@ Proof.
 Qed.
 Local Opaque ZX_H.
 
-Lemma ZX_H_H_is_Wire_eq : ZX_semantics (Compose ZX_H ZX_H) = Cexp (PI/2)%R .* ZX_semantics Wire.
+Lemma ZX_H_H_is_Wire_eq : ZX_semantics (□ ⟷ □) = Cexp (PI/2)%R .* ZX_semantics —.
 Proof.
   simpl.
   rewrite wire_identity_semantics.
@@ -31,7 +31,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma ZX_H_H_is_Wire : (Compose ZX_H ZX_H) ∝ Wire.
+Lemma ZX_H_H_is_Wire : □ ⟷ □ ∝ —.
 Proof.
   eexists.
   split.
@@ -106,7 +106,7 @@ Local Opaque ZX_CNOT_r.
 Local Opaque ZX_CNOT.
 
 Local Transparent ZX_SWAP.
-Lemma ZX_SWAP_is_swap : ZX_semantics ZX_SWAP = (/ 2 * / √ 2)%C .* swap.
+Lemma ZX_SWAP_is_swap : ZX_semantics ⨉ = (/ 2 * / √ 2)%C .* swap.
 Proof.
   simpl.
   rewrite ZX_CNOT_is_cnot.

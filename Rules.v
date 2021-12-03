@@ -20,7 +20,7 @@ Proof.
 Qed.
 
 Lemma ZX_Stack_Empty_l : forall {nIn nOut} (zx : ZX nIn nOut),
-  Stack Empty zx ∝ zx.
+  ⦰ ↕ zx ∝ zx.
 Proof.
   intros.
   prop_exist_non_zero 1.
@@ -114,7 +114,7 @@ Local Transparent nWire.
 Lemma nwire_identity : forall n, ZX_semantics (nWire n) = I (2 ^ n).
 Proof.
   intros.
-  unfold nWire.
+  unfold nWire. 
   rewrite nStack1_n_kron.
   rewrite wire_identity_semantics.
   apply kron_n_I.
@@ -178,7 +178,7 @@ Qed.
 
 
 Lemma nH_composition : forall n, 
-  Compose (nH n) (nH n) ∝ nWire n.
+  nH n ⟷ nH n ∝ nWire n.
 Proof.
   intros.
   rewrite <- nStack1_compose.
@@ -189,7 +189,7 @@ Qed.
 Local Opaque nWire.
 
 Lemma wire_stack_identity : forall n, 
-  ZX_semantics (nStack n Wire) = I (2 ^ n).
+  ZX_semantics (n ⇑ —) = I (2 ^ n).
 Proof.
   intros.
   induction n.
@@ -205,7 +205,7 @@ Proof.
 Qed.
 
 Lemma nwire_r : forall nIn nOut (zx : ZX nIn nOut), 
-  Compose zx (nWire nOut) ∝ zx.
+  zx ⟷ (nWire nOut) ∝ zx.
 Proof.
   intros.
   simpl.
@@ -217,7 +217,7 @@ Proof.
 Qed.
 
 Lemma nwire_l : forall nIn nOut (zx : ZX nIn nOut), 
-  Compose (nWire nIn) zx ∝ zx.
+  (nWire nIn) ⟷ zx ∝ zx.
 Proof.
   intros.
   simpl.
@@ -474,10 +474,9 @@ Proof.
 Qed.
 
 Lemma Spiders_commute_through_swap_b : forall (zx0 zx1 : ZX 1 1),
-  Compose (Stack Wire zx0) ZX_SWAP ∝ Compose ZX_SWAP (Stack zx0 Wire) ->      
-  Compose (Stack Wire zx1) ZX_SWAP ∝ Compose ZX_SWAP (Stack zx1 Wire) ->
-  Compose (Stack Wire (Compose zx0 zx1)) ZX_SWAP ∝ 
-  Compose ZX_SWAP (Stack (Compose zx0 zx1) Wire).
+  (— ↕ zx0) ⟷ ⨉ ∝ ⨉ ⟷ (zx0 ↕ —) ->      
+  (— ↕ zx1) ⟷ ⨉ ∝ ⨉ ⟷ (zx1 ↕ —) ->
+  (— ↕ (zx0 ⟷ zx1)) ⟷ ⨉ ∝ ⨉ ⟷ ((zx0 ⟷ zx1) ↕ —).
 Proof.
   intros.
   rewrite <- Wire_Compose.
@@ -533,9 +532,9 @@ Theorem trivial_cap_cup :
   ⊂ ⟷ ⊃ ∝ Empty.
 Proof. prop_exist_non_zero 2; solve_matrix. Qed.
 
-Definition back_forth : ZX 1 1 := (≎ ↕ ⊃) ⟷ (⊂ ↕ ≎).
+Definition back_forth : ZX 1 1 := (— ↕ ⊂) ⟷ (⊃ ↕ —).
 
-Theorem back_forth_is_wire : back_forth ∝ Wire.
+Theorem back_forth_is_wire : back_forth ∝ —.
 Proof.
   prop_exist_non_zero 1.
   simpl. 
@@ -544,7 +543,7 @@ Proof.
 Qed.
 
 Definition forth_back : ZX 1 1 := Compose (Stack Cap Wire) (Stack Wire Cup).
-Theorem forth_back_is_wire : back_forth ∝ Wire.
+Theorem forth_back_is_wire : back_forth ∝ —.
 Proof.
   prop_exist_non_zero 1.
   simpl. 
