@@ -125,6 +125,15 @@ Proof.
   lma.
 Qed.
 
+Lemma nWire_2_Stack_wire : (2 ↑ —) ∝ Wire ↕ Wire.
+Proof.
+  prop_exist_non_zero 1.
+  simpl.
+  rewrite wire_identity_semantics.
+  rewrite kron_1_r.
+  lma.
+Qed.
+
 Lemma nWire_Stack : forall n m, (n ↑ —) ↕ (m ↑ —) ∝ ((n + m) ↑ —).
 Proof.
   intros.
