@@ -9,8 +9,6 @@ Global Opaque ZX_H.
 
 Notation "□" := (ZX_H). (* \square*)
 
-Notation nH := (fun n => n ↑ □).
-
 Definition ZX_CNOT_l : ZX 2 2 :=  
         ((Z_Spider 1 2 0%R) ↕ —) ⟷ (— ↕ (X_Spider 2 1 0%R)).
 Global Opaque ZX_CNOT_l.
