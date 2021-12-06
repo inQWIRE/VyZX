@@ -7,7 +7,8 @@ Definition ZX_H :=
     (Z_Spider 1 1 (PI/2)) ⟷ (X_Spider 1 1 (PI/2)) ⟷ (Z_Spider 1 1 (PI/2)).
 Global Opaque ZX_H.
 
-Notation "□" := (ZX_H). (* \square*)
+Notation "□" := (ZX_H). (* \square*) 
+Notation "zx0 ⥈ zx1" := (zx0 ⟷ □ ⟷ zx1) (left associativity, at level 40). (* \leftrightarrowcircle *)
 
 Definition ZX_CNOT_l : ZX 2 2 :=  
         ((Z_Spider 1 2 0%R) ↕ —) ⟷ (— ↕ (X_Spider 2 1 0%R)).

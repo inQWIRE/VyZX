@@ -21,7 +21,7 @@ Notation "⦰" := Empty. (* \revemptyset *)
 Notation "⊂" := Cap. (* \subset *)
 Notation "⊃" := Cup. (* \supset *)
 Infix "⟷" := Compose (left associativity, at level 40). (* \longleftrightarrow *)
-Infix "↕" := Stack (left associativity, at level 4). (* \updownarrow *)
+Infix "↕" := Stack (left associativity, at level 40). (* \updownarrow *)
 
 Definition bra_ket_MN (bra: Matrix 1 2) (ket : Vector 2) {n m} : Matrix (2 ^ m) (2 ^ n) := 
   (m ⨂ ket) × (n ⨂ bra).
