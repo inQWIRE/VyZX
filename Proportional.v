@@ -149,7 +149,7 @@ Proof. apply compose_compat; assumption. Qed.
 Lemma transpose_compat : 
   forall nIn nOut,
     forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
-    Transpose zx0 ∝ Transpose zx1.
+    (zx0 ⊺) ∝ (zx1 ⊺).
 Proof.
   intros.
   destruct H; destruct H; exists x; split; try assumption.
@@ -166,7 +166,7 @@ Proof. apply transpose_compat. Qed.
 Lemma colorswap_compat :
   forall nIn nOut,
     forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
-    ColorSwap zx0 ∝ ColorSwap zx1.
+    (∽ zx0) ∝ (∽ zx1).
 Proof.
   intros.
   destruct H; destruct H; exists x; split; try assumption.
@@ -328,7 +328,7 @@ Proof.
   reflexivity.
 Qed.
 
-Definition build_prop_constants c c' θ := (Stack (Stack (Scalar_Cexp_alpha_times_sqrt_2 θ) (Scalar_1_div_sqrt_2)) (Stack (nStack c Scalar_sqrt_2 ) (nStack c' Scalar_1_div_sqrt_2 ))).
+Definition build_prop_constants c c' θ := (((Scalar_Cexp_alpha_times_sqrt_2 θ) ↕ (Scalar_1_div_sqrt_2)) ↕ ((c ⇑ Scalar_sqrt_2 ) ↕ (c' ⇑ Scalar_1_div_sqrt_2 ))).
 
 Theorem ZX_prop_explicit_eq : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut) c c' θ,  ZX_semantics zx0 = ((√ 2) ^ c * (1 / ((√ 2) ^ c')))%R * Cexp θ .* ZX_semantics zx1-> ZX_semantics zx0 = ZX_semantics (Stack (build_prop_constants c c' θ) zx1).
 Proof.

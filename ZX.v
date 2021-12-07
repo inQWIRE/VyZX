@@ -127,17 +127,18 @@ Definition nWire := fun n => n ↑ Wire.
 Global Opaque nWire.
 
 (* Definitions for transposes of ZX diagrams and a proof that its what we expect *)
-
+Reserved Notation "zx ⊺" (at level 10). (* \intercal *)
 Fixpoint Transpose {nIn nOut} (zx : ZX nIn nOut) : ZX nOut nIn :=
   match zx with
-  | Empty => Empty
+  | ⦰ => ⦰
   | Z_Spider mIn mOut α => Z_Spider mOut mIn α
   | X_Spider mIn mOut α => X_Spider mOut mIn α
-  | Compose zx1 zx2     => Compose (Transpose zx2) (Transpose zx1)
-  | Stack zx1 zx2       => Stack (Transpose zx1) (Transpose zx2)
-  | Cap                 => Cup
-  | Cup                 => Cap
-  end.
+  | zx1 ⟷ zx2 => (zx2 ⊺) ⟷ (zx1 ⊺)
+  | zx1 ↕ zx2 => (zx1 ⊺) ↕ (zx2 ⊺)
+  | ⊂ => ⊃
+  | ⊃ => ⊂
+  end
+  where "zx ⊺" := (Transpose zx).
 
 Lemma hadamard_self_transpose : hadamard ⊤ = hadamard.
 Proof. solve_matrix. Qed.
@@ -179,7 +180,7 @@ Lemma adjoint_transpose_comm : forall m n (A : Matrix m n),
 Proof. reflexivity. Qed.
 
 Lemma ZX_semantics_Transpose_comm {nIn nOut} : forall (zx : ZX nIn nOut),
-  ZX_semantics (Transpose zx) = (ZX_semantics zx)⊤.
+  ZX_semantics (zx ⊺) = (ZX_semantics zx) ⊤.
 Proof.
   assert (Mmult_trans_dep : forall n m o p (A : Matrix n m) (B : Matrix o p), m = o -> (A × B) ⊤ = B ⊤ × A ⊤).
     {
@@ -254,17 +255,21 @@ Proof.
     reflexivity.
 Qed.
 
+Reserved Notation "∽ zx" (at level 10). (* \backsim *) 
+
 Fixpoint ColorSwap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
   match zx with
   | X_Spider n m α  => Z_Spider n m α
   | Z_Spider n m α  => X_Spider n m α
-  | Stack zx1 zx2   => Stack (ColorSwap zx1) (ColorSwap zx2)
-  | Compose zx1 zx2 => Compose (ColorSwap zx1) (ColorSwap zx2)
-  | otherwise       => otherwise
-  end.
+  | zx1 ↕ zx2   => (∽ zx1) ↕ (∽ zx2)
+  | zx1 ⟷ zx2 => (∽ zx1) ⟷ (∽ zx2)
+  | otherwise => otherwise
+  end
+  where "∽ zx" := (ColorSwap zx).
+(* I'm not convinced of using \backsim but I have no better symbol in mind so far *)
 
 Lemma ZX_semantics_Colorswap_comm {nIn nOut} : forall (zx : ZX nIn nOut),
-  ZX_semantics (ColorSwap zx) = nOut ⨂ hadamard × (ZX_semantics zx) × nIn ⨂ hadamard.
+  ZX_semantics (∽ zx) = nOut ⨂ hadamard × (ZX_semantics zx) × nIn ⨂ hadamard.
 Proof.
   induction zx.
   - ZXunfold; reflexivity.

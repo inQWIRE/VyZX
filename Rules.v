@@ -37,7 +37,7 @@ Obligation Tactic := auto with test_db.
 Program Lemma ZX_Stack_assoc : 
   forall {nIn1 nIn2 nIn3 nOut1 nOut2 nOut3}
     (zx1 : ZX nIn1 nOut1) (zx2 : ZX nIn2 nOut2) (zx3 : ZX nIn3 nOut3),
-    Stack (Stack zx1 zx2) zx3 ∝ Stack zx1 (Stack zx2 zx3).
+    (zx1 ↕ zx2) ↕ zx3 ∝ zx1 ↕ (zx2 ↕ zx3).
 Proof.
   intros.
   prop_exist_non_zero 1.
@@ -87,18 +87,18 @@ Ltac remove_empty := try repeat rewrite ZX_Compose_Empty_l;
 
 Lemma ZX_semantics_Compose : forall nIn nMid nOut
                                     (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
-  ZX_semantics (Compose zx0 zx1) = ZX_semantics zx1 × (ZX_semantics zx0).
+  ZX_semantics (zx0 ⟷ zx1) = ZX_semantics zx1 × (ZX_semantics zx0).
 Proof. reflexivity. Qed.
    
 Lemma ZX_semantics_Stack : forall nIn nMid nOut
                                     (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
-  ZX_semantics (Stack zx0 zx1) = ZX_semantics zx0 ⊗ (ZX_semantics zx1).
+  ZX_semantics (zx0 ↕ zx1) = ZX_semantics zx0 ⊗ (ZX_semantics zx1).
 Proof. reflexivity. Qed.
 
 Lemma ZX_Stack_Compose_distr : 
   forall nIn1 nMid12 nIn3 nOut2 nMid34 nOut4 
     (zx1 : ZX nIn1 nMid12) (zx2 : ZX nMid12 nOut2) (zx3 : ZX nIn3 nMid34) (zx4 : ZX nMid34 nOut4),
-    Stack (Compose zx1 zx2) (Compose zx3 zx4) ∝ Compose (Stack zx1 zx3) (Stack zx2 zx4).
+    (zx1 ⟷ zx2) ↕ (zx3 ⟷ zx4) ∝ (zx1 ↕ zx3) ⟷ (zx2 ↕ zx4).
 Proof.
   intros.
   prop_exist_non_zero 1.
@@ -125,7 +125,7 @@ Proof.
   lma.
 Qed.
 
-Lemma nWire_2_Stack_wire : (2 ↑ —) ∝ Wire ↕ Wire.
+Lemma nWire_2_Stack_Wire : (2 ↑ —) ∝ — ↕ Wire.
 Proof.
   prop_exist_non_zero 1.
   simpl.
@@ -191,7 +191,7 @@ Proof.
 Qed. 
 
 Lemma nStack1_compose : forall (zx0 zx1 : ZX 1 1) n, 
-  nStack1 n (Compose zx0 zx1) ∝ Compose (nStack1 n zx0) (nStack1 n zx1).
+  n ↑ (zx0 ⟷ zx1) ∝ (n ↑ zx0) ⟷ (n ↑ zx1).
 Proof.
   intros.
   induction n.
@@ -274,7 +274,7 @@ Proof.
 Qed.
 
 Lemma hadamard_color_change_Z : forall nIn nOut α, 
-  Compose (nIn ↑ □) (Z_Spider nIn nOut α) ∝ Compose (X_Spider nIn nOut α) (nOut ↑ □).
+  (nIn ↑ □) ⟷ (Z_Spider nIn nOut α) ∝ (X_Spider nIn nOut α) ⟷ (nOut ↑ □).
 Proof.
   intros.
   prop_exist_non_zero (Cexp (PI / 4 * (INR nIn - INR nOut))).
@@ -311,7 +311,7 @@ Proof.
 Qed.
 
 Lemma hadamard_color_change_X : forall nIn nOut α, 
-  Compose (nIn ↑ □) (X_Spider nIn nOut α) ∝ Compose (Z_Spider nIn nOut α) (nOut ↑ □).
+  (nIn ↑ □) ⟷ (X_Spider nIn nOut α) ∝ (Z_Spider nIn nOut α) ⟷ (nOut ↑ □).
 Proof.
   intros.
   prop_exist_non_zero (Cexp (PI / 4 * (INR nIn - INR nOut))).
@@ -351,7 +351,7 @@ Proof.
 Qed.
 
 Lemma bi_hadamard_color_change_Z : forall nIn nOut α, 
-  Compose (Compose (nIn ↑ □) (Z_Spider nIn nOut α)) (nOut ↑ □) ∝ 
+  (nIn ↑ □) ⟷ (Z_Spider nIn nOut α) ⟷ (nOut ↑ □) ∝ 
   X_Spider nIn nOut α.
 Proof.
   intros.
@@ -363,7 +363,7 @@ Proof.
 Qed.
 
 Lemma bi_hadamard_color_change_X : forall nIn nOut α, 
-  Compose (Compose (nIn ↑ □) (X_Spider nIn nOut α)) (nOut ↑ □) ∝ 
+  (nIn ↑ □) ⟷ (X_Spider nIn nOut α) ⟷ (nOut ↑ □) ∝ 
   Z_Spider nIn nOut α.
 Proof.
   intros.
@@ -375,7 +375,7 @@ Proof.
 Qed.
 
 Lemma Z_spider_1_1_fusion : forall nIn nOut α β, 
-  Compose (Z_Spider nIn 1 α) (Z_Spider 1 nOut β) ∝
+  (Z_Spider nIn 1 α) ⟷ (Z_Spider 1 nOut β) ∝
   Z_Spider nIn nOut (α + β).
 Proof.
   prop_exist_non_zero 1.
@@ -454,8 +454,8 @@ Proof.
 Qed.
 
 Lemma Z_commutes_through_swap_t : forall α, 
-  Compose (Stack (Z_Spider 1 1 α) Wire) ZX_SWAP ∝ 
-  Compose ZX_SWAP (Stack Wire (Z_Spider 1 1 α)).
+  ((Z_Spider 1 1 α) ↕ —) ⟷ ⨉ ∝ 
+  ⨉ ⟷ (— ↕ (Z_Spider 1 1 α)).
 Proof.
   intros.
   prop_exist_non_zero 1.
@@ -470,8 +470,8 @@ Proof.
 Qed.
 
 Lemma Z_commutes_through_swap_b : forall α, 
-  Compose (Stack Wire (Z_Spider 1 1 α)) ZX_SWAP ∝ 
-  Compose ZX_SWAP (Stack (Z_Spider 1 1 α) Wire).
+  (— ↕ (Z_Spider 1 1 α)) ⟷ ⨉ ∝ 
+  ⨉ ⟷ ((Z_Spider 1 1 α) ↕ —).
 Proof.
   intros.
   prop_exist_non_zero 1.
@@ -485,8 +485,8 @@ Proof.
 Qed.
 
 Lemma X_commutes_through_swap_b : forall α, 
-  Compose (Stack Wire (X_Spider 1 1 α)) ZX_SWAP ∝ 
-  Compose ZX_SWAP (Stack (X_Spider 1 1 α) Wire).
+  (— ↕ (X_Spider 1 1 α)) ⟷ ⨉ ∝ 
+  ⨉ ⟷ ((X_Spider 1 1 α) ↕ —).
 Proof.
   intros.
   prop_exist_non_zero 1.
@@ -516,10 +516,9 @@ Proof.
 Qed.
 
 Lemma Spiders_commute_through_swap_t : forall (zx0 zx1 : ZX 1 1),
-  Compose (Stack zx0 Wire) ZX_SWAP ∝ Compose ZX_SWAP (Stack Wire zx0) ->      
-  Compose (Stack zx1 Wire) ZX_SWAP ∝ Compose ZX_SWAP (Stack Wire zx1) ->
-  Compose (Stack (Compose zx0 zx1) Wire) ZX_SWAP ∝ 
-  Compose ZX_SWAP (Stack Wire (Compose zx0 zx1)).
+  (zx0 ↕ —) ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ zx0) ->      
+  (zx1 ↕ —) ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ zx1) ->
+  ((zx0 ⟷ zx1) ↕ —) ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (zx0 ⟷ zx1)).
 Proof.
   intros.
   rewrite <- Wire_Compose.
@@ -555,12 +554,12 @@ Proof.
 Qed.
 
 Theorem trivial_cap_cup : 
-  ⊂ ⟷ ⊃ ∝ Empty.
+  ⊂ ⟷ ⊃ ∝ ⦰.
 Proof. prop_exist_non_zero 2; solve_matrix. Qed.
 
 Definition back_forth : ZX 1 1 := (— ↕ ⊂) ⟷ (⊃ ↕ —).
 
-Theorem back_forth_is_wire : back_forth ∝ —.
+Theorem back_forth_is_Wire : back_forth ∝ —.
 Proof.
   prop_exist_non_zero 1.
   simpl. 
@@ -568,22 +567,17 @@ Proof.
   solve_matrix.
 Qed.
 
-Definition forth_back : ZX 1 1 := Compose (Stack Cap Wire) (Stack Wire Cup).
-Theorem forth_back_is_wire : back_forth ∝ —.
+Definition forth_back : ZX 1 1 := (⊂ ↕ —) ⟷ (— ↕ ⊃).
+Theorem forth_back_is_Wire : back_forth ∝ —.
 Proof.
   prop_exist_non_zero 1.
   simpl. 
   rewrite wire_identity_semantics.
   solve_matrix.
 Qed.
-
-Theorem inverse_angle_Z : forall α nIn nOut, ZX_semantics(Compose (Z_Spider nIn 1 α) (Z_Spider 1 nOut (-α))) = ZX_semantics (Z_Spider nIn nOut 0).
-Proof.
-  intros.
-Abort.
 
 Theorem Hopf_rule_Z_X : 
-  Compose (Z_Spider 1 2 0) (X_Spider 2 1 0) ∝ Compose (Z_Spider 1 0 0) (X_Spider 0 1 0).
+  (Z_Spider 1 2 0) ⟷ (X_Spider 2 1 0) ∝ (Z_Spider 1 0 0) ⟷ (X_Spider 0 1 0).
 Proof.
   prop_exist_non_zero (/C2).
   simpl.
@@ -594,7 +588,7 @@ Proof.
 Qed.
 
 Theorem Hopf_rule_X_Z : 
-  Compose (X_Spider 1 2 0) (Z_Spider 2 1 0) ∝ Compose (X_Spider 1 0 0) (Z_Spider 0 1 0).
+  (X_Spider 1 2 0) ⟷ (Z_Spider 2 1 0) ∝ (X_Spider 1 0 0) ⟷ (Z_Spider 0 1 0).
 Proof.
   prop_exist_non_zero (/C2).
   simpl.
@@ -604,13 +598,13 @@ Proof.
   solve_matrix.
 Qed.
 
-Local Definition Bi_Alg_X_Stack_2_1 : ZX 2 4 := Stack (X_Spider 1 2 0) (X_Spider 1 2 0).
-Local Definition Bi_Alg_SWAP_Stack : ZX 4 4 := Stack Wire (Stack ZX_SWAP Wire).
-Local Definition Bi_Alg_Z_Stack_1_2 : ZX 4 2 := Stack (Z_Spider 2 1 0) (Z_Spider 2 1 0).
-Definition Bi_Alg_Z_X := Compose Bi_Alg_X_Stack_2_1 (Compose Bi_Alg_SWAP_Stack Bi_Alg_Z_Stack_1_2).
+Local Definition Bi_Alg_X_Stack_2_1 : ZX 2 4 := (X_Spider 1 2 0) ↕ (X_Spider 1 2 0).
+Local Definition Bi_Alg_SWAP_Stack : ZX 4 4 := — ↕ ⨉ ↕ —.
+Local Definition Bi_Alg_Z_Stack_1_2 : ZX 4 2 := (Z_Spider 2 1 0) ↕ (Z_Spider 2 1 0).
+Definition Bi_Alg_Z_X := Bi_Alg_X_Stack_2_1 ⟷ Bi_Alg_SWAP_Stack ⟷ Bi_Alg_Z_Stack_1_2.
 
 Theorem BiAlgebra_rule_Z_X : 
-  Compose (Z_Spider 2 1 0) (X_Spider 1 2 0) ∝ Bi_Alg_Z_X.
+  (Z_Spider 2 1 0) ⟷ (X_Spider 1 2 0) ∝ Bi_Alg_Z_X.
 Proof.
   prop_exist_non_zero 4.
   simpl.
@@ -635,11 +629,12 @@ Proof.
     auto).
 Qed.
 
-Local Definition Bi_Alg_Z_Stack_2_1 : ZX 2 4 := Stack (Z_Spider 1 2 0) (Z_Spider 1 2 0).
-Local Definition Bi_Alg_X_Stack_1_2 : ZX 4 2 := Stack (X_Spider 2 1 0) (X_Spider 2 1 0).
-Definition Bi_Alg_X_Z := Compose Bi_Alg_Z_Stack_2_1 (Compose Bi_Alg_SWAP_Stack Bi_Alg_X_Stack_1_2).
-Theorem BiAlgebra_rule_X_Z : ZX_semantics (Compose (X_Spider 2 1 0) (Z_Spider 1 2 0)) = (C2 * C2) .* ZX_semantics Bi_Alg_X_Z.
+Local Definition Bi_Alg_Z_Stack_2_1 : ZX 2 4 := (Z_Spider 1 2 0) ↕ (Z_Spider 1 2 0).
+Local Definition Bi_Alg_X_Stack_1_2 : ZX 4 2 := (X_Spider 2 1 0) ↕ (X_Spider 2 1 0).
+Definition Bi_Alg_X_Z := Bi_Alg_Z_Stack_2_1 ⟷ Bi_Alg_SWAP_Stack ⟷ Bi_Alg_X_Stack_1_2.
+Theorem BiAlgebra_rule_X_Z : (X_Spider 2 1 0) ⟷ (Z_Spider 1 2 0) ∝ Bi_Alg_X_Z.
 Proof.
+  prop_exist_non_zero 4.
   simpl.
   rewrite ZX_SWAP_is_swap, wire_identity_semantics.
   unfold_spider.
@@ -662,6 +657,7 @@ Proof.
     simpl;
     auto).
 Qed.
+
 Theorem inverse_Z_Spider : forall nIn nOut α, ZX_semantics (Z_Spider nIn nOut α) = (ZX_semantics (Z_Spider nOut nIn (-α)))†.
 Proof.
   intros.
@@ -715,18 +711,6 @@ Proof.
     reflexivity.
 Qed.
 
-Fixpoint ColorSwap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
-  match zx with
-  | X_Spider n m α  => Z_Spider n m α
-  | Z_Spider n m α  => X_Spider n m α
-  | zx1 ↕ zx2   => Stack (ColorSwap zx1) (ColorSwap zx2)
-  | zx1 ⟷ zx2 => Compose (ColorSwap zx1) (ColorSwap zx2)
-  | otherwise       => otherwise
-  end.
-
-Notation "∽ zx" := (ColorSwap zx) (at level 10). (* \backsim *) 
-(* I'm not convinced of using \backsim but I have no better symbol in mind so far *)
-
 Lemma ColorSwap_self_inverse : forall {nIn nOut} (zx : ZX nIn nOut),
   ∽ (∽ zx) = zx. 
 Proof.
@@ -742,7 +726,7 @@ Proof.
 Qed.
 
 Definition BiHadamard {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
-  Compose (Compose (nIn ↑ □) zx) (nOut ↑ □).
+  (nIn ↑ □) ⟷ zx ⟷ (nOut ↑ □).
 Transparent BiHadamard.
 
 Lemma nH_Plus_Stack : forall {n0 n1 : nat},
@@ -761,7 +745,7 @@ Proof.
     rewrite kron_assoc; try auto with wf_db.
 Qed.
 
-Lemma H_comm_cap : (Compose Cap (Stack ZX_H Wire)) ∝ (Compose Cap (Stack Wire ZX_H)).
+Lemma H_comm_cap : (⊂ ⟷ (□ ↕ —)) ∝ (⊂ ⟷ (— ↕ □)).
 Proof.
   unfold proportional.
   prop_exist_non_zero 1.
@@ -772,7 +756,7 @@ Proof.
   solve_matrix.
 Qed.
 
-Lemma H_comm_cup : (Compose (Stack ZX_H Wire) Cup) ∝ (Compose (Stack Wire ZX_H) Cup).
+Lemma H_comm_cup : ((□ ↕ —) ⟷ ⊃) ∝ ((— ↕ □) ⟷ ⊃).
 Proof.
   unfold proportional.
   prop_exist_non_zero 1.
@@ -806,7 +790,7 @@ Proof.
     rewrite  <- (ZX_Stack_Compose_distr _ _ _ _ _ _ ZX_H ZX_H).
     rewrite ZX_H_H_is_Wire.
     rewrite Wire_Compose.
-    rewrite <- nWire_2_Stack_wire.
+    rewrite <- nWire_2_Stack_Wire.
     rewrite nwire_r.
     reflexivity.
   - remove_empty.
@@ -818,10 +802,10 @@ Proof.
     rewrite ZX_Compose_assoc.
     rewrite H_comm_cup.
     rewrite <- ZX_Compose_assoc.
-    rewrite <- (ZX_Stack_Compose_distr _ _ _ _ _ _ Wire Wire).
+    rewrite <- (ZX_Stack_Compose_distr _ _ _ _ _ _ — —).
     rewrite ZX_H_H_is_Wire.
     rewrite Wire_Compose.
-    rewrite <- nWire_2_Stack_wire.
+    rewrite <- nWire_2_Stack_Wire.
     rewrite nwire_l.
     reflexivity.
   - simpl.
@@ -864,7 +848,7 @@ Proof.
 Qed.
 
 Transparent Wire.
-Lemma wire_colorswap : ColorSwap Wire ∝ Wire.
+Lemma wire_colorswap : ∽ — ∝ Wire.
 Proof.
   unfold Wire.
   simpl.
@@ -1031,7 +1015,7 @@ Ltac swap_colors_of proof :=
   intros; swap_colors; try apply proof.
 
 Lemma ColorSwap_HadamardPass :forall {nIn nOut} (zx : ZX nIn nOut),
-  Compose (nIn ↑ □) zx ∝ Compose (ColorSwap zx) (nOut ↑ □).
+  (nIn ↑ □) ⟷ zx ∝ (∽ zx ⟷ (nOut ↑ □)).
 Proof.
   intros.
   rewrite ColorSwap_isBiHadamard.
@@ -1044,8 +1028,7 @@ Proof.
 Qed.
 
 Lemma Z_1_1_Wire_Cup : forall α, 
-  Compose (Stack Wire (Z_Spider 1 1 α)) Cup ∝
-  Compose (Stack (Z_Spider 1 1 α) Wire) Cup.
+  (— ↕ (Z_Spider 1 1 α)) ⟷ ⊃ ∝ ((Z_Spider 1 1 α) ↕ —) ⟷ ⊃.
 Proof.
   intros.
   prop_exist_non_zero 1.
@@ -1057,8 +1040,7 @@ Proof.
 Qed.
 
 Lemma Z_1_1_Wire_Cap : forall α, 
-  ⊂ ⟷ (— ↕ (Z_Spider 1 1 α)) ∝
-  ⊂ ⟷ ((Z_Spider 1 1 α) ↕ —).
+  ⊂ ⟷ (— ↕ (Z_Spider 1 1 α)) ∝ ⊂ ⟷ ((Z_Spider 1 1 α) ↕ —).
 Proof.
   intros.
   prop_exist_non_zero 1.
@@ -1070,24 +1052,21 @@ Proof.
 Qed.
 
 Lemma X_1_1_Wire_Cup : forall α, 
-  Compose (Stack Wire (X_Spider 1 1 α)) Cup ∝
-  Compose (Stack (X_Spider 1 1 α) Wire) Cup.
+  (— ↕ (X_Spider 1 1 α)) ⟷ ⊃ ∝ ((X_Spider 1 1 α) ↕ —) ⟷ ⊃.
 Proof.
   swap_colors_of Z_1_1_Wire_Cup.
 Qed.
 
 Lemma X_1_1_Wire_Cap : forall α,
-Compose Cap (Stack Wire (X_Spider 1 1 α)) ∝
-Compose Cap (Stack (X_Spider 1 1 α) Wire).
+  ⊂ ⟷ (— ↕ (X_Spider 1 1 α)) ∝ ⊂ ⟷ ((X_Spider 1 1 α) ↕ —).
 Proof.
   swap_colors_of Z_1_1_Wire_Cap.
 Qed.
 
 Lemma X_spider_1_1_fusion : forall α β, 
-  Compose (X_Spider 1 1 α) (X_Spider 1 1 β) ∝ X_Spider 1 1 (α + β).
+  (X_Spider 1 1 α) ⟷ (X_Spider 1 1 β) ∝ X_Spider 1 1 (α + β).
 Proof.
   swap_colors_of Z_spider_1_1_fusion.
 Qed.
-
 
 Local Close Scope ZX_scope.
