@@ -140,6 +140,18 @@ Fixpoint Transpose {nIn nOut} (zx : ZX nIn nOut) : ZX nOut nIn :=
   end
   where "zx ⊺" := (Transpose zx).
 
+Fixpoint Invert_angles {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut :=
+  match zx with
+  | Z_Spider mIn mOut α => Z_Spider mIn mOut (-α)
+  | X_Spider mIn mOut α => X_Spider mIn mOut (-α)
+  | zx1 ⟷ zx2 => (Invert_angles zx1) ⟷ (Invert_angles zx2)
+  | zx1 ↕ zx2 => (Invert_angles zx1) ↕ (Invert_angles zx2)
+  | other => other
+  end.
+
+Definition Adjoint {nIn nOut} (zx : ZX nIn nOut) : ZX nOut nIn := Invert_angles (zx ⊺).
+Notation "zx ‡" := (Adjoint zx) (at level 10). (* \ddagger *)
+  
 Lemma hadamard_self_transpose : hadamard ⊤ = hadamard.
 Proof. solve_matrix. Qed.
 
@@ -224,6 +236,42 @@ Proof.
   - simpl; solve_matrix.
   - simpl; rewrite IHzx1, IHzx2; rewrite <- kron_transpose; reflexivity.
   - simpl; rewrite IHzx1, IHzx2; rewrite <- Mmult_transpose; reflexivity.
+Qed.
+
+Lemma ZX_semantics_Adjoint_comm {nIn nOut} : forall (zx : ZX nIn nOut),
+  ZX_semantics (zx ‡) = (ZX_semantics zx) †.
+Proof.
+  intros.
+  induction zx.
+  1, 4, 5: ZXunfold; solve_matrix. (* Cap, Cup *)
+  3, 4: simpl; unfold Adjoint in IHzx1; unfold Adjoint in IHzx2; rewrite IHzx1, IHzx2;
+        try rewrite <- kron_adjoint; try rewrite <- Mmult_adjoint;
+        reflexivity. (* Compose, Stack *)
+  - ZXunfold.
+    rewrite Mscale_adj.
+    rewrite Cexp_conj_neg.
+    apply Mplus_simplify; try apply Mscale_simplify; try reflexivity; try rewrite Mmult_adjoint.
+    + rewrite 2 kron_n_adjoint; try auto with wf_db.
+      rewrite 2 Mmult_adjoint.
+      rewrite 2 adjoint_involutive.
+      reflexivity.
+    + restore_dims.
+      rewrite 2 kron_n_adjoint; try auto with wf_db.
+      rewrite 2 Mmult_adjoint.
+      rewrite 2 adjoint_involutive.
+      reflexivity.
+  - ZXunfold.
+    rewrite Mscale_adj.
+    rewrite Cexp_conj_neg.
+    restore_dims.
+    rewrite Mmult_adjoint.
+    restore_dims.
+    rewrite 4 kron_n_adjoint; try auto with wf_db.
+    rewrite bra0_adjoint_ket0.
+    rewrite bra1_adjoint_ket1.
+    rewrite ket0_adjoint_bra0.
+    rewrite ket1_adjoint_bra1.
+    reflexivity.
 Qed.
 
 Lemma kron_n_id : forall n, n ⨂ I 2 = I (2^n).
