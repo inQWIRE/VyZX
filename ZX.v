@@ -95,21 +95,21 @@ Global Opaque Wire.
 
 Global Hint Resolve wire_identity_semantics : zx_sem_db.
 
+Reserved Notation "n ⇑ zx" (at level 40). (* \Uparrow - maybe change to ⇕ (\Updownarrow) *)
 Fixpoint nStack {nIn nOut} n (zx : ZX nIn nOut) : ZX (n * nIn) (n * nOut) :=
   match n with
   | 0 => ⦰
-  | S n' => zx ↕ (nStack n' zx)
-  end.
+  | S n' => zx ↕ (n' ⇑ zx)
+  end
+  where "n ⇑ zx" := (nStack n zx).
 
-Notation "n ⇑ zx" := (nStack n zx) (at level 40). (* \Uparrow - maybe change to ⇕ (\Updownarrow) *)
-
+Reserved Notation "n ↑ zx" (at level 41).
 Fixpoint nStack1 n (zx : ZX 1 1) : ZX n n :=
   match n with
   | 0 => ⦰
-  | S n' => zx ↕ (nStack1 n' zx)
-  end.
-
-Notation "n ↑ zx" := (nStack1 n zx) (at level 41). (* \uparrow - maybe change to ↕ (\updownarrow) *)
+  | S n' => zx ↕ (n' ↑ zx)
+  end
+  where "n ↑ zx" := (nStack1 n zx).
 
 Lemma nStack1_n_kron : forall n (zx : ZX 1 1), ZX_semantics (n ↑ zx) = n ⨂ ZX_semantics zx.
 Proof.
