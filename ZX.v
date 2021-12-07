@@ -1,6 +1,7 @@
 Require Import Coq.Vectors.Fin.
 Require Import externals.QuantumLib.Quantum.
 Require Import externals.QuantumLib.Proportional.
+Require Import externals.QuantumLib.Dirac.
 
 Declare Scope ZX_scope.
 Local Open Scope ZX_scope.
@@ -151,45 +152,6 @@ Fixpoint Invert_angles {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut :=
 
 Definition Adjoint {nIn nOut} (zx : ZX nIn nOut) : ZX nOut nIn := Invert_angles (zx ⊺).
 Notation "zx ‡" := (Adjoint zx) (at level 10). (* \ddagger *)
-  
-Lemma hadamard_self_transpose : hadamard ⊤ = hadamard.
-Proof. solve_matrix. Qed.
-
-Lemma ket0_transpose_bra0 : (ket 0) ⊤ = bra 0.
-Proof. solve_matrix. Qed.
-
-Lemma ket1_transpose_bra1 : (ket 1) ⊤ = bra 1.
-Proof. solve_matrix. Qed.
-
-Lemma bra0_transpose_ket0 : (bra 0) ⊤ = ket 0.
-Proof. solve_matrix. Qed.
-
-Lemma bra1_transpose_ket1 : (bra 1) ⊤ = ket 1.
-Proof. solve_matrix. Qed.
-
-Lemma bra1_adjoint_ket1 : (bra 1) † = ket 1.
-Proof. solve_matrix. Qed.
-
-Lemma ket1_adjoint_bra1 : (ket 1) † = bra 1.
-Proof. solve_matrix. Qed.
-
-Lemma bra0_adjoint_ket0 : (bra 0) † = ket 0.
-Proof. solve_matrix. Qed.
-
-Lemma ket0_adjoint_bra0 : (ket 0) † = bra 0.
-Proof. solve_matrix. Qed.
-
-Lemma kron_n_transpose : forall (m n o : nat) (A : Matrix m n),
-  (o ⨂ A)⊤ = o ⨂ (A⊤). 
-Proof. 
-  induction o; intros.
-  - apply id_transpose_eq.
-  - simpl; rewrite <- IHo; rewrite <- kron_transpose; reflexivity. 
-Qed.
-
-Lemma adjoint_transpose_comm : forall m n (A : Matrix m n),
-  A † ⊤ = A ⊤ †.
-Proof. reflexivity. Qed.
 
 Lemma ZX_semantics_Transpose_comm {nIn nOut} : forall (zx : ZX nIn nOut),
   ZX_semantics (zx ⊺) = (ZX_semantics zx) ⊤.
@@ -210,7 +172,7 @@ Proof.
     repeat rewrite kron_n_transpose.
     repeat rewrite Mmult_transpose.
     repeat rewrite adjoint_transpose_comm.
-    repeat rewrite hadamard_self_transpose.
+    repeat rewrite hadamard_st.
     repeat rewrite hadamard_sa.
     rewrite ket0_transpose_bra0.
     rewrite ket1_transpose_bra1.
@@ -271,35 +233,6 @@ Proof.
     rewrite bra1_adjoint_ket1.
     rewrite ket0_adjoint_bra0.
     rewrite ket1_adjoint_bra1.
-    reflexivity.
-Qed.
-
-Lemma kron_n_id : forall n, n ⨂ I 2 = I (2^n).
-Proof.
-  induction n.
-  - reflexivity.
-  - simpl.
-    rewrite IHn.
-    rewrite id_kron.
-    replace (2^n + (2^n + 0))%nat with (2^n*2)%nat by lia.
-    reflexivity.
-Qed.
-
-Lemma kron_n_m_split {o p} : forall n m (A : Matrix o p), 
-  WF_Matrix A -> (n + m) ⨂ A = n ⨂ A ⊗ m ⨂ A.
-Proof.
-  induction n.
-  - simpl. 
-    intros. 
-    rewrite kron_1_l; try auto with wf_db.
-  - intros.
-    simpl.
-    rewrite IHn; try auto.
-    restore_dims.
-    rewrite 2 kron_assoc; try auto with wf_db.
-    rewrite <- kron_n_assoc; try auto.
-    simpl.
-    restore_dims.
     reflexivity.
 Qed.
 
@@ -393,7 +326,7 @@ Proof.
     rewrite <- 2 Mmult_assoc with (nMid ⨂ hadamard) _ _.
     rewrite kron_n_mult.
     rewrite MmultHH.
-    rewrite kron_n_id.
+    rewrite kron_n_I.
     rewrite Mmult_1_l; try auto with wf_db.
     repeat rewrite Mmult_assoc.
     reflexivity.
