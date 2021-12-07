@@ -166,7 +166,7 @@ Proof. apply transpose_compat. Qed.
 Lemma colorswap_compat :
   forall nIn nOut,
     forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
-    (∽ zx0) ∝ (∽ zx1).
+    (⊙ zx0) ∝ (⊙ zx1).
 Proof.
   intros.
   destruct H; destruct H; exists x; split; try assumption.

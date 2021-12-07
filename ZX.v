@@ -255,21 +255,19 @@ Proof.
     reflexivity.
 Qed.
 
-Reserved Notation "∽ zx" (at level 10). (* \backsim *) 
-
+Reserved Notation "⊙ zx" (at level 10). (* \odot *) 
 Fixpoint ColorSwap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
   match zx with
   | X_Spider n m α  => Z_Spider n m α
   | Z_Spider n m α  => X_Spider n m α
-  | zx1 ↕ zx2   => (∽ zx1) ↕ (∽ zx2)
-  | zx1 ⟷ zx2 => (∽ zx1) ⟷ (∽ zx2)
+  | zx1 ↕ zx2   => (⊙ zx1) ↕ (⊙ zx2)
+  | zx1 ⟷ zx2 => (⊙ zx1) ⟷ (⊙ zx2)
   | otherwise => otherwise
   end
-  where "∽ zx" := (ColorSwap zx).
-(* I'm not convinced of using \backsim but I have no better symbol in mind so far *)
+  where "⊙ zx" := (ColorSwap zx).
 
 Lemma ZX_semantics_Colorswap_comm {nIn nOut} : forall (zx : ZX nIn nOut),
-  ZX_semantics (∽ zx) = nOut ⨂ hadamard × (ZX_semantics zx) × nIn ⨂ hadamard.
+  ZX_semantics (⊙ zx) = nOut ⨂ hadamard × (ZX_semantics zx) × nIn ⨂ hadamard.
 Proof.
   induction zx.
   - ZXunfold; reflexivity.

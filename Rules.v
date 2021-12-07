@@ -712,7 +712,7 @@ Proof.
 Qed.
 
 Lemma ColorSwap_self_inverse : forall {nIn nOut} (zx : ZX nIn nOut),
-  ∽ (∽ zx) = zx. 
+  ⊙ (⊙ zx) = zx. 
 Proof.
   intros; induction zx; try reflexivity.
   - simpl.
@@ -768,7 +768,7 @@ Proof.
 Qed.
 
 Lemma ColorSwap_isBiHadamard : forall {nIn nOut} (zx : ZX nIn nOut),
-    ∽ zx ∝ BiHadamard zx.
+    ⊙ zx ∝ BiHadamard zx.
 Proof.
   intros; unfold BiHadamard.
   induction zx.
@@ -827,7 +827,7 @@ Qed.
 
 Lemma ColorSwap_comp : forall nIn nOut,
   forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
-  ∽ zx0 ∝ ∽ zx1.
+  ⊙ zx0 ∝ ⊙ zx1.
 Proof.
   intros.
   rewrite 2 ColorSwap_isBiHadamard.
@@ -837,7 +837,7 @@ Proof.
 Qed.
 
 Lemma ColorSwap_lift : forall nIn nOut (zx0 zx1 : ZX nIn nOut),
-  ∽ zx0 ∝ ∽ zx1 -> zx0 ∝ zx1.
+  ⊙ zx0 ∝ ⊙ zx1 -> zx0 ∝ zx1.
 Proof.
   intros.
   rewrite <- ColorSwap_self_inverse with zx0.
@@ -848,7 +848,7 @@ Proof.
 Qed.
 
 Transparent Wire.
-Lemma wire_colorswap : ∽ — ∝ Wire.
+Lemma wire_colorswap : ⊙ — ∝ Wire.
 Proof.
   unfold Wire.
   simpl.
@@ -857,21 +857,12 @@ Proof.
 Qed.
 Opaque Wire.
 
-Lemma empty_colorswap : ∽ ⦰ ∝ ⦰.
+Lemma empty_colorswap : ⊙ ⦰ ∝ ⦰.
 Proof.
   reflexivity.
 Qed.
 
-Lemma colorswap_eq_n_Stack : forall nIn nOut (zx : ZX nIn nOut) n, ∽ zx ∝ zx -> ∽ (n ⇑ zx) ∝ (n ⇑ zx).
-Proof.
-  intros.
-  induction n; simpl; try exact empty_colorswap.
-  rewrite IHn.
-  rewrite H.
-  reflexivity.
-Qed.
-
-Lemma colorswap_eq_n_Stack_1 : forall zx n, ∽ zx ∝ zx -> ∽ (n ↑ zx) ∝ (n ↑ zx).
+Lemma colorswap_eq_n_Stack : forall nIn nOut (zx : ZX nIn nOut) n, ⊙ zx ∝ zx -> ⊙ (n ⇑ zx) ∝ (n ⇑ zx).
 Proof.
   intros.
   induction n; simpl; try exact empty_colorswap.
@@ -880,14 +871,23 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma nWire_colorswap : forall n, ∽ (n ↑ —) ∝ (n ↑ —).
+Lemma colorswap_eq_n_Stack_1 : forall zx n, ⊙ zx ∝ zx -> ⊙ (n ↑ zx) ∝ (n ↑ zx).
+Proof.
+  intros.
+  induction n; simpl; try exact empty_colorswap.
+  rewrite IHn.
+  rewrite H.
+  reflexivity.
+Qed.
+
+Lemma nWire_colorswap : forall n, ⊙ (n ↑ —) ∝ (n ↑ —).
 Proof.
   intros.
   apply colorswap_eq_n_Stack_1.
   exact wire_colorswap.
 Qed.
 
-Lemma H_colorswap : ∽ □ ∝ □.
+Lemma H_colorswap : ⊙ □ ∝ □.
 Proof.
   rewrite ColorSwap_isBiHadamard.
   unfold BiHadamard.
@@ -900,20 +900,20 @@ Proof.
 Qed.
 
 Local Transparent ZX_X ZX_Z ZX_Y.
-Lemma Z_colorswap_X : ∽ ZX_X ∝ ZX_Z.
+Lemma Z_colorswap_X : ⊙ ZX_X ∝ ZX_Z.
 Proof.
   unfold ZX_X, ZX_Z.
   reflexivity.
 Qed.
 
-Lemma X_colorswap_Z : ∽ ZX_Z ∝ ZX_X.
+Lemma X_colorswap_Z : ⊙ ZX_Z ∝ ZX_X.
 Proof.
   unfold ZX_X, ZX_Z.
   reflexivity.
 Qed.
 Local Opaque ZX_X ZX_Z.
 
-Lemma Y_colorswap : ∽ ZX_Y ∝ ZX_Y.
+Lemma Y_colorswap : ⊙ ZX_Y ∝ ZX_Y.
 Proof.
   unfold ZX_Y.
   simpl.
@@ -928,7 +928,7 @@ Local Transparent ZX_X ZX_Z.
 Qed.
 Local Opaque ZX_X ZX_Z ZX_Y.
 
-Lemma nH_colorswap : forall n, ∽ (n ↑ □) ∝ (n ↑ □).
+Lemma nH_colorswap : forall n, ⊙ (n ↑ □) ∝ (n ↑ □).
 Proof.
   intros.
   apply colorswap_eq_n_Stack_1.
@@ -936,7 +936,7 @@ Proof.
 Qed.
 
 Lemma compose_colorswap : forall nIn nMid nOut (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
-  ∽ zx0 ∝ zx0 -> ∽ zx1 ∝ zx1 -> ∽ (zx0 ⟷ zx1) ∝ (zx0 ⟷ zx1).
+  ⊙ zx0 ∝ zx0 -> ⊙ zx1 ∝ zx1 -> ⊙ (zx0 ⟷ zx1) ∝ (zx0 ⟷ zx1).
 Proof.
   intros.
   simpl.
@@ -945,7 +945,7 @@ Proof.
 Qed.
 
 Lemma stack_colorswap : forall nIn nMid nOut (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
-  ∽ zx0 ∝ zx0 -> ∽ zx1 ∝ zx1 -> ∽ (zx0 ↕ zx1) ∝ (zx0 ↕ zx1).
+  ⊙ zx0 ∝ zx0 -> ⊙ zx1 ∝ zx1 -> ⊙ (zx0 ↕ zx1) ∝ (zx0 ↕ zx1).
 Proof.
   intros.
   simpl.
@@ -954,7 +954,7 @@ Proof.
 Qed.
 
 Lemma nStack1_colorswap : forall zx n ,
-  ∽ zx ∝ zx -> ∽ (n ↑ zx) ∝ (n ↑ zx).
+  ⊙ zx ∝ zx -> ⊙ (n ↑ zx) ∝ (n ↑ zx).
 Proof.
   intros.
   subst.
@@ -965,7 +965,7 @@ Proof.
 Qed.
 
 Lemma nStack_colorswap : forall nIn nOut (zx : ZX nIn nOut) n,
-  ∽ zx ∝ zx -> ∽ (n ⇑ zx) ∝ (n ⇑ zx).
+  ⊙ zx ∝ zx -> ⊙ (n ⇑ zx) ∝ (n ⇑ zx).
 Proof.
   intros.
   subst.
@@ -975,7 +975,7 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma swap_colorswap : ∽ ⨉ ∝ ⨉.
+Lemma swap_colorswap : ⊙ ⨉ ∝ ⨉.
 Proof.
   rewrite ColorSwap_isBiHadamard.
   prop_exist_non_zero (-1).
@@ -1015,7 +1015,7 @@ Ltac swap_colors_of proof :=
   intros; swap_colors; try apply proof.
 
 Lemma ColorSwap_HadamardPass :forall {nIn nOut} (zx : ZX nIn nOut),
-  (nIn ↑ □) ⟷ zx ∝ (∽ zx ⟷ (nOut ↑ □)).
+  (nIn ↑ □) ⟷ zx ∝ (⊙ zx ⟷ (nOut ↑ □)).
 Proof.
   intros.
   rewrite ColorSwap_isBiHadamard.
