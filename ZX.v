@@ -1,7 +1,7 @@
 Require Import Coq.Vectors.Fin.
 Require Import externals.QuantumLib.Quantum.
 Require Import externals.QuantumLib.Proportional.
-Require Import externals.QuantumLib.Dirac.
+Require Import externals.QuantumLib.VectorStates.
 
 Declare Scope ZX_scope.
 Local Open Scope ZX_scope.

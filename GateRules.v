@@ -115,7 +115,7 @@ Proof.
   autorewrite with Cexp_db.
   Msimpl.
   rewrite hadamard_sa.
-  repeat rewrite Dirac.ket2bra.
+  repeat rewrite VectorStates.ket2bra.
   restore_dims.
   repeat rewrite <- kron_mixed_product.
   repeat rewrite <- Mmult_assoc.

@@ -1,5 +1,5 @@
 Require Import externals.QuantumLib.Quantum.
-Require Import externals.QuantumLib.Dirac.
+Require Import externals.QuantumLib.VectorStates.
 Require Export ZX.
 
 Local Open Scope ZX_scope.
