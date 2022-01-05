@@ -751,7 +751,7 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma ColorSwap_self_inverse : forall {nIn nOut} (zx : ZX nIn nOut),
+Lemma ColorSwap_involutive : forall {nIn nOut} (zx : ZX nIn nOut),
   ⊙ (⊙ zx) = zx. 
 Proof.
   intros; induction zx; try reflexivity.
@@ -805,6 +805,20 @@ Proof.
   rewrite wire_identity_semantics.
   rewrite ZX_H_is_H.
   solve_matrix.
+Qed.
+
+Lemma ColorSwap_Compose : forall nIn nMid nOut (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
+  ⊙ (zx0 ⟷ zx1) ∝ (⊙ zx0 ⟷ ⊙ zx1).
+Proof.
+  intros.
+  reflexivity.
+Qed.
+
+Lemma ColorSwap_Stack : forall nIn nMid nOut (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
+  ⊙ (zx0 ↕ zx1) ∝ (⊙ zx0 ↕ ⊙ zx1).
+Proof.
+  intros.
+  reflexivity.
 Qed.
 
 Lemma ColorSwap_isBiHadamard : forall {nIn nOut} (zx : ZX nIn nOut),
@@ -880,8 +894,8 @@ Lemma ColorSwap_lift : forall nIn nOut (zx0 zx1 : ZX nIn nOut),
   ⊙ zx0 ∝ ⊙ zx1 -> zx0 ∝ zx1.
 Proof.
   intros.
-  rewrite <- ColorSwap_self_inverse with zx0.
-  rewrite <- ColorSwap_self_inverse.
+  rewrite <- ColorSwap_involutive with zx0.
+  rewrite <- ColorSwap_involutive.
   rewrite ColorSwap_comp.
   - reflexivity.
   - assumption.
@@ -1205,6 +1219,18 @@ Proof.
   rewrite nH_composition.
   rewrite nwire_r.
   reflexivity.
+Qed.
+
+Lemma H_edge_sandwich' : forall nIn nMid0 nMid1 nOut (zx0 : ZX nIn nMid0) (zx1 : ZX nMid0 nMid1) (zx2 : ZX nMid1 nOut),
+  zx0 ⥈ zx1 ⥈ zx2 ∝ BiHadamard (⊙ zx0 ⟷ zx1 ⟷ ⊙ zx2).
+Proof.
+  intros.
+  rewrite <- ColorSwap_isBiHadamard.
+  rewrite ColorSwap_Compose.
+  rewrite ColorSwap_involutive.
+  rewrite ColorSwap_Compose.
+  rewrite ColorSwap_involutive.
+  apply H_edge_sandwich.
 Qed.
 
 Local Close Scope ZX_scope.
