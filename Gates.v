@@ -8,7 +8,11 @@ Definition ZX_H :=
 Global Opaque ZX_H.
 
 Notation "□" := (ZX_H). (* \square*) 
-Notation "zx0 ⥈ zx1" := (zx0 ⟷ □ ⟷ zx1) (left associativity, at level 40). (* \leftrightarrowcircle *)
+
+Definition hadamard_edge {nIn nMid nOut} (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut) := 
+    (zx0 ⟷ (nMid ↑ □) ⟷ zx1).
+
+Notation "zx0 ⥈ zx1" := (hadamard_edge zx0 zx1) (left associativity, at level 40). (* \leftrightarrowcircle *)
 
 Definition ZX_CNOT_l : ZX 2 2 :=  
         ((Z_Spider 1 2 0%R) ↕ —) ⟷ (— ↕ (X_Spider 2 1 0%R)).

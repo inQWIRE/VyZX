@@ -80,9 +80,49 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma ZX_nStack_0_Empty_l : forall {nOut nIn' nOut'} (zx : ZX 0 nOut) (zx' : ZX nIn' nOut'),
+  (0 ⇑ zx') ⟷ zx ∝ zx.
+Proof.
+  intros.
+  simpl.
+  rewrite ZX_Compose_Empty_l.
+  reflexivity.
+Qed.
+
+Lemma ZX_nStack1_0_Empty_l : forall {nOut} (zx : ZX 0 nOut) (zx' : ZX 1 1),
+  (0 ↑ zx') ⟷ zx ∝ zx.
+Proof.
+  intros.
+  simpl.
+  rewrite ZX_Compose_Empty_l.
+  reflexivity.
+Qed.
+
+Lemma ZX_nStack_0_Empty_r : forall {nIn nIn' nOut'} (zx : ZX nIn 0) (zx' : ZX nIn' nOut'),
+  zx ⟷ (0 ⇑ zx') ∝ zx.
+Proof.
+  intros.
+  simpl.
+  rewrite ZX_Compose_Empty_r; clear_eq_ctx.
+  reflexivity.
+Qed.
+
+Lemma ZX_nStack1_0_Empty_r : forall {nIn} (zx : ZX nIn 0) (zx' : ZX 1 1),
+  zx ⟷  (0 ↑ zx') ∝ zx.
+Proof.
+  intros.
+  simpl.
+  rewrite ZX_Compose_Empty_r; clear_eq_ctx.
+  reflexivity.
+Qed.
+
 Ltac remove_empty := try repeat rewrite ZX_Compose_Empty_l;
                      try repeat rewrite ZX_Compose_Empty_r;
                      try repeat rewrite ZX_Stack_Empty_l;
+                     try repeat rewrite ZX_nStack_0_Empty_l;
+                     try repeat rewrite ZX_nStack_0_Empty_r;
+                     try repeat rewrite ZX_nStack1_0_Empty_l;
+                     try repeat rewrite ZX_nStack1_0_Empty_r;
                      try (repeat rewrite ZX_Stack_Empty_r; try clear_eq_ctx).
 
 Lemma ZX_semantics_Compose : forall nIn nMid nOut
@@ -1067,6 +1107,104 @@ Lemma X_spider_1_1_fusion : forall α β,
   (X_Spider 1 1 α) ⟷ (X_Spider 1 1 β) ∝ X_Spider 1 1 (α + β).
 Proof.
   swap_colors_of Z_spider_1_1_fusion.
+Qed.
+ 
+Hint Rewrite Mscale_kron_dist_l Mscale_kron_dist_r Mscale_mult_dist_l Mscale_mult_dist_r Mscale_assoc : scalar_move_db.
+
+Lemma Z_double_H_connection : forall α β,
+  (Z_Spider 1 2 α) ⥈ (Z_Spider 2 1 β) ∝ (Z_Spider 1 0 α) ⟷ (Z_Spider 0 1 β).
+Proof.
+  intros.
+  prop_exist_non_zero (Cexp (PI / 4) * (Cexp (PI / 4)) * / C2); try apply Cmult_neq_0; try apply nonzero_div_nonzero; try apply Cmult_neq_0; try nonzero.
+  unfold_spider.
+  unfold Spider_semantics, bra_ket_MN.
+  simpl; Msimpl.
+  rewrite ZX_H_is_H.
+  autorewrite with scalar_move_db.
+  solve_matrix.
+Qed.
+
+Lemma X_double_H_connection : forall α β,
+  (X_Spider 1 2 α) ⥈ (X_Spider 2 1 β) ∝ (X_Spider 1 0 α) ⟷ (X_Spider 0 1 β).
+Proof.
+    swap_colors_of Z_double_H_connection.
+Qed.
+
+Lemma Empty_H_edge : forall nIn nOut (zx0 : ZX nIn 0) (zx1 : ZX 0 nOut),
+  zx0 ⥈ zx1 ∝ zx0 ⟷ zx1.
+Proof.
+  intros; simpl.
+  unfold hadamard_edge.
+  simpl.
+  rewrite ZX_Compose_Empty_r.
+  reflexivity.
+Qed. 
+
+Lemma H_edge_ColorSwap_inv_l : forall nMid nOut (zx0 : ZX 0 nMid) (zx1 : ZX nMid nOut), 
+  zx0 ∝ ⊙ zx0 -> zx0 ⥈ zx1 ∝ zx0 ⟷ zx1.
+Proof.
+  intros.
+  unfold hadamard_edge.
+  rewrite H.
+  rewrite <- ColorSwap_HadamardPass.
+  remove_empty.
+  rewrite <- H.
+  reflexivity.
+Qed.
+
+Lemma H_edge_ColorSwap_inv_r : forall nIn nMid (zx0 : ZX nIn nMid) (zx1 : ZX nMid 0), 
+  zx1 ∝ ⊙ zx1 -> zx0 ⥈ zx1 ∝ zx0 ⟷ zx1.
+Proof.
+  intros.
+  unfold hadamard_edge.
+  rewrite ZX_Compose_assoc.
+  rewrite ColorSwap_HadamardPass.
+  remove_empty.
+  rewrite <- H.
+  reflexivity.
+Qed.
+
+Lemma H_edge_cap : forall nOut (zx : ZX 2 nOut), ⊂ ⥈ zx ∝ ⊂ ⟷ zx.
+Proof.
+  intros.
+  apply H_edge_ColorSwap_inv_l.
+  reflexivity.
+Qed.
+
+Lemma H_edge_cup : forall nIn (zx : ZX nIn 2), zx ⥈ ⊃ ∝ zx ⟷ ⊃.
+Proof.
+  intros.
+  apply H_edge_ColorSwap_inv_r.
+  reflexivity.
+Qed.
+
+Lemma H_edge_empty_l : forall nOut (zx : ZX 0 nOut), ⦰ ⥈ zx ∝ ⦰ ⟷ zx.
+Proof.
+  intros.
+  apply H_edge_ColorSwap_inv_l.
+  reflexivity.
+Qed.
+
+Lemma H_edge_empty_r : forall nIn (zx : ZX nIn 0), zx ⥈ ⦰ ∝ zx ⟷ ⦰.
+Proof.
+  intros.
+  apply H_edge_ColorSwap_inv_r.
+  reflexivity.
+Qed.
+
+Lemma H_edge_sandwich : forall nIn nMid0 nMid1 nOut (zx0 : ZX nIn nMid0) (zx1 : ZX nMid0 nMid1) (zx2 : ZX nMid1 nOut),
+  zx0 ⥈ zx1 ⥈ zx2 ∝ zx0 ⟷ ⊙ zx1 ⟷ zx2.
+Proof.
+  intros.
+  unfold hadamard_edge.
+  assert ((zx0 ⟷ (nMid0 ↑ □) ⟷ zx1 ⟷ (nMid1 ↑ □) ⟷ zx2) ∝ (zx0 ⟷ ((nMid0 ↑ □) ⟷ zx1 ⟷ (nMid1 ↑ □)) ⟷ zx2)) by (repeat rewrite <- ZX_Compose_assoc; reflexivity).
+  rewrite H.
+  rewrite ColorSwap_HadamardPass.
+  assert ((⊙ zx1 ⟷ (nMid1 ↑ □) ⟷ (nMid1 ↑ □)) ∝ (⊙ zx1 ⟷ ((nMid1 ↑ □) ⟷ (nMid1 ↑ □)))) by (repeat rewrite <- ZX_Compose_assoc; reflexivity).
+  rewrite H0.
+  rewrite nH_composition.
+  rewrite nwire_r.
+  reflexivity.
 Qed.
 
 Local Close Scope ZX_scope.
