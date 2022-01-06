@@ -7,6 +7,9 @@ Require Export Proportional.
 
 Local Open Scope ZX_scope.
 
+(* TODO: Move into quantum lib *)
+Hint Rewrite Mscale_kron_dist_l Mscale_kron_dist_r Mscale_mult_dist_l Mscale_mult_dist_r Mscale_assoc : scalar_move_db.
+
 Lemma ZX_Compose_assoc : forall nIn nMid1 nMid2 nOut
                               (zx1 : ZX nIn nMid1) (zx2 : ZX nMid1 nMid2) (zx3 : ZX nMid2 nOut),
      (zx1 ⟷ zx2) ⟷ zx3 ∝ zx1 ⟷ (zx2 ⟷ zx3).
@@ -493,85 +496,6 @@ Proof.
       reflexivity.
 Qed.
 
-Lemma Z_commutes_through_swap_t : forall α, 
-  ((Z_Spider 1 1 α) ↕ —) ⟷ ⨉ ∝ 
-  ⨉ ⟷ (— ↕ (Z_Spider 1 1 α)).
-Proof.
-  intros.
-  prop_exist_non_zero 1.
-  rewrite Mscale_1_l.
-  simpl.
-  unfold_spider.
-  rewrite ZX_SWAP_is_swap.
-  rewrite wire_identity_semantics.
-  simpl.
-  Msimpl.
-  solve_matrix.
-Qed.
-
-Lemma Z_commutes_through_swap_b : forall α, 
-  (— ↕ (Z_Spider 1 1 α)) ⟷ ⨉ ∝ 
-  ⨉ ⟷ ((Z_Spider 1 1 α) ↕ —).
-Proof.
-  intros.
-  prop_exist_non_zero 1.
-  simpl.
-  unfold_spider.
-  rewrite ZX_SWAP_is_swap.
-  rewrite wire_identity_semantics.
-  simpl.
-  Msimpl.
-  solve_matrix.
-Qed.
-
-Lemma X_commutes_through_swap_b : forall α, 
-  (— ↕ (X_Spider 1 1 α)) ⟷ ⨉ ∝ 
-  ⨉ ⟷ ((X_Spider 1 1 α) ↕ —).
-Proof.
-  intros.
-  prop_exist_non_zero 1.
-  simpl.
-  unfold_spider.
-  rewrite ZX_SWAP_is_swap.
-  rewrite wire_identity_semantics.
-  simpl.
-  Msimpl.
-  solve_matrix.
-Qed.
-
-Lemma Spiders_commute_through_swap_b : forall (zx0 zx1 : ZX 1 1),
-  (— ↕ zx0) ⟷ ⨉ ∝ ⨉ ⟷ (zx0 ↕ —) ->      
-  (— ↕ zx1) ⟷ ⨉ ∝ ⨉ ⟷ (zx1 ↕ —) ->
-  (— ↕ (zx0 ⟷ zx1)) ⟷ ⨉ ∝ ⨉ ⟷ ((zx0 ⟷ zx1) ↕ —).
-Proof.
-  intros.
-  rewrite <- Wire_Compose.
-  rewrite 2 ZX_Stack_Compose_distr.
-  rewrite ZX_Compose_assoc.
-  rewrite H0.
-  rewrite <- ZX_Compose_assoc.
-  rewrite H.
-  rewrite <- ZX_Compose_assoc.
-  reflexivity.
-Qed.
-
-Lemma Spiders_commute_through_swap_t : forall (zx0 zx1 : ZX 1 1),
-  (zx0 ↕ —) ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ zx0) ->      
-  (zx1 ↕ —) ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ zx1) ->
-  ((zx0 ⟷ zx1) ↕ —) ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (zx0 ⟷ zx1)).
-Proof.
-  intros.
-  rewrite <- Wire_Compose.
-  rewrite ZX_Stack_Compose_distr.
-  rewrite ZX_Compose_assoc.
-  rewrite H0.
-  rewrite <- ZX_Compose_assoc.
-  rewrite H.
-  rewrite ZX_Compose_assoc.
-  rewrite ZX_Stack_Compose_distr.
-  reflexivity.
-Qed.
-
 Lemma Z_0_eq_X_0 : 
   Z_Spider 1 1 0 ∝ X_Spider 1 1 0.
 Proof.
@@ -579,6 +503,13 @@ Proof.
   simpl.
   unfold_spider.
   rewrite Cexp_0.
+  Msimpl.
+  rewrite hadamard_sa.
+  rewrite 2 Dirac.ket2bra.
+  repeat rewrite Mmult_assoc.
+  rewrite <- Mmult_plus_distr_l.
+  repeat rewrite <- Mmult_assoc.
+  rewrite <- Mmult_plus_distr_r.
   solve_matrix.
 Qed.
 
@@ -608,7 +539,7 @@ Proof.
 Qed.
 
 Definition forth_back : ZX 1 1 := (⊂ ↕ —) ⟷ (— ↕ ⊃).
-Theorem forth_back_is_Wire : back_forth ∝ —.
+Theorem forth_back_is_Wire : forth_back ∝ —.
 Proof.
   prop_exist_non_zero 1.
   simpl. 
@@ -624,17 +555,8 @@ Proof.
   unfold_spider.
   rewrite Cexp_0.
   rewrite 4 Mscale_1_l.
-  solve_matrix.
-Qed.
-
-Theorem Hopf_rule_X_Z : 
-  (X_Spider 1 2 0) ⟷ (Z_Spider 2 1 0) ∝ (X_Spider 1 0 0) ⟷ (Z_Spider 0 1 0).
-Proof.
-  prop_exist_non_zero (/C2).
-  simpl.
-  unfold_spider.
-  rewrite Cexp_0.
-  rewrite 4 Mscale_1_l.
+  repeat rewrite Dirac.ket2bra.
+  repeat rewrite hadamard_sa.
   solve_matrix.
 Qed.
 
@@ -656,36 +578,9 @@ Proof.
   repeat rewrite Mscale_1_l.
   repeat rewrite Mmult_adjoint.
   repeat rewrite hadamard_sa.
+  repeat rewrite Dirac.ket2bra.
+  autorewrite with scalar_move_db.
   solve_matrix;
-  try repeat rewrite (Cmult_assoc C2 (/C2) _);
-  try repeat rewrite Cinv_r;
-  try repeat rewrite Cmult_1_l;
-  try rewrite Cinv_sqrt2_sqrt;
-  try rewrite 2 Cmult_assoc;
-  try lca;
-  try (
-    apply C0_fst_neq;
-    simpl;
-    auto).
-Qed.
-
-Local Definition Bi_Alg_Z_Stack_2_1 : ZX 2 4 := (Z_Spider 1 2 0) ↕ (Z_Spider 1 2 0).
-Local Definition Bi_Alg_X_Stack_1_2 : ZX 4 2 := (X_Spider 2 1 0) ↕ (X_Spider 2 1 0).
-Definition Bi_Alg_X_Z := Bi_Alg_Z_Stack_2_1 ⟷ Bi_Alg_SWAP_Stack ⟷ Bi_Alg_X_Stack_1_2.
-Theorem BiAlgebra_rule_X_Z : (X_Spider 2 1 0) ⟷ (Z_Spider 1 2 0) ∝ Bi_Alg_X_Z.
-Proof.
-  prop_exist_non_zero 4.
-  simpl.
-  rewrite ZX_SWAP_is_swap, wire_identity_semantics.
-  unfold_spider.
-  autorewrite with Cexp_db.
-  simpl.
-  repeat rewrite kron_1_l; try auto with wf_db.
-  repeat rewrite Mscale_1_l.
-  repeat rewrite Mmult_adjoint.
-  repeat rewrite hadamard_sa.
-  solve_matrix;
-  try repeat rewrite (Cmult_comm (/√2) (/C2));
   try repeat rewrite (Cmult_assoc C2 (/C2) _);
   try repeat rewrite Cinv_r;
   try repeat rewrite Cmult_1_l;
@@ -793,6 +688,8 @@ Proof.
   simpl.
   rewrite wire_identity_semantics.
   rewrite ZX_H_is_H.
+  autorewrite with scalar_move_db.
+  apply Mscale_simplify; try reflexivity.
   solve_matrix.
 Qed.
 
@@ -804,22 +701,24 @@ Proof.
   simpl.
   rewrite wire_identity_semantics.
   rewrite ZX_H_is_H.
+  autorewrite with scalar_move_db.
+  apply Mscale_simplify; try reflexivity.
   solve_matrix.
 Qed.
 
-Lemma ColorSwap_Compose : forall nIn nMid nOut (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
-  ⊙ (zx0 ⟷ zx1) ∝ (⊙ zx0 ⟷ ⊙ zx1).
-Proof.
-  intros.
-  reflexivity.
-Qed.
+Lemma ColorSwap_X : forall nIn nOut α, X_Spider nIn nOut α ∝ ⊙ (Z_Spider nIn nOut α).
+Proof. intros. reflexivity. Qed.
 
-Lemma ColorSwap_Stack : forall nIn nMid nOut (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
-  ⊙ (zx0 ↕ zx1) ∝ (⊙ zx0 ↕ ⊙ zx1).
-Proof.
-  intros.
-  reflexivity.
-Qed.
+Lemma ColorSwap_Z : forall nIn nOut α, Z_Spider nIn nOut α ∝ ⊙ (X_Spider nIn nOut α).
+Proof. intros. reflexivity. Qed.
+
+Lemma ColorSwap_Compose : forall nIn nMid nOut (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
+  (⊙ zx0 ⟷ ⊙ zx1) ∝ ⊙ (zx0 ⟷ zx1).
+Proof. intros. reflexivity. Qed.
+
+Lemma ColorSwap_Stack : forall nIn0 nIn1 nOut0 nOut1 (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1),
+  (⊙ zx0 ↕ ⊙ zx1) ∝ ⊙ (zx0 ↕ zx1).
+Proof. intros. reflexivity. Qed.
 
 Lemma ColorSwap_isBiHadamard : forall {nIn nOut} (zx : ZX nIn nOut),
     ⊙ zx ∝ BiHadamard zx.
@@ -902,7 +801,7 @@ Proof.
 Qed.
 
 Transparent Wire.
-Lemma wire_colorswap : ⊙ — ∝ Wire.
+Lemma wire_colorswap : ⊙ — ∝ —.
 Proof.
   unfold Wire.
   simpl.
@@ -978,6 +877,9 @@ Local Transparent ZX_X ZX_Z.
   simpl.
   unfold_spider.
   autorewrite with Cexp_db.
+  Msimpl.
+  repeat rewrite Dirac.ket2bra.
+  repeat rewrite hadamard_sa.
   solve_matrix.
 Qed.
 Local Opaque ZX_X ZX_Z ZX_Y.
@@ -1055,10 +957,9 @@ Proof.
                                                                   rewrite Rmult_1_r;
                                                                   reflexivity).
   rewrite Cexp_PI.
-  rewrite Mscale_mult_dist_l.
-  rewrite Mscale_mult_dist_r.
-  rewrite 2 Mscale_assoc.
+  autorewrite with scalar_move_db.
   apply Mscale_simplify; try reflexivity.
+  rewrite <- Mmult_assoc.
   solve_matrix.
 Qed.
 
@@ -1067,6 +968,104 @@ Ltac swap_colors :=
 
 Ltac swap_colors_of proof := 
   intros; swap_colors; try apply proof.
+
+Theorem Hopf_rule_X_Z : 
+  (X_Spider 1 2 0) ⟷ (Z_Spider 2 1 0) ∝ (X_Spider 1 0 0) ⟷ (Z_Spider 0 1 0).
+Proof.
+  swap_colors_of Hopf_rule_Z_X.
+Qed.
+ 
+Local Definition Bi_Alg_Z_Stack_2_1 : ZX 2 4 := (Z_Spider 1 2 0) ↕ (Z_Spider 1 2 0).
+Local Definition Bi_Alg_X_Stack_1_2 : ZX 4 2 := (X_Spider 2 1 0) ↕ (X_Spider 2 1 0).
+Definition Bi_Alg_X_Z := Bi_Alg_Z_Stack_2_1 ⟷ Bi_Alg_SWAP_Stack ⟷ Bi_Alg_X_Stack_1_2.
+Theorem BiAlgebra_rule_X_Z : (X_Spider 2 1 0) ⟷ (Z_Spider 1 2 0) ∝ Bi_Alg_X_Z.
+Proof.
+  unfold Bi_Alg_X_Z, Bi_Alg_Z_Stack_2_1, Bi_Alg_X_Stack_1_2.
+  swap_colors_of BiAlgebra_rule_Z_X.
+Qed.
+
+
+Lemma Z_commutes_through_swap_t : forall α, 
+  ((Z_Spider 1 1 α) ↕ —) ⟷ ⨉ ∝ 
+  ⨉ ⟷ (— ↕ (Z_Spider 1 1 α)).
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  rewrite Mscale_1_l.
+  simpl.
+  unfold_spider.
+  rewrite ZX_SWAP_is_swap.
+  rewrite wire_identity_semantics.
+  simpl.
+  Msimpl.
+  autorewrite with scalar_move_db.
+  apply Mscale_simplify; try reflexivity.
+  solve_matrix.
+Qed.  
+
+Lemma X_commutes_through_swap_t : forall α, 
+  ((X_Spider 1 1 α) ↕ —) ⟷ ⨉ ∝ 
+  ⨉ ⟷ (— ↕ (X_Spider 1 1 α)).
+Proof.
+  swap_colors_of Z_commutes_through_swap_t.
+Qed.  
+
+Lemma Z_commutes_through_swap_b : forall α, 
+  (— ↕ (Z_Spider 1 1 α)) ⟷ ⨉ ∝ 
+  ⨉ ⟷ ((Z_Spider 1 1 α) ↕ —).
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  simpl.
+  unfold_spider.
+  rewrite ZX_SWAP_is_swap.
+  rewrite wire_identity_semantics.
+  simpl.
+  Msimpl.
+  autorewrite with scalar_move_db.
+  apply Mscale_simplify; try reflexivity.
+  solve_matrix.
+Qed.
+
+Lemma X_commutes_through_swap_b : forall α, 
+  (— ↕ (X_Spider 1 1 α)) ⟷ ⨉ ∝ 
+  ⨉ ⟷ ((X_Spider 1 1 α) ↕ —).
+Proof.
+  swap_colors_of Z_commutes_through_swap_b.
+Qed.
+
+Lemma Spiders_commute_through_swap_b : forall (zx0 zx1 : ZX 1 1),
+  (— ↕ zx0) ⟷ ⨉ ∝ ⨉ ⟷ (zx0 ↕ —) ->      
+  (— ↕ zx1) ⟷ ⨉ ∝ ⨉ ⟷ (zx1 ↕ —) ->
+  (— ↕ (zx0 ⟷ zx1)) ⟷ ⨉ ∝ ⨉ ⟷ ((zx0 ⟷ zx1) ↕ —).
+Proof.
+  intros.
+  rewrite <- Wire_Compose.
+  rewrite 2 ZX_Stack_Compose_distr.
+  rewrite ZX_Compose_assoc.
+  rewrite H0.
+  rewrite <- ZX_Compose_assoc.
+  rewrite H.
+  rewrite <- ZX_Compose_assoc.
+  reflexivity.
+Qed.
+
+Lemma Spiders_commute_through_swap_t : forall (zx0 zx1 : ZX 1 1),
+  (zx0 ↕ —) ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ zx0) ->      
+  (zx1 ↕ —) ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ zx1) ->
+  ((zx0 ⟷ zx1) ↕ —) ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (zx0 ⟷ zx1)).
+Proof.
+  intros.
+  rewrite <- Wire_Compose.
+  rewrite ZX_Stack_Compose_distr.
+  rewrite ZX_Compose_assoc.
+  rewrite H0.
+  rewrite <- ZX_Compose_assoc.
+  rewrite H.
+  rewrite ZX_Compose_assoc.
+  rewrite ZX_Stack_Compose_distr.
+  reflexivity.
+Qed.
 
 Lemma ColorSwap_HadamardPass :forall {nIn nOut} (zx : ZX nIn nOut),
   (nIn ↑ □) ⟷ zx ∝ (⊙ zx ⟷ (nOut ↑ □)).
@@ -1123,8 +1122,6 @@ Proof.
   swap_colors_of Z_spider_1_1_fusion.
 Qed.
  
-Hint Rewrite Mscale_kron_dist_l Mscale_kron_dist_r Mscale_mult_dist_l Mscale_mult_dist_r Mscale_assoc : scalar_move_db.
-
 Lemma Z_double_H_connection : forall α β,
   (Z_Spider 1 2 α) ⥈ (Z_Spider 2 1 β) ∝ (Z_Spider 1 0 α) ⟷ (Z_Spider 0 1 β).
 Proof.
@@ -1135,6 +1132,9 @@ Proof.
   simpl; Msimpl.
   rewrite ZX_H_is_H.
   autorewrite with scalar_move_db.
+  repeat rewrite <- Mscale_assoc.
+  apply Mscale_simplify; try reflexivity.
+  apply Mscale_simplify; try reflexivity.
   solve_matrix.
 Qed.
 
@@ -1226,9 +1226,9 @@ Lemma H_edge_sandwich' : forall nIn nMid0 nMid1 nOut (zx0 : ZX nIn nMid0) (zx1 :
 Proof.
   intros.
   rewrite <- ColorSwap_isBiHadamard.
-  rewrite ColorSwap_Compose.
+  rewrite <- ColorSwap_Compose.
   rewrite ColorSwap_involutive.
-  rewrite ColorSwap_Compose.
+  rewrite <- ColorSwap_Compose.
   rewrite ColorSwap_involutive.
   apply H_edge_sandwich.
 Qed.

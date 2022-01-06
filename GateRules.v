@@ -78,26 +78,56 @@ Proof.
   simpl.
   unfold_spider.
   rewrite wire_identity_semantics.
+  rewrite <- cnot_decomposition.
   autorewrite with Cexp_db.
+  Msimpl.
+  rewrite hadamard_sa.
+  rewrite <- kron_mixed_product.
+  rewrite <- kron_mixed_product.
+  rewrite 2 Mmult_assoc.
+  rewrite <- (Mmult_plus_distr_l _ _ _ hadamard _ _).
+  repeat rewrite <- Mmult_assoc.
+  rewrite <- Mmult_plus_distr_r.
+  repeat rewrite Dirac.ket2bra.
+  repeat rewrite <- Mmult_assoc.
   simpl.
-  solve_matrix.
-Qed.
-
-Lemma ZX_CNOT_r_is_cnot : ZX_semantics ZX_CNOT_r = (/ √ 2)%C .* cnot.
-Proof.
-  simpl.
-  unfold_spider.
-  rewrite wire_identity_semantics.
-  autorewrite with Cexp_db.
-  simpl.
+  Msimpl.
   solve_matrix.
 Qed.
 
 Lemma ZX_CNOT_equiv : ZX_semantics ZX_CNOT_l = ZX_semantics ZX_CNOT_r.
 Proof.
+  simpl.
+  unfold_spider.
+  rewrite wire_identity_semantics.
+  repeat rewrite <- cnot_decomposition.
+  autorewrite with Cexp_db.
+  Msimpl.
+  repeat rewrite hadamard_sa.
+  repeat rewrite <- kron_mixed_product.
+  rewrite 4 Mmult_assoc.
+  repeat rewrite <- Mmult_plus_distr_l.
+  repeat rewrite <- Mmult_assoc.
+  repeat rewrite <- Mmult_plus_distr_r.
+  repeat rewrite Dirac.ket2bra.
+  repeat rewrite <- Mmult_assoc.
+  (* TODO: Simplify further *)
+  Msimpl.
+  solve_matrix.
+Qed.
+
+Lemma ZX_CNOT_r_is_cnot : ZX_semantics ZX_CNOT_r = (/ √ 2)%C .* cnot.
+Proof.
+  rewrite <- ZX_CNOT_equiv.
   rewrite ZX_CNOT_l_is_cnot.
-  rewrite <- ZX_CNOT_r_is_cnot.
   reflexivity.
+Qed.
+
+Lemma ZX_CNOT_prop : ZX_CNOT_l ∝ ZX_CNOT_r.
+Proof.
+   prop_exist_non_zero 1.
+   rewrite Mscale_1_l.
+   apply ZX_CNOT_equiv.
 Qed.
 
 Notation ZX_CNOT_is_cnot := ZX_CNOT_l_is_cnot.
