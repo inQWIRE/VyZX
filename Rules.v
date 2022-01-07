@@ -505,7 +505,7 @@ Proof.
   rewrite Cexp_0.
   Msimpl.
   rewrite hadamard_sa.
-  rewrite 2 Dirac.ket2bra.
+  rewrite 2 ket2bra.
   repeat rewrite Mmult_assoc.
   rewrite <- Mmult_plus_distr_l.
   repeat rewrite <- Mmult_assoc.
@@ -555,7 +555,7 @@ Proof.
   unfold_spider.
   rewrite Cexp_0.
   rewrite 4 Mscale_1_l.
-  repeat rewrite Dirac.ket2bra.
+  repeat rewrite ket2bra.
   repeat rewrite hadamard_sa.
   solve_matrix.
 Qed.
@@ -578,7 +578,7 @@ Proof.
   repeat rewrite Mscale_1_l.
   repeat rewrite Mmult_adjoint.
   repeat rewrite hadamard_sa.
-  repeat rewrite Dirac.ket2bra.
+  repeat rewrite ket2bra.
   autorewrite with scalar_move_db.
   solve_matrix;
   try repeat rewrite (Cmult_assoc C2 (/C2) _);
@@ -878,7 +878,7 @@ Local Transparent ZX_X ZX_Z.
   unfold_spider.
   autorewrite with Cexp_db.
   Msimpl.
-  repeat rewrite Dirac.ket2bra.
+  repeat rewrite ket2bra.
   repeat rewrite hadamard_sa.
   solve_matrix.
 Qed.

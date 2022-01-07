@@ -88,7 +88,7 @@ Proof.
   rewrite <- (Mmult_plus_distr_l _ _ _ hadamard _ _).
   repeat rewrite <- Mmult_assoc.
   rewrite <- Mmult_plus_distr_r.
-  repeat rewrite Dirac.ket2bra.
+  repeat rewrite ket2bra.
   repeat rewrite <- Mmult_assoc.
   simpl.
   Msimpl.
@@ -109,7 +109,7 @@ Proof.
   repeat rewrite <- Mmult_plus_distr_l.
   repeat rewrite <- Mmult_assoc.
   repeat rewrite <- Mmult_plus_distr_r.
-  repeat rewrite Dirac.ket2bra.
+  repeat rewrite ket2bra.
   repeat rewrite <- Mmult_assoc.
   (* TODO: Simplify further *)
   Msimpl.
