@@ -6,7 +6,8 @@ externals/QuantumLib/Complex.v
 externals/QuantumLib/Matrix.v
 externals/QuantumLib/VecSet.v
 externals/QuantumLib/Quantum.v
-externals/QuantumLib/Dirac.v
+externals/QuantumLib/Pad.v
+externals/QuantumLib/VectorStates.v
 externals/QuantumLib/Proportional.v
 
 ZX.v
