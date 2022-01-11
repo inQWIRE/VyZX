@@ -32,10 +32,9 @@ Proof.
   lma.
 Qed.
 
-Global Hint Resolve Nat.add_0_r : test_db.
-
-Global Hint Resolve Nat.add_assoc : test_db.
-Obligation Tactic := auto with test_db.
+Global Hint Resolve Nat.add_0_r : program_db.
+Global Hint Resolve Nat.add_assoc : program_db.
+Obligation Tactic := auto with program_db.
 
 Program Lemma ZX_Stack_assoc : 
   forall {nIn1 nIn2 nIn3 nOut1 nOut2 nOut3}
@@ -152,7 +151,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma nwire_identity : forall n, ZX_semantics (n ↑ —) = I (2 ^ n).
+Lemma nwire_identity_semantics : forall n, ZX_semantics (n ↑ —) = I (2 ^ n).
 Proof.
   intros.
   rewrite nStack1_n_kron.
@@ -163,7 +162,7 @@ Qed.
 Lemma nWire_1_Wire : (1 ↑ —) ∝ Wire.
 Proof.
   prop_exist_non_zero 1.
-  rewrite nwire_identity.
+  rewrite nwire_identity_semantics.
   rewrite wire_identity_semantics.
   lma.
 Qed.
@@ -182,7 +181,7 @@ Proof.
   intros.
   prop_exist_non_zero 1.
   simpl.
-  rewrite 3 nwire_identity.
+  rewrite 3 nwire_identity_semantics.
   rewrite Mscale_1_l.
   rewrite id_kron.
   rewrite Nat.pow_add_r.
@@ -194,7 +193,7 @@ Proof.
   intros.
   prop_exist_non_zero 1.
   simpl.
-  rewrite nwire_identity.
+  rewrite nwire_identity_semantics.
   rewrite Mmult_1_l; try auto with wf_db.
   lma.
 Qed.
@@ -205,7 +204,52 @@ Proof.
   apply nWire_Compose.
 Qed.
 
-Global Hint Resolve Nat.mul_1_r : test_db.
+Lemma wire_removal_l : forall nOut (zx : ZX 1 nOut), — ⟷ zx ∝ zx.
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  simpl.
+  rewrite wire_identity_semantics.
+  Msimpl.
+  reflexivity.
+Qed.
+
+Lemma nwire_removal_l: forall n nOut (zx : ZX n nOut), (n ↑ —) ⟷ zx ∝ zx.
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  simpl.
+  rewrite nwire_identity_semantics.
+  Msimpl.
+  reflexivity.
+Qed.
+
+Lemma wire_removal_r : forall nIn (zx : ZX nIn 1), zx ⟷ — ∝ zx.
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  simpl.
+  rewrite wire_identity_semantics.
+  Msimpl.
+  reflexivity.
+Qed.
+
+Lemma nwire_removal_r: forall n nIn (zx : ZX nIn n), zx ⟷ (n ↑ —) ∝ zx.
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  simpl.
+  rewrite nwire_identity_semantics.
+  Msimpl.
+  reflexivity.
+Qed.
+
+Ltac remove_wire := try repeat rewrite wire_removal_l;
+                    try repeat rewrite nwire_removal_l;
+                    try repeat rewrite wire_removal_r;
+                    try repeat rewrite nwire_removal_r.
+
+Global Hint Resolve Nat.mul_1_r : program_db.
 
 Program Lemma nStack_1_nStack : forall n (zx : ZX 1 1), (n ↑ zx) ∝ (n ⇑ zx).
 Proof.
@@ -280,7 +324,7 @@ Proof.
   simpl.
   prop_exist_non_zero 1.
   simpl.
-  rewrite nwire_identity.
+  rewrite nwire_identity_semantics.
   Msimpl.
   reflexivity.
 Qed.
@@ -292,7 +336,7 @@ Proof.
   simpl.
   prop_exist_non_zero 1.
   simpl.
-  rewrite nwire_identity.
+  rewrite nwire_identity_semantics.
   Msimpl.
   reflexivity.
 Qed.
@@ -1203,6 +1247,46 @@ Lemma H_edge_empty_r : forall nIn (zx : ZX nIn 0), zx ⥈ ⦰ ∝ zx ⟷ ⦰.
 Proof.
   intros.
   apply H_edge_ColorSwap_inv_r.
+  reflexivity.
+Qed.
+
+Lemma H_edge_H_removal_l : forall nOut (zx : ZX 1 nOut), □ ⥈ zx ∝ zx.
+Proof.
+  intros.
+  unfold hadamard_edge.
+  simpl; remove_empty.
+  rewrite ZX_H_H_is_Wire.
+  remove_wire.
+  reflexivity.
+Qed.
+
+Lemma H_edge_nH_removal_l : forall n nOut (zx : ZX n nOut), (n ↑ □) ⥈ zx ∝ zx.
+Proof.
+  intros.
+  unfold hadamard_edge.
+  rewrite nH_composition.
+  remove_wire.
+  reflexivity.
+Qed.
+  
+Lemma H_edge_H_removal_r : forall nIn (zx : ZX nIn 1), zx ⥈ □ ∝ zx.
+Proof.
+  intros.
+  unfold hadamard_edge.
+  rewrite ZX_Compose_assoc.
+  simpl; remove_empty.
+  rewrite ZX_H_H_is_Wire.
+  remove_wire.
+  reflexivity.
+Qed.
+
+Lemma H_edge_nH_removal_r : forall n nIn (zx : ZX nIn n), zx ⥈ (n ↑ □) ∝ zx.
+Proof.
+  intros.
+  unfold hadamard_edge.
+  rewrite ZX_Compose_assoc.
+  rewrite nH_composition.
+  remove_wire.
   reflexivity.
 Qed.
 
