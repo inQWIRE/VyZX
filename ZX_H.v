@@ -90,6 +90,26 @@ Add Parametric Relation (nIn nOut : nat) : (H_ZX nIn nOut) (@H_proportional nIn 
   transitivity proved by H_proportional_trans
   as zx_prop_equiv_rel.
 
+Lemma H_stack_compat :
+  forall nIn0 nOut0 nIn1 nOut1,
+    forall zx0 zx1 : H_ZX nIn0 nOut0, zx0 ∝H zx1 ->
+    forall zx2 zx3 : H_ZX nIn1 nOut1, zx2 ∝H zx3 ->
+    zx0 ↕H zx2 ∝H zx1 ↕H zx3.
+Proof.
+  intros.
+  destruct H; destruct H; destruct H0; destruct H0.
+  exists (x * x0).
+  split.
+  - simpl; rewrite H; rewrite H0.
+    lma.
+  - apply Cmult_neq_0; try assumption.
+Qed.
+
+Add Parametric Morphism (nIn0 nOut0 nIn1 nOut1 : nat) : (@H_Stack nIn0 nIn1 nOut0 nOut1)
+  with signature (@H_proportional nIn0 nOut0) ==> (@H_proportional nIn1 nOut1) ==> 
+                 (@H_proportional (nIn0 + nIn1) (nOut0 + nOut1)) as H_stack_mor.
+Proof. apply H_stack_compat; assumption. Qed.
+
 Local Open Scope C_scope.
 
 Theorem H_ZX_to_ZX_consistent : forall nIn nOut (zx : H_ZX nIn nOut),
@@ -130,6 +150,7 @@ Fixpoint nStack1_H n (zx : H_ZX 1 1) :=
   | 0 => H_Empty
   | S n' => H_Stack (zx) (nStack1_H n' zx)
   end.
+Notation "n ↑H zx" := (nStack1_H n zx) (at level 41).
 
 Lemma nStack1_H_nStack1 : forall (zx : H_ZX 1 1) n,
   ZX_semantics (H_ZX_to_ZX (nStack1_H n zx)) = ZX_semantics (nStack1 n (H_ZX_to_ZX zx)).
@@ -357,6 +378,52 @@ Add Parametric Morphism (nIn nOut : nat) : (@H_ZX_to_ZX nIn nOut)
   with signature (@H_proportional nIn nOut) ==> (@proportional nIn nOut) as H_ZX_to_ZX_mor.
 Proof. apply H_ZX_to_ZX_compat. Qed. 
 
+
+Lemma H_nStack1_compat :
+  forall n,
+    forall zx0 zx1 : H_ZX 1 1, zx0 ∝H zx1 ->
+    n ↑H zx0 ∝H n ↑H zx1.
+Proof.
+  intros.
+  induction n.
+  - reflexivity.
+  - simpl.
+    rewrite IHn.
+    rewrite H.
+    reflexivity.
+Qed.
+
+Add Parametric Morphism (n : nat) : (nStack1_H n)
+  with signature (@H_proportional 1 1) ==> 
+                 (@H_proportional n n) as H_nstack1_mor.
+Proof. apply H_nStack1_compat. Qed.
+
+Lemma H_compose_compat :
+  forall nIn nMid nOut,
+    forall zx0 zx1 : H_ZX nIn  nMid, zx0 ∝H zx1 ->
+    forall zx2 zx3 : H_ZX nMid nOut, zx2 ∝H zx3 ->
+    (H_Compose zx0 zx2) ∝H (H_Compose zx1 zx3).
+Proof.
+  intros.
+  destruct H; destruct H; destruct H0; destruct H0.
+  simpl.
+  exists (x * x0).
+  split.
+  - simpl; rewrite H; rewrite H0.
+    rewrite Mscale_mult_dist_r.
+    rewrite Mscale_mult_dist_l.
+    restore_dims.
+    rewrite Mscale_mult_dist_l.
+    rewrite Mscale_assoc.
+    reflexivity.
+  - apply Cmult_neq_0; try assumption.
+Qed.
+
+Add Parametric Morphism (nIn nMid nOut : nat)  : (@H_Compose nIn nMid nOut)
+  with signature (@H_proportional nIn nMid) ==> (@H_proportional nMid nOut) ==> 
+                 (@H_proportional nIn nOut) as H_compose_mor.
+Proof. apply H_compose_compat; assumption. Qed.
+
 Lemma ZX_H_ZX_matrix_compat : forall {nIn nOut} (zx : ZX nIn nOut) (M : Matrix (2 ^ nIn) (2 ^ nOut)), 
   (exists (c : C), ZX_semantics zx = c .* M /\ c <> C0) -> (exists c, H_ZX_semantics (ZX_to_H_ZX zx) = c .* M /\ c <> C0).
 Proof.
@@ -402,6 +469,26 @@ Proof.
 Qed.
 
 Local Transparent H_Wire.
+Local Transparent H_nWire.
+Local Transparent nWire.
+
+Lemma H_nWire_ZX_to_H_ZX_nWire : forall n, (H_nWire n) ∝H (ZX_to_H_ZX (nWire n)).
+Proof.
+  intros.
+  induction n; try reflexivity.
+  unfold H_nWire.
+  simpl.
+  unfold H_nWire in IHn.
+  rewrite IHn.
+  rewrite <- IHn.
+  unfold nWire.
+  unfold H_Wire.
+  unfold H_Wire, nWire in IHn.
+  rewrite <- IHn.
+  reflexivity.
+Qed.
+Local Opaque H_nWire.
+Local Opaque nWire.
 
 Lemma ZX_H_to_ZX_Wire :  — ∝ (H_ZX_to_ZX H_Wire).
 Proof.
@@ -485,10 +572,104 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma ZX_ZX_H_Wire_involutive : forall n, H_ZX_to_ZX (ZX_to_H_ZX (nWire n)) ∝ nWire n.
+Proof.
+  intros.
+  assert (exists (c : C), H_ZX_semantics (ZX_to_H_ZX (nWire (n))) = c .* I (2 ^ (n)) /\ c <> C0).
+  {
+    apply ZX_H_ZX_matrix_compat.
+    prop_exist_non_zero 1%R.
+    Msimpl.
+    apply nwire_identity_semantics.
+  }
+  assert (exists (c : C), ZX_semantics (H_ZX_to_ZX (ZX_to_H_ZX (nWire (n)))) = c .* I (2 ^ (n)) /\ c <> C0).
+  {
+    apply H_ZX_ZX_matrix_compat.
+    apply H.
+  }
+  destruct H0.
+  destruct H0.
+  exists x; split; try assumption.
+  rewrite nwire_identity_semantics.
+  rewrite H0.
+  reflexivity.
+Qed.
+
 Lemma ZX_H_ZX_involutive : forall nIn nOut (zx : ZX nIn nOut), H_ZX_to_ZX (ZX_to_H_ZX zx) ∝ zx.
 Proof.
   intros.
   induction zx; try (prop_exist_non_zero 1%R; autorewrite with Cexp_db; Msimpl; simpl; reflexivity) (* non compositional cases *); 
   try (destruct IHzx1, IHzx2 (* Stack / Compose *); simpl; destruct H, H0).
   - simpl.
-Abort.
+    rewrite 2 H_nWire_ZX_to_H_ZX_nWire.
+    rewrite 2 ZX_ZX_H_Wire_involutive.
+    exists (Cexp (PI / 4) ^ nOut * Cexp (PI / 4) ^ nIn); split; try (rewrite 2 Cexp_pow; apply Cmult_neq_0; nonzero).
+    simpl.
+    repeat rewrite nStack1_n_kron.
+    rewrite ZX_H_is_H.
+    rewrite 2 nwire_identity_semantics.
+    Msimpl.
+    unfold_spider.
+    rewrite Mmult_plus_distr_l; try auto with wf_db.
+    rewrite Mmult_plus_distr_r; try auto with wf_db.
+    repeat rewrite <- Mmult_assoc.
+    rewrite kron_n_mult.
+    rewrite (Mmult_assoc _ _ (nIn ⨂ _)).
+    restore_dims.
+    rewrite kron_n_mult.
+    repeat rewrite ket2bra.
+    repeat rewrite hadamard_sa.
+    repeat rewrite Mscale_kron_n_distr_r.
+    autorewrite with scalar_move_db.
+    repeat rewrite Mscale_kron_n_distr_r.
+    repeat rewrite <- Mscale_assoc.
+    rewrite 2 Mscale_plus_distr_r.
+    apply Mplus_simplify.
+    + restore_dims.
+      autorewrite with scalar_move_db.
+      rewrite <- Mscale_assoc.
+      rewrite <- Mscale_mult_dist_l.
+      rewrite <- Mscale_mult_dist_r.
+      rewrite <- Mscale_mult_dist_l.
+      reflexivity.
+    + autorewrite with scalar_move_db.
+      apply Mscale_simplify; try lca.
+      rewrite <- Mmult_assoc.
+      rewrite kron_n_mult.
+      rewrite Mmult_assoc.
+      restore_dims.
+      rewrite kron_n_mult.
+      reflexivity.
+  - exists (x0 * x); split; try (apply Cmult_neq_0; assumption).
+    simpl.
+    rewrite H.  
+    rewrite H0.
+    autorewrite with scalar_move_db.
+    reflexivity.
+  - simpl.
+    assert (exists (c : C), ZX_semantics (H_ZX_to_ZX (H_nWire (nMid))) = c .* I (2 ^ (nMid)) /\ c <> C0).
+    {
+      apply H_ZX_ZX_matrix_compat.
+      rewrite H_nWire_identity.
+      prop_exist_non_zero 1%R.
+      lma.
+    }
+    destruct H3.
+    destruct H3.
+    exists (x * x1 * x0 * Cexp (PI / 4) ^ nMid * Cexp (PI / 4) ^ nMid); split; 
+      try (repeat apply Cmult_neq_0; try assumption; try (rewrite Cexp_pow; nonzero)) (* non zero constant *).
+    simpl.
+    rewrite H, H0, H3.
+    rewrite nStack1_n_kron.
+    rewrite ZX_H_is_H.
+    repeat rewrite Mscale_kron_n_distr_r.
+    autorewrite with scalar_move_db.
+    Msimpl.
+    rewrite Mmult_assoc.
+    rewrite <- (Mmult_assoc _ (nMid ⨂ _) (ZX_semantics _)).
+    rewrite kron_n_mult.
+    rewrite MmultHH.
+    rewrite kron_n_I.
+    Msimpl.
+    reflexivity.
+Qed.
