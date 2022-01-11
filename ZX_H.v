@@ -24,7 +24,7 @@ Local Close Scope R_scope.
 Notation "⦰H" := H_Empty. (* \revemptyset *)
 Notation "⊂H'" := H_Cap. (* \subset *)
 Notation "⊃H'" := H_Cup. (* \supset *)
-Infix "⟷H'" := H_Compose (left associativity, at level 40). (* \longleftrightarrow *)
+Infix "⟷H" := H_Compose (left associativity, at level 40). (* \longleftrightarrow *)
 Infix "↕H" := H_Stack (left associativity, at level 40). (* \updownarrow *)
 
 Fixpoint H_ZX_semantics {nIn nOut} (zx : H_ZX nIn nOut) : 

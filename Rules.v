@@ -461,11 +461,10 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma Z_spider_1_1_fusion : forall nIn nOut α β, 
-  (Z_Spider nIn 1 α) ⟷ (Z_Spider 1 nOut β) ∝
-  Z_Spider nIn nOut (α + β).
+Lemma Z_spider_1_1_fusion_eq : forall nIn nOut α β, 
+  ZX_semantics ((Z_Spider nIn 1 α) ⟷ (Z_Spider 1 nOut β)) =
+  ZX_semantics (Z_Spider nIn nOut (α + β)).
 Proof.
-  prop_exist_non_zero 1.
   intros.
   simpl.
   unfold_spider.
@@ -538,6 +537,15 @@ Proof.
       apply Mmult_simplify; try reflexivity.
       rewrite Mmult_assoc.
       reflexivity.
+Qed.
+
+Lemma Z_spider_1_1_fusion : forall nIn nOut α β, 
+  (Z_Spider nIn 1 α) ⟷ (Z_Spider 1 nOut β) ∝
+  Z_Spider nIn nOut (α + β).
+Proof.
+  prop_exist_non_zero 1.
+  Msimpl.
+  apply Z_spider_1_1_fusion_eq.
 Qed.
 
 Lemma Z_0_eq_X_0 : 
