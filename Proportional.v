@@ -8,9 +8,11 @@ Local Open Scope ZX_scope.
 Definition proportional_constructible {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX nIn nOut) :=
   exists c c' θ, ZX_semantics zx0 = ((√ 2) ^ c * (1 / ((√ 2) ^ c')))%R * Cexp θ .* ZX_semantics zx1.
 
+Definition proportional_general {T n m} (eval : T -> (Matrix n m)) (t0 t1 : T) := 
+  exists (c : C), eval t0 = c .* eval t1 /\ c <> 0.
 
-Definition proportional {nIn nOut} (zx0 : ZX nIn nOut) (zx1: ZX nIn nOut) :=
-  exists (c : C), ZX_semantics zx0 =  c .* ZX_semantics zx1 /\ c <> 0 .
+Definition proportional {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX nIn nOut) :=
+  proportional_general ZX_semantics zx0 zx1.
 
 Ltac prop_exist_non_zero c := exists c; split; try apply nonzero_div_nonzero; try nonzero.
 
@@ -18,15 +20,14 @@ Infix "∝'" := proportional_constructible (at level 70).
 
 Infix "∝" := proportional (at level 70).
 
-Lemma proportional_refl : forall {nIn nOut} (zx : ZX nIn nOut), zx ∝ zx.
+Lemma proportional_general_refl : forall T n m eval (t : T), @proportional_general T n m eval t t.
 Proof.
   prop_exist_non_zero 1.
   intros.
   lma.
 Qed.
 
-Lemma proportional_symm : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut),
-  zx0 ∝ zx1 -> zx1 ∝ zx0.
+Lemma proportional_general_symm : forall T n m eval (t0 t1 : T), @proportional_general T n m eval t0 t1 -> @proportional_general T n m eval t1 t0.
 Proof.
   intros.
   destruct H.
@@ -42,8 +43,8 @@ Proof.
     apply H0.
 Qed.
 
-Lemma proportional_trans : forall {nIn nOut} (zx0 zx1 zx2 : ZX nIn nOut),
-  zx0 ∝ zx1 -> zx1 ∝ zx2 -> zx0 ∝ zx2.
+Lemma proportional_general_trans : forall T n m eval (t0 t1 t2 : T), 
+    @proportional_general T n m eval t0 t1 -> @proportional_general T n m eval t1 t2 -> @proportional_general T n m eval t0 t2.
 Proof.
   intros.
   destruct H.
@@ -57,6 +58,26 @@ Proof.
     rewrite <- H.
     reflexivity.
   - apply Cmult_neq_0; try assumption. 
+Qed.
+
+Lemma proportional_refl : forall {nIn nOut} (zx : ZX nIn nOut), zx ∝ zx.
+Proof.
+  intros.
+  apply proportional_general_refl.
+Qed.
+
+Lemma proportional_symm : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut),
+  zx0 ∝ zx1 -> zx1 ∝ zx0.
+Proof.
+  intros.
+  apply proportional_general_symm; assumption.
+Qed.
+
+Lemma proportional_trans : forall {nIn nOut} (zx0 zx1 zx2 : ZX nIn nOut),
+  zx0 ∝ zx1 -> zx1 ∝ zx2 -> zx0 ∝ zx2.
+Proof.
+  intros.
+  apply (proportional_general_trans _ _ _ ZX_semantics zx0 zx1 zx2); assumption.
 Qed.
 
 Add Parametric Relation (nIn nOut : nat) : (ZX nIn nOut) (@proportional nIn nOut)
