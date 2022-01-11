@@ -2,6 +2,7 @@ Require Import externals.QuantumLib.Quantum.
 Require Export ZX.
 Require Export Gates.
 Require Export Proportional.
+Require Import Setoid.
 
 Local Open Scope ZX_scope.
 
@@ -154,6 +155,23 @@ Proof.
   all : field_simplify_eq [Csqrt2_sqrt]; try reflexivity; split; nonzero.
 Qed.
 Local Opaque ZX_SWAP.
+
+Lemma hadamard_edge_compat :
+  forall nIn nMid nOut,
+    forall zx0 zx1 : ZX nIn  nMid, zx0 ∝ zx1 ->
+    forall zx2 zx3 : ZX nMid nOut, zx2 ∝ zx3 ->
+    zx0 ⥈ zx2 ∝ zx1 ⥈ zx3.
+Proof.
+  intros.
+  unfold hadamard_edge.
+  rewrite H, H0.
+  reflexivity.
+Qed.
+
+Add Parametric Morphism (nIn nMid nOut : nat)  : (@hadamard_edge nIn nMid nOut)
+  with signature (@proportional nIn nMid) ==> (@proportional nMid nOut) ==> 
+                 (@proportional nIn nOut) as hadamard_edge_mor.
+Proof. apply hadamard_edge_compat; assumption. Qed.
 
 Local Close Scope R_scope.
 Local Close Scope ZX_scope.

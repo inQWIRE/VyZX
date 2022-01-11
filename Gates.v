@@ -9,7 +9,7 @@ Global Opaque ZX_H.
 
 Notation "□" := (ZX_H). (* \square*) 
 
-Definition hadamard_edge {nIn nMid nOut} (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut) := 
+Definition hadamard_edge {nIn nMid nOut} (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut) : ZX nIn nOut := 
     (zx0 ⟷ (nMid ↑ □) ⟷ zx1).
 
 Notation "zx0 ⥈ zx1" := (hadamard_edge zx0 zx1) (left associativity, at level 40). (* \leftrightarrowcircle *)
