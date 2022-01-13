@@ -15,5 +15,6 @@ Gates.v
 Scalars.v
 Eigenstates.v
 Proportional.v
+Relations.v
 GateRules.v
 Rules.v 
