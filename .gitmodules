@@ -1,3 +1,6 @@
 [submodule "externals/QuantumLib"]
 	path = externals/QuantumLib
 	url = git@github.com:inQWIRE/QuantumLib.git
+[submodule "externals/SQIR"]
+	path = externals/SQIR
+	url = https://github.com/inQWIRE/SQIR
