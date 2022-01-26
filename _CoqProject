@@ -18,5 +18,6 @@ Proportional.v
 Relations.v
 GateRules.v
 Rules.v 
+Properties.v
 ZX_H.v
 ZX_G.v
