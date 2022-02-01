@@ -10,7 +10,7 @@ Local Transparent ZX_H.
 Lemma ZX_H_is_H : ZX_semantics □ = Cexp (PI/4)%R .* hadamard.
 Proof.
   simpl.
-  unfold_spider.
+  unfold_spider; unfold_spider; simpl.
   solve_matrix; 
   field_simplify_eq [Cexp_PI2 Cexp_PI4 Ci2 Csqrt2_sqrt2_inv Csqrt2_inv]; 
   try apply c_proj_eq; try simpl; try R_field_simplify; try reflexivity; (try split; try apply RtoC_neq; try apply sqrt2_neq_0; try auto).
@@ -47,7 +47,10 @@ Proof.
   simpl.
   unfold_spider.
   autorewrite with Cexp_db.
-  solve_matrix.
+  simpl.
+  rewrite kron_1_l; try auto with wf_db.
+  solve_matrix;
+  try (C_field_simplify; try lca; try nonzero).
 Qed.
 
 Lemma ZX_Z_is_Z : ZX_semantics ZX_Z = σz.
@@ -77,43 +80,18 @@ Local Transparent ZX_CNOT.
 Lemma ZX_CNOT_l_is_cnot : ZX_semantics ZX_CNOT_l = (/ √ 2)%C .* cnot.
 Proof.
   simpl.
-  unfold_spider.
   rewrite wire_identity_semantics.
-  rewrite <- cnot_decomposition.
+  unfold_spider.
   autorewrite with Cexp_db.
-  Msimpl.
-  rewrite hadamard_sa.
-  rewrite <- kron_mixed_product.
-  rewrite <- kron_mixed_product.
-  rewrite 2 Mmult_assoc.
-  rewrite <- (Mmult_plus_distr_l _ _ _ hadamard _ _).
-  repeat rewrite <- Mmult_assoc.
-  rewrite <- Mmult_plus_distr_r.
-  repeat rewrite ket2bra.
-  repeat rewrite <- Mmult_assoc.
-  simpl.
-  Msimpl.
   solve_matrix.
 Qed.
 
 Lemma ZX_CNOT_equiv : ZX_semantics ZX_CNOT_l = ZX_semantics ZX_CNOT_r.
 Proof.
   simpl.
-  unfold_spider.
   rewrite wire_identity_semantics.
-  repeat rewrite <- cnot_decomposition.
+  unfold_spider.
   autorewrite with Cexp_db.
-  Msimpl.
-  repeat rewrite hadamard_sa.
-  repeat rewrite <- kron_mixed_product.
-  rewrite 4 Mmult_assoc.
-  repeat rewrite <- Mmult_plus_distr_l.
-  repeat rewrite <- Mmult_assoc.
-  repeat rewrite <- Mmult_plus_distr_r.
-  repeat rewrite ket2bra.
-  repeat rewrite <- Mmult_assoc.
-  (* TODO: Simplify further *)
-  Msimpl.
   solve_matrix.
 Qed.
 
@@ -144,15 +122,8 @@ Proof.
   rewrite wire_identity_semantics.
   unfold_spider.
   autorewrite with Cexp_db.
-  Msimpl.
-  rewrite hadamard_sa.
-  repeat rewrite VectorStates.ket2bra.
-  restore_dims.
-  repeat rewrite <- kron_mixed_product.
-  repeat rewrite <- Mmult_assoc.
-  solve_matrix.
-  simpl.
-  all : field_simplify_eq [Csqrt2_sqrt]; try reflexivity; split; nonzero.
+  solve_matrix;
+  C_field_simplify; try lca; try nonzero.
 Qed.
 Local Opaque ZX_SWAP.
 

@@ -35,6 +35,135 @@ Proof.
   apply WF_mult; restore_dims; apply WF_kron_n; assumption.
 Qed.
 
+Definition Z_semantics (n m : nat) (α : R) : Matrix (2 ^ m) (2 ^ n) :=
+  fun x y =>
+  match x =? 0, y =? 0 with
+  | true, true => match n =? 0, m =? 0 with
+                  | true, true => C1 + Cexp α
+                  | _, _  => C1
+                  end
+  | _, _  => match x =? (2 ^ m) - 1, y =? (2 ^ n) - 1 with
+                  | true, true => Cexp α
+                  | _, _  => C0
+                  end
+  end.
+
+Lemma Z_semantics_transpose (n m : nat) (α : R) : (Z_semantics n m α) ⊤ = Z_semantics m n α.
+Proof.
+  unfold Z_semantics.
+  unfold transpose.
+  prep_matrix_equality.
+  destruct (x =? 0);destruct (y =? 0); destruct (x =? 2 ^ n - 1); destruct (y =? 2 ^ m - 1); try reflexivity.
+Qed.
+
+Lemma Z_semantics_adj (n m : nat) (α : R) : (Z_semantics n m α) † = Z_semantics m n (- α).
+Proof.
+  unfold Z_semantics.
+  unfold adjoint.
+  prep_matrix_equality.
+  destruct (x =? 0);destruct (y =? 0); destruct (x =? 2 ^ n - 1); destruct (y =? 2 ^ m - 1); 
+    try lca;
+    try (rewrite Cexp_conj_neg; reflexivity).
+  rewrite Cconj_plus_distr.
+  rewrite Cexp_conj_neg.
+  lca.
+Qed.
+
+Lemma WF_Z_semantics {n m : nat} {α : R} : WF_Matrix (Z_semantics n m α).
+Proof.
+  unfold WF_Matrix.
+  intros.
+  assert ( GeqToEqb : forall (a b c : nat), b <= a  -> c < b -> a =? c = false ).
+  {
+    intros.
+    apply Nat.eqb_neq.
+    apply not_eq_sym.
+    apply (Nat.lt_neq c a).
+    apply (Nat.lt_le_trans c b a); assumption.
+  }
+  assert ( geq_symm : forall (a b : nat), a >= b -> b <= a).
+  {
+    induction a.
+    - intros.
+      inversion H0.
+      reflexivity.
+    - intros.
+      inversion H0; try reflexivity.
+      apply (Nat.le_le_succ_r _ _ H2).
+  }
+  assert ( expgt : forall a : nat, 2 ^ a - 1 < 2 ^ a).
+  {
+    intros.
+    induction a.
+    - constructor.
+    - simpl.
+      lia.
+  }
+  destruct H as [Hx | Hy].
+  - unfold Z_semantics.
+    rewrite (GeqToEqb x (2^m)%nat 0).
+    + rewrite (GeqToEqb x (2^m)%nat (2^m-1)%nat).
+      * reflexivity.
+      * apply geq_symm; assumption.
+      * apply expgt.
+    + apply geq_symm.
+      assumption.
+    + apply pow_positive; easy.
+  - unfold Z_semantics.
+    destruct (x =? 0).
+    + rewrite (GeqToEqb y (2^n)%nat 0).
+      * destruct (x =? 2 ^ m - 1).
+        -- rewrite (GeqToEqb y (2^n)%nat (2^n-1)%nat).
+           ++ reflexivity.
+           ++ apply geq_symm; assumption.
+           ++ apply expgt.
+        -- reflexivity.
+      * apply geq_symm; assumption.
+      * apply pow_positive; easy.
+    + rewrite (GeqToEqb y (2^n)%nat (2^n - 1)%nat).
+      * destruct (x =? 2 ^ m - 1); reflexivity.
+      * apply geq_symm; assumption.
+      * easy.
+Qed.
+
+Global Hint Resolve WF_Z_semantics : wf_db.
+
+Definition X_semantics (n m : nat) (α : R) : Matrix (2 ^ m) (2 ^ n) :=
+  (m ⨂ hadamard) × (Z_semantics n m α) × (n ⨂ hadamard).
+
+Lemma X_semantics_transpose (n m : nat) (α : R) : (X_semantics n m α) ⊤ = X_semantics m n α.
+Proof.
+  unfold X_semantics.
+  Msimpl.
+  rewrite 2 Mmult_transpose.
+  rewrite 2 kron_n_transpose.
+  Msimpl.
+  restore_dims.
+  rewrite hadamard_st.
+  rewrite <- Mmult_assoc.
+  rewrite Z_semantics_transpose.
+  reflexivity.
+Qed.
+
+Lemma X_semantics_adj (n m : nat) (α : R) : (X_semantics n m α)† = X_semantics m n (- α).
+Proof.
+  unfold X_semantics.
+  rewrite 2 Mmult_adjoint.
+  rewrite <- Mmult_assoc.
+  rewrite Z_semantics_adj.
+  rewrite 2 kron_n_adjoint; try auto with wf_db.
+  rewrite hadamard_sa.
+  reflexivity.
+Qed.
+
+Lemma WF_X_semantics {n m : nat} {α : R} : WF_Matrix (X_semantics n m α).
+Proof.
+  unfold X_semantics.
+  auto with wf_db.
+Qed.
+
+Global Hint Resolve WF_X_semantics : wf_db.
+
 Definition Spider_semantics (bra0 bra1 : Matrix 1 2) (ket0 ket1 : Vector 2) (α : R) {n m : nat} : Matrix (2 ^ m) (2 ^ n) :=
   (bra_ket_MN bra0 ket0) .+ (Cexp α) .* (bra_ket_MN bra1 ket1). 
 Transparent Spider_semantics.
@@ -54,15 +183,15 @@ Fixpoint ZX_semantics {nIn nOut} (zx : ZX nIn nOut) :
   Matrix (2 ^ nOut) (2 ^nIn) := 
   match zx with
   | ⦰ => I 1
-  | X_Spider _ _ α => Spider_semantics (hadamard × (ket 0))† (hadamard × (ket 1))† (hadamard × (ket 0)) (hadamard × (ket 1)) α
-  | Z_Spider _ _ α => Spider_semantics (bra 0) (bra 1) (ket 0) (ket 1) α
+  | X_Spider _ _ α => X_semantics nIn nOut α
+  | Z_Spider _ _ α => Z_semantics nIn nOut α
   | ⊃ => list2D_to_matrix [[C1;C0;C0;C1]]
   | ⊂ => list2D_to_matrix [[C1];[C0];[C0];[C1]]  
   | zx0 ↕ zx1 => (ZX_semantics zx0) ⊗ (ZX_semantics zx1)
   | zx0 ⟷ zx1 => (ZX_semantics zx1) × (ZX_semantics zx0)
   end.
 
-Ltac unfold_spider := unfold Spider_semantics, bra_ket_MN; try (simpl; Msimpl).
+Ltac unfold_spider := unfold X_semantics, Z_semantics.
 
 Ltac ZXunfold := simpl; Msimpl; unfold_spider; restore_dims.
 
@@ -70,6 +199,7 @@ Theorem WF_ZX : forall nIn nOut (zx : ZX nIn nOut), WF_Matrix (ZX_semantics zx).
 Proof.
   intros.
   induction zx; try (simpl; auto 10 with wf_db);
+  try (simpl; auto 10 with wf_db);
     apply WF_list2D_to_matrix;
     try easy; (* case list of length 4 *)
     try intros; simpl in H; repeat destruct H; try discriminate; try (subst; easy). (* Case of 4 lists length 1 *)
@@ -84,12 +214,21 @@ Notation "—" := Wire. (* \emdash *)
 Theorem wire_identity_semantics : ZX_semantics — = I 2.
 Proof.
   simpl.
-  unfold_spider.
-  autorewrite with Cexp_db.
-  rewrite Mscale_1_l.
-  unfold kron_n.
-  repeat rewrite kron_1_l; try auto with wf_db.
-  solve_matrix.
+  unfold Z_semantics.
+  unfold I.
+  prep_matrix_equality.
+  rewrite Cexp_0.
+  simpl.
+  destruct x; destruct y; try reflexivity.
+  - simpl.
+    destruct x; reflexivity.
+  - simpl.
+    destruct x; destruct y; try reflexivity.
+    + simpl.
+      unfold Nat.ltb.
+      unfold Nat.leb.
+      rewrite andb_false_r.
+      reflexivity.
 Qed.
 
 Global Opaque Wire.
@@ -153,6 +292,7 @@ Fixpoint Invert_angles {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut :=
 Definition Adjoint {nIn nOut} (zx : ZX nIn nOut) : ZX nOut nIn := Invert_angles (zx ⊺).
 Notation "zx ‡" := (Adjoint zx) (at level 10). (* \ddagger *)
 
+
 Lemma ZX_semantics_Transpose_comm {nIn nOut} : forall (zx : ZX nIn nOut),
   ZX_semantics (zx ⊺) = (ZX_semantics zx) ⊤.
 Proof.
@@ -164,35 +304,10 @@ Proof.
   - Msimpl.
     reflexivity.
   - simpl.
-    unfold_spider.
-    rewrite Mplus_transpose.
-    rewrite Mscale_trans.
-    restore_dims.
-    rewrite 2 Mmult_trans_dep; try (repeat rewrite Nat.pow_1_l; reflexivity).
-    repeat rewrite kron_n_transpose.
-    repeat rewrite Mmult_transpose.
-    repeat rewrite adjoint_transpose_comm.
-    repeat rewrite hadamard_st.
-    repeat rewrite hadamard_sa.
-    rewrite ket0_transpose_bra0.
-    rewrite ket1_transpose_bra1.
-    rewrite bra1_adjoint_ket1.
-    rewrite ket1_adjoint_bra1.
-    rewrite bra0_adjoint_ket0.
-    rewrite ket0_adjoint_bra0.
+    rewrite X_semantics_transpose.
     reflexivity.
   - simpl.
-    unfold_spider.
-    rewrite Mplus_transpose.
-    rewrite Mscale_trans.
-    restore_dims.
-    rewrite 2 Mmult_trans_dep; try (repeat rewrite Nat.pow_1_l; reflexivity).
-    repeat rewrite kron_n_transpose.
-    repeat rewrite Mmult_transpose.
-    rewrite ket0_transpose_bra0.
-    rewrite ket1_transpose_bra1.
-    rewrite bra1_transpose_ket1.
-    rewrite bra0_transpose_ket0.
+    rewrite Z_semantics_transpose.
     reflexivity.
   - simpl; solve_matrix.
   - simpl; solve_matrix.
@@ -209,30 +324,11 @@ Proof.
   3, 4: simpl; unfold Adjoint in IHzx1; unfold Adjoint in IHzx2; rewrite IHzx1, IHzx2;
         try rewrite <- kron_adjoint; try rewrite <- Mmult_adjoint;
         reflexivity. (* Compose, Stack *)
-  - ZXunfold.
-    rewrite Mscale_adj.
-    rewrite Cexp_conj_neg.
-    apply Mplus_simplify; try apply Mscale_simplify; try reflexivity; try rewrite Mmult_adjoint.
-    + rewrite 2 kron_n_adjoint; try auto with wf_db.
-      rewrite 2 Mmult_adjoint.
-      rewrite 2 adjoint_involutive.
-      reflexivity.
-    + restore_dims.
-      rewrite 2 kron_n_adjoint; try auto with wf_db.
-      rewrite 2 Mmult_adjoint.
-      rewrite 2 adjoint_involutive.
-      reflexivity.
-  - ZXunfold.
-    rewrite Mscale_adj.
-    rewrite Cexp_conj_neg.
-    restore_dims.
-    rewrite Mmult_adjoint.
-    restore_dims.
-    rewrite 4 kron_n_adjoint; try auto with wf_db.
-    rewrite bra0_adjoint_ket0.
-    rewrite bra1_adjoint_ket1.
-    rewrite ket0_adjoint_bra0.
-    rewrite ket1_adjoint_bra1.
+  - simpl.
+    rewrite X_semantics_adj.
+    reflexivity.
+  - simpl.
+    rewrite Z_semantics_adj.
     reflexivity.
 Qed.
 
@@ -247,71 +343,24 @@ Fixpoint ColorSwap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut :=
   end
   where "⊙ zx" := (ColorSwap zx).
 
+Local Open Scope C_scope.
+
 Lemma ZX_semantics_Colorswap_comm {nIn nOut} : forall (zx : ZX nIn nOut),
   ZX_semantics (⊙ zx) = nOut ⨂ hadamard × (ZX_semantics zx) × nIn ⨂ hadamard.
 Proof.
   induction zx.
   - ZXunfold; reflexivity.
-  - ZXunfold.
-    repeat rewrite Mmult_plus_distr_l.
-    repeat rewrite Mmult_plus_distr_r.
-    apply Mplus_simplify.
-    + rewrite 2 Mmult_assoc.
-      rewrite <- Mmult_assoc with (nOut ⨂ hadamard) _ _.
-      apply Mmult_simplify.
-      * rewrite kron_n_mult.
-        rewrite <- Mmult_assoc.
-        rewrite MmultHH.
-        rewrite Mmult_1_l; try auto with wf_db.
-      * restore_dims. 
-        rewrite kron_n_mult.
-        rewrite hadamard_sa.
-        rewrite Mmult_assoc.
-        rewrite MmultHH.
-        rewrite Mmult_1_r; try auto with wf_db.
-    + restore_dims.
-      rewrite Mscale_mult_dist_r.
-      rewrite Mscale_mult_dist_l.
-      apply Mscale_simplify; try reflexivity.
-      rewrite 2 Mmult_assoc.
-      rewrite <- Mmult_assoc with (nOut ⨂ hadamard) _ _.
-      apply Mmult_simplify.
-      * rewrite kron_n_mult.
-        rewrite <- Mmult_assoc.
-        rewrite MmultHH.
-        rewrite Mmult_1_l; try auto with wf_db.
-      * restore_dims.
-        rewrite kron_n_mult.
-        rewrite hadamard_sa.
-        rewrite Mmult_assoc.
-        rewrite MmultHH.
-        rewrite Mmult_1_r; try auto with wf_db.
-  - ZXunfold.
-    repeat rewrite Mmult_plus_distr_l.
-    repeat rewrite Mmult_plus_distr_r.
-    apply Mplus_simplify.
-    + rewrite 2 Mmult_assoc.
-      rewrite <- Mmult_assoc with (nOut ⨂ hadamard) _ _.
-      apply Mmult_simplify.
-      * rewrite kron_n_mult.
-        reflexivity.
-      * restore_dims. 
-        rewrite kron_n_mult.
-        rewrite hadamard_sa.
-        reflexivity.
-    + restore_dims.
-      rewrite Mscale_mult_dist_r.
-      rewrite Mscale_mult_dist_l.
-      apply Mscale_simplify; try reflexivity.
-      rewrite 2 Mmult_assoc.
-      rewrite <- Mmult_assoc with (nOut ⨂ hadamard) _ _.
-      apply Mmult_simplify.
-      * rewrite kron_n_mult.
-        reflexivity.
-      * restore_dims.
-        rewrite kron_n_mult.
-        rewrite hadamard_sa.
-        reflexivity.
+  - simpl.
+    unfold X_semantics.
+    rewrite <- 2 Mmult_assoc.
+    rewrite kron_n_mult.
+    rewrite 2 Mmult_assoc.
+    rewrite kron_n_mult.
+    rewrite MmultHH.
+    rewrite 2 kron_n_I.
+    rewrite Mmult_1_r; try auto with wf_db.
+    rewrite Mmult_1_l; try auto with wf_db.
+  - reflexivity.
   - solve_matrix.
   - solve_matrix.
   - simpl.

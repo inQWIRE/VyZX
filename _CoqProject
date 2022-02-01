@@ -10,6 +10,8 @@ externals/QuantumLib/Pad.v
 externals/QuantumLib/VectorStates.v
 externals/QuantumLib/Proportional.v
 
+externals/SQIR/SQIR/SQIR.v
+
 ZX.v
 Gates.v 
 Scalars.v
