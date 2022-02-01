@@ -1,31 +1,91 @@
 Require Import externals.QuantumLib.Quantum.
 Require Import externals.QuantumLib.VectorStates.
+Require Import externals.QuantumLib.Matrix.
 Require Export ZX.
 
 Local Open Scope ZX_scope.
 
+
+
+Lemma Scalar_general : forall (zx : ZX 0 0), ZX_semantics zx = ((ZX_semantics zx) 0%nat 0%nat) .* I 1.
+Proof.
+  intros.
+  prep_matrix_equality.
+  simpl.
+  assert (Hgt : forall a : nat, (S a >= 1)%nat).
+  { 
+    intros.
+    induction a.
+    - auto.
+    - constructor; assumption.
+  }
+  destruct x; destruct y.
+    - unfold scale.
+    unfold I.
+    simpl.
+    rewrite Cmult_1_r.
+    reflexivity.
+  - assert (HZX : ZX_semantics zx 0%nat (S y) = 0).
+    {
+      rewrite (WF_ZX _ _ zx 0%nat (S y)).
+      + reflexivity.
+      + right; apply Hgt.
+    }
+    assert (HI : I 1 0%nat (S y) = 0).
+    {
+      rewrite (WF_I _ 0%nat (S y)); try reflexivity.
+      right; apply Hgt.
+    }
+    rewrite HZX; unfold scale; rewrite HI.
+    rewrite Cmult_0_r.
+    reflexivity.
+  - assert (HZX : ZX_semantics zx (S x) 0%nat = 0).
+    {
+      rewrite (WF_ZX _ _ zx (S x) 0%nat).
+      + reflexivity.
+      + left; apply Hgt.
+    }
+    assert (HI : I 1 (S x) 0%nat = 0).
+    {
+      rewrite (WF_I _ (S x) 0%nat); try reflexivity.
+      left; apply Hgt.
+    }
+    rewrite HZX; unfold scale; rewrite HI.
+    rewrite Cmult_0_r.
+    reflexivity.
+  - assert (HZX : ZX_semantics zx (S x) (S y) = 0).
+    {
+      rewrite (WF_ZX _ _ zx (S x) (S y)).
+      + reflexivity.
+      + left; apply Hgt.
+    }
+    assert (HI : I 1 (S x) (S y) = 0).
+    {
+      rewrite (WF_I _ (S x) (S y)); try reflexivity.
+      left; apply Hgt.
+    }
+    rewrite HZX; unfold scale; rewrite HI.
+    rewrite Cmult_0_r.
+    reflexivity.
+Qed.
+
+Ltac solve_scalar := intros; rewrite Scalar_general; apply Mscale_simplify; try reflexivity.
+
 Definition Scalar_1_plus_Cexp_alpha α := Z_Spider 0 0 α.
 
 Theorem Scalar_Z_general : forall α, (ZX_semantics (Scalar_1_plus_Cexp_alpha α)) = (1 + Cexp(α)) .* I 1.
-Proof.
-  intros.
-  simpl.
-  unfold_spider.
-  rewrite Mscale_plus_distr_l.
-  rewrite Mscale_1_l.
-  reflexivity.
-Qed.
+Proof. solve_scalar. Qed.
 
 Global Opaque Scalar_1_plus_Cexp_alpha.
 
 Definition Scalar_2 := Scalar_1_plus_Cexp_alpha 0.
 
 Theorem Scalar_Z_0_2 : (ZX_semantics Scalar_2) = 2 .* I 1.
-Proof.
+Proof. 
   unfold Scalar_2.
-  rewrite Scalar_Z_general.
-  autorewrite with Cexp_db.
-  solve_matrix.
+  rewrite Scalar_Z_general. 
+  rewrite Cexp_0.
+  lma.
 Qed.
 
 Global Opaque Scalar_2.
@@ -46,52 +106,124 @@ Definition Scalar_sqrt_2 := Compose (X_Spider 0 1 0) (Z_Spider 1 0 0).
 
 Theorem Scalar_X_alpha_Z_0_sqrt_2 : (ZX_semantics Scalar_sqrt_2) = (√2) .* I 1.
 Proof.
-  intros.
+  solve_scalar.
+  unfold Scalar_sqrt_2.
   simpl.
-  unfold_spider.
-  autorewrite with Cexp_db.
-  repeat rewrite Mmult_1_l; try auto with wf_db.
-  repeat rewrite kron_1_l; try auto with wf_db.
-  repeat rewrite Mscale_1_l.
-  repeat rewrite Mmult_1_r; try auto with wf_db.
-  solve_matrix.
-  C_field_simplify; try lca; try apply Csqrt2_neq_0.
+  unfold Mmult.
+  simpl.
+  rewrite Cplus_0_l.
+  unfold Z_semantics.
+  unfold X_semantics.
+  simpl.
+  rewrite Cexp_0.
+  rewrite 2 Cmult_1_l.
+  rewrite kron_1_l; try auto with wf_db.
+  unfold Mmult; simpl.
+  unfold I; simpl.
+  unfold Z_semantics; simpl.
+  repeat rewrite (Cplus_0_l).
+  rewrite Cexp_0.
+  repeat rewrite Cmult_1_r.
+  rewrite Cplus_opp_r.
+  rewrite Cplus_0_r.
+  rewrite Cdiv_unfold.
+  rewrite Cmult_1_l.
+  rewrite <- Cdouble.
+  rewrite <- Csqrt2_sqrt. 
+  rewrite <- Cmult_assoc.
+  rewrite Cinv_r; try nonzero.
+  rewrite Cmult_1_r.
+  reflexivity.
 Qed. 
 
 Global Opaque Scalar_sqrt_2.
 
 Definition Scalar_Cexp_alpha_times_sqrt_2 α := Compose (X_Spider 0 1 α) (Z_Spider 1 0 PI).
 
+Opaque Ropp.
+
 Theorem Scalar_X_alpha_Z_PI_sqrt_2 : forall α, (ZX_semantics (Scalar_Cexp_alpha_times_sqrt_2 α)) = (√2 * Cexp(α)) .* I 1.
 Proof.
-  intros.
+  solve_scalar.
+  unfold Scalar_Cexp_alpha_times_sqrt_2.
   simpl.
-  unfold_spider.
-  autorewrite with Cexp_db.
-  repeat rewrite Mmult_1_l; try auto with wf_db.
-  repeat rewrite kron_1_l; try auto with wf_db.
-  repeat rewrite Mscale_1_l.
-  repeat rewrite Mmult_1_r; try auto with wf_db.
-  solve_matrix.
-  C_field_simplify; try lca; try apply Csqrt2_neq_0.
-Qed. 
+  unfold Mmult; simpl.
+  rewrite Cplus_0_l.
+  unfold X_semantics; simpl.
+  rewrite Cmult_1_l.
+  rewrite kron_1_l; try auto with wf_db.
+  unfold Mmult; simpl.
+  repeat rewrite Cplus_0_l.
+  unfold I; simpl.
+  rewrite Cdiv_unfold; rewrite Cmult_1_l.
+  repeat rewrite Cmult_1_r.
+  assert (forall a, Z_semantics 1 0 a 0%nat 1%nat = Cexp a).
+  { intros; unfold Z_semantics; reflexivity. }
+  rewrite H.
+  replace (Cexp PI) with (- C1) by (rewrite Cexp_PI; lca).
+  rewrite <- Copp_mult_distr_l.
+  rewrite Cmult_1_l.
+  rewrite Copp_plus_distr.
+  rewrite Copp_mult_distr_l.
+  rewrite Copp_involutive.
+  rewrite Cplus_assoc.
+  replace (/ √ 2 + / √ 2 * Z_semantics 0 1 α 1%nat 0%nat + - / √ 2 + / √ 2 * Z_semantics 0 1 α 1%nat 0%nat) 
+    with  (/ √ 2 * Z_semantics 0 1 α 1%nat 0%nat + / √ 2 * Z_semantics 0 1 α 1%nat 0%nat) by lca.
+  replace (/ √ 2 * Z_semantics 0 1 α 1%nat 0%nat + / √ 2 * Z_semantics 0 1 α 1%nat 0%nat)
+    with  (√ 2 * Z_semantics 0 1 α 1%nat 0%nat).
+  - unfold Z_semantics; reflexivity.
+  - rewrite <- Cdouble.
+    rewrite Cmult_assoc.
+    rewrite <- Csqrt2_sqrt.
+    rewrite <- (Cmult_assoc (√2) _ _).
+    rewrite Cinv_r; try nonzero.
+    rewrite Cmult_1_r.
+    reflexivity.
+Qed.
 
 Global Opaque Scalar_Cexp_alpha_times_sqrt_2.
 
 Definition Scalar_1_div_sqrt_2 := Compose (Z_Spider 0 3 0) (X_Spider 3 0 0).
 
+
 Theorem Scalar_X_Z_triple_1_sqrt_2 : (ZX_semantics Scalar_1_div_sqrt_2) = (1 / √ 2) .* I 1.
 Proof.
-  intros.
+  solve_scalar.
+  unfold Scalar_1_div_sqrt_2.
   simpl.
-  unfold_spider.
-  solve_matrix.
-  autorewrite with Cexp_db.
-  rewrite Cmult_1_l.
-  C_field_simplify; try lca; split; try apply Csqrt2_neq_0.
-  apply C0_fst_neq.
   simpl.
-  auto.
+  unfold Mmult; simpl.
+  rewrite Cplus_0_l.
+  unfold Z_semantics; simpl.
+  repeat rewrite Cmult_0_r.
+  repeat rewrite Cplus_0_r.
+  rewrite Cexp_0.
+  rewrite 2 Cmult_1_r.
+  unfold X_semantics; simpl.
+  unfold Mmult; simpl.
+  repeat rewrite Cplus_0_l.
+  rewrite kron_1_l; try auto with wf_db.
+  unfold I; simpl.
+  repeat rewrite Cmult_1_l.
+  unfold kron; simpl.
+  unfold hadamard; simpl.
+  unfold Z_semantics; simpl.
+  repeat rewrite Cmult_0_l.
+  repeat rewrite Cplus_0_r.
+  rewrite Cexp_0.
+  repeat rewrite Cmult_1_l.
+  rewrite <- Copp_mult_distr_l.
+  rewrite <- 2 Copp_mult_distr_r.
+  rewrite Copp_involutive.
+  rewrite Cplus_opp_r.
+  rewrite Cplus_0_r.
+  repeat rewrite Cdiv_unfold.
+  repeat rewrite Cmult_1_l.
+  rewrite <- Cdouble.
+  rewrite Cinv_sqrt2_sqrt.
+  rewrite Cmult_assoc.
+  rewrite Cinv_r; try nonzero.
+  lca.
 Qed.
 
 Global Opaque Scalar_1_div_sqrt_2.

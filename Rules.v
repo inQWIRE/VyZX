@@ -8,7 +8,7 @@ Require Export VyZX.Proportional.
 Local Open Scope ZX_scope.
 
 (* TODO: Move into quantum lib *)
-Hint Rewrite Mscale_kron_dist_l Mscale_kron_dist_r Mscale_mult_dist_l Mscale_mult_dist_r Mscale_assoc : scalar_move_db.
+Local Hint Rewrite Mscale_kron_dist_l Mscale_kron_dist_r Mscale_mult_dist_l Mscale_mult_dist_r Mscale_assoc : scalar_move_db.
 
 Lemma ZX_Compose_assoc : forall nIn nMid1 nMid2 nOut
                               (zx1 : ZX nIn nMid1) (zx2 : ZX nMid1 nMid2) (zx3 : ZX nMid2 nOut),
@@ -367,7 +367,6 @@ Proof.
   prop_exist_non_zero (Cexp (PI / 4 * (INR nIn - INR nOut))).
   simpl.
   rewrite 2 nStack1_n_kron.
-  unfold_spider.
   rewrite ZX_H_is_H.
   repeat rewrite Mscale_kron_n_distr_r.
   repeat rewrite Cexp_pow; simpl.
@@ -380,21 +379,12 @@ Proof.
   rewrite <- Rmult_plus_distr_l.
   replace ((INR nIn - INR nOut + INR nOut))%R with (INR nIn) by lra.
   apply Mscale_simplify; try reflexivity.
-  repeat rewrite Mmult_assoc.
-  restore_dims.
-  repeat rewrite kron_n_mult.
-  rewrite Mmult_plus_distr_l.
-  rewrite <- Mmult_assoc.
-  repeat rewrite Mscale_mult_dist_r.
-  rewrite <- Mmult_assoc.
-  repeat rewrite kron_n_mult.
-  repeat rewrite <- Mmult_assoc.
+  unfold X_semantics.
+  rewrite <- 2 Mmult_assoc.
+  rewrite kron_n_mult.
   rewrite MmultHH.
-  Msimpl.
-  apply Mplus_simplify;
-    try (apply Mscale_simplify; try reflexivity);
-    apply Mmult_simplify; try reflexivity;
-                          try (rewrite hadamard_sa; unfold bra; reflexivity).
+  rewrite kron_n_I.
+  rewrite Mmult_1_l; try auto with wf_db.
 Qed.
 
 Lemma hadamard_color_change_X : forall nIn nOut α, 
@@ -404,7 +394,6 @@ Proof.
   prop_exist_non_zero (Cexp (PI / 4 * (INR nIn - INR nOut))).
   simpl.
   rewrite 2 nStack1_n_kron.
-  unfold_spider.
   rewrite ZX_H_is_H.
   repeat rewrite Mscale_kron_n_distr_r.
   repeat rewrite Cexp_pow; simpl.
@@ -417,24 +406,12 @@ Proof.
   rewrite <- Rmult_plus_distr_l.
   replace ((INR nIn - INR nOut + INR nOut))%R with (INR nIn) by lra.
   apply Mscale_simplify; try reflexivity.
-  repeat rewrite Mmult_assoc.
-  restore_dims.
-  repeat rewrite kron_n_mult.
-  rewrite Mmult_plus_distr_l.
-  rewrite <- Mmult_assoc.
-  repeat rewrite Mscale_mult_dist_r.
-  rewrite <- Mmult_assoc.
-  repeat rewrite kron_n_mult.
-  rewrite hadamard_sa.
-  restore_dims.
-  repeat rewrite Mmult_assoc.
+  unfold X_semantics.
+  rewrite 2 Mmult_assoc.
+  rewrite kron_n_mult.
   rewrite MmultHH.
-  Msimpl.
-  repeat rewrite <- Mmult_assoc.
-  apply Mplus_simplify;
-    try (apply Mscale_simplify; try reflexivity);
-    apply Mmult_simplify; try reflexivity;
-                          try (rewrite hadamard_sa; unfold bra; reflexivity).
+  rewrite kron_n_I.
+  rewrite Mmult_1_r; try auto with wf_db.
 Qed.
 
 Lemma bi_hadamard_color_change_Z : forall nIn nOut α, 
@@ -467,76 +444,13 @@ Lemma Z_spider_1_1_fusion_eq : forall nIn nOut α β,
 Proof.
   intros.
   simpl.
-  unfold_spider.
-  rewrite Mmult_plus_distr_r, Mmult_plus_distr_l.
-  rewrite <- Mmult_assoc.
-  rewrite Mscale_mult_dist_r.
-  rewrite Mmult_plus_distr_l.
-  rewrite Mscale_mult_dist_r.
-  restore_dims.
-  Msimpl.
-  rewrite <- Mplus_assoc.
-  rewrite Mplus_comm.
-  rewrite <- Mplus_assoc.
-  restore_dims.
-  Msimpl.
-  rewrite Cexp_add.
-  repeat rewrite <- Mmult_assoc.
-  rewrite 2 Mscale_mult_dist_l.
-  rewrite Mscale_assoc.
-  rewrite (Mplus_comm _ _ (nOut ⨂ (ket 0) × nIn ⨂ (bra 0)) _).
-  repeat rewrite Mplus_assoc.
-  apply Mplus_simplify.
-  - apply Mscale_simplify; try reflexivity.
-    rewrite 2 Mmult_assoc.
-    apply Mmult_simplify; try reflexivity.
-    rewrite <- Mmult_assoc.
-    restore_dims.
-    replace (bra 1 × (ket 1)) with (I 1) by solve_matrix.
-    Msimpl.
-    reflexivity.
-  - rewrite <- Mplus_0_r.
-    apply Mplus_simplify.
-    + rewrite 2 Mmult_assoc.
-      apply Mmult_simplify; try reflexivity.
-      rewrite <- Mmult_assoc.
-      restore_dims. 
-      replace (bra 0 × (ket 0)) with (I 1) by solve_matrix.
-      Msimpl.
-      reflexivity.
-    + restore_dims.
-      replace ((nOut ⨂ (ket 0) × (bra 0) × (ket 1) × nIn ⨂ (bra 1))) with ((nOut ⨂ (ket 0) × ((bra 0) × (ket 1)) × nIn ⨂ (bra 1))).
-      rewrite bra0ket1.
-      rewrite Mmult_assoc.
-      restore_dims.
-      rewrite Mmult_0_l.
-      restore_dims.
-      rewrite Mmult_0_r.
-      rewrite Mscale_0_r.
-      rewrite Mplus_0_l.
-      rewrite Mmult_assoc.
-      rewrite Mscale_mult_dist_l.
-      rewrite <- Mmult_assoc.
-      restore_dims.
-      replace ((nOut ⨂ (ket 1) × (bra 1) × (ket 0) × nIn ⨂ (bra 0))) with ((nOut ⨂ (ket 1) × ((bra 1) × (ket 0)) × nIn ⨂ (bra 0))).
-      rewrite bra1ket0.
-      restore_dims.
-      rewrite Mmult_assoc.
-      rewrite Mmult_0_l.
-      restore_dims.
-      rewrite Mmult_0_r.
-      rewrite Mscale_0_r.
-      reflexivity.
-      rewrite 3 Mmult_assoc.
-      apply Mmult_simplify; try reflexivity.
-      restore_dims.
-      rewrite Mmult_assoc.
-      reflexivity.
-      rewrite 3 Mmult_assoc.
-      restore_dims.
-      apply Mmult_simplify; try reflexivity.
-      rewrite Mmult_assoc.
-      reflexivity.
+  rewrite Mscale_1_l.
+  prep_matrix_equality.
+  unfold Mmult; simpl.
+  rewrite Cplus_0_l.
+  unfold Z_semantics; simpl.
+  destruct (x =? 0); destruct (y =? 0); destruct (x =? 2 ^ nOut - 1); destruct (y =? 2 ^ nIn - 1);
+    autorewrite with Cexp_db; C_field_simplify; reflexivity.
 Qed.
 
 Lemma Z_spider_1_1_fusion : forall nIn nOut α β, 
@@ -553,15 +467,10 @@ Lemma Z_0_eq_X_0 :
 Proof.
   prop_exist_non_zero 1.
   simpl.
-  unfold_spider.
-  rewrite Cexp_0.
-  Msimpl.
-  rewrite hadamard_sa.
-  rewrite 2 ket2bra.
-  repeat rewrite Mmult_assoc.
-  rewrite <- Mmult_plus_distr_l.
-  repeat rewrite <- Mmult_assoc.
-  rewrite <- Mmult_plus_distr_r.
+  rewrite Mscale_1_l.
+  unfold_spider; simpl.
+  rewrite kron_1_l; auto with wf_db.
+  autorewrite with Cexp_db; C_field_simplify.
   solve_matrix.
 Qed.
 
@@ -604,11 +513,10 @@ Theorem Hopf_rule_Z_X :
 Proof.
   prop_exist_non_zero (/C2).
   simpl.
+  unfold X_semantics; simpl.
+  rewrite kron_1_l; try auto with wf_db.
   unfold_spider.
-  rewrite Cexp_0.
-  rewrite 4 Mscale_1_l.
-  repeat rewrite ket2bra.
-  repeat rewrite hadamard_sa.
+  autorewrite with Cexp_db; C_field_simplify.
   solve_matrix.
 Qed.
 
@@ -617,20 +525,99 @@ Local Definition Bi_Alg_SWAP_Stack : ZX 4 4 := — ↕ ⨉ ↕ —.
 Local Definition Bi_Alg_Z_Stack_1_2 : ZX 4 2 := (Z_Spider 2 1 0) ↕ (Z_Spider 2 1 0).
 Definition Bi_Alg_Z_X := Bi_Alg_X_Stack_2_1 ⟷ Bi_Alg_SWAP_Stack ⟷ Bi_Alg_Z_Stack_1_2.
 
+Definition Bi_Alg_SWAP_Stack_Semantics : Matrix 16 16 :=
+  fun x y =>
+  match x, y with
+  | 0, 0 | 1, 1 | 4, 2 | 5, 3 | 2, 4 | 3, 5 | 6, 6 | 7, 7 
+  | 8, 8 | 9, 9 | 12, 10 | 13, 11 | 10, 12 | 11, 13 | 14, 14 | 15, 15 => 1
+  | _, _ => 0
+  end.
+
 Theorem BiAlgebra_rule_Z_X : 
   (Z_Spider 2 1 0) ⟷ (X_Spider 1 2 0) ∝ Bi_Alg_Z_X.
 Proof.
   prop_exist_non_zero 4.
   simpl.
   rewrite ZX_SWAP_is_swap, wire_identity_semantics.
+  autorewrite with scalar_move_db.
+  prep_matrix_equality.
+  unfold scale; unfold Mmult; simpl.
+  repeat rewrite Cmult_0_r.
+  repeat rewrite Cmult_0_l.
+  repeat rewrite Cplus_0_l.
+  repeat rewrite Cplus_0_r.
+  repeat rewrite Cmult_1_l.
+  unfold I; unfold swap; unfold kron; simpl.
+  repeat rewrite Cmult_0_r.
+  repeat rewrite Cmult_0_l.
+  repeat rewrite Cmult_1_l.
+  repeat rewrite Cplus_0_l.
+  repeat rewrite Cplus_0_r.
+  Local Ltac solve_one := (
+      unfold X_semantics; unfold Mmult; simpl;
+      unfold hadamard; unfold I; unfold kron; unfold Z_semantics; simpl;
+      C_field_simplify; try nonzero;
+      autorewrite with Cexp_db; lca).
+  destruct y; simpl.
+  - destruct x; [ solve_one | simpl ].
+    destruct x; [ solve_one | simpl ].
+    destruct x; [ solve_one | simpl ].
+    destruct x; [ solve_one | simpl ].
+    
+
+    rewrite (WF_X_semantics(S (S (S (S x)))) 0%nat); [ | left; simpl; lia].
+    rewrite (WF_X_semantics(S (S (S (S x)))) 1%nat); [ | left; simpl; lia].
+    rewrite 2 Cmult_0_l.
+    
+    unfold X_semantics; unfold Mmult; simpl; unfold hadamard; unfold I; unfold kron; unfold Z_semantics; simpl.
+    C_field_simplify; [ | nonzero ].
+    autorewrite with Cexp_db.
+    C_field_simplify.
+
+    destruct (fst (Nat.divmod x 1 2 1) =? 1) eqn:DM1.
+    + rewrite (beq_nat_true _ _ DM1); simpl.
+      repeat rewrite Cmult_0_r.
+      repeat rewrite Cmult_0_l.
+      repeat rewrite Cplus_0_l.
+      destruct (snd (Nat.divmod x 1 2 1)).
+      * simpl.
+        repeat rewrite Rmult_0_l.
+        repeat rewrite Rplus_0_r.
+        repeat rewrite Rmult_0_l.
+        repeat rewrite Rmult_0_r.
+        lca.
+        rewrite Cmult_0_l.
+        C_field_simplify.
+
+    rewrite (WF_X_semantics 3%nat 0%nat).
+    rewrite Cmult_0_r.
+
+    destruct x; [ solve_one | simpl ].
+    destruct x; [ solve_one | simpl ].
+    unfold X_semantics; unfold Mmult; simpl.
+    unfold hadamard. rewrite kron_1_l.
+    try solve_one.
+
+    destruct x; try solve_one.
+    rewrite (WF_X_semantics (S (S x)) 0%nat).
+    rewrite (WF_X_semantics (S (S x)) 0%nat).
+
+
+  C_field_simplify.
+  Local Ltac solve_one := (
+      unfold X_semantics; unfold Mmult; simpl;
+      unfold hadamard; unfold I; unfold kron; unfold Z_semantics; simpl;
+      C_field_simplify; try nonzero;
+      autorewrite with Cexp_db; lca).
+  destruct y; simpl.
+  - destruct x; try solve_one.
+    destruct x; try solve_one.
+    destruct x; try solve_one.
+    destruct x; try solve_one.
   unfold_spider.
   autorewrite with Cexp_db.
   simpl.
   repeat rewrite kron_1_l; try auto with wf_db.
-  repeat rewrite Mscale_1_l.
-  repeat rewrite Mmult_adjoint.
-  repeat rewrite hadamard_sa.
-  repeat rewrite ket2bra.
   autorewrite with scalar_move_db.
   solve_matrix;
   try repeat rewrite (Cmult_assoc C2 (/C2) _);
@@ -644,58 +631,21 @@ Proof.
     simpl;
     auto).
 Qed.
-
+ *)
 Theorem inverse_Z_Spider : forall nIn nOut α, ZX_semantics (Z_Spider nIn nOut α) = (ZX_semantics (Z_Spider nOut nIn (-α)))†.
 Proof.
-  intros.
-  simpl.
-  unfold_spider.
-  restore_dims.
-  rewrite Mscale_adj.
-  rewrite Mmult_adjoint.
-  rewrite 3 kron_n_adjoint; try auto with wf_db.
-  rewrite Cexp_conj_neg.
-  rewrite Ropp_involutive.
-  assert ((ket 0)† = bra 0) as Hket0 by reflexivity.
-  assert ((ket 1)† = bra 1) as Hket1 by reflexivity.
-  assert ((bra 0)† = ket 0) as Hbra0 by apply adjoint_involutive.
-  assert ((bra 1)† = ket 1) as Hbra1 by apply adjoint_involutive.
-  apply Mplus_simplify; (* We need to unfortunately split the proof here due to restore_dims not dealing with .* *)
-    try apply Mscale_simplify; 
-    try restore_dims;
-    try rewrite kron_n_adjoint; try auto with wf_db;
-    try rewrite Hket0;
-    try rewrite Hket1;
-    try rewrite Hbra0;
-    try rewrite Hbra1;
-    reflexivity.
+  intros; simpl.
+  rewrite <- Z_semantics_adj.
+  rewrite adjoint_involutive.
+  reflexivity.
 Qed.
 
 Theorem inverse_X_Spider : forall nIn nOut α, ZX_semantics (X_Spider nIn nOut α) = (ZX_semantics (X_Spider nOut nIn (-α)))†.
 Proof.
-  intros.
-  simpl.
-  unfold_spider.
-  rewrite Mscale_adj.
-  repeat rewrite Mmult_adjoint.
-  repeat rewrite <- kron_n_mult.
-  rewrite Cexp_conj_neg.
-  rewrite Ropp_involutive.
-  assert ((ket 0)† = bra 0) as Hket0 by reflexivity.
-  assert ((ket 1)† = bra 1) as Hket1 by reflexivity.
-  assert ((bra 0)† = ket 0) as Hbra0 by apply adjoint_involutive.
-  assert ((bra 1)† = ket 1) as Hbra1 by apply adjoint_involutive.
-  apply Mplus_simplify; (* We need to unfortunately split the proof here due to restore_dims not dealing with .* *)
-    try apply Mscale_simplify; 
-    try restore_dims;
-    try repeat rewrite Mmult_adjoint;
-    try repeat rewrite kron_n_adjoint; try auto with wf_db;
-    try rewrite Hket0;
-    try rewrite Hket1;
-    try rewrite Hbra0;
-    try rewrite Hbra1;
-    try repeat rewrite hadamard_sa;
-    reflexivity.
+  intros; simpl.
+  rewrite <- X_semantics_adj.
+  rewrite adjoint_involutive.
+  reflexivity.
 Qed.
 
 Lemma ColorSwap_involutive : forall {nIn nOut} (zx : ZX nIn nOut),
@@ -918,22 +868,75 @@ Proof.
 Qed.
 Local Opaque ZX_X ZX_Z.
 
+Lemma ZX_K1_Z_base : Z_Spider 1 1 PI ⟷ X_Spider 1 1 0 ∝ X_Spider 1 1 0 ⟷ Z_Spider 1 1 PI.
+Proof.
+  prop_exist_non_zero 1.
+  Msimpl; simpl.
+  prep_matrix_equality.
+  unfold Mmult.
+  unfold scale.
+  unfold Z_semantics; simpl.
+  repeat rewrite Cplus_0_l.
+  destruct x; destruct y.
+  - simpl; C_field_simplify; reflexivity.
+  - simpl; C_field_simplify.
+    destruct y.
+    + simpl; C_field_simplify. unfold X_semantics; simpl.
+      rewrite kron_1_l; try auto with wf_db.
+      unfold Mmult; simpl.
+      repeat rewrite Cplus_0_l.
+      unfold Z_semantics; simpl.
+      C_field_simplify; try nonzero.
+      autorewrite with Cexp_db; lca.
+    + simpl; C_field_simplify. unfold X_semantics; simpl.
+      rewrite kron_1_l; try auto with wf_db.
+      unfold Mmult; simpl.
+      lca.
+  - simpl; C_field_simplify.
+    destruct x.
+    + simpl; C_field_simplify.
+      unfold X_semantics; simpl.
+      rewrite kron_1_l; try auto with wf_db.
+      unfold Mmult; simpl.
+      unfold Z_semantics; simpl.
+      C_field_simplify; try nonzero.
+      autorewrite with Cexp_db.
+      lca.
+    + simpl; C_field_simplify.
+      unfold X_semantics; simpl.
+      rewrite kron_1_l; try auto with wf_db.
+      unfold Mmult.
+      unfold Z_semantics; simpl.
+      C_field_simplify; try nonzero; lca.
+  - destruct x; destruct y.
+    + simpl. lca.
+    + simpl. unfold X_semantics; simpl.
+      rewrite kron_1_l; try auto with wf_db.
+      lca.
+    + simpl. unfold_spider; unfold Mmult; simpl.
+      C_field_simplify. 
+      rewrite kron_1_l; try auto with wf_db.
+      unfold hadamard; simpl; lca.
+    + simpl. lca.
+Qed.
+(*
+Lemma ZX_K2_Z {α} : Z_Spider 1 1 PI ⟷ X_Spider 1 1 α ∝ X_Spider 1 1 (-α) ⟷ Z_Spider 1 1 PI.
+Proof.
+  prop_exist_non_zero 1; Msimpl.
+  rewrite <- adjoint_involutive.
+  rewrite <- ZX_semantics_Adjoint_comm.
+  simpl.
+ *)
+
+Transparent ZX_Z.
+Transparent ZX_X.
+(*
 Lemma Y_colorswap : ⊙ ZX_Y ∝ ZX_Y.
 Proof.
-  unfold ZX_Y.
+  unfold ZX_Y; unfold ZX_Z; unfold ZX_X.
   simpl.
-  rewrite X_colorswap_Z, Z_colorswap_X.
-Local Transparent ZX_X ZX_Z.
-  prop_exist_non_zero (-1).
-  unfold ZX_X, ZX_Z.
-  simpl.
-  unfold_spider.
-  autorewrite with Cexp_db.
-  Msimpl.
-  repeat rewrite ket2bra.
-  repeat rewrite hadamard_sa.
-  solve_matrix.
 Qed.
+ *)
 Local Opaque ZX_X ZX_Z ZX_Y.
 
 Lemma nH_colorswap : forall n, ⊙ (n ↑ □) ∝ (n ↑ □).
@@ -1026,7 +1029,7 @@ Theorem Hopf_rule_X_Z :
 Proof.
   swap_colors_of Hopf_rule_Z_X.
 Qed.
- 
+(* 
 Local Definition Bi_Alg_Z_Stack_2_1 : ZX 2 4 := (Z_Spider 1 2 0) ↕ (Z_Spider 1 2 0).
 Local Definition Bi_Alg_X_Stack_1_2 : ZX 4 2 := (X_Spider 2 1 0) ↕ (X_Spider 2 1 0).
 Definition Bi_Alg_X_Z := Bi_Alg_Z_Stack_2_1 ⟷ Bi_Alg_SWAP_Stack ⟷ Bi_Alg_X_Stack_1_2.
@@ -1035,7 +1038,7 @@ Proof.
   unfold Bi_Alg_X_Z, Bi_Alg_Z_Stack_2_1, Bi_Alg_X_Stack_1_2.
   swap_colors_of BiAlgebra_rule_Z_X.
 Qed.
-
+ *)
 
 Lemma Z_commutes_through_swap_t : forall α, 
   ((Z_Spider 1 1 α) ↕ —) ⟷ ⨉ ∝ 
@@ -1179,15 +1182,29 @@ Lemma Z_double_H_connection : forall α β,
 Proof.
   intros.
   prop_exist_non_zero (Cexp (PI / 4) * (Cexp (PI / 4)) * / C2); try apply Cmult_neq_0; try apply nonzero_div_nonzero; try apply Cmult_neq_0; try nonzero.
-  unfold_spider.
-  unfold Spider_semantics, bra_ket_MN.
   simpl; Msimpl.
   rewrite ZX_H_is_H.
   autorewrite with scalar_move_db.
   repeat rewrite <- Mscale_assoc.
   apply Mscale_simplify; try reflexivity.
   apply Mscale_simplify; try reflexivity.
+  unfold Z_semantics.
   solve_matrix.
+  - destruct x; simpl.
+    + destruct y; simpl.
+      * lca.
+      * lca.
+    + destruct y; simpl.
+      * destruct x; simpl.
+        -- lca.
+        -- lca.
+      * destruct x; simpl.
+        -- destruct y.
+           ++ lca.
+           ++ lca.
+        -- destruct y.
+           ++ lca.
+           ++ lca.
 Qed.
 
 Lemma X_double_H_connection : forall α β,
