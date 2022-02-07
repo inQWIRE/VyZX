@@ -151,7 +151,6 @@ Global Opaque G2_Wire.
 Definition StackWire {nIn nOut} (zx : G2_ZX nIn nOut) : G2_ZX (S nIn) (S nOut) := G2_Wire ↕G2 zx.
 
 
-
 Fixpoint G_Spider_In_to_G2_Spiders nOut α: G2_ZX 1 nOut :=
   match nOut with
   | 0%nat => G2_Z_Spider_In0 α
@@ -164,7 +163,6 @@ Proof.
   intro nOut.
   induction nOut; intros.
   - simpl.
-    Msimpl.
     reflexivity.
   - simpl.
     repeat rewrite G2_wire_identity_semantics.
@@ -177,22 +175,32 @@ Proof.
     Msimpl; restore_dims; try auto with wf_db.
     specialize (IHnOut 0%R).
     rewrite <- IHnOut.
-    Local Transparent G_ZX_semantics.
+    Local Transparent G_ZX_semantics.    
     simpl.
-    unfold_spider.
+    unfold Spider_semantics, bra_ket_MN.
+    repeat rewrite kron_n_assoc; try auto with wf_db.
+    simpl.
+    restore_dims.
     rewrite kron_plus_distr_l.
     autorewrite with Cexp_db.
     Msimpl.
     rewrite Mmult_plus_distr_l.
     rewrite 2 Mmult_plus_distr_r.
     restore_dims.
-Abort.
+    rewrite <- (Mscale_mult_dist_r _ _ _ _ (ket 1 ⊗ _) _).
+    repeat rewrite <- kron_n_assoc; try auto with wf_db.
+    restore_dims.
+Admitted.
 
 Fixpoint G_Spider_Out_to_G2_Spiders nIn α: G2_ZX nIn 1 :=
   match nIn with
   | 0%nat => G2_Z_Spider_Out0 α
   | S nIn' => (StackWire (G_Spider_Out_to_G2_Spiders nIn' R0)) ⟷G2 (StackWire G2_Wire) ⟷G2 G2_Z_Spider_Out2 R0
   end.
+
+Lemma G_Spider_Out_to_G2_Spiders_consistent : forall nIn α, G_ZX_semantics (G_Z_Spider_Out nIn α) = G2_ZX_semantics (G_Spider_Out_to_G2_Spiders nIn α).
+Admitted.
+
 
 Fixpoint G_ZX_to_G2_ZX {nIn nOut} (zx : G_ZX nIn nOut) : G2_ZX nIn nOut :=
   match zx with
@@ -215,19 +223,8 @@ Proof.
   rewrite IHzx1, IHzx2;
   reflexivity). 
   (* Interesting case: Spider fusion *)
-  Local Opaque ZX_semantics.
-  simpl.
-  rewrite G_wire_identity_semantics.
-  Msimpl.
-  rewrite <- Mmult_assoc.
-  rewrite (Mmult_assoc _ hadamard hadamard).
-  rewrite MmultHH.
-  Msimpl.
-  rewrite <- ZX_semantics_Compose.
-  rewrite Z_spider_1_1_fusion_eq.
-  rewrite Rplus_0_r.
-  reflexivity.
-  Local Transparent ZX_semantics.
+  apply G_Spider_In_to_G2_Spiders_consistent.
+  apply G_Spider_Out_to_G2_Spiders_consistent.
 Qed.
 
 Definition ZX_to_G2_ZX {nIn nOut} (zx : ZX nIn nOut) := G_ZX_to_G2_ZX (ZX_to_G_ZX zx).
@@ -248,7 +245,7 @@ Proof.
   simpl.
   unfold ZX_to_G2_ZX.
   rewrite <- G_ZX_to_G2_ZX_consistent.
-  apply ZX_to_G_ZX_consistent.
+  apply ZX_to_ZX_G_consistent.
 Qed.
 
 Lemma ZX_G2_ZX_H_involutive : forall nIn nOut (zx : G_ZX nIn nOut), G2_ZX_to_G_ZX (G_ZX_to_G2_ZX zx) ∝G zx.
@@ -318,19 +315,19 @@ Proof.
 Qed.
 
 Add Parametric Morphism (nIn nOut : nat) : (@ZX_to_G2_ZX nIn nOut)
-  with signature (@proportional nIn nOut) ==> (@G_proportional nIn nOut) as ZX_to_G2_ZX_mor.
+  with signature (@proportional nIn nOut) ==> (@G2_proportional nIn nOut) as ZX_to_G2_ZX_mor.
 Proof. apply ZX_to_G2_ZX_compat. Qed.
 
 Add Parametric Morphism (nIn nOut : nat) : (@G2_ZX_to_ZX nIn nOut)
-  with signature (@G_proportional nIn nOut) ==> (@proportional nIn nOut) as G2_ZX_to_ZX_mor.
+  with signature (@G2_proportional nIn nOut) ==> (@proportional nIn nOut) as G2_ZX_to_ZX_mor.
 Proof. apply G2_ZX_to_ZX_compat. Qed. 
 
 Add Parametric Morphism (nIn nOut : nat) : (@G_ZX_to_G2_ZX nIn nOut)
-  with signature (@H_proportional nIn nOut) ==> (@G_proportional nIn nOut) as G_ZX_to_G2_ZX_mor.
+  with signature (@G_proportional nIn nOut) ==> (@G2_proportional nIn nOut) as G_ZX_to_G2_ZX_mor.
 Proof. apply G_ZX_to_G2_ZX_compat. Qed.
 
 Add Parametric Morphism (nIn nOut : nat) : (@G2_ZX_to_G_ZX nIn nOut)
-  with signature (@G_proportional nIn nOut) ==> (@H_proportional nIn nOut) as G2_ZX_to_G_ZX_mor.
+  with signature (@G2_proportional nIn nOut) ==> (@G_proportional nIn nOut) as G2_ZX_to_G_ZX_mor.
 Proof. apply G2_ZX_to_G_ZX_compat. Qed. 
 
 Lemma G2_ZX_ZX_involutive : forall nIn nOut (zx : ZX nIn nOut), G2_ZX_to_ZX (ZX_to_G2_ZX zx) ∝ zx.
@@ -341,7 +338,7 @@ Proof.
   unfold ZX_to_G2_ZX.
   unfold G2_ZX_to_ZX.
   rewrite ZX_G2_ZX_H_involutive.
-  apply ZX_G_ZX_involutive.
+  apply G_ZX_ZX_involutive.
 Qed.
 
 Lemma ZX_G2_ZX_involutive : forall nIn nOut (zx : G2_ZX nIn nOut), ZX_to_G2_ZX (G2_ZX_to_ZX zx) ∝G2 zx.
@@ -351,7 +348,7 @@ Proof.
   simpl.
   unfold ZX_to_G2_ZX.
   unfold G2_ZX_to_ZX.
-  rewrite G_ZX_ZX_involutive.
+  rewrite ZX_G_ZX_involutive.
   apply ZX_G_ZX_G_involutive.
 Qed.
 
