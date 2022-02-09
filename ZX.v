@@ -29,23 +29,29 @@ Hint Rewrite Mscale_kron_dist_l Mscale_kron_dist_r Mscale_mult_dist_l Mscale_mul
 
 Definition Z_semantics (n m : nat) (α : R) : Matrix (2 ^ m) (2 ^ n) :=
   fun x y =>
-  match x =? 0, y =? 0 with
-  | true, true => match n =? 0, m =? 0 with
-                  | true, true => C1 + Cexp α
+  match x, y with
+  | 0, 0 => match n, m with
+                  | 0, 0 => C1 + Cexp α
                   | _, _  => C1
                   end
-  | _, _  => match x =? (2 ^ m) - 1, y =? (2 ^ n) - 1 with
-                  | true, true => Cexp α
-                  | _, _  => C0
-                  end
+  | _, _ => if ((x =? 2^m-1) && (y =? 2^n-1)) then Cexp α else C0
   end.
+(* 
+bdestruct, takes a boolean equality and destructs it, reflects into context
+
+*)
+
 
 Lemma Z_semantics_transpose (n m : nat) (α : R) : (Z_semantics n m α) ⊤ = Z_semantics m n α.
 Proof.
   unfold Z_semantics.
   unfold transpose.
   prep_matrix_equality.
-  destruct (x =? 0);destruct (y =? 0); destruct (x =? 2 ^ n - 1); destruct (y =? 2 ^ m - 1); try reflexivity.
+  destruct x, y.
+  - destruct n, m; reflexivity.
+  - destruct (S y =? 2^m - 1), (0 =? 2^n-1); reflexivity.
+  - destruct (0 =? 2^m - 1), (S x =? 2^n-1); reflexivity.
+  - destruct (S y =? 2^m-1), (S x =? 2^n-1); reflexivity.
 Qed.
 
 Lemma Z_semantics_adj (n m : nat) (α : R) : (Z_semantics n m α) † = Z_semantics m n (- α).
@@ -53,18 +59,22 @@ Proof.
   unfold Z_semantics.
   unfold adjoint.
   prep_matrix_equality.
-  destruct (x =? 0);destruct (y =? 0); destruct (x =? 2 ^ n - 1); destruct (y =? 2 ^ m - 1); 
-    try lca;
-    try (rewrite Cexp_conj_neg; reflexivity).
-  rewrite Cconj_plus_distr.
-  rewrite Cexp_conj_neg.
-  lca.
+  destruct x,y. 
+  - destruct n,m; try lca.
+    rewrite Cconj_plus_distr.
+    rewrite Cexp_conj_neg.
+    lca.
+  - destruct (S y =? 2^m-1), (0=?2^n-1); try lca.
+    apply Cexp_conj_neg.
+  - destruct (0=?2^m-1),(S x=?2^n-1); try lca.
+    apply Cexp_conj_neg.
+  - destruct (S y=?2^m-1),(S x=?2^n-1); try lca.
+    apply Cexp_conj_neg.
 Qed.
 
 Lemma WF_Z_semantics {n m : nat} {α : R} : WF_Matrix (Z_semantics n m α).
 Proof.
-  unfold WF_Matrix.
-  intros.
+  unfold WF_Matrix; unfold Z_semantics.
   assert ( GeqToEqb : forall (a b c : nat), b <= a  -> c < b -> a =? c = false ).
   {
     intros.
@@ -77,11 +87,11 @@ Proof.
   {
     induction a.
     - intros.
-      inversion H0.
+      inversion H.
       reflexivity.
     - intros.
-      inversion H0; try reflexivity.
-      apply (Nat.le_le_succ_r _ _ H2).
+      inversion H; try reflexivity.
+      apply (Nat.le_le_succ_r _ _ H1).
   }
   assert ( expgt : forall a : nat, 2 ^ a - 1 < 2 ^ a).
   {
@@ -91,31 +101,21 @@ Proof.
     - simpl.
       lia.
   }
-  destruct H as [Hx | Hy].
-  - unfold Z_semantics.
-    rewrite (GeqToEqb x (2^m)%nat 0).
-    + rewrite (GeqToEqb x (2^m)%nat (2^m-1)%nat).
-      * reflexivity.
-      * apply geq_symm; assumption.
-      * apply expgt.
-    + apply geq_symm.
-      assumption.
-    + apply pow_positive; easy.
-  - unfold Z_semantics.
-    destruct (x =? 0).
-    + rewrite (GeqToEqb y (2^n)%nat 0).
-      * destruct (x =? 2 ^ m - 1).
-        -- rewrite (GeqToEqb y (2^n)%nat (2^n-1)%nat).
-           ++ reflexivity.
-           ++ apply geq_symm; assumption.
-           ++ apply expgt.
-        -- reflexivity.
-      * apply geq_symm; assumption.
-      * apply pow_positive; easy.
-    + rewrite (GeqToEqb y (2^n)%nat (2^n - 1)%nat).
-      * destruct (x =? 2 ^ m - 1); reflexivity.
-      * apply geq_symm; assumption.
-      * easy.
+  intros x y [Hx | Hy].
+  - destruct x,y.
+    + inversion Hx.
+      apply Nat.pow_nonzero in H0; [destruct H0 | lia].
+    + inversion Hx.
+      apply Nat.pow_nonzero in H0; [destruct H0 | lia].
+    + rewrite (GeqToEqb (S x) (2^m)%nat (2^m-1)%nat); easy.
+    + rewrite (GeqToEqb (S x) (2^m)%nat (2^m-1)%nat); easy.
+  - destruct x,y.
+    + inversion Hy.
+      apply Nat.pow_nonzero in H0; [destruct H0 | lia].
+    + rewrite (GeqToEqb (S y) (2^n)%nat (2^n-1)%nat); [ rewrite andb_false_r; easy | easy | easy].
+    + inversion Hy.
+      apply Nat.pow_nonzero in H0; [destruct H0 | lia].
+    + rewrite (GeqToEqb (S y) (2^n)%nat (2^n-1)%nat); [ rewrite andb_false_r; easy | easy | easy].
 Qed.
 
 Global Hint Resolve WF_Z_semantics : wf_db.
