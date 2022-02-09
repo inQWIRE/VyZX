@@ -24,16 +24,8 @@ Notation "⊃" := Cup. (* \supset *)
 Infix "⟷" := Compose (left associativity, at level 40). (* \longleftrightarrow *)
 Infix "↕" := Stack (left associativity, at level 40). (* \updownarrow *)
 
-Definition bra_ket_MN (bra: Matrix 1 2) (ket : Vector 2) {n m} : Matrix (2 ^ m) (2 ^ n) := 
-  (m ⨂ ket) × (n ⨂ bra).
-Transparent bra_ket_MN. 
-
-Lemma WF_bra_ket_MN : forall n m bra ket, WF_Matrix bra -> WF_Matrix ket -> WF_Matrix (@bra_ket_MN bra ket n m).
-Proof.
-  intros.
-  unfold bra_ket_MN.
-  apply WF_mult; restore_dims; apply WF_kron_n; assumption.
-Qed.
+(* TODO: Move into quantum lib *)
+Hint Rewrite Mscale_kron_dist_l Mscale_kron_dist_r Mscale_mult_dist_l Mscale_mult_dist_r Mscale_assoc : scalar_move_db.
 
 Definition Z_semantics (n m : nat) (α : R) : Matrix (2 ^ m) (2 ^ n) :=
   fun x y =>
@@ -205,7 +197,104 @@ Proof.
     try intros; simpl in H; repeat destruct H; try discriminate; try (subst; easy). (* Case of 4 lists length 1 *)
 Qed.
 
-Global Hint Resolve WF_ZX : wf_db.
+
+Definition bra_ket_MN (bra: Matrix 1 2) (ket : Vector 2) {n m} : Matrix (2 ^ m) (2 ^ n) := 
+  (m ⨂ ket) × (n ⨂ bra).
+Transparent bra_ket_MN. 
+
+Lemma WF_bra_ket_MN : forall n m bra ket, WF_Matrix bra -> WF_Matrix ket -> WF_Matrix (@bra_ket_MN bra ket n m).
+Proof.
+  intros.
+  unfold bra_ket_MN.
+  apply WF_mult; restore_dims; apply WF_kron_n; assumption.
+Qed.
+
+Definition Dirac_spider_semantics (bra0 bra1 : Matrix 1 2) (ket0 ket1 : Vector 2) (α : R) {n m : nat} : Matrix (2 ^ m) (2 ^ n) :=
+  (bra_ket_MN bra0 ket0) .+ (Cexp α) .* (bra_ket_MN bra1 ket1). 
+Local Transparent Dirac_spider_semantics.
+
+Lemma WF_Dirac_Spider_semantics : forall n m bra0 bra1 ket0 ket1 α, 
+                                WF_Matrix bra0 -> WF_Matrix bra1 -> WF_Matrix ket0 -> WF_Matrix ket1 -> 
+                                WF_Matrix (@Dirac_spider_semantics bra0 bra1 ket0 ket1 α n m).
+Proof.
+  intros.
+  unfold Dirac_spider_semantics.
+  apply WF_plus; restore_dims; try apply WF_scale; apply WF_bra_ket_MN; assumption.
+Qed.
+
+Global Hint Resolve WF_Dirac_Spider_semantics WF_bra_ket_MN : wf_db.
+
+Fixpoint ZX_Dirac_semantics {nIn nOut} (zx : ZX nIn nOut) : 
+  Matrix (2 ^ nOut) (2 ^nIn) := 
+  match zx with
+  | ⦰ => I 1
+  | X_Spider _ _ α => Dirac_spider_semantics (hadamard × (ket 0))† (hadamard × (ket 1))† (hadamard × (ket 0)) (hadamard × (ket 1)) α
+  | Z_Spider _ _ α => Dirac_spider_semantics (bra 0) (bra 1) (ket 0) (ket 1) α
+  | ⊃ => list2D_to_matrix [[C1;C0;C0;C1]]
+  | ⊂ => list2D_to_matrix [[C1];[C0];[C0];[C1]]  
+  | zx0 ↕ zx1 => (ZX_Dirac_semantics zx0) ⊗ (ZX_Dirac_semantics zx1)
+  | zx0 ⟷ zx1 => (ZX_Dirac_semantics zx1) × (ZX_Dirac_semantics zx0)
+  end.
+
+
+Ltac unfold_dirac_spider := unfold Dirac_spider_semantics, bra_ket_MN; try (simpl; Msimpl).
+
+Ltac ZXDiracunfold := simpl; Msimpl; unfold_spider; restore_dims.
+
+Theorem WF_ZX_Dirac : forall nIn nOut (zx : ZX nIn nOut), WF_Matrix (ZX_Dirac_semantics zx).
+Proof.
+  intros.
+  induction zx; try (simpl; auto 10 with wf_db);
+  try (simpl; auto 10 with wf_db);
+    apply WF_list2D_to_matrix;
+    try easy; (* case list of length 4 *)
+    try intros; simpl in H; repeat destruct H; try discriminate; try (subst; easy). (* Case of 4 lists length 1 *)
+Qed.
+
+Lemma ZX_Dirac_spider_X_H_Z : forall nIn nOut α, ZX_Dirac_semantics (X_Spider nIn nOut α) = nOut ⨂ hadamard × ZX_Dirac_semantics (Z_Spider nIn nOut α) × (nIn ⨂ hadamard).
+Proof.
+  intros.
+  unfold_dirac_spider.
+  unfold_dirac_spider.
+  repeat rewrite <- kron_n_mult.
+  rewrite Mmult_plus_distr_l.
+  rewrite Mmult_plus_distr_r.
+  apply Mplus_simplify.
+  - repeat rewrite Mmult_assoc. 
+    rewrite hadamard_sa.
+    rewrite ket2bra.
+    reflexivity.
+  - autorewrite with scalar_move_db.
+    apply Mscale_simplify; try reflexivity.
+    rewrite hadamard_sa.
+    rewrite ket2bra.
+    repeat rewrite Mmult_assoc.
+    reflexivity.
+Qed.
+  
+Global Hint Resolve WF_ZX_Dirac : wf_db.
+
+Lemma ZX_Z_semantics_equiv : forall nIn nOut α, ZX_semantics (Z_Spider nIn nOut α) = ZX_Dirac_semantics (Z_Spider nIn nOut α).
+Proof.
+  intros.
+  unfold_dirac_spider.
+  unfold Z_semantics.
+  unfold Dirac_spider_semantics, bra_ket_MN.
+  prep_matrix_equality.
+Admitted. (* TODO *)
+
+Theorem ZX_semantics_equiv : forall {nIn nOut} (zx : ZX nIn nOut), ZX_semantics zx = ZX_Dirac_semantics zx.
+Proof.
+  intros.
+  induction zx; try (simpl; rewrite IHzx1, IHzx2); try reflexivity.
+  - rewrite ZX_Dirac_spider_X_H_Z.
+    unfold ZX_semantics, X_semantics.
+    rewrite <- ZX_Z_semantics_equiv.
+    simpl.
+    reflexivity.
+  - apply ZX_Z_semantics_equiv.
+Qed.
+
 
 Definition Wire : ZX 1 1 := Z_Spider _ _ 0.
 
