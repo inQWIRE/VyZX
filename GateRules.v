@@ -1,7 +1,7 @@
 Require Import externals.QuantumLib.Quantum.
 Require Export ZX.
 Require Export Gates.
-Require Export Proportional.
+Require Export VyZX.Proportional.
 Require Import Setoid.
 
 Local Open Scope ZX_scope.

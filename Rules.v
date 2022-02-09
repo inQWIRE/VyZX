@@ -3,7 +3,7 @@ Require Import externals.QuantumLib.VectorStates.
 Require Export ZX.
 Require Export Gates.
 Require Export GateRules.
-Require Export Proportional.
+Require Export VyZX.Proportional.
 
 Local Open Scope ZX_scope.
 

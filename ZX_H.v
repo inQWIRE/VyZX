@@ -4,7 +4,7 @@ Require Export ZX.
 Require Export Gates.
 Require Export GateRules.
 Require Export Rules.
-Require Export Proportional.
+Require Export VyZX.Proportional.
 Require Import Setoid.
 
 Local Declare Scope H_ZX_scope.
