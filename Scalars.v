@@ -148,37 +148,16 @@ Proof.
   unfold Scalar_Cexp_alpha_times_sqrt_2.
   simpl.
   unfold Mmult; simpl.
-  rewrite Cplus_0_l.
-  unfold X_semantics; simpl.
+  autorewrite with Cexp_db.
   rewrite Cmult_1_l.
-  rewrite kron_1_l; try auto with wf_db.
+  rewrite Cplus_0_l.
+  unfold X_semantics.
   unfold Mmult; simpl.
   repeat rewrite Cplus_0_l.
+  rewrite kron_1_l; [ | auto with wf_db].
   unfold I; simpl.
-  rewrite Cdiv_unfold; rewrite Cmult_1_l.
-  repeat rewrite Cmult_1_r.
-  assert (forall a, Z_semantics 1 0 a 0%nat 1%nat = Cexp a).
-  { intros; unfold Z_semantics; reflexivity. }
-  rewrite H.
-  replace (Cexp PI) with (- C1) by (rewrite Cexp_PI; lca).
-  rewrite <- Copp_mult_distr_l.
-  rewrite Cmult_1_l.
-  rewrite Copp_plus_distr.
-  rewrite Copp_mult_distr_l.
-  rewrite Copp_involutive.
-  rewrite Cplus_assoc.
-  replace (/ √ 2 + / √ 2 * Z_semantics 0 1 α 1%nat 0%nat + - / √ 2 + / √ 2 * Z_semantics 0 1 α 1%nat 0%nat) 
-    with  (/ √ 2 * Z_semantics 0 1 α 1%nat 0%nat + / √ 2 * Z_semantics 0 1 α 1%nat 0%nat) by lca.
-  replace (/ √ 2 * Z_semantics 0 1 α 1%nat 0%nat + / √ 2 * Z_semantics 0 1 α 1%nat 0%nat)
-    with  (√ 2 * Z_semantics 0 1 α 1%nat 0%nat).
-  - unfold Z_semantics; reflexivity.
-  - rewrite <- Cdouble.
-    rewrite Cmult_assoc.
-    rewrite <- Csqrt2_sqrt.
-    rewrite <- (Cmult_assoc (√2) _ _).
-    rewrite Cinv_r; try nonzero.
-    rewrite Cmult_1_r.
-    reflexivity.
+  C_field_simplify; [ | nonzero].
+  lca.
 Qed.
 
 Global Opaque Scalar_Cexp_alpha_times_sqrt_2.

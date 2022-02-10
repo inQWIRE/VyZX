@@ -442,15 +442,42 @@ Lemma Z_spider_1_1_fusion_eq : forall nIn nOut α β,
   ZX_semantics ((Z_Spider nIn 1 α) ⟷ (Z_Spider 1 nOut β)) =
   ZX_semantics (Z_Spider nIn nOut (α + β)).
 Proof.
-  intros.
-  simpl.
+  assert (expnonzero : forall a, exists b, (2 ^ a + (2 ^ a + 0) - 1)%nat = S b).
+  { 
+    intros.
+    destruct (2^a)%nat eqn:E.
+      - contradict E.
+        apply Nat.pow_nonzero; easy.
+      - simpl.
+        rewrite <- plus_n_Sm.
+        exists (n + n)%nat.
+        lia.
+  }
+  prop_exist_non_zero 1.
   rewrite Mscale_1_l.
   prep_matrix_equality.
-  unfold Mmult; simpl.
+  simpl.
+  unfold Mmult.
+  simpl.
   rewrite Cplus_0_l.
-  unfold Z_semantics; simpl.
-  destruct (x =? 0); destruct (y =? 0); destruct (x =? 2 ^ nOut - 1); destruct (y =? 2 ^ nIn - 1);
-    autorewrite with Cexp_db; C_field_simplify; reflexivity.
+  destruct nIn, nOut.
+  - simpl.
+    destruct x,y; [simpl; autorewrite with Cexp_db | | | ]; lca.
+  - destruct x,y; simpl; destruct (expnonzero nOut); rewrite H; [ lca | lca | | ].
+    + destruct (x =? x0).
+      * simpl.
+        autorewrite with Cexp_db.
+        lca.
+      * simpl.
+        lca.
+    + destruct (x =? x0); lca.
+  - destruct x,y; simpl; destruct (expnonzero nIn); rewrite H; [lca | | lca | lca].
+    + destruct (y =? x); [autorewrite with Cexp_db | ]; lca.
+  - destruct x,y; simpl; destruct (expnonzero nIn), (expnonzero nOut); rewrite H,H0; [lca | lca | | ].
+    + destruct (x =? x1); lca.
+    + destruct (x =? x1), (y =? x0); [| lca | lca | lca].
+      autorewrite with Cexp_db.
+      lca.
 Qed.
 
 Lemma Z_spider_1_1_fusion : forall nIn nOut α β, 
@@ -524,24 +551,74 @@ Local Definition Bi_Alg_X_Stack_2_1 : ZX 2 4 := (X_Spider 1 2 0) ↕ (X_Spider 1
 Local Definition Bi_Alg_SWAP_Stack : ZX 4 4 := — ↕ ⨉ ↕ —.
 Local Definition Bi_Alg_Z_Stack_1_2 : ZX 4 2 := (Z_Spider 2 1 0) ↕ (Z_Spider 2 1 0).
 Definition Bi_Alg_Z_X := Bi_Alg_X_Stack_2_1 ⟷ Bi_Alg_SWAP_Stack ⟷ Bi_Alg_Z_Stack_1_2.
-
-Definition Bi_Alg_SWAP_Stack_Semantics : Matrix 16 16 :=
+(*
+Definition SWAP_Stack_semantics : Matrix 16 16 :=
   fun x y =>
   match x, y with
-  | 0, 0 | 1, 1 | 4, 2 | 5, 3 | 2, 4 | 3, 5 | 6, 6 | 7, 7 
-  | 8, 8 | 9, 9 | 12, 10 | 13, 11 | 10, 12 | 11, 13 | 14, 14 | 15, 15 => 1
+  | 0, 0 | 1, 1 | 4, 2 | 5, 3 | 2, 4 | 3, 5 | 6, 6 | 7, 7 => C1
+  | 8, 8 | 9, 9 | 12, 10 | 13, 11 | 10, 12 | 11, 13 | 14, 14 | 15, 15 => C1
   | _, _ => 0
   end.
 
+Lemma SWAP_Stack_semantics_correct : I 2 ⊗ swap ⊗ I 2 = SWAP_Stack_semantics.
+Proof.
+  prep_matrix_equality.
+  unfold I, swap, kron, SWAP_Stack_semantics.
+  destruct x,y.
+  - lca.
+  - simpl.
+    destruct (Nat.divmod y 1 0 0) eqn:E1.
+    simpl.
+    destruct (Nat.divmod n 3 0 3) eqn:E2.
+    destruct n1, n2.
+    + lca.
+    + admit.
+    + lca.
+    + lca.
+  - simpl.
+    destruct (Nat.divmod x 1 0 0).
+    simpl.
+    destruct (Nat.divmod n 3 0 3).
+    simpl.
+    destruct n1, n2.
+ *)
+(*
 Theorem BiAlgebra_rule_Z_X : 
   (Z_Spider 2 1 0) ⟷ (X_Spider 1 2 0) ∝ Bi_Alg_Z_X.
 Proof.
-  prop_exist_non_zero 4.
+  prop_exist_non_zero 1.
+  rewrite Mscale_1_l.
   simpl.
   rewrite ZX_SWAP_is_swap, wire_identity_semantics.
   autorewrite with scalar_move_db.
   prep_matrix_equality.
+  destruct x,y.
+  - unfold scale.
+    unfold Mmult; simpl.
+    repeat rewrite Cplus_0_l.
+
+
   unfold scale; unfold Mmult; simpl.
+  rewrite Cplus_0_l.
+  destruct x,y.
+  - unfold kron; unfold I; simpl.
+    repeat rewrite Cmult_0_r.
+    repeat rewrite Cmult_0_l.
+    repeat rewrite Cplus_0_r.
+    repeat rewrite Cplus_0_l.
+    C_field_simplify; [|nonzero].
+    unfold X_semantics.
+    unfold kron_n.
+    rewrite kron_1_l; [|auto with wf_db].
+    unfold Mmult.
+    simpl. 
+    repeat rewrite Cmult_0_r.
+    repeat rewrite Cplus_0_l.
+    repeat rewrite Cplus_0_r.
+    repeat rewrite Cmult_1_r.
+    unfold hadamard; unfold kron; simpl.
+    C_field_simplify; [|nonzero].
+    C_field_simplify; [|nonzero].
   repeat rewrite Cmult_0_r.
   repeat rewrite Cmult_0_l.
   repeat rewrite Cplus_0_l.
@@ -631,7 +708,7 @@ Proof.
     simpl;
     auto).
 Qed.
- *)
+*)
 Theorem inverse_Z_Spider : forall nIn nOut α, ZX_semantics (Z_Spider nIn nOut α) = (ZX_semantics (Z_Spider nOut nIn (-α)))†.
 Proof.
   intros; simpl.
@@ -1190,21 +1267,6 @@ Proof.
   apply Mscale_simplify; try reflexivity.
   unfold Z_semantics.
   solve_matrix.
-  - destruct x; simpl.
-    + destruct y; simpl.
-      * lca.
-      * lca.
-    + destruct y; simpl.
-      * destruct x; simpl.
-        -- lca.
-        -- lca.
-      * destruct x; simpl.
-        -- destruct y.
-           ++ lca.
-           ++ lca.
-        -- destruct y.
-           ++ lca.
-           ++ lca.
 Qed.
 
 Lemma X_double_H_connection : forall α β,
