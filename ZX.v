@@ -156,9 +156,6 @@ Qed.
 
 Global Hint Resolve WF_X_semantics : wf_db.
 
-Definition Spider_semantics (bra0 bra1 : Matrix 1 2) (ket0 ket1 : Vector 2) (α : R) {n m : nat} : Matrix (2 ^ m) (2 ^ n) :=
-  (bra_ket_MN bra0 ket0) .+ (Cexp α) .* (bra_ket_MN bra1 ket1). 
-Transparent Spider_semantics.
 
 Lemma WF_Spider_semantics : forall n m bra0 bra1 ket0 ket1 α, 
                                 WF_Matrix bra0 -> WF_Matrix bra1 -> WF_Matrix ket0 -> WF_Matrix ket1 -> 
@@ -274,13 +271,119 @@ Qed.
   
 Global Hint Resolve WF_ZX_Dirac : wf_db.
 
+Lemma big_ket_0_0_0 : forall n, (n ⨂ (ket 0)) 0 0 = C1.
+Proof.
+  intros.
+  induction n; [reflexivity | ].
+  rewrite kron_n_assoc; [ | auto with wf_db].
+  unfold kron.
+  rewrite 2 Nat.div_0_l; try apply Nat.pow_nonzero; try easy.
+  rewrite 2 Nat.mod_0_l; try apply Nat.pow_nonzero; try easy.
+  rewrite IHn.
+  rewrite Cmult_1_r.
+  reflexivity.
+Qed.
+
+Lemma big_ket_0_non_0_0 : forall n x y, x >= 1 \/ y >= 1 -> (n ⨂ (ket 0)) x y = C0.
+Proof.
+  intro n.
+  induction n; intros.
+  - simpl.
+    assert (WF_Matrix (I 1)) by auto with wf_db.
+    unfold WF_Matrix in H0.
+    apply H0.
+    apply H.
+  - simpl.
+    unfold kron.
+    rewrite IHn.
+    lca.
+    destruct H.
+    + left.
+      admit.
+    + right.
+      rewrite Nat.div_1_r.
+      assumption.
+Admitted.
+
+Lemma big_bra_0_0_0 : forall n, (n ⨂ (bra 0)) 0 0 = C1.
+Proof.
+  intros.
+  induction n; [reflexivity | ].
+  rewrite kron_n_assoc; [ | auto with wf_db].
+  unfold kron.
+  rewrite 2 Nat.div_0_l; try apply Nat.pow_nonzero; try easy.
+  rewrite 2 Nat.mod_0_l; try apply Nat.pow_nonzero; try easy.
+  rewrite IHn.
+  rewrite Cmult_1_r.
+  unfold bra.
+  unfold adjoint.
+  simpl.
+  lca.
+Qed.
+
+Lemma big_bra_0_non_0_0 : forall n x y, x >= 1 \/ y >= 1 -> (n ⨂ (bra 0)) x y = C0.
+Proof.
+  intro n.
+  induction n; intros.
+  - simpl.
+    assert (WF_Matrix (I 1)) by auto with wf_db.
+    unfold WF_Matrix in H0.
+    apply H0.
+    apply H.
+  - simpl.
+    unfold kron.
+    rewrite IHn.
+    lca.
+    destruct H.
+    + left.
+      rewrite Nat.div_1_r.
+      assumption. 
+    + right.
+      admit.
+Admitted.
+
+Lemma bra_ket_MN_0_0_0_0 : forall nOut nIn, (@bra_ket_MN (bra 0) (ket 0) nIn nOut) 0 0 = C1.
+Proof.
+  intros.
+  unfold bra_ket_MN.
+  unfold Mmult.
+  Set Printing All.
+  rewrite Nat.pow_1_l.
+  unfold Csum.
+  rewrite big_ket_0_0_0.
+  rewrite big_bra_0_0_0.
+  lca.
+Qed.
+
+Lemma bra_ket_MN_0_0_non_0_0 : forall nOut nIn x y, x >= 1 \/ y >= 1 -> (@bra_ket_MN (bra 0) (ket 0) nIn nOut) x y = C0.
+Proof.
+  intros.
+  unfold bra_ket_MN.
+  unfold Mmult.
+  rewrite Nat.pow_1_l.
+  unfold Csum.
+  destruct H.
+  - rewrite big_ket_0_non_0_0; [lca | ].
+    left.
+    assumption.
+  - rewrite big_bra_0_non_0_0; [lca | ].
+    right.
+    assumption.
+Qed.
+
 Lemma ZX_Z_semantics_equiv : forall nIn nOut α, ZX_semantics (Z_Spider nIn nOut α) = ZX_Dirac_semantics (Z_Spider nIn nOut α).
 Proof.
   intros.
   unfold_dirac_spider.
   unfold Z_semantics.
-  unfold Dirac_spider_semantics, bra_ket_MN.
+  unfold Dirac_spider_semantics.
   prep_matrix_equality.
+  simpl.
+  destruct x, y; 
+    simpl;
+    unfold Mplus, scale;
+  try rewrite bra_ket_MN_0_0_0_0.
+  try rewrite bra_ket_MN_0_0_non_0_0.
 Admitted. (* TODO *)
 
 Theorem ZX_semantics_equiv : forall {nIn nOut} (zx : ZX nIn nOut), ZX_semantics zx = ZX_Dirac_semantics zx.
