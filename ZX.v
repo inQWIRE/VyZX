@@ -284,6 +284,47 @@ Proof.
   reflexivity.
 Qed.
 
+
+Lemma big_ket_1_0_0 : forall n, (n ⨂ (ket 1)) (2 ^ n - 1)%nat 0 = C1.
+Proof.
+  intros.
+  induction n; [reflexivity | ].
+  rewrite kron_n_assoc; [ | auto with wf_db].
+  unfold kron.
+  rewrite Nat.div_0_l; try apply Nat.pow_nonzero; try easy.
+  rewrite Nat.mod_0_l; try apply Nat.pow_nonzero; try easy.
+  simpl.
+  replace ((2 ^ n + (2 ^ n + 0) - 1) mod 2 ^ n)%nat with (2 ^ n - 1)%nat.
+  rewrite IHn.
+  replace (((2 ^ n + (2 ^ n + 0) - 1) / (2 ^ n)))%nat with (1)%nat.
+  simpl.
+  unfold ket.
+  lca.  
+  + admit.
+  + admit.
+Admitted.
+
+Lemma big_ket_1_non_0_0 : forall n x y : nat, x <> 0 \/ y <> (2 ^ n - 1)%nat -> (n ⨂ (ket 1)) x y = C0.
+Proof.
+  intro n.
+  induction n; intros.
+  - simpl.
+    destruct H.
+    + rewrite WF_I; [reflexivity | left].
+      destruct x; [contradiction |].
+      admit. 
+    + rewrite Nat.pow_0_r in H.
+      rewrite Nat.sub_diag in H.
+      rewrite WF_I; [reflexivity | right].
+      destruct y; [contradiction |].
+      admit.
+  - rewrite kron_n_assoc; [ | auto with wf_db].
+    destruct H.
+    unfold kron.
+    rewrite IHn.
+Abort.
+
+
 Lemma big_ket_0_non_0_0 : forall n x y, x >= 1 \/ y >= 1 -> (n ⨂ (ket 0)) x y = C0.
 Proof.
   intro n.
