@@ -811,6 +811,9 @@ Proof.
       reflexivity.
 Qed.
 
+Transparent Nat.div.
+Transparent Nat.modulo.
+
 Theorem ZX_semantics_equiv (nIn nOut : nat) : forall (zx : ZX nIn nOut),
   ZX_semantics zx = ZX_Dirac_semantics zx.
 Proof.
@@ -996,7 +999,7 @@ Proof.
     rewrite kron_n_mult.
     rewrite MmultHH.
     rewrite kron_n_I.
-    rewrite Mmult_1_l; try auto with wf_db.
+    rewrite Mmult_1_l; [| apply WF_ZX].
     repeat rewrite Mmult_assoc.
     reflexivity.
 Qed.
