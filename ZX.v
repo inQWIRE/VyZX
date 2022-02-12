@@ -194,6 +194,7 @@ Proof.
     try intros; simpl in H; repeat destruct H; try discriminate; try (subst; easy). (* Case of 4 lists length 1 *)
 Qed.
 
+Global Hint Resolve WF_ZX : wf_db.
 
 Definition bra_ket_MN (bra: Matrix 1 2) (ket : Vector 2) {n m} : Matrix (2 ^ m) (2 ^ n) := 
   (m ⨂ ket) × (n ⨂ bra).
