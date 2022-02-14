@@ -278,9 +278,6 @@ Definition braket_0_intermediate (n m : nat) : Matrix (2^m) (2^n) :=
              | _, _ => C0
              end.
 
-Print Z_semantics.
-Check Z_semantics.
-
 Definition braket_1_intermediate (n m : nat) : Matrix (2^m) (2^n) :=
   fun x y => if (x =? 2^m - 1) && (y =? 2^n - 1) then C1 else C0.
 
@@ -770,17 +767,7 @@ Proof.
   unfold_dirac_spider.
   rewrite (braket_sem_0_intermediate nOut nIn).
   rewrite (braket_sem_1_intermediate nOut nIn).
-  prep_matrix_equality.
-  unfold Mplus, scale.
-  unfold Z_semantics.
-  unfold braket_0_intermediate, braket_1_intermediate.
-  destruct x,y.
-  - destruct nIn, nOut; [lca | | |]; rewrite contra; lca.
-  - destruct nIn, nOut; [lca | rewrite contra; lca | | ].
-    + destruct (S y =? 2 ^ S nIn - 1); lca.
-    + destruct (_ =? _), (_ =? _); lca.
-  - destruct (_ =? _), (_ =? _); lca.
-  - destruct (_ =? _), (_ =? _); lca.
+  apply Z_semantics_split_plus.
 Qed.
 
 Lemma ZX_X_semantics_equiv : forall nIn nOut α, ZX_semantics (X_Spider nIn nOut α) = ZX_Dirac_semantics (X_Spider nIn nOut α).
