@@ -150,7 +150,6 @@ Global Opaque G2_Wire.
 
 Definition StackWire {nIn nOut} (zx : G2_ZX nIn nOut) : G2_ZX (S nIn) (S nOut) := G2_Wire ↕G2 zx.
 
-
 Fixpoint G_Spider_In_to_G2_Spiders nOut α: G2_ZX 1 nOut :=
   match nOut with
   | 0%nat => G2_Z_Spider_In0 α
@@ -175,22 +174,120 @@ Proof.
     Msimpl; restore_dims; try auto with wf_db.
     specialize (IHnOut 0%R).
     rewrite <- IHnOut.
-    Local Transparent G_ZX_semantics.    
+Local Transparent G_ZX_semantics.    
     simpl.
-    unfold Spider_semantics, bra_ket_MN.
-    repeat rewrite kron_n_assoc; try auto with wf_db.
+    unfold_spider.
+    assert (contra : forall a, (2^S a - 1 <> 0)%nat).
+    { intros; simpl. 
+      destruct (2^a)%nat eqn:Ea. 
+      - apply Nat.pow_nonzero in Ea; [destruct Ea | easy].
+      - simpl; rewrite <- plus_n_Sm; easy.
+    }
+    unfold Mmult.
+    prep_matrix_equality.
+    destruct x eqn:Hx,y eqn:Hy; rewrite Nat.pow_1_r; simpl.
+    2, 3, 4 :  rewrite Nat.add_0_r;
+    rewrite double_pow;
+    rewrite Nat.add_1_r; 
+    destruct (2 ^ (S nOut) - 1)%nat eqn:He; [ contradict He; apply contra | destruct He ];
+    unfold kron;
+    repeat rewrite Nat.div_0_l; try apply Nat.pow_nonzero; auto;
+    repeat rewrite Nat.mod_0_l; try apply Nat.pow_nonzero; auto;
     simpl.
-    restore_dims.
-    rewrite kron_plus_distr_l.
-    autorewrite with Cexp_db.
-    Msimpl.
-    rewrite Mmult_plus_distr_l.
-    rewrite 2 Mmult_plus_distr_r.
-    restore_dims.
-    rewrite <- (Mscale_mult_dist_r _ _ _ _ (ket 1 ⊗ _) _).
-    repeat rewrite <- kron_n_assoc; try auto with wf_db.
-    restore_dims.
-Admitted.
+    + repeat rewrite Cmult_0_r.
+      unfold kron.
+      rewrite Nat.mod_0_l; [ | apply Nat.pow_nonzero; auto ].
+      rewrite Nat.div_0_l; [ | apply Nat.pow_nonzero; auto ].
+      rewrite Nat.mod_0_l; [| auto ].
+      rewrite Nat.div_0_l; [| auto ].
+      unfold I.
+      simpl.
+      lca.
+    + repeat rewrite Cmult_0_r.
+      unfold I.
+      simpl.
+      lca.
+    + repeat rewrite andb_false_r.
+      repeat rewrite Cmult_0_r.
+      unfold I.
+      destruct (S n / 2 ^ nOut =? 0) eqn:HSn2nOut; [ rewrite Nat.eqb_eq in HSn2nOut; rewrite HSn2nOut; simpl | simpl; rewrite Cmult_0_l; lca].
+      destruct (S n mod 2 ^ nOut) eqn:Hsnmod; [ | lca].
+      assert (S n = 0).
+      {
+        Search ( _ mod _ = 0).
+        rewrite <- Nat.div_exact in Hsnmod; [ | apply Nat.pow_nonzero; auto].
+        rewrite HSn2nOut in Hsnmod.
+        rewrite Hsnmod.
+        lia.
+      }
+      discriminate H.
+    + destruct n0; simpl; [ destruct (n =? n1) eqn:Hnn1 | rewrite andb_false_r ]; simpl; repeat rewrite Cmult_0_r; [ | | lca]; admit.
+      * unfold I.
+        destruct ((S n / 2 ^ nOut =? 1)) eqn:Hsn; [ rewrite Nat.eqb_eq in Hsn | rewrite Cmult_0_l]; simpl.
+        -- rewrite Hsn.
+           simpl.
+           destruct (S n mod 2 ^ nOut) eqn:HSnmod.
+           destruct nOut.
+           ++ rewrite Nat.pow_0_r.
+              simpl.
+              rewrite Cexp_0.
+              lca.
+           ++ destruct (0 =? 2 ^ S nOut - 1) eqn:HSnOut; [ rewrite Nat.eqb_eq in HSnOut; symmetry in HSnOut; contradict HSnOut; apply contra | ].
+              simpl.
+              admit.
+           ++ destruct (S n0 =? 2 ^ nOut - 1) eqn:Hsn02nOut; [ simpl |].
+              ** autorewrite with Cexp_db.
+                 lca.
+              ** simpl. 
+                 rewrite <- HSnmod in Hsn02nOut.
+                 subst.
+                 Search (_ mod _ = _).
+                 contradict Hsn02nOut.
+                 apply not_false_iff_true.
+                 rewrite Nat.eqb_eq.
+                 assert ((S n / 2 ^ nOut)%nat = 1 /\ S n mod 2 ^ nOut = (2 ^ nOut - 1)%nat -> S n mod 2 ^ nOut = (2 ^ nOut - 1)%nat).
+                 {
+                   intros. destruct H. assumption.
+                 }
+                 apply H.
+                 apply divmod_decomp.
+                 --- admit.
+                 --- admit.
+                 --- rewrite Nat.mul_1_l.
+                     Search (_ - 1)%nat.
+                     admit.
+Abort.
+(* Other start
+    solve_matrix.
+    + simpl.
+      rewrite Nat.div_0_l; [simpl | apply Nat.pow_nonzero; auto].
+      rewrite Nat.mod_0_l; [lca | apply Nat.pow_nonzero; auto].
+    + rewrite Nat.add_0_r.
+      rewrite double_pow.
+      rewrite Nat.add_1_r.
+      destruct (2 ^ S nOut - 1)%nat eqn:He; [contradict He; apply contra | destruct He].
+      simpl.
+      rewrite Nat.div_0_l; [simpl; lca | apply Nat.pow_nonzero; auto].
+    + destruct (S x / 2 ^ nOut =? 0) eqn:HSx2nOut; simpl; [rewrite Nat.eqb_eq in HSx2nOut; rewrite HSx2nOut | lca].
+      simpl.
+      Search (_ mod _ = _)%nat.
+    + rewrite Nat.add_0_r.
+      rewrite double_pow.
+      rewrite Nat.add_1_r.
+      destruct (2 ^ S nOut - 1)%nat eqn:He; [contradict He; apply contra | destruct He].
+      destruct (x =? n) eqn:Hxn, (y =? 0) eqn:Hy0; simpl; [| lca | | lca]; rewrite andb_true_r;
+      destruct (S x / 2 ^ nOut =? 1) eqn:HSx2nOut;
+      simpl.
+      * rewrite Nat.eqb_eq in HSx2nOut.
+        rewrite HSx2nOut.
+        simpl.
+        destruct (S x mod 2 ^ nOut)%nat eqn:HSxMod2nOut; simpl;
+        destruct (2 ^ nOut - 1)%nat eqn:H2nOut1l;
+        [ autorewrite with Cexp_db; lca | | | ].
+        --  Search "divmod_spec".
+            Search (_ mod _ = 0).
+            
+Abort. *)
 
 Fixpoint G_Spider_Out_to_G2_Spiders nIn α: G2_ZX nIn 1 :=
   match nIn with
