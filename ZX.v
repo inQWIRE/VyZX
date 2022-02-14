@@ -335,8 +335,7 @@ Proof.
     rewrite kron_n_assoc; [| auto with wf_db].
     unfold kron.
     destruct (S j mod 2 ^S n) eqn:En.
-    + Search (_ mod _ = 0).
-      destruct (Nat.mod_divides (S j) (2 ^ S n)); [apply Nat.pow_nonzero; auto |]. 
+    + destruct (Nat.mod_divides (S j) (2 ^ S n)); [apply Nat.pow_nonzero; auto |]. 
       destruct (H En).
       rewrite H1.
       replace (2 ^ S n * x / 2 ^ S n)%nat with x.
@@ -352,10 +351,8 @@ Proof.
            ++ simpl.
               destruct x; lca.
       * rewrite mult_comm.
-        Search (mult _ (Nat.div _ _))%nat.
         rewrite Nat.divide_div_mul_exact.
-        -- Search (Nat.div _ _).
-           rewrite Nat.div_same; [lia | ].
+        -- rewrite Nat.div_same; [lia | ].
            apply Nat.pow_nonzero; easy.
         -- apply Nat.pow_nonzero; easy.
         -- apply Nat.divide_refl.
@@ -727,7 +724,6 @@ Qed.
 Lemma big_ket_to_sem : forall n, (n ⨂ (ket 1)) = big_ket_sem n.
 Proof.
   intros.
-  Search ((_⊤)⊤).
   rewrite <- (transpose_involutive _ _ _).
   rewrite kron_n_transpose.
   replace ((ket 1)⊤) with (bra 1).
