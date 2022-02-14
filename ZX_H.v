@@ -168,7 +168,9 @@ Lemma H_wire_identity_semantics : H_ZX_semantics H_Wire = I 2.
 Proof.
   intros.
   simpl.
-  unfold_spider.
+  rewrite <- ZX_Z_is_Z_semantics.
+  rewrite ZX_semantics_equiv.
+  unfold_dirac_spider.
   rewrite Cexp_0.
   Msimpl.
   solve_matrix.
@@ -234,9 +236,12 @@ Proof.
     try destruct IHzx1, IHzx2 (* Stack / Compose *).
   - simpl. (* X_Spider *)
     exists 0%R.
+    rewrite <- ZX_X_is_X_semantics.
+    rewrite <- ZX_Z_is_Z_semantics.
+    rewrite 2 ZX_semantics_equiv.
     rewrite Cexp_0.
     Msimpl.
-    unfold_spider.
+    unfold_dirac_spider.
     rewrite 2 H_nWire_identity.
     Msimpl; try repeat apply WF_mult; try apply WF_plus; try apply WF_scale; try apply WF_mult; restore_dims; try auto with wf_db.
     rewrite Mmult_plus_distr_l; try auto with wf_db.
@@ -462,7 +467,9 @@ Proof.
   intros.
   unfold Wire.
   simpl.
-  unfold_spider.
+  rewrite <- ZX_Z_is_Z_semantics.
+  rewrite ZX_semantics_equiv.
+  unfold_dirac_spider.
   autorewrite with Cexp_db.
   Msimpl.
   solve_matrix.
@@ -608,8 +615,11 @@ Proof.
     repeat rewrite nStack1_n_kron.
     rewrite ZX_H_is_H.
     rewrite 2 nwire_identity_semantics.
+    rewrite <- ZX_Z_is_Z_semantics.
+    rewrite <- ZX_X_is_X_semantics.
+    rewrite 2 ZX_semantics_equiv.
     Msimpl.
-    unfold_spider.
+    unfold_dirac_spider.
     rewrite Mmult_plus_distr_l; try auto with wf_db.
     rewrite Mmult_plus_distr_r; try auto with wf_db.
     repeat rewrite <- Mmult_assoc.
