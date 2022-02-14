@@ -4,6 +4,6 @@ Require Import Setoid.
 Require Export ZX.
 Require Export Gates.
 Require Export GateRules.
-Require Export Proportional.
+Require Export VyZX.Proportional.
 
 

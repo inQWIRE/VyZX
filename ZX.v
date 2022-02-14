@@ -180,6 +180,12 @@ Fixpoint ZX_semantics {nIn nOut} (zx : ZX nIn nOut) :
   | zx0 ⟷ zx1 => (ZX_semantics zx1) × (ZX_semantics zx0)
   end.
 
+Lemma ZX_X_is_X_semantics : forall nIn nOut α, (ZX_semantics (X_Spider nIn nOut α) = X_semantics nIn nOut α).
+Proof. easy. Qed.
+
+Lemma ZX_Z_is_Z_semantics : forall nIn nOut α, (ZX_semantics (Z_Spider nIn nOut α) = Z_semantics nIn nOut α).
+Proof. easy. Qed.
+
 Ltac unfold_spider := unfold X_semantics, Z_semantics.
 
 Ltac ZXunfold := simpl; Msimpl; unfold_spider; restore_dims.
@@ -235,7 +241,7 @@ Fixpoint ZX_Dirac_semantics {nIn nOut} (zx : ZX nIn nOut) :
   end.
 
 
-Ltac unfold_dirac_spider := unfold Dirac_spider_semantics, bra_ket_MN; try (simpl; Msimpl).
+Ltac unfold_dirac_spider := simpl; unfold Dirac_spider_semantics, bra_ket_MN; try (simpl; Msimpl).
 
 Ltac ZXDiracunfold := simpl; Msimpl; unfold_spider; restore_dims.
 
