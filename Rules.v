@@ -453,8 +453,7 @@ Proof.
         exists (n + n)%nat.
         lia.
   }
-  prop_exist_non_zero 1.
-  rewrite Mscale_1_l.
+  intros.
   prep_matrix_equality.
   simpl.
   unfold Mmult.
