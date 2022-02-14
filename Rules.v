@@ -582,133 +582,37 @@ Proof.
     simpl.
     destruct n1, n2.
  *)
-(*
 Theorem BiAlgebra_rule_Z_X : 
-  (Z_Spider 2 1 0) ⟷ (X_Spider 1 2 0) ∝ Bi_Alg_Z_X.
+ (Z_Spider 2 1 0) ⟷ (X_Spider 1 2 0) ∝ Bi_Alg_Z_X.
 Proof.
-  prop_exist_non_zero 1.
-  rewrite Mscale_1_l.
-  simpl.
-  rewrite ZX_SWAP_is_swap, wire_identity_semantics.
-  autorewrite with scalar_move_db.
-  prep_matrix_equality.
-  destruct x,y.
-  - unfold scale.
-    unfold Mmult; simpl.
-    repeat rewrite Cplus_0_l.
-
-
-  unfold scale; unfold Mmult; simpl.
-  rewrite Cplus_0_l.
-  destruct x,y.
-  - unfold kron; unfold I; simpl.
-    repeat rewrite Cmult_0_r.
-    repeat rewrite Cmult_0_l.
-    repeat rewrite Cplus_0_r.
-    repeat rewrite Cplus_0_l.
-    C_field_simplify; [|nonzero].
-    unfold X_semantics.
-    unfold kron_n.
-    rewrite kron_1_l; [|auto with wf_db].
-    unfold Mmult.
-    simpl. 
-    repeat rewrite Cmult_0_r.
-    repeat rewrite Cplus_0_l.
-    repeat rewrite Cplus_0_r.
-    repeat rewrite Cmult_1_r.
-    unfold hadamard; unfold kron; simpl.
-    C_field_simplify; [|nonzero].
-    C_field_simplify; [|nonzero].
-  repeat rewrite Cmult_0_r.
-  repeat rewrite Cmult_0_l.
-  repeat rewrite Cplus_0_l.
-  repeat rewrite Cplus_0_r.
-  repeat rewrite Cmult_1_l.
-  unfold I; unfold swap; unfold kron; simpl.
-  repeat rewrite Cmult_0_r.
-  repeat rewrite Cmult_0_l.
-  repeat rewrite Cmult_1_l.
-  repeat rewrite Cplus_0_l.
-  repeat rewrite Cplus_0_r.
-  Local Ltac solve_one := (
-      unfold X_semantics; unfold Mmult; simpl;
-      unfold hadamard; unfold I; unfold kron; unfold Z_semantics; simpl;
-      C_field_simplify; try nonzero;
-      autorewrite with Cexp_db; lca).
-  destruct y; simpl.
-  - destruct x; [ solve_one | simpl ].
-    destruct x; [ solve_one | simpl ].
-    destruct x; [ solve_one | simpl ].
-    destruct x; [ solve_one | simpl ].
-    
-
-    rewrite (WF_X_semantics(S (S (S (S x)))) 0%nat); [ | left; simpl; lia].
-    rewrite (WF_X_semantics(S (S (S (S x)))) 1%nat); [ | left; simpl; lia].
-    rewrite 2 Cmult_0_l.
-    
-    unfold X_semantics; unfold Mmult; simpl; unfold hadamard; unfold I; unfold kron; unfold Z_semantics; simpl.
-    C_field_simplify; [ | nonzero ].
-    autorewrite with Cexp_db.
-    C_field_simplify.
-
-    destruct (fst (Nat.divmod x 1 2 1) =? 1) eqn:DM1.
-    + rewrite (beq_nat_true _ _ DM1); simpl.
-      repeat rewrite Cmult_0_r.
-      repeat rewrite Cmult_0_l.
-      repeat rewrite Cplus_0_l.
-      destruct (snd (Nat.divmod x 1 2 1)).
-      * simpl.
-        repeat rewrite Rmult_0_l.
-        repeat rewrite Rplus_0_r.
-        repeat rewrite Rmult_0_l.
-        repeat rewrite Rmult_0_r.
-        lca.
-        rewrite Cmult_0_l.
-        C_field_simplify.
-
-    rewrite (WF_X_semantics 3%nat 0%nat).
-    rewrite Cmult_0_r.
-
-    destruct x; [ solve_one | simpl ].
-    destruct x; [ solve_one | simpl ].
-    unfold X_semantics; unfold Mmult; simpl.
-    unfold hadamard. rewrite kron_1_l.
-    try solve_one.
-
-    destruct x; try solve_one.
-    rewrite (WF_X_semantics (S (S x)) 0%nat).
-    rewrite (WF_X_semantics (S (S x)) 0%nat).
-
-
-  C_field_simplify.
-  Local Ltac solve_one := (
-      unfold X_semantics; unfold Mmult; simpl;
-      unfold hadamard; unfold I; unfold kron; unfold Z_semantics; simpl;
-      C_field_simplify; try nonzero;
-      autorewrite with Cexp_db; lca).
-  destruct y; simpl.
-  - destruct x; try solve_one.
-    destruct x; try solve_one.
-    destruct x; try solve_one.
-    destruct x; try solve_one.
-  unfold_spider.
-  autorewrite with Cexp_db.
-  simpl.
-  repeat rewrite kron_1_l; try auto with wf_db.
-  autorewrite with scalar_move_db.
-  solve_matrix;
-  try repeat rewrite (Cmult_assoc C2 (/C2) _);
-  try repeat rewrite Cinv_r;
-  try repeat rewrite Cmult_1_l;
-  try rewrite Cinv_sqrt2_sqrt;
-  try rewrite 2 Cmult_assoc;
-  try lca;
-  try (
-    apply C0_fst_neq;
-    simpl;
-    auto).
+ prop_exist_non_zero 4.
+ simpl.
+ rewrite <- ZX_Z_is_Z_semantics. 
+ rewrite <- ZX_X_is_X_semantics.
+ rewrite ZX_SWAP_is_swap, wire_identity_semantics.
+ repeat rewrite ZX_semantics_equiv.
+ unfold_dirac_spider.
+ autorewrite with Cexp_db.
+ simpl.
+ repeat rewrite kron_1_l; try auto with wf_db.
+ repeat rewrite Mscale_1_l.
+ repeat rewrite Mmult_adjoint.
+ repeat rewrite hadamard_sa.
+ repeat rewrite ket2bra.
+ autorewrite with scalar_move_db.
+ solve_matrix;
+ try repeat rewrite (Cmult_assoc C2 (/C2) _);
+ try repeat rewrite Cinv_r;
+ try repeat rewrite Cmult_1_l;
+ try rewrite Cinv_sqrt2_sqrt;
+ try rewrite 2 Cmult_assoc;
+ try lca;
+ try (
+   apply C0_fst_neq;
+   simpl;
+   auto).
 Qed.
-*)
+
 Theorem inverse_Z_Spider : forall nIn nOut α, ZX_semantics (Z_Spider nIn nOut α) = (ZX_semantics (Z_Spider nOut nIn (-α)))†.
 Proof.
   intros; simpl.
