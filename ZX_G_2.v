@@ -250,7 +250,7 @@ Proof.
               rewrite E2nOut.
               unfold I.
               bdestruct (S x / S n =? 1).
-                 ** assert (Hx : (S x) = ((S n) * ((S x) / (S n)) + (S x) mod (S n))%nat); [apply Nat.div_mod_eq |].
+                 ** assert (Hx : (S x) = ((S n) * ((S x) / (S n)) + (S x) mod (S n))%nat); [apply Nat.div_mod; lia |].
                     rewrite H1 in Hx.
                     rewrite Nat.mul_1_r in Hx.
                     bdestruct (S x mod S n =? S n - 1).
@@ -377,7 +377,7 @@ Proof.
            reflexivity.
       * rewrite Epow.
         bdestruct (S n0 / S n1 =? 1)%nat.
-        -- assert (Hx : (S n0) = ((S n1) * ((S n0) / (S n1)) + (S n0) mod (S n1))%nat); [apply Nat.div_mod_eq |].
+        -- assert (Hx : (S n0) = ((S n1) * ((S n0) / (S n1)) + (S n0) mod (S n1))%nat); [apply Nat.div_mod; lia |].
            rewrite H0 in Hx.
            rewrite Nat.mul_1_r in Hx.
            bdestruct (S n0 mod S n1 =? S n1 - 1)%nat.
