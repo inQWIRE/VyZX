@@ -160,144 +160,245 @@ Local Opaque G_ZX_semantics.
 Lemma G_Spider_In_to_G2_Spiders_consistent : forall nOut α, G_ZX_semantics (G_Z_Spider_In nOut α) = G2_ZX_semantics (G_Spider_In_to_G2_Spiders nOut α).
 Proof.
   intro nOut.
-  induction nOut; intros.
-  - simpl.
-    reflexivity.
-  - simpl.
-    repeat rewrite G2_wire_identity_semantics.
+  Transparent G_ZX_semantics.
+  induction nOut.
+  - reflexivity.
+  - simpl in IHnOut. simpl.
+    rewrite kron_1_l; [| auto with wf_db].
+    rewrite G2_wire_identity_semantics.
     rewrite id_kron.
-    repeat rewrite Mmult_1_l; try auto with wf_db.
-    repeat rewrite kron_1_l; try auto with wf_db.
-    repeat rewrite Mmult_assoc.
-    rewrite <- (Mmult_assoc (hadamard ⊗ hadamard) (hadamard ⊗ hadamard) _).
-    replace ((hadamard ⊗ hadamard × (hadamard ⊗ hadamard))) with (I 4) by solve_matrix.
-    Msimpl; restore_dims; try auto with wf_db.
-    specialize (IHnOut 0%R).
+    replace (2*2)%nat with (4)%nat by reflexivity.
+    rewrite Mmult_1_l; [| auto with wf_db].
+    intros.
+    rewrite Mmult_assoc.
+    restore_dims.
+    rewrite <- (Mmult_assoc (hadamard ⊗ hadamard)).
+    rewrite kron_mixed_product.
+    rewrite MmultHH.
+    rewrite id_kron.
+    restore_dims.
+    rewrite Mmult_1_l; [| auto with wf_db].
     rewrite <- IHnOut.
-Local Transparent G_ZX_semantics.    
-    simpl.
-    unfold_spider.
-    assert (contra : forall a, (2^S a - 1 <> 0)%nat).
-    { intros; simpl. 
-      destruct (2^a)%nat eqn:Ea. 
-      - apply Nat.pow_nonzero in Ea; [destruct Ea | easy].
-      - simpl; rewrite <- plus_n_Sm; easy.
-    }
-    unfold Mmult.
     prep_matrix_equality.
-    destruct x eqn:Hx,y eqn:Hy; rewrite Nat.pow_1_r; simpl.
-    2, 3, 4 :  rewrite Nat.add_0_r;
-    rewrite double_pow;
-    rewrite Nat.add_1_r; 
-    destruct (2 ^ (S nOut) - 1)%nat eqn:He; [ contradict He; apply contra | destruct He ];
-    unfold kron;
-    repeat rewrite Nat.div_0_l; try apply Nat.pow_nonzero; auto;
-    repeat rewrite Nat.mod_0_l; try apply Nat.pow_nonzero; auto;
+    unfold Mmult.
+    Opaque Z_semantics.
     simpl.
-    + repeat rewrite Cmult_0_r.
-      unfold kron.
-      rewrite Nat.mod_0_l; [ | apply Nat.pow_nonzero; auto ].
-      rewrite Nat.div_0_l; [ | apply Nat.pow_nonzero; auto ].
-      rewrite Nat.mod_0_l; [| auto ].
-      rewrite Nat.div_0_l; [| auto ].
-      unfold I.
-      simpl.
+    rewrite Cplus_0_l.
+    Transparent Z_semantics.
+    destruct x,y; simpl; C_field_simplify.
+    + unfold kron; simpl.
+      rewrite Nat.mod_0_l;[| apply Nat.pow_nonzero; easy].
+      rewrite Nat.div_0_l;[| apply Nat.pow_nonzero; easy].
       lca.
-    + repeat rewrite Cmult_0_r.
-      unfold I.
-      simpl.
-      lca.
-    + repeat rewrite andb_false_r.
-      repeat rewrite Cmult_0_r.
-      unfold I.
-      destruct (S n / 2 ^ nOut =? 0) eqn:HSn2nOut; [ rewrite Nat.eqb_eq in HSn2nOut; rewrite HSn2nOut; simpl | simpl; rewrite Cmult_0_l; lca].
-      destruct (S n mod 2 ^ nOut) eqn:Hsnmod; [ | lca].
-      assert (S n = 0).
-      {
-        Search ( _ mod _ = 0).
-        rewrite <- Nat.div_exact in Hsnmod; [ | apply Nat.pow_nonzero; auto].
-        rewrite HSn2nOut in Hsnmod.
-        rewrite Hsnmod.
-        lia.
-      }
-      discriminate H.
-    + destruct n0; simpl; [ destruct (n =? n1) eqn:Hnn1 | rewrite andb_false_r ]; simpl; repeat rewrite Cmult_0_r; [ | | lca]; admit.
-      * unfold I.
-        destruct ((S n / 2 ^ nOut =? 1)) eqn:Hsn; [ rewrite Nat.eqb_eq in Hsn | rewrite Cmult_0_l]; simpl.
-        -- rewrite Hsn.
+    + bdestruct (y =? 0).
+      * unfold kron.
+        destruct (2 ^ nOut)%nat eqn:E2nOut.
+        -- apply (Nat.pow_nonzero) in E2nOut; [destruct E2nOut | easy].
+        -- simpl.
+           rewrite <- plus_n_Sm.
            simpl.
-           destruct (S n mod 2 ^ nOut) eqn:HSnmod.
-           destruct nOut.
-           ++ rewrite Nat.pow_0_r.
-              simpl.
-              rewrite Cexp_0.
-              lca.
-           ++ destruct (0 =? 2 ^ S nOut - 1) eqn:HSnOut; [ rewrite Nat.eqb_eq in HSnOut; symmetry in HSnOut; contradict HSnOut; apply contra | ].
-              simpl.
-              admit.
-           ++ destruct (S n0 =? 2 ^ nOut - 1) eqn:Hsn02nOut; [ simpl |].
-              ** autorewrite with Cexp_db.
-                 lca.
-              ** simpl. 
-                 rewrite <- HSnmod in Hsn02nOut.
-                 subst.
-                 Search (_ mod _ = _).
-                 contradict Hsn02nOut.
-                 apply not_false_iff_true.
-                 rewrite Nat.eqb_eq.
-                 assert ((S n / 2 ^ nOut)%nat = 1 /\ S n mod 2 ^ nOut = (2 ^ nOut - 1)%nat -> S n mod 2 ^ nOut = (2 ^ nOut - 1)%nat).
-                 {
-                   intros. destruct H. assumption.
-                 }
-                 apply H.
-                 apply divmod_decomp.
-                 --- admit.
-                 --- admit.
-                 --- rewrite Nat.mul_1_l.
-                     Search (_ - 1)%nat.
-                     admit.
-Abort.
-(* Other start
-    solve_matrix.
-    + simpl.
-      rewrite Nat.div_0_l; [simpl | apply Nat.pow_nonzero; auto].
-      rewrite Nat.mod_0_l; [lca | apply Nat.pow_nonzero; auto].
-    + rewrite Nat.add_0_r.
-      rewrite double_pow.
-      rewrite Nat.add_1_r.
-      destruct (2 ^ S nOut - 1)%nat eqn:He; [contradict He; apply contra | destruct He].
+           lca.
+      * rewrite andb_false_r.
+        lca.
+    + rewrite andb_false_r.
+      unfold kron.
       simpl.
-      rewrite Nat.div_0_l; [simpl; lca | apply Nat.pow_nonzero; auto].
-    + destruct (S x / 2 ^ nOut =? 0) eqn:HSx2nOut; simpl; [rewrite Nat.eqb_eq in HSx2nOut; rewrite HSx2nOut | lca].
-      simpl.
-      Search (_ mod _ = _)%nat.
-    + rewrite Nat.add_0_r.
-      rewrite double_pow.
-      rewrite Nat.add_1_r.
-      destruct (2 ^ S nOut - 1)%nat eqn:He; [contradict He; apply contra | destruct He].
-      destruct (x =? n) eqn:Hxn, (y =? 0) eqn:Hy0; simpl; [| lca | | lca]; rewrite andb_true_r;
-      destruct (S x / 2 ^ nOut =? 1) eqn:HSx2nOut;
-      simpl.
-      * rewrite Nat.eqb_eq in HSx2nOut.
-        rewrite HSx2nOut.
+      unfold Z_semantics.
+      rewrite andb_false_r.
+      destruct ((S x) mod 2^nOut) eqn:ExMod.
+      * apply Nat.mod_divides in ExMod; [| apply Nat.pow_nonzero; easy].
+        destruct ExMod.
+        rewrite H.
+        rewrite Nat.mul_comm.
+        rewrite Nat.div_mul; [| apply Nat.pow_nonzero; easy].
+        destruct x0.
+        -- rewrite Nat.mul_0_r in H.
+           discriminate H.
+        -- lca.
+      * lca.
+    + bdestruct (y =? 0).
+      * rewrite andb_true_r.
+        unfold kron.
         simpl.
-        destruct (S x mod 2 ^ nOut)%nat eqn:HSxMod2nOut; simpl;
-        destruct (2 ^ nOut - 1)%nat eqn:H2nOut1l;
-        [ autorewrite with Cexp_db; lca | | | ].
-        --  Search "divmod_spec".
-            Search (_ mod _ = 0).
-            
-Abort. *)
+        destruct (2 ^ nOut)%nat eqn:E2nOut.
+        -- simpl.
+           lca.
+        -- replace (S n + (S n + 0) - 1)%nat with (S (n + n))%nat by lia.
+           bdestruct (x =? n + n).
+           ++ rewrite H0.
+              rewrite plus_n_Sm.
+              rewrite Nat.add_mod; [| easy].
+              rewrite Nat.mod_same; [| easy].
+              rewrite plus_0_r.
+              rewrite Nat.mod_mod; [| easy].
+              rewrite Nat.mod_small; [| constructor; constructor].
+              replace ((n + S n) / S n)%nat
+                 with (1)%nat.
+                 ** unfold Z_semantics.
+                     assert ((2 ^ nOut - 1) = n)%nat.
+                     { rewrite E2nOut. lia. }
+                     rewrite H1.
+                     rewrite Nat.eqb_refl.
+                     autorewrite with Cexp_db.
+                     destruct n; lca.
+                 ** rewrite Nat.add_comm.
+                     replace ((S n) + n)%nat with ((1 * (S n)) + n)%nat by lia.
+                     rewrite Nat.div_add_l; [| easy].
+                     rewrite Nat.div_small; [| constructor; constructor].
+                     reflexivity.
+           ++ unfold Z_semantics.
+              rewrite E2nOut.
+              unfold I.
+              bdestruct (S x / S n =? 1).
+                 ** assert (Hx : (S x) = ((S n) * ((S x) / (S n)) + (S x) mod (S n))%nat); [apply Nat.div_mod_eq |].
+                    rewrite H1 in Hx.
+                    rewrite Nat.mul_1_r in Hx.
+                    bdestruct (S x mod S n =? S n - 1).
+                    --- rewrite H2 in Hx.
+                        simpl in Hx.
+                        rewrite Nat.sub_0_r in Hx.
+                        inversion Hx.
+                        contradiction.
+                    --- destruct (S x mod S n); lca.
+                 ** lca.
+      * rewrite andb_false_r.
+        lca.
+Qed.
 
 Fixpoint G_Spider_Out_to_G2_Spiders nIn α: G2_ZX nIn 1 :=
   match nIn with
   | 0%nat => G2_Z_Spider_Out0 α
-  | S nIn' => (StackWire (G_Spider_Out_to_G2_Spiders nIn' R0)) ⟷G2 (StackWire G2_Wire) ⟷G2 G2_Z_Spider_Out2 R0
+  | S nIn' => (StackWire (G_Spider_Out_to_G2_Spiders nIn' 0%R)) ⟷G2 (StackWire G2_Wire) ⟷G2 G2_Z_Spider_Out2 α
   end.
 
 Lemma G_Spider_Out_to_G2_Spiders_consistent : forall nIn α, G_ZX_semantics (G_Z_Spider_Out nIn α) = G2_ZX_semantics (G_Spider_Out_to_G2_Spiders nIn α).
-Admitted.
-
+Proof.
+  intro nIn.
+  Transparent G_ZX_semantics.
+  induction nIn.
+  - reflexivity.
+  - simpl.
+    rewrite kron_1_l; [| auto with wf_db].
+    rewrite G2_wire_identity_semantics.
+    rewrite id_kron.
+    replace (2*2)%nat with (4)%nat by reflexivity.
+    rewrite Mmult_1_l; [| auto with wf_db].
+    intros.
+    rewrite Mmult_assoc.
+    restore_dims.
+    rewrite <- (Mmult_assoc (hadamard ⊗ hadamard)).
+    rewrite kron_mixed_product.
+    rewrite MmultHH.
+    rewrite id_kron.
+    restore_dims.
+    rewrite Mmult_1_l; [| auto with wf_db].
+    rewrite <- IHnIn.
+    prep_matrix_equality.
+    unfold Mmult.
+    Opaque Z_semantics.
+    simpl.
+    rewrite Cplus_0_l.
+    Transparent Z_semantics.
+    destruct x eqn:Ex, y eqn:Ey; simpl.
+    + (* x = 0, y = 0 *)
+      C_field_simplify.
+      unfold kron; simpl.
+      rewrite Nat.mod_0_l;[| apply Nat.pow_nonzero; easy].
+      rewrite Nat.div_0_l;[| apply Nat.pow_nonzero; easy].
+      destruct nIn; lca.
+    + (* x = 0, y = S n *)
+      repeat rewrite Cmult_0_l.
+      repeat rewrite Cplus_0_r.
+      rewrite Cmult_1_l.
+      unfold kron.
+      rewrite Nat.mod_0_l; [| easy].
+      rewrite Nat.div_0_l; [| easy].
+      simpl.
+      destruct (S n mod 2 ^ nIn) eqn:ESnmod2NIn.
+      * rewrite Nat.mod_divides in ESnmod2NIn; [| apply Nat.pow_nonzero; easy].
+        destruct ESnmod2NIn as [c Hc].
+        destruct c.
+        -- rewrite Nat.mul_0_r in Hc.
+           discriminate.
+        -- rewrite Hc.
+           rewrite Nat.mul_comm.
+           rewrite Nat.div_mul; [| apply Nat.pow_nonzero; easy].
+           lca.
+      * lca.
+    + (* x = S n, y = 0 *)
+      rewrite andb_false_r.
+      C_field_simplify.
+      destruct (2^nIn)%nat eqn:Epow.
+      * contradict Epow.
+        apply Nat.pow_nonzero.
+        easy.
+      * simpl.
+        rewrite <- plus_n_Sm.
+        simpl.
+        rewrite andb_false_r.
+        lca.
+    + (* x = S n, y = S n *)
+      rewrite andb_false_r.
+      C_field_simplify.
+      destruct (2^nIn)%nat eqn:Epow.
+      { contradict Epow; apply Nat.pow_nonzero; easy. }
+      simpl.
+      rewrite <- plus_n_Sm.
+      simpl.
+      rewrite andb_true_r.
+      rewrite plus_0_r.
+      unfold kron.
+      replace (3/2)%nat with 1%nat by reflexivity.
+      replace (3 mod 2)%nat with 1%nat by reflexivity.
+      unfold Z_semantics.
+      replace (1 =? 2 ^ 1 - 1) with true by reflexivity.
+      rewrite andb_true_l.
+      bdestruct (n0 =? n1 + n1).
+      * rewrite H.
+        rewrite Epow.
+        replace (S (n1 + n1) / S n1)% nat with 1%nat.
+        -- rewrite <- plus_Sn_m.
+           rewrite Nat.add_mod; [| easy].
+           rewrite Nat.mod_same; [| easy].
+           rewrite Nat.add_0_l.
+           rewrite Nat.mod_mod; [| easy].
+           rewrite Nat.mod_small; [| auto].
+           simpl.
+           rewrite Nat.sub_0_r.
+           rewrite Nat.eqb_refl.
+           rewrite Cexp_0.
+           destruct n; lca.
+        -- rewrite <- plus_Sn_m.
+           replace ((S n1 + n1) / S n1)%nat
+           with ( 1 + (n1 / S n1))%nat.
+           { rewrite Nat.div_small; auto. }
+           rewrite <- Nat.div_add_l; [| auto].
+           rewrite Nat.mul_1_l.
+           reflexivity.
+      * rewrite Epow.
+        bdestruct (S n0 / S n1 =? 1)%nat.
+        -- assert (Hx : (S n0) = ((S n1) * ((S n0) / (S n1)) + (S n0) mod (S n1))%nat); [apply Nat.div_mod_eq |].
+           rewrite H0 in Hx.
+           rewrite Nat.mul_1_r in Hx.
+           bdestruct (S n0 mod S n1 =? S n1 - 1)%nat.
+           ++ rewrite H1 in Hx.
+              simpl in Hx.
+              rewrite Nat.sub_0_r in Hx.
+              inversion Hx.
+              contradiction.
+           ++ rewrite andb_false_r.
+              lca.
+        -- destruct (S n0 / S n1)%nat.
+           ++ rewrite andb_false_r.
+              lca.
+           ++ destruct n2.
+              ** contradiction.
+              ** unfold I. 
+                 simpl.
+                 rewrite Cmult_0_l.
+                 rewrite andb_false_r.
+                 lca.
+Qed.
 
 Fixpoint G_ZX_to_G2_ZX {nIn nOut} (zx : G_ZX nIn nOut) : G2_ZX nIn nOut :=
   match zx with
