@@ -14,8 +14,8 @@ Local Open Scope G_ZX_scope.
 Local Open Scope R_scope.
 Inductive G_ZX : nat -> nat -> Type :=
   | G_Empty : G_ZX 0 0
-  | G_Z_Spider_In nOut (α : R) : G_ZX 1 nOut
-  | G_Z_Spider_Out nIn (α : R) : G_ZX nIn 1
+  | G_Z_Spider_1_nOut nOut (α : R) : G_ZX 1 nOut
+  | G_Z_Spider_nIn_1 nIn (α : R) : G_ZX nIn 1
   | G_Cap : G_ZX 0 2
   | G_Cup : G_ZX 2 0
   | G_Stack {nIn0 nIn1 nOut0 nOut1} (zx0 : G_ZX nIn0 nOut0) (zx1 : G_ZX nIn1 nOut1) :
@@ -33,8 +33,8 @@ Fixpoint G_ZX_semantics {nIn nOut} (zx : G_ZX nIn nOut) :
   Matrix (2 ^ nOut) (2 ^nIn) := 
   match zx with
   | ⦰G => H_ZX_semantics ⦰H
-  | G_Z_Spider_In nOut α => H_ZX_semantics (H_Z_Spider 1 nOut α)
-  | G_Z_Spider_Out nIn α => H_ZX_semantics (H_Z_Spider nIn 1 α)
+  | G_Z_Spider_1_nOut nOut α => H_ZX_semantics (H_Z_Spider 1 nOut α)
+  | G_Z_Spider_nIn_1 nIn α => H_ZX_semantics (H_Z_Spider nIn 1 α)
   | G_Cap => H_ZX_semantics (H_Cap)
   | G_Cup => H_ZX_semantics (H_Cup)
   | zx0 ↕G zx1 => (G_ZX_semantics zx0) ⊗ (G_ZX_semantics zx1)
@@ -44,8 +44,8 @@ Fixpoint G_ZX_semantics {nIn nOut} (zx : G_ZX nIn nOut) :
 Fixpoint G_ZX_to_H_ZX {nIn nOut} (zx : G_ZX nIn nOut) : H_ZX nIn nOut :=
   match zx with
   | G_Empty => H_Empty
-  | G_Z_Spider_In nOut α => H_Z_Spider 1 nOut α
-  | G_Z_Spider_Out nIn α => H_Z_Spider nIn 1 α
+  | G_Z_Spider_1_nOut nOut α => H_Z_Spider 1 nOut α
+  | G_Z_Spider_nIn_1 nIn α => H_Z_Spider nIn 1 α
   | G_Cap => H_Cap
   | G_Cup => H_Cup
   | G_Stack zx0 zx1 => (G_ZX_to_H_ZX zx0) ↕H (G_ZX_to_H_ZX zx1)
@@ -124,7 +124,7 @@ Proof.
   simpl; rewrite IHzx1, IHzx2; reflexivity.
 Qed.
 
-Definition G_Wire := G_Z_Spider_Out 1 0.
+Definition G_Wire := G_Z_Spider_nIn_1 1 0.
 
 Local Opaque H_ZX_semantics.
 Local Transparent H_Wire.
@@ -142,7 +142,7 @@ Local Opaque G_Wire.
 Fixpoint H_ZX_to_G_ZX {nIn nOut} (zx : H_ZX nIn nOut) : G_ZX nIn nOut :=
   match zx with
   | H_Empty => G_Empty
-  | H_Z_Spider nIn nOut α => G_Z_Spider_Out nIn α ⟷G G_Wire ⟷G G_Z_Spider_In nOut 0%R
+  | H_Z_Spider nIn nOut α => G_Z_Spider_nIn_1 nIn α ⟷G G_Wire ⟷G G_Z_Spider_1_nOut nOut 0%R
   | H_Cap => G_Cap
   | H_Cup => G_Cup
   | zx0 ↕H zx1 => (H_ZX_to_G_ZX zx0) ↕G (H_ZX_to_G_ZX zx1)

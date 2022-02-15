@@ -14,11 +14,11 @@ Local Open Scope G2_ZX_scope.
 Local Open Scope R_scope.
 Inductive G2_ZX : nat -> nat -> Type :=
   | G2_Empty : G2_ZX 0 0
-  | G2_Z_Spider_In0 (α : R) : G2_ZX 1 0
-  | G2_Z_Spider_Out0 (α : R) : G2_ZX 0 1
-  | G2_Z_Spider_1 (α : R) : G2_ZX 1 1 (* Required to build wire construct *)
-  | G2_Z_Spider_In2 (α : R) : G2_ZX 1 2
-  | G2_Z_Spider_Out2 (α : R) : G2_ZX 2 1
+  | G2_Z_Spider_1_0 (α : R) : G2_ZX 1 0
+  | G2_Z_Spider_0_1 (α : R) : G2_ZX 0 1
+  | G2_Z_Spider_1_1 (α : R) : G2_ZX 1 1 (* Required to build wire construct *)
+  | G2_Z_Spider_1_2 (α : R) : G2_ZX 1 2
+  | G2_Z_Spider_2_1 (α : R) : G2_ZX 2 1
   | G2_Cap : G2_ZX 0 2
   | G2_Cup : G2_ZX 2 0
   | G2_Stack {nIn0 nIn1 nOut0 nOut1} (zx0 : G2_ZX nIn0 nOut0) (zx1 : G2_ZX nIn1 nOut1) :
@@ -36,11 +36,11 @@ Fixpoint G2_ZX_semantics {nIn nOut} (zx : G2_ZX nIn nOut) :
   Matrix (2 ^ nOut) (2 ^nIn) := 
   match zx with
   | ⦰G2 => G_ZX_semantics ⦰G
-  | G2_Z_Spider_In0 α => G_ZX_semantics (G_Z_Spider_In 0 α)
-  | G2_Z_Spider_Out0 α => G_ZX_semantics (G_Z_Spider_Out 0 α)
-  | G2_Z_Spider_1 α => G_ZX_semantics (G_Z_Spider_In 1 α)
-  | G2_Z_Spider_In2 α => G_ZX_semantics (G_Z_Spider_In 2 α)
-  | G2_Z_Spider_Out2 α => G_ZX_semantics (G_Z_Spider_Out 2 α)
+  | G2_Z_Spider_1_0 α => G_ZX_semantics (G_Z_Spider_1_nOut 0 α)
+  | G2_Z_Spider_0_1 α => G_ZX_semantics (G_Z_Spider_nIn_1 0 α)
+  | G2_Z_Spider_1_1 α => G_ZX_semantics (G_Z_Spider_1_nOut 1 α)
+  | G2_Z_Spider_1_2 α => G_ZX_semantics (G_Z_Spider_1_nOut 2 α)
+  | G2_Z_Spider_2_1 α => G_ZX_semantics (G_Z_Spider_nIn_1 2 α)
   | G2_Cap => G_ZX_semantics (G_Cap)
   | G2_Cup => G_ZX_semantics (G_Cup)
   | zx0 ↕G2 zx1 => (G2_ZX_semantics zx0) ⊗ (G2_ZX_semantics zx1)
@@ -50,11 +50,11 @@ Fixpoint G2_ZX_semantics {nIn nOut} (zx : G2_ZX nIn nOut) :
 Fixpoint G2_ZX_to_G_ZX {nIn nOut} (zx : G2_ZX nIn nOut) : G_ZX nIn nOut :=
   match zx with
   | ⦰G2 => ⦰G
-  | G2_Z_Spider_In0 α => G_Z_Spider_In 0 α
-  | G2_Z_Spider_Out0 α => G_Z_Spider_Out 0 α
-  | G2_Z_Spider_1 α => G_Z_Spider_In 1 α
-  | G2_Z_Spider_In2 α => G_Z_Spider_In 2 α
-  | G2_Z_Spider_Out2 α => G_Z_Spider_Out 2 α
+  | G2_Z_Spider_1_0 α => G_Z_Spider_1_nOut 0 α
+  | G2_Z_Spider_0_1 α => G_Z_Spider_nIn_1 0 α
+  | G2_Z_Spider_1_1 α => G_Z_Spider_1_nOut 1 α
+  | G2_Z_Spider_1_2 α => G_Z_Spider_1_nOut 2 α
+  | G2_Z_Spider_2_1 α => G_Z_Spider_nIn_1 2 α
   | G2_Cap => G_Cap
   | G2_Cup => G_Cup
   | zx0 ↕G2 zx1 => (G2_ZX_to_G_ZX zx0) ↕G (G2_ZX_to_G_ZX zx1)
@@ -133,7 +133,7 @@ Proof.
   simpl; rewrite IHzx1, IHzx2; reflexivity.
 Qed.
 
-Definition G2_Wire := G2_Z_Spider_1 0.
+Definition G2_Wire := G2_Z_Spider_1_1 0.
 
 Local Opaque G_ZX_semantics.
 Local Transparent G_Wire.
@@ -152,12 +152,12 @@ Definition StackWire {nIn nOut} (zx : G2_ZX nIn nOut) : G2_ZX (S nIn) (S nOut) :
 
 Fixpoint G_Spider_In_to_G2_Spiders nOut α: G2_ZX 1 nOut :=
   match nOut with
-  | 0%nat => G2_Z_Spider_In0 α
-  | S nOut' => G2_Z_Spider_In2 α ⟷G2 (StackWire G2_Wire) ⟷G2 StackWire (G_Spider_In_to_G2_Spiders nOut' 0%R)
+  | 0%nat => G2_Z_Spider_1_0 α
+  | S nOut' => G2_Z_Spider_1_2 α ⟷G2 (StackWire G2_Wire) ⟷G2 StackWire (G_Spider_In_to_G2_Spiders nOut' 0%R)
   end.
 
 Local Opaque G_ZX_semantics.
-Lemma G_Spider_In_to_G2_Spiders_consistent : forall nOut α, G_ZX_semantics (G_Z_Spider_In nOut α) = G2_ZX_semantics (G_Spider_In_to_G2_Spiders nOut α).
+Lemma G_Spider_In_to_G2_Spiders_consistent : forall nOut α, G_ZX_semantics (G_Z_Spider_1_nOut nOut α) = G2_ZX_semantics (G_Spider_In_to_G2_Spiders nOut α).
 Proof.
   intro nOut.
   Transparent G_ZX_semantics.
@@ -267,11 +267,11 @@ Qed.
 
 Fixpoint G_Spider_Out_to_G2_Spiders nIn α: G2_ZX nIn 1 :=
   match nIn with
-  | 0%nat => G2_Z_Spider_Out0 α
-  | S nIn' => (StackWire (G_Spider_Out_to_G2_Spiders nIn' 0%R)) ⟷G2 (StackWire G2_Wire) ⟷G2 G2_Z_Spider_Out2 α
+  | 0%nat => G2_Z_Spider_0_1 α
+  | S nIn' => (StackWire (G_Spider_Out_to_G2_Spiders nIn' 0%R)) ⟷G2 (StackWire G2_Wire) ⟷G2 G2_Z_Spider_2_1 α
   end.
 
-Lemma G_Spider_Out_to_G2_Spiders_consistent : forall nIn α, G_ZX_semantics (G_Z_Spider_Out nIn α) = G2_ZX_semantics (G_Spider_Out_to_G2_Spiders nIn α).
+Lemma G_Spider_Out_to_G2_Spiders_consistent : forall nIn α, G_ZX_semantics (G_Z_Spider_nIn_1 nIn α) = G2_ZX_semantics (G_Spider_Out_to_G2_Spiders nIn α).
 Proof.
   intro nIn.
   Transparent G_ZX_semantics.
@@ -403,8 +403,8 @@ Qed.
 Fixpoint G_ZX_to_G2_ZX {nIn nOut} (zx : G_ZX nIn nOut) : G2_ZX nIn nOut :=
   match zx with
   | G_Empty => G2_Empty
-  | G_Z_Spider_In nOut α => G_Spider_In_to_G2_Spiders nOut α
-  | G_Z_Spider_Out nIn α => G_Spider_Out_to_G2_Spiders nIn α
+  | G_Z_Spider_1_nOut nOut α => G_Spider_In_to_G2_Spiders nOut α
+  | G_Z_Spider_nIn_1 nIn α => G_Spider_Out_to_G2_Spiders nIn α
   | G_Cap => G2_Cap
   | G_Cup => G2_Cup
   | zx0 ↕G zx1 => (G_ZX_to_G2_ZX zx0) ↕G2 (G_ZX_to_G2_ZX zx1)
