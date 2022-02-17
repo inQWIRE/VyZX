@@ -72,9 +72,25 @@ Fixpoint G2_ZX_to_A_G2_ZX_helper base {nIn nOut} (zx : G2_ZX nIn nOut) : (A_G2_Z
                       let (zx1', ret) := (G2_ZX_to_A_G2_ZX_helper base' zx1) in (A_G2_Compose zx0' zx1' base, S ret) 
   end.
 
-Definition G2_ZX_to_A_G2_ZX := @G2_ZX_to_A_G2_ZX_helper 0.
+Definition G2_ZX_to_A_G2_ZX {nIn nOut} (zx : G2_ZX nIn nOut) := fst (G2_ZX_to_A_G2_ZX_helper 0 zx).
 
 (* Todo: 
    - State/Prove no collisions
    - Add maps from node id -> [node id] * [node id] (i.e. map to connected spider/cap/cup) 
 *)
+
+Fixpoint collect_ids {nIn nOut n} (zx : A_G2_ZX nIn nOut n) : list nat :=
+  match zx with
+  | ⦰AG2 n => [n]
+  | A_G2_Z_Spider_1_0 n _ => [n]
+  | A_G2_Z_Spider_0_1 n _ => [n]
+  | A_G2_Z_Spider_1_1 n _ => [n]
+  | A_G2_Z_Spider_1_2 n _ => [n]
+  | A_G2_Z_Spider_2_1 n _ => [n]
+  | A_G2_Cap n => [n]
+  | A_G2_Cup n => [n]
+  | A_G2_Stack zx0 zx1 n => n :: (collect_ids zx0 ++ collect_ids zx1)
+  | A_G2_Compose zx0 zx1 n => n :: (collect_ids zx0 ++ collect_ids zx1)
+  end.
+
+Definition WF_A_G2_ZX {nIn nOut n} (zx : A_G2_ZX nIn nOut n) := NoDup (collect_ids zx).
