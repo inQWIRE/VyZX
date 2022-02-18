@@ -66,10 +66,14 @@ Fixpoint G2_ZX_to_A_G2_ZX_helper base {nIn nOut} (zx : G2_ZX nIn nOut) : (A_G2_Z
   | G2_Z_Spider_2_1 α => (A_G2_Z_Spider_2_1 base α, S base)
   | G2_Cap => (A_G2_Cap base, S base)
   | G2_Cup => (A_G2_Cup base, S base)
-  | G2_Stack zx0 zx1 => let (zx0', base') := (G2_ZX_to_A_G2_ZX_helper (S base) zx0) in 
-                      let (zx1', ret) := (G2_ZX_to_A_G2_ZX_helper base' zx1) in (A_G2_Stack zx0' zx1' base, S ret) 
-  | G2_Compose zx0 zx1 => let (zx0', base') := (G2_ZX_to_A_G2_ZX_helper (S base) zx0) in 
-                      let (zx1', ret) := (G2_ZX_to_A_G2_ZX_helper base' zx1) in (A_G2_Compose zx0' zx1' base, S ret) 
+  | G2_Stack zx0 zx1 => (A_G2_Stack 
+                            (fst (G2_ZX_to_A_G2_ZX_helper (S base) zx0)) 
+                            (fst (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper (S base) zx0)) zx1)) base,
+                            S (snd (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper (S base) zx0)) zx1)))
+  | G2_Compose zx0 zx1 => (A_G2_Compose
+                            (fst (G2_ZX_to_A_G2_ZX_helper (S base) zx0)) 
+                            (fst (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper (S base) zx0)) zx1)) base,
+                            S (snd (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper (S base) zx0)) zx1)))
   end.
 
 Definition G2_ZX_to_A_G2_ZX {nIn nOut} (zx : G2_ZX nIn nOut) := fst (G2_ZX_to_A_G2_ZX_helper 0 zx).
@@ -94,3 +98,101 @@ Fixpoint collect_ids {nIn nOut n} (zx : A_G2_ZX nIn nOut n) : list nat :=
   end.
 
 Definition WF_A_G2_ZX {nIn nOut n} (zx : A_G2_ZX nIn nOut n) := NoDup (collect_ids zx).
+
+Lemma G2_ZX_to_A_G2_ZX_helper_ret_geq_base : forall base {nIn nOut} (zx : G2_ZX nIn nOut), base <= snd (G2_ZX_to_A_G2_ZX_helper base zx).
+Proof.
+  intros.
+  generalize dependent base.
+  induction zx; intros; simpl; try auto (* Non composite *).
+  all: 
+  simpl;
+  apply (Nat.le_trans _ (snd (G2_ZX_to_A_G2_ZX_helper (S base) zx1)) _);
+  [ apply (Nat.le_trans _ (S base) _); [auto | apply IHzx1] | constructor; apply IHzx2].
+Qed.
+
+Lemma G2_ZX_to_A_G2_ZX_helper_assigns_geq_base : forall base {nIn nOut} (zx : G2_ZX nIn nOut), forallb (fun n => base <=? n) (collect_ids (fst (G2_ZX_to_A_G2_ZX_helper base zx))) = true.
+Proof.
+  intros.
+  generalize dependent base.
+  assert (forall x base, (S base <=? x = true) -> (base <=? x = true)).
+    {
+      intros.
+      rewrite leb_correct; [ reflexivity | ].
+      apply leb_complete in H.
+      eapply Nat.le_trans.
+      2: apply H.
+      auto.
+    }
+  assert (andb_simpl : forall a b, a = true /\ b = true -> a && b = true) by (intros a b H'; destruct H'; subst; reflexivity).
+  induction zx; intros; simpl; try (rewrite Nat.leb_refl; easy).
+  - simpl.
+    rewrite Nat.leb_refl.
+    rewrite andb_true_l.
+    rewrite forallb_app.
+    apply andb_simpl.
+    split. 
+    + specialize (IHzx1 (S base)).
+      rewrite forallb_forall in *.
+      intros; apply H; apply IHzx1; assumption.
+    + specialize (IHzx2 (snd (G2_ZX_to_A_G2_ZX_helper (S base) zx1))).
+      rewrite forallb_forall in *.
+      intros.
+      assert ((snd (G2_ZX_to_A_G2_ZX_helper (S base) zx1) <=? x) = true -> base <=? x = true).
+      {
+       intros.
+       rewrite leb_correct; [ reflexivity | ].
+       apply leb_complete in H1.
+       apply (Nat.le_trans _ (S base) _); [ auto | ].
+       eapply Nat.le_trans.
+       apply G2_ZX_to_A_G2_ZX_helper_ret_geq_base.
+       apply H1.
+      }
+      apply H1.
+      apply IHzx2.
+      apply H0.
+  - simpl.
+    rewrite Nat.leb_refl.
+    rewrite andb_true_l.
+    rewrite forallb_app.
+    apply andb_simpl.
+    split. 
+    + specialize (IHzx1 (S base)).
+      rewrite forallb_forall in *.
+      intros; apply H; apply IHzx1; assumption.
+    + specialize (IHzx2 (snd (G2_ZX_to_A_G2_ZX_helper (S base) zx1))).
+      rewrite forallb_forall in *.
+      intros.
+      assert ((snd (G2_ZX_to_A_G2_ZX_helper (S base) zx1) <=? x) = true -> base <=? x = true).
+      {
+        intros.
+        rewrite leb_correct; [ reflexivity | ].
+        apply leb_complete in H1.
+        apply (Nat.le_trans _ (S base) _); [ auto | ].
+        eapply Nat.le_trans.
+        apply G2_ZX_to_A_G2_ZX_helper_ret_geq_base.
+        apply H1.
+      }
+      apply H1.
+      apply IHzx2.
+      apply H0.
+Qed.
+
+Lemma WF_G2_ZX_to_A_G2_ZX : forall {nIn nOut} (zx : G2_ZX nIn nOut), WF_A_G2_ZX (G2_ZX_to_A_G2_ZX zx).
+Proof.
+  intros.
+  unfold G2_ZX_to_A_G2_ZX.
+  unfold WF_A_G2_ZX.
+  induction zx; try (simpl; constructor; try auto; constructor) (* All non compositional cases *).
+  - simpl.
+    constructor.
+    + rewrite in_app_iff.
+      unfold not.
+      intros.
+      destruct H.
+      assert (Hcontra : forallb (fun n => 1 <=? n) (collect_ids (fst (G2_ZX_to_A_G2_ZX_helper 1 zx1))) = true) by apply G2_ZX_to_A_G2_ZX_helper_assigns_geq_base.
+      rewrite forallb_forall in Hcontra.
+      * apply Hcontra in H.
+        discriminate H.
+      * admit.
+    + Search (NoDup (_ ++ _)). 
+Abort.
