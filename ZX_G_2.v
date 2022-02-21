@@ -162,8 +162,11 @@ Proof.
   intro nOut.
   Transparent G_ZX_semantics.
   induction nOut.
-  - reflexivity.
-  - simpl in IHnOut. simpl.
+  - (* Base Case *)
+    reflexivity.
+  - (* Inductive Case  ∀ α : R, G_ZX_semantics (G_Z_Spider_1_nOut nOut α) = G2_ZX_semantics (G_Spider_In_to_G2_Spiders (S nOut) α *)
+    (* Extract the inductive hypothesis from the statement, and remove the hadamards. *)
+    simpl in IHnOut. simpl.
     rewrite kron_1_l; [| auto with wf_db].
     rewrite G2_wire_identity_semantics.
     rewrite id_kron.
@@ -179,19 +182,23 @@ Proof.
     restore_dims.
     rewrite Mmult_1_l; [| auto with wf_db].
     rewrite <- IHnOut.
+    (* Prepare for matrix equality by putting x,y in front of every matrix (except for those with ⊗). *)
     prep_matrix_equality.
     unfold Mmult.
     Opaque Z_semantics.
     simpl.
     rewrite Cplus_0_l.
     Transparent Z_semantics.
+    (* C_field_simplify eliminates 0%R * cases, but will not always be well behaved. It is for this one, but the next proof it is not. *)
     destruct x,y; simpl; C_field_simplify.
-    + unfold kron; simpl.
+    + (* x = 0, y = 0 *)
+      unfold kron; simpl.
       rewrite Nat.mod_0_l;[| apply Nat.pow_nonzero; easy].
       rewrite Nat.div_0_l;[| apply Nat.pow_nonzero; easy].
       lca.
-    + bdestruct (y =? 0).
-      * unfold kron.
+    + (* x = 0, y = S y' *)
+      bdestruct (y =? 0). (* This y is y', shows up in both booleans, so we bdestruct it *)
+      * unfold kron. (* We have booleans in the lhs of =, but no way to see how they relate to rhs of = *)
         destruct (2 ^ nOut)%nat eqn:E2nOut.
         -- apply (Nat.pow_nonzero) in E2nOut; [destruct E2nOut | easy].
         -- simpl.
@@ -244,7 +251,7 @@ Proof.
                  ** rewrite Nat.add_comm.
                      replace ((S n) + n)%nat with ((1 * (S n)) + n)%nat by lia.
                      rewrite Nat.div_add_l; [| easy].
-                     rewrite Nat.div_small; [| constructor; constructor].
+                     rewrite Nat.div_small; [| auto].
                      reflexivity.
            ++ unfold Z_semantics.
               rewrite E2nOut.
@@ -299,7 +306,7 @@ Proof.
     simpl.
     rewrite Cplus_0_l.
     Transparent Z_semantics.
-    destruct x eqn:Ex, y eqn:Ey; simpl.
+    destruct x, y; simpl; try (rewrite andb_false_r; simpl).
     + (* x = 0, y = 0 *)
       C_field_simplify.
       unfold kron; simpl.
@@ -314,7 +321,7 @@ Proof.
       rewrite Nat.mod_0_l; [| easy].
       rewrite Nat.div_0_l; [| easy].
       simpl.
-      destruct (S n mod 2 ^ nIn) eqn:ESnmod2NIn.
+      destruct (S y mod 2 ^ nIn) eqn:ESnmod2NIn.
       * rewrite Nat.mod_divides in ESnmod2NIn; [| apply Nat.pow_nonzero; easy].
         destruct ESnmod2NIn as [c Hc].
         destruct c.
@@ -326,7 +333,6 @@ Proof.
            lca.
       * lca.
     + (* x = S n, y = 0 *)
-      rewrite andb_false_r.
       C_field_simplify.
       destruct (2^nIn)%nat eqn:Epow.
       * contradict Epow.
@@ -337,8 +343,7 @@ Proof.
         simpl.
         rewrite andb_false_r.
         lca.
-    + (* x = S n, y = S n *)
-      rewrite andb_false_r.
+    + (* x = S n, y = S m *)
       C_field_simplify.
       destruct (2^nIn)%nat eqn:Epow.
       { contradict Epow; apply Nat.pow_nonzero; easy. }
@@ -353,10 +358,10 @@ Proof.
       unfold Z_semantics.
       replace (1 =? 2 ^ 1 - 1) with true by reflexivity.
       rewrite andb_true_l.
-      bdestruct (n0 =? n1 + n1).
+      bdestruct (y =? n + n).
       * rewrite H.
         rewrite Epow.
-        replace (S (n1 + n1) / S n1)% nat with 1%nat.
+        replace (S (n + n) / S n)% nat with 1%nat.
         -- rewrite <- plus_Sn_m.
            rewrite Nat.add_mod; [| easy].
            rewrite Nat.mod_same; [| easy].
@@ -367,36 +372,34 @@ Proof.
            rewrite Nat.sub_0_r.
            rewrite Nat.eqb_refl.
            rewrite Cexp_0.
-           destruct n; lca.
+           destruct x; lca.
         -- rewrite <- plus_Sn_m.
-           replace ((S n1 + n1) / S n1)%nat
-           with ( 1 + (n1 / S n1))%nat.
+           replace ((S n + n) / S n)%nat
+           with ( 1 + (n / S n))%nat.
            { rewrite Nat.div_small; auto. }
            rewrite <- Nat.div_add_l; [| auto].
            rewrite Nat.mul_1_l.
            reflexivity.
-      * rewrite Epow.
-        bdestruct (S n0 / S n1 =? 1)%nat.
-        -- assert (Hx : (S n0) = ((S n1) * ((S n0) / (S n1)) + (S n0) mod (S n1))%nat); [apply Nat.div_mod; lia |].
+      * rewrite andb_false_r.
+        rewrite Epow.
+        bdestruct (S y / S n =? 1)%nat.
+        -- assert (Hx : (S y) = ((S n) * ((S y) / (S n)) + (S y) mod (S n))%nat); [apply Nat.div_mod; lia |].
            rewrite H0 in Hx.
            rewrite Nat.mul_1_r in Hx.
-           bdestruct (S n0 mod S n1 =? S n1 - 1)%nat.
+           bdestruct (S y mod S n =? S n - 1)%nat.
            ++ rewrite H1 in Hx.
               simpl in Hx.
               rewrite Nat.sub_0_r in Hx.
               inversion Hx.
               contradiction.
-           ++ rewrite andb_false_r.
-              lca.
-        -- destruct (S n0 / S n1)%nat.
-           ++ rewrite andb_false_r.
-              lca.
-           ++ destruct n2.
+           ++ lca.
+        -- destruct (S y / S n)%nat.
+           ++ lca.
+           ++ destruct n0.
               ** contradiction.
               ** unfold I. 
                  simpl.
                  rewrite Cmult_0_l.
-                 rewrite andb_false_r.
                  lca.
 Qed.
 

@@ -691,8 +691,6 @@ Proof.
       Transparent Nat.div.
       destruct (Nat.divmod y 1 0 1) eqn:Edm.
       assert (Hy : (y = 2 * (y / 2) + y mod 2)%nat).
-      Locate "div".
-      Search Nat.div Nat.modulo.
       { apply Nat.div_mod; lia. } (* Nat.div_mod_eq works in 8.14 on *)
       destruct (y/2 =? 2^n-1) eqn:Ey2.
       * destruct (y mod 2 =? 1) eqn:Eym.
