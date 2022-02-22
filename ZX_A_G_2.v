@@ -7,6 +7,8 @@ Require Export GateRules.
 Require Export Rules.
 Require Export VyZX.Proportional.
 Require Import Setoid.
+Require Import Coq.Logic.Eqdep_dec.
+Require Import Coq.Arith.Peano_dec.
 
 Local Open Scope R_scope.
 Inductive A_G2_ZX : nat (* #inputs *) -> nat (* #outputs *) -> Type :=
@@ -100,10 +102,10 @@ Inductive In_A_G2_ZX : forall {nIn nOut : nat}, nat -> A_G2_ZX nIn nOut -> Prop 
                 In_A_G2_ZX n zx1 -> In_A_G2_ZX n (A_G2_Stack zx0 zx1)
   | In_Compose_L {nIn nMid nOut}
                (zx0 : A_G2_ZX nIn nMid)
-               (zx1 : A_G2_ZX nMid nOut) n : In_A_G2_ZX n zx0 -> In_A_G2_ZX n (A_G2_Stack zx0 zx1)
+               (zx1 : A_G2_ZX nMid nOut) n : In_A_G2_ZX n zx0 -> In_A_G2_ZX n (A_G2_Compose zx0 zx1)
   | In_Compose_R {nIn nMid nOut}
                (zx0 : A_G2_ZX nIn nMid)
-               (zx1 : A_G2_ZX nMid nOut) n : In_A_G2_ZX n zx1 -> In_A_G2_ZX n (A_G2_Stack zx0 zx1).
+               (zx1 : A_G2_ZX nMid nOut) n : In_A_G2_ZX n zx1 -> In_A_G2_ZX n (A_G2_Compose zx0 zx1).
 
 Inductive WF_A_G2_ZX : forall {nIn nOut : nat}, A_G2_ZX nIn nOut -> Prop :=
   | WF_Empty                 : WF_A_G2_ZX ⦰AG2
@@ -112,8 +114,8 @@ Inductive WF_A_G2_ZX : forall {nIn nOut : nat}, A_G2_ZX nIn nOut -> Prop :=
   | WF_A_G2_Z_Spider_1_1 n α : WF_A_G2_ZX (A_G2_Z_Spider_1_1 n α)
   | WF_A_G2_Z_Spider_2_1 n α : WF_A_G2_ZX (A_G2_Z_Spider_2_1 n α)
   | WF_A_G2_Z_Spider_1_2 n α : WF_A_G2_ZX (A_G2_Z_Spider_1_2 n α)
-  | WF_A_G2_Stack (nIn0 nIn1 nOut0 nOut1 : nat)
-      (zx0 : A_G2_ZX nIn0 nOut0) (zx1 : A_G2_ZX nIn1 nOut1) : 
+  | WF_A_G2_Stack : 
+      forall (nIn0 nIn1 nOut0 nOut1 : nat) (zx0 : A_G2_ZX nIn0 nOut0) (zx1 : A_G2_ZX nIn1 nOut1),
         (forall n, In_A_G2_ZX n zx0 -> ~ In_A_G2_ZX n zx1) -> 
           WF_A_G2_ZX (A_G2_Stack zx0 zx1)
   | WF_A_G2_Compose {nIn nMid nOut}
@@ -156,10 +158,37 @@ Lemma In_A_G2_ZX_Stack_Rev {nIn0 nOut0 nIn1 nOut1} :
 Proof.
   intros.
   inversion H.
-  remember (A_G2_Stack zx0 zx1) as zxstack.
+  - subst.
+    inversion H10.
+    apply inj_pair2_eq_dec in H6; [| apply eq_nat_dec].
+    apply inj_pair2_eq_dec in H6; [| apply eq_nat_dec].
+    left.
+    subst; assumption.
+  - subst.
+    inversion H11.
+    apply inj_pair2_eq_dec in H6; [| apply eq_nat_dec].
+    apply inj_pair2_eq_dec in H6; [| apply eq_nat_dec].
+    right.
+    subst; assumption.
+Qed.
+
+Lemma In_A_G2_ZX_Compose_Rev {nIn nMid nOut} :
+  forall n (zx0 : A_G2_ZX nIn nMid) (zx1 : A_G2_ZX nMid nOut),
+    In_A_G2_ZX n (A_G2_Compose zx0 zx1) -> In_A_G2_ZX n zx0 \/ In_A_G2_ZX n zx1.
+Proof.
+  intros.
   inversion H.
-Abort.
-  
+  - subst.
+    inversion H5.
+    apply inj_pair2_eq_dec in H1; [| apply eq_nat_dec].
+    apply inj_pair2_eq_dec in H1; [| apply eq_nat_dec].
+    left; subst; assumption.
+  - subst.
+    inversion H6.
+    apply inj_pair2_eq_dec in H1; [| apply eq_nat_dec].
+    apply inj_pair2_eq_dec in H1; [| apply eq_nat_dec].
+    right; subst; assumption.
+Qed.
 
 Lemma G2_ZX_to_A_G2_ZX_labels_small {nIn nOut} : 
   forall (n base : nat) (zx : G2_ZX nIn nOut) , 
