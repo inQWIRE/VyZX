@@ -22,10 +22,12 @@ Inductive A_G2_ZX : nat (* #inputs *) -> nat (* #outputs *) -> Type :=
   | A_G2_Cup                   : forall n : nat, A_G2_ZX 2 0
   | A_G2_Stack {nIn0 nIn1 nOut0 nOut1} 
                (zx0 : A_G2_ZX nIn0 nOut0) 
-               (zx1 : A_G2_ZX nIn1 nOut1) : A_G2_ZX (nIn0 + nIn1) (nOut0 + nOut1)
+               (zx1 : A_G2_ZX nIn1 nOut1) : 
+                                 forall n : nat, A_G2_ZX (nIn0 + nIn1) (nOut0 + nOut1)
   | A_G2_Compose {nIn nMid nOut} 
                (zx0 : A_G2_ZX nIn nMid) 
-               (zx1 : A_G2_ZX nMid nOut) : A_G2_ZX nIn nOut.
+               (zx1 : A_G2_ZX nMid nOut) : 
+                                 forall n : nat, A_G2_ZX nIn nOut.
 Local Close Scope R_scope.
 
 Notation "⦰AG2" := A_G2_Empty. (* \revemptyset *)
@@ -43,8 +45,8 @@ Fixpoint A_G2_ZX_semantics {nIn nOut} (zx : A_G2_ZX nIn nOut) :
   | A_G2_Z_Spider_2_1 α _ => G2_ZX_semantics (G2_Z_Spider_2_1 α)
   | A_G2_Cap _ => G2_ZX_semantics (G2_Cap)
   | A_G2_Cup _ => G2_ZX_semantics (G2_Cup)
-  | A_G2_Stack zx0 zx1 => (A_G2_ZX_semantics zx0) ⊗ (A_G2_ZX_semantics zx1)
-  | @A_G2_Compose _ nMid _ zx0 zx1 => (A_G2_ZX_semantics zx1) × (nMid ⨂ hadamard) × (A_G2_ZX_semantics zx0)
+  | A_G2_Stack zx0 zx1 _ => (A_G2_ZX_semantics zx0) ⊗ (A_G2_ZX_semantics zx1)
+  | @A_G2_Compose _ nMid _ zx0 zx1 _ => (A_G2_ZX_semantics zx1) × (nMid ⨂ hadamard) × (A_G2_ZX_semantics zx0)
   end.
 
 Fixpoint A_G2_ZX_to_G2_ZX {nIn nOut} (zx : A_G2_ZX nIn nOut) : G2_ZX nIn nOut :=
@@ -57,8 +59,8 @@ Fixpoint A_G2_ZX_to_G2_ZX {nIn nOut} (zx : A_G2_ZX nIn nOut) : G2_ZX nIn nOut :=
   | A_G2_Z_Spider_2_1 α _ => G2_Z_Spider_2_1 α
   | A_G2_Cap _ => G2_Cap
   | A_G2_Cup _ => G2_Cup
-  | A_G2_Stack zx0 zx1 => (A_G2_ZX_to_G2_ZX zx0) ↕G2 (A_G2_ZX_to_G2_ZX zx1)
-  | A_G2_Compose zx0 zx1 => (A_G2_ZX_to_G2_ZX zx0) ⟷G2 (A_G2_ZX_to_G2_ZX zx1)
+  | A_G2_Stack zx0 zx1 _ => (A_G2_ZX_to_G2_ZX zx0) ↕G2 (A_G2_ZX_to_G2_ZX zx1)
+  | A_G2_Compose zx0 zx1 _ => (A_G2_ZX_to_G2_ZX zx0) ⟷G2 (A_G2_ZX_to_G2_ZX zx1)
   end.
 
 Fixpoint G2_ZX_to_A_G2_ZX_helper (base : nat) {nIn nOut} (zx : G2_ZX nIn nOut) : (A_G2_ZX nIn nOut) * nat :=
@@ -73,11 +75,13 @@ Fixpoint G2_ZX_to_A_G2_ZX_helper (base : nat) {nIn nOut} (zx : G2_ZX nIn nOut) :
   | G2_Cup             => (A_G2_Cup base, S base)
   | G2_Stack zx0 zx1   => (A_G2_Stack 
                             (fst (G2_ZX_to_A_G2_ZX_helper base zx0)) 
-                            (fst (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper base zx0)) zx1)),
+                            (fst (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper base zx0)) zx1)) 
+                            (snd (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper base zx0)) zx1)),
                             S (snd (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper base zx0)) zx1)))
   | G2_Compose zx0 zx1 => (A_G2_Compose
                             (fst (G2_ZX_to_A_G2_ZX_helper base zx0)) 
-                            (fst (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper base zx0)) zx1)),
+                            (fst (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper base zx0)) zx1))
+                            (snd (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper base zx0)) zx1)),
                             S (snd (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper base zx0)) zx1)))
   end.
 
@@ -94,18 +98,23 @@ Inductive In_A_G2_ZX : forall {nIn nOut : nat}, nat -> A_G2_ZX nIn nOut -> Prop 
   | In_Z_Spider_1_1 {α} n : In_A_G2_ZX n (A_G2_Z_Spider_1_1 α n)
   | In_Z_Spider_2_1 {α} n : In_A_G2_ZX n (A_G2_Z_Spider_2_1 α n)
   | In_Z_Spider_1_2 {α} n : In_A_G2_ZX n (A_G2_Z_Spider_1_2 α n)
-  | In_Stack_L (nIn0 nIn1 nOut0 nOut1 : nat) 
+  | In_Stack_L {nIn0 nIn1 nOut0 nOut1 idnum : nat}
                (zx0 : A_G2_ZX nIn0 nOut0) (zx1 : A_G2_ZX nIn1 nOut1) n : 
-                In_A_G2_ZX n zx0 -> In_A_G2_ZX n (A_G2_Stack zx0 zx1)
-  | In_Stack_R (nIn0 nIn1 nOut0 nOut1 : nat)
+                In_A_G2_ZX n zx0 -> In_A_G2_ZX n (A_G2_Stack zx0 zx1 idnum)
+  | In_Stack_R {nIn0 nIn1 nOut0 nOut1 idnum : nat}
                (zx0 : A_G2_ZX nIn0 nOut0) (zx1 : A_G2_ZX nIn1 nOut1) n : 
-                In_A_G2_ZX n zx1 -> In_A_G2_ZX n (A_G2_Stack zx0 zx1)
-  | In_Compose_L {nIn nMid nOut}
+                In_A_G2_ZX n zx1 -> In_A_G2_ZX n (A_G2_Stack zx0 zx1 idnum)
+  | In_Stack {nIn0 nIn1 nOut0 nOut1 : nat} 
+               (zx0 : A_G2_ZX nIn0 nOut0) (zx1 : A_G2_ZX nIn1 nOut1) n : In_A_G2_ZX n (A_G2_Stack zx0 zx1 n)
+  | In_Compose_L {nIn nMid nOut idnum : nat}
                (zx0 : A_G2_ZX nIn nMid)
-               (zx1 : A_G2_ZX nMid nOut) n : In_A_G2_ZX n zx0 -> In_A_G2_ZX n (A_G2_Compose zx0 zx1)
-  | In_Compose_R {nIn nMid nOut}
+               (zx1 : A_G2_ZX nMid nOut) n : In_A_G2_ZX n zx0 -> In_A_G2_ZX n (A_G2_Compose zx0 zx1 idnum)
+  | In_Compose_R {nIn nMid nOut idnum : nat}
                (zx0 : A_G2_ZX nIn nMid)
-               (zx1 : A_G2_ZX nMid nOut) n : In_A_G2_ZX n zx1 -> In_A_G2_ZX n (A_G2_Compose zx0 zx1).
+               (zx1 : A_G2_ZX nMid nOut) n : In_A_G2_ZX n zx1 -> In_A_G2_ZX n (A_G2_Compose zx0 zx1 idnum)
+  | In_Compose {nIn nMid nOut} 
+               (zx0 : A_G2_ZX nIn nMid)
+               (zx1 : A_G2_ZX nMid nOut) n : In_A_G2_ZX n (A_G2_Compose zx0 zx1 n).
 
 Inductive WF_A_G2_ZX : forall {nIn nOut : nat}, A_G2_ZX nIn nOut -> Prop :=
   | WF_Empty                 : WF_A_G2_ZX ⦰AG2
@@ -117,15 +126,17 @@ Inductive WF_A_G2_ZX : forall {nIn nOut : nat}, A_G2_ZX nIn nOut -> Prop :=
   | WF_A_G2_Cap n : WF_A_G2_ZX (A_G2_Cap n)
   | WF_A_G2_Cup n : WF_A_G2_ZX (A_G2_Cup n)
   | WF_A_G2_Stack : 
-      forall (nIn0 nIn1 nOut0 nOut1 : nat) (zx0 : A_G2_ZX nIn0 nOut0) (zx1 : A_G2_ZX nIn1 nOut1),
+      forall (nIn0 nIn1 nOut0 nOut1 idnum : nat) (zx0 : A_G2_ZX nIn0 nOut0) (zx1 : A_G2_ZX nIn1 nOut1),
         (forall n, In_A_G2_ZX n zx0 -> ~ In_A_G2_ZX n zx1) -> 
+        (~ In_A_G2_ZX idnum zx0) -> (~ In_A_G2_ZX idnum zx1) ->
           WF_A_G2_ZX zx0 -> WF_A_G2_ZX zx1 ->
-          WF_A_G2_ZX (A_G2_Stack zx0 zx1)
-  | WF_A_G2_Compose {nIn nMid nOut}
+          WF_A_G2_ZX (A_G2_Stack zx0 zx1 idnum)
+  | WF_A_G2_Compose {nIn nMid nOut idnum}
       (zx0 : A_G2_ZX nIn nMid) (zx1 : A_G2_ZX nMid nOut) : 
         (forall n, In_A_G2_ZX n zx0 -> ~ In_A_G2_ZX n zx1) ->
+        (~ In_A_G2_ZX idnum zx0) -> (~ In_A_G2_ZX idnum zx1) ->
           WF_A_G2_ZX zx0 -> WF_A_G2_ZX zx1 ->
-          WF_A_G2_ZX (A_G2_Compose zx0 zx1).
+          WF_A_G2_ZX (A_G2_Compose zx0 zx1 idnum).
 
 Lemma G2_ZX_to_A_G2_ZX_helper_ret_gt_base : 
   forall base {nIn nOut} (zx : G2_ZX nIn nOut), 
@@ -138,27 +149,9 @@ Proof.
   apply (Nat.lt_trans _ (snd (G2_ZX_to_A_G2_ZX_helper base zx1)) _); [ apply IHzx1 | apply Nat.lt_lt_succ_r; apply IHzx2].
 Qed.
 
-(* 
-TODO:
-
-  Prove that if we have In_A_G2_ZX n (A_G2_Stack zx0 zx1) then In_A_G2_ZX n zx0 \/ In_A_G2_ZX n zx1
-    Same for compose
-
-  Prove a relation between In_A_G2_ZX and G2_ZX_to_A_G2_ZX.
-   Well, if In n (fst G2_ZX_to_A_G2_ZX zx) then n <= snd (G2_ZX_to_A_G2_ZX zx).
-
-  From there we can prove that the output will be well founded.
-
-  Prove that the helper function produces a WF_A_G2_ZX (for any base)
-  
-    Corrollary that the non helper function works (could just start here, but no real benefit).
-
-
-*)
-
-Lemma In_A_G2_ZX_Stack_Rev {nIn0 nOut0 nIn1 nOut1} : 
+Lemma In_A_G2_ZX_Stack_Rev {nIn0 nOut0 nIn1 nOut1 idnum} : 
   forall n (zx0 : A_G2_ZX nIn0 nOut0) (zx1 : A_G2_ZX nIn1 nOut1), 
-    In_A_G2_ZX n (A_G2_Stack zx0 zx1) -> In_A_G2_ZX n zx0 \/ In_A_G2_ZX n zx1.
+    In_A_G2_ZX n (A_G2_Stack zx0 zx1 idnum) -> In_A_G2_ZX n zx0 \/ In_A_G2_ZX n zx1 \/ idnum = n.
 Proof.
   intros.
   inversion H.
@@ -172,13 +165,14 @@ Proof.
     inversion H11.
     apply inj_pair2_eq_dec in H6; [| apply eq_nat_dec].
     apply inj_pair2_eq_dec in H6; [| apply eq_nat_dec].
-    right.
+    right; left.
     subst; assumption.
+  - right; right; reflexivity.
 Qed.
 
-Lemma In_A_G2_ZX_Compose_Rev {nIn nMid nOut} :
+Lemma In_A_G2_ZX_Compose_Rev {nIn nMid nOut idnum} :
   forall n (zx0 : A_G2_ZX nIn nMid) (zx1 : A_G2_ZX nMid nOut),
-    In_A_G2_ZX n (A_G2_Compose zx0 zx1) -> In_A_G2_ZX n zx0 \/ In_A_G2_ZX n zx1.
+    In_A_G2_ZX n (A_G2_Compose zx0 zx1 idnum) -> In_A_G2_ZX n zx0 \/ In_A_G2_ZX n zx1 \/ n = idnum.
 Proof.
   intros.
   inversion H.
@@ -191,7 +185,8 @@ Proof.
     inversion H6.
     apply inj_pair2_eq_dec in H1; [| apply eq_nat_dec].
     apply inj_pair2_eq_dec in H1; [| apply eq_nat_dec].
-    right; subst; assumption.
+    right; left; subst; assumption.
+  - right; right; easy.
 Qed.
 
 Lemma G2_ZX_to_A_G2_ZX_labels_small {nIn nOut} : 
@@ -210,7 +205,7 @@ Proof.
   2: apply In_A_G2_ZX_Compose_Rev in H.
   all: destruct H; simpl.
   1,3: rewrite IHzx1; [ apply Nat.lt_lt_succ_r; apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base | apply H ].
-  all: rewrite IHzx2; [ constructor | apply H ].
+  all: destruct H; [ rewrite IHzx2; [ constructor | apply H ] | rewrite H; constructor ].
 Qed.
 
 Lemma Not_In_A_G2_ZX_lt_base : forall {nIn nOut} n base (zx : G2_ZX nIn nOut), n < base -> ~ In_A_G2_ZX n (fst (G2_ZX_to_A_G2_ZX_helper base zx)).
@@ -227,23 +222,84 @@ Proof.
   2: apply In_A_G2_ZX_Compose_Rev in Hcontra.
   all: destruct Hcontra; contradict H0.
   1,3: apply IHzx1; assumption.
-  all: apply IHzx2. 
-  all: eapply Nat.lt_trans; [ | apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base ].
-  all: congruence.
+  - apply Classical_Prop.and_not_or.
+    split.
+    + apply IHzx2.
+      apply (Nat.lt_trans _ base); [ assumption | ].
+      apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base.
+    + apply not_eq_sym.
+      apply Nat.lt_neq.
+      apply (Nat.lt_trans _ base); [ assumption | ].
+      apply (Nat.lt_trans _ (snd (G2_ZX_to_A_G2_ZX_helper base zx1))); apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base.
+  - apply Classical_Prop.and_not_or.
+    split.
+    + apply IHzx2.
+      apply (Nat.lt_trans _ base); [ assumption | ].
+      apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base.
+    + apply Nat.lt_neq.
+      apply (Nat.lt_trans _ base); [ assumption | ].
+      apply (Nat.lt_trans _ (snd (G2_ZX_to_A_G2_ZX_helper base zx1))); apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base.
 Qed.
  
 Lemma WF_G2_ZX_to_A_G2_ZX_helper : forall {nIn nOut} base (zx : G2_ZX nIn nOut), WF_A_G2_ZX (fst (G2_ZX_to_A_G2_ZX_helper base zx)).
 Proof.
   intros.
   generalize dependent base.
-  induction zx; intros; simpl; constructor.
-  2,5: apply IHzx1.
-  2,4: apply IHzx2.
-  all: intros.
-  all: apply Not_In_A_G2_ZX_lt_base.
-  all: apply G2_ZX_to_A_G2_ZX_labels_small. 
-  all: assumption.
+  induction zx; intros.
+  1 - 10 : simpl; constructor.
+  4,9:  apply IHzx1.
+  4,8: apply IHzx2.
+  1,4 : intros;
+       apply Not_In_A_G2_ZX_lt_base;
+       apply G2_ZX_to_A_G2_ZX_labels_small;
+       assumption.
+  - unfold not; intros.
+    apply G2_ZX_to_A_G2_ZX_labels_small in H.
+    contradict H.
+    apply le_not_lt.
+    apply Nat.lt_le_incl.
+    apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base.
+  - unfold not; intros.
+    apply G2_ZX_to_A_G2_ZX_labels_small in H.
+    contradict H.
+    apply le_not_lt.
+    constructor.
+  - unfold not; intros.
+    apply G2_ZX_to_A_G2_ZX_labels_small in H.
+    contradict H.
+    apply le_not_lt.
+    apply Nat.lt_le_incl.
+    apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base.
+  - unfold not; intros.
+    apply G2_ZX_to_A_G2_ZX_labels_small in H.
+    contradict H.
+    apply le_not_lt.
+    constructor.
 Qed.
 
 Corollary WF_G2_ZX_to_A_G2_ZX : forall {nIn nOut} (zx : G2_ZX nIn nOut), WF_A_G2_ZX (G2_ZX_to_A_G2_ZX zx).
 Proof. intros. unfold G2_ZX_to_A_G2_ZX. apply WF_G2_ZX_to_A_G2_ZX_helper. Qed.
+
+
+
+(* TODO 2:
+  
+  Create a map which annotates the edges 
+    (Map node# -> (Vector nIn node# * Vector nOut node#) or a similar idea where inputs and outputs are differentiated)
+      What facts can we prove about this?
+        - 
+
+
+  Create a function which generates the map automatically.
+    Function should be bottom-up generation
+      What facts can we prove about this?
+        - 
+
+  A function which matches inputs and outputs.
+    What facts can we prove about this?
+      -
+
+  Graph semantics (or graph back to ZX diagram, same difficulty)
+
+ *)
+
