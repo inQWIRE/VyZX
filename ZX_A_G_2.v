@@ -222,23 +222,14 @@ Proof.
   2: apply In_A_G2_ZX_Compose_Rev in Hcontra.
   all: destruct Hcontra; contradict H0.
   1,3: apply IHzx1; assumption.
-  - apply Classical_Prop.and_not_or.
-    split.
-    + apply IHzx2.
-      apply (Nat.lt_trans _ base); [ assumption | ].
-      apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base.
-    + apply not_eq_sym.
-      apply Nat.lt_neq.
-      apply (Nat.lt_trans _ base); [ assumption | ].
-      apply (Nat.lt_trans _ (snd (G2_ZX_to_A_G2_ZX_helper base zx1))); apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base.
-  - apply Classical_Prop.and_not_or.
-    split.
-    + apply IHzx2.
-      apply (Nat.lt_trans _ base); [ assumption | ].
-      apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base.
-    + apply Nat.lt_neq.
-      apply (Nat.lt_trans _ base); [ assumption | ].
-      apply (Nat.lt_trans _ (snd (G2_ZX_to_A_G2_ZX_helper base zx1))); apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base.
+  all: apply Classical_Prop.and_not_or; split.
+  1,3: apply IHzx2.
+  1,2: apply (Nat.lt_trans _ base); [ assumption | ].
+  1,2: apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base.
+  1: apply not_eq_sym.
+  all: apply Nat.lt_neq.
+  all: apply (Nat.lt_trans _ base); [ assumption | ].
+  all: apply (Nat.lt_trans _ (snd (G2_ZX_to_A_G2_ZX_helper base zx1))); apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base.
 Qed.
  
 Lemma WF_G2_ZX_to_A_G2_ZX_helper : forall {nIn nOut} base (zx : G2_ZX nIn nOut), WF_A_G2_ZX (fst (G2_ZX_to_A_G2_ZX_helper base zx)).
@@ -246,35 +237,20 @@ Proof.
   intros.
   generalize dependent base.
   induction zx; intros.
-  1 - 10 : simpl; constructor.
-  4,9:  apply IHzx1.
+  all: simpl; constructor.
+  4,9: apply IHzx1.
   4,8: apply IHzx2.
-  1,4 : intros;
+  1,4: intros;
        apply Not_In_A_G2_ZX_lt_base;
        apply G2_ZX_to_A_G2_ZX_labels_small;
        assumption.
-  - unfold not; intros.
-    apply G2_ZX_to_A_G2_ZX_labels_small in H.
-    contradict H.
-    apply le_not_lt.
-    apply Nat.lt_le_incl.
-    apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base.
-  - unfold not; intros.
-    apply G2_ZX_to_A_G2_ZX_labels_small in H.
-    contradict H.
-    apply le_not_lt.
-    constructor.
-  - unfold not; intros.
-    apply G2_ZX_to_A_G2_ZX_labels_small in H.
-    contradict H.
-    apply le_not_lt.
-    apply Nat.lt_le_incl.
-    apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base.
-  - unfold not; intros.
-    apply G2_ZX_to_A_G2_ZX_labels_small in H.
-    contradict H.
-    apply le_not_lt.
-    constructor.
+  all: unfold not; intros.
+  all: apply G2_ZX_to_A_G2_ZX_labels_small in H.
+  all: contradict H.
+  all: apply le_not_lt.
+  2,4: constructor.
+  all: apply Nat.lt_le_incl.
+  all: apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base.
 Qed.
 
 Corollary WF_G2_ZX_to_A_G2_ZX : forall {nIn nOut} (zx : G2_ZX nIn nOut), WF_A_G2_ZX (G2_ZX_to_A_G2_ZX zx).
