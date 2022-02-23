@@ -135,7 +135,7 @@ Proof.
   generalize dependent base.
   induction zx; intros; simpl; try auto (* Non composite *).
   all: 
-  apply (Nat.lt_trans _ (snd (G2_ZX_to_A_G2_ZX_helper base zx1)) _); [ apply IHzx1 | apply IHzx2].
+  apply (Nat.lt_trans _ (snd (G2_ZX_to_A_G2_ZX_helper base zx1)) _); [ apply IHzx1 | apply Nat.lt_lt_succ_r; apply IHzx2].
 Qed.
 
 (* 
