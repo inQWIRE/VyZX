@@ -74,11 +74,11 @@ Fixpoint G2_ZX_to_A_G2_ZX_helper (base : nat) {nIn nOut} (zx : G2_ZX nIn nOut) :
   | G2_Stack zx0 zx1   => (A_G2_Stack 
                             (fst (G2_ZX_to_A_G2_ZX_helper base zx0)) 
                             (fst (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper base zx0)) zx1)),
-                            (snd (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper base zx0)) zx1)))
+                            S (snd (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper base zx0)) zx1)))
   | G2_Compose zx0 zx1 => (A_G2_Compose
                             (fst (G2_ZX_to_A_G2_ZX_helper base zx0)) 
                             (fst (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper base zx0)) zx1)),
-                            (snd (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper base zx0)) zx1)))
+                            S (snd (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper base zx0)) zx1)))
   end.
 
 Definition G2_ZX_to_A_G2_ZX {nIn nOut} (zx : G2_ZX nIn nOut) := fst (G2_ZX_to_A_G2_ZX_helper 0 zx).
@@ -196,7 +196,7 @@ Qed.
 
 Lemma G2_ZX_to_A_G2_ZX_labels_small {nIn nOut} : 
   forall (n base : nat) (zx : G2_ZX nIn nOut) , 
-    In_A_G2_ZX n (fst (G2_ZX_to_A_G2_ZX_helper base zx)) -> n <= snd (G2_ZX_to_A_G2_ZX_helper base zx).
+    In_A_G2_ZX n (fst (G2_ZX_to_A_G2_ZX_helper base zx)) -> n < snd (G2_ZX_to_A_G2_ZX_helper base zx).
 Proof.
   intros.
   generalize dependent base.
@@ -209,25 +209,41 @@ Proof.
   1: apply In_A_G2_ZX_Stack_Rev in H.
   2: apply In_A_G2_ZX_Compose_Rev in H.
   all: destruct H; simpl.
-  1,3: rewrite IHzx1; [ apply Nat.lt_le_incl; apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base | apply H ].
-  all: rewrite IHzx2; [ easy | apply H ].
+  1,3: rewrite IHzx1; [ apply Nat.lt_lt_succ_r; apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base | apply H ].
+  all: rewrite IHzx2; [ constructor | apply H ].
 Qed.
 
-
+Lemma Not_In_A_G2_ZX_lt_base : forall {nIn nOut} n base (zx : G2_ZX nIn nOut), n < base -> ~ In_A_G2_ZX n (fst (G2_ZX_to_A_G2_ZX_helper base zx)).
+Proof.
+  intros.
+  generalize dependent n.
+  generalize dependent base.
+  induction zx; intros.
+  all: simpl; unfold not; intros Hcontra.
+  1-8: inversion Hcontra.
+  1-5: apply Nat.lt_neq in H; subst; congruence.
+  all: simpl.
+  1: apply In_A_G2_ZX_Stack_Rev in Hcontra.
+  2: apply In_A_G2_ZX_Compose_Rev in Hcontra.
+  all: destruct Hcontra; contradict H0.
+  1,3: apply IHzx1; assumption.
+  all: apply IHzx2. 
+  all: eapply Nat.lt_trans; [ | apply G2_ZX_to_A_G2_ZX_helper_ret_gt_base ].
+  all: congruence.
+Qed.
+ 
 Lemma WF_G2_ZX_to_A_G2_ZX_helper : forall {nIn nOut} base (zx : G2_ZX nIn nOut), WF_A_G2_ZX (fst (G2_ZX_to_A_G2_ZX_helper base zx)).
 Proof.
   intros.
   generalize dependent base.
-  induction zx; intros. 
-  1-8: (simpl; constructor).
-  - simpl.
-    constructor; [ | apply IHzx1 | apply IHzx2].
-    admit.
-  - simpl.
-    constructor; [ | apply IHzx1 | apply IHzx2].
-    admit.
-Admitted.
-
+  induction zx; intros; simpl; constructor.
+  2,5: apply IHzx1.
+  2,4: apply IHzx2.
+  all: intros.
+  all: apply Not_In_A_G2_ZX_lt_base.
+  all: apply G2_ZX_to_A_G2_ZX_labels_small. 
+  all: assumption.
+Qed.
 
 Corollary WF_G2_ZX_to_A_G2_ZX : forall {nIn nOut} (zx : G2_ZX nIn nOut), WF_A_G2_ZX (G2_ZX_to_A_G2_ZX zx).
 Proof. intros. unfold G2_ZX_to_A_G2_ZX. apply WF_G2_ZX_to_A_G2_ZX_helper. Qed.
