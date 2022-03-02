@@ -99,7 +99,17 @@ Proof.
         apply (BinaryTree_bounds bt1).
 Defined.
 
+Fixpoint remove {A : Type} (key : nat) {lft rgt : nat} 
+    (bt : BinaryTree A lft rgt) : BinaryTree A lft rgt :=
+  match bt with
+  | Empty n => Empty n
+  | Leaf n val => if key =? n then Empty n else Leaf n val
+  | @Node _ _ _ _ _ l r H => @Node _ _ _ _ _ (remove key l) (remove key r) H
+  end.
+
+
 Notation "<[ ( key , val ) ++ m ]>" := (insert key val m).
+Notation "<[ key -- m ]>" := (remove key m).
 
 Lemma insert_lookup : forall {A n m} (bt : BinaryTree A n m) key val,
   key !! <[ (key, val) ++ bt ]> = Some val.
@@ -162,5 +172,52 @@ Proof.
   unfold KeyIn.
   exists val.
   apply insert_lookup.
+Qed.
+
+Lemma remove_lookup : forall {A n m} (bt : BinaryTree A n m) key,
+  key !! <[ key -- bt ]> = None.
+Proof.
+  intros.
+  generalize dependent key.
+  induction bt; intros.
+  - reflexivity.
+  - simpl.
+    destruct (key =? n) eqn:Heq.
+    + reflexivity.
+    + simpl.
+      rewrite Heq.
+      reflexivity.
+  - simpl.
+    bdestruct (key <=? maxl); [ apply IHbt1 | apply IHbt2 ].
+Qed.
+
+Corollary removet_KeyIn : forall {A n m} (bt : BinaryTree A n m) key,
+  ~ (key ?? <[ key -- bt ]>).
+Proof.
+  intros.
+  unfold KeyIn.
+  unfold not.
+  intros.
+  destruct H.
+  rewrite remove_lookup in H.
+  discriminate.
+Qed.
+
+Lemma lookup_empty : forall {A n} key,
+  key !! (@Empty A n) = None.
+Proof.
+  intros. reflexivity.
+Qed.
+
+Corollary keyIn_empty : forall {A n} key,
+  ~ (key ?? (@Empty A n)).
+Proof.
+  intros.
+  unfold not.
+  unfold KeyIn.
+  rewrite lookup_empty.
+  intros.
+  destruct H.
+  discriminate.
 Qed.
 
