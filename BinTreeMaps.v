@@ -12,6 +12,8 @@ Arguments Empty {A}%type_scope _.
 Arguments Leaf {A}%type_scope _ _.
 Arguments Node {A}%type_scope {minl} {maxl} {minr} {maxr} _ _ {Hlt}.
 
+Notation "<[]>" := (Empty 0).
+
 Lemma BinaryTree_bounds : forall {A : Type} {n m : nat} (bt : BinaryTree A n m),
   n <= m.
 Proof.
@@ -37,7 +39,10 @@ Definition KeyIn {A : Type}
           (n : nat) {min max : nat} 
           (bt : BinaryTree A min max) := exists a, lookup n bt = Some a.
 
-Lemma insertHelper {n m : nat} : n <> m -> m <= n -> m < n.
+Notation "key !! m" := (lookup key m) (at level 20).
+Notation "key ?? m" := (KeyIn key m) (at level 20).
+
+Lemma neq_le_is_lt {n m : nat} : n <> m -> m <= n -> m < n.
 Proof.
   intros.
   destruct (le_lt_or_eq m n H0).
@@ -59,7 +64,7 @@ Proof.
         apply (@Node _ _ _ _ _ (Leaf n a) (Empty m) H0).
       * rewrite Nat.min_l; [ | apply H0 ].
         rewrite Nat.max_r; [ | apply H0 ].
-        apply (@Node _ _ _ _ _ (Empty m) (Leaf n a) (insertHelper H H0)).
+        apply (@Node _ _ _ _ _ (Empty m) (Leaf n a) (neq_le_is_lt H H0)).
   - bdestruct (n =? n0).
     + rewrite H, Nat.min_id, Nat.max_id.
       exact (Leaf n0 a).
@@ -69,7 +74,7 @@ Proof.
         apply (@Node _ _ _ _ _ (Leaf n a) (Leaf n0 val) H0).
       * rewrite Nat.min_l; [ | apply H0 ].
         rewrite Nat.max_r; [ | apply H0 ].
-        apply (@Node _ _ _ _ _ (Leaf n0 val) (Leaf n a) (insertHelper H H0)).
+        apply (@Node _ _ _ _ _ (Leaf n0 val) (Leaf n a) (neq_le_is_lt H H0)).
   - bdestruct (n <=? maxl). 
     + (* Left insertion *)
       rewrite Nat.max_l. 
@@ -94,8 +99,10 @@ Proof.
         apply (BinaryTree_bounds bt1).
 Defined.
 
+Notation "<[ ( key , val ) ++ m ]>" := (insert key val m).
+
 Lemma insert_lookup : forall {A n m} (bt : BinaryTree A n m) key val,
-  lookup key (insert key val bt) = Some val.
+  key !! <[ (key, val) ++ bt ]> = Some val.
 Proof.
   intros.
   generalize dependent key.
@@ -146,5 +153,14 @@ Proof.
     + bdestruct (key <=? maxl).
       * congruence.
       * apply IHbt2.
+Qed.
+
+Corollary insert_KeyIn : forall {A n m} (bt : BinaryTree A n m) key val,
+  key ?? <[ (key, val) ++ bt ]>.
+Proof.
+  intros.
+  unfold KeyIn.
+  exists val.
+  apply insert_lookup.
 Qed.
 
