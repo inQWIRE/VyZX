@@ -73,8 +73,8 @@ Proof.
   - bdestruct (n <=? maxl). 
     + (* Left insertion *)
       rewrite Nat.max_l. 
-      * assert (leftInsert : BinaryTree A (Init.Nat.min minl n) (Init.Nat.max maxl n)).
-        { apply insert; [ apply a | apply bt1 ]. }
+      * assert (leftInsert : BinaryTree A (Init.Nat.min minl n) (Init.Nat.max maxl n)) 
+          by exact (insert A n a minl maxl bt1).
         assert (Hlt : Init.Nat.max maxl n < minr).
         { rewrite Nat.max_l; assumption. }
         apply (@Node _ _ _ _ _ leftInsert bt2 Hlt).
@@ -84,7 +84,67 @@ Proof.
         apply (BinaryTree_bounds bt2).
     + (* Right insertion *)
       rewrite Nat.min_l.
-      * assert (rightInsert : BinaryTree A (Init.Nat.min minr n) (Init.Nat.max maxr n)).
-        { exact (insert A n a bt2).
+      * assert (rightInsert : BinaryTree A (Init.Nat.min minr n) (Init.Nat.max maxr n)) 
+          by exact (insert A n a minr maxr bt2).
+      assert (Hlt : maxl < Init.Nat.min minr n).
+      { apply Nat.min_glb_lt; assumption. }
+      apply (@Node _ _ _ _ _ bt1 rightInsert Hlt).
+      * apply Nat.lt_le_incl in H.
+        transitivity maxl; [ | assumption].
+        apply (BinaryTree_bounds bt1).
+Defined.
 
+Lemma insert_lookup : forall {A n m} (bt : BinaryTree A n m) key val,
+  lookup key (insert key val bt) = Some val.
+Proof.
+  intros.
+  generalize dependent key.
+  generalize dependent val.
+  induction bt; intros.
+  - unfold insert.
+    destruct (beq_reflect key m);
+    unfold eq_rect_r.
+    + simpl_eqs.
+      rewrite Nat.eqb_refl.
+      reflexivity.
+    + destruct (blt_reflect key m); simpl_eqs.
+      * rewrite Nat.leb_refl, Nat.eqb_refl.
+        reflexivity.
+      * bdestruct (key <=? m).
+        -- exfalso.
+           apply le_lt_or_eq in H.
+           destruct H; contradiction.
+        -- rewrite Nat.eqb_refl.
+           reflexivity.
+  - unfold insert.
+    destruct (beq_reflect key n);
+    unfold eq_rect_r.
+    + simpl_eqs.
+      rewrite Nat.eqb_refl.
+      reflexivity.
+    + destruct (blt_reflect key n); simpl_eqs.
+      * rewrite Nat.leb_refl, Nat.eqb_refl.
+        reflexivity.
+      * bdestruct (key <=? n).
+        -- exfalso.
+           apply le_lt_or_eq in H.
+           destruct H; contradiction.
+        -- rewrite Nat.eqb_refl.
+           reflexivity.
+  - unfold insert. 
+    destruct (ble_reflect key maxl);
+    unfold eq_rect_r;
+    simpl_eqs.
+    + bdestruct (key <=? Init.Nat.max maxl key).
+      * apply IHbt1.
+      * exfalso.
+        rewrite Nat.max_l in H; [ | assumption ].
+        contradict H.
+        Search (not (gt _ _)).
+        apply le_not_gt.
+        assumption.
+    + bdestruct (key <=? maxl).
+      * congruence.
+      * apply IHbt2.
+Qed.
 
