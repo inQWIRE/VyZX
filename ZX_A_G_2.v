@@ -281,6 +281,68 @@ Proof. intros. unfold G2_ZX_to_A_G2_ZX. apply WF_G2_ZX_to_A_G2_ZX_helper. Qed.
 
  *)
 
+Module OrderedNat <: OrderedType with Definition t := nat%type.
+  Definition t := nat%type.
+  Definition eq := @eq nat.
+  Definition lt (a b : nat) := a < b.
+  Theorem eq_refl : forall x, eq x x.
+    reflexivity.
+  Qed.
+
+  Theorem eq_sym : forall a b, eq a b -> eq b a.
+    intros; symmetry; auto.
+  Qed.
+
+  Theorem eq_trans : forall a b c, eq a b -> eq b c -> eq a c.
+    intros; etransitivity; eauto.
+  Qed.
+
+  Theorem lt_trans : forall a b c, lt a b -> lt b c -> lt a c.
+    intros. 
+    unfold lt in *.
+    etransitivity; [ apply H | apply H0 ].
+  Qed.
+
+  Theorem lt_not_eq : forall a b, lt a b -> ~(eq a b).
+    unfold eq, lt.
+    intros.
+    lia.
+  Qed.
+
+  Lemma eq_dec (x y : nat) : {x = y} + {x <> y}.
+  Proof.
+    apply eq_nat_dec.
+  Defined.
+
+  Lemma le_not_eq_lt : forall n n1,  n <= n1 -> n <> n1 -> n < n1.
+  Proof.
+    intros.
+    apply le_lt_or_eq in H.
+    destruct H.
+    - assumption.
+    - contradiction.
+  Qed. 
+
+  Lemma lt_eq_gt_dec (x y : nat) : {lt x y} + {eq x y} + {lt y x}.
+  Proof.
+    bdestruct (x <? y).
+    - left; left. assumption.
+    - bdestruct (x =? y).
+      + left; right. assumption.
+      + right. apply not_eq_sym in H0. apply le_not_eq_lt; assumption.
+  Qed.
+
+Definition compare (x y : t) : OrderedType.Compare lt eq x y.
+Proof.
+  assert ({lt x y} + {eq x y} + {lt y x}) by apply lt_eq_gt_dec.
+  destruct H; 
+  [ destruct s | ];
+  [ apply LT | apply EQ | apply GT ];
+  assumption.
+Defined.
+
+End OrderedNat.
+
 Module OrderedNatPair <: OrderedType with Definition t := (nat * nat)%type.
 
   Definition t := (nat * nat)%type.
@@ -290,6 +352,7 @@ Module OrderedNatPair <: OrderedType with Definition t := (nat * nat)%type.
     | (a1, a2), (b1, b2) => (a1 < b1) \/ (a1 = b1 /\ a2 < b2)
     end.
 
+    
   Theorem eq_refl : forall x, eq x x.
     reflexivity.
   Qed.
