@@ -9,6 +9,8 @@ Require Export VyZX.Proportional.
 Require Import Setoid.
 Require Import Coq.Logic.Eqdep_dec.
 Require Import Coq.Arith.Peano_dec.
+Require Import Coq.Structures.OrderedType.
+Require Import Coq.FSets.FMapAVL.
 
 Local Open Scope R_scope.
 Inductive A_G2_ZX : nat (* #inputs *) -> nat (* #outputs *) -> Type :=
@@ -279,3 +281,131 @@ Proof. intros. unfold G2_ZX_to_A_G2_ZX. apply WF_G2_ZX_to_A_G2_ZX_helper. Qed.
 
  *)
 
+Module OrderedNatPair <: OrderedType with Definition t := (nat * nat)%type.
+
+  Definition t := (nat * nat)%type.
+  Definition eq := @eq (nat * nat).
+  Definition lt (a b : (nat * nat)) := 
+    match a, b with
+    | (a1, a2), (b1, b2) => (a1 < b1) \/ (a1 = b1 /\ a2 < b2)
+    end.
+
+  Theorem eq_refl : forall x, eq x x.
+    reflexivity.
+  Qed.
+
+  Theorem eq_sym : forall a b, eq a b -> eq b a.
+    intros; symmetry; auto.
+  Qed.
+
+  Theorem eq_trans : forall a b c, eq a b -> eq b c -> eq a c.
+    intros; etransitivity; eauto.
+  Qed.
+
+  Theorem lt_trans : forall a b c, lt a b -> lt b c -> lt a c.
+    intros. 
+    destruct a, b, c.
+    unfold lt in *.
+    destruct H, H0.
+    - left.
+      etransitivity; [ apply H | apply H0 ].
+    - destruct H0.
+      subst.
+      left.
+      assumption.
+    - destruct H.
+      subst.
+      left.
+      assumption.
+    - destruct H, H0.
+      subst.
+      right.
+      split; [ easy | ].
+      etransitivity; [ apply H1 | apply H2 ].
+  Qed.
+
+  Theorem lt_not_eq : forall a b, lt a b -> ~(eq a b).
+    unfold eq, lt. destruct a, b.
+    intros; destruct H.
+    - unfold not.
+      intros.
+      apply pair_equal_spec in H0.
+      destruct H0.
+      subst.
+      lia.
+    - destruct H.
+      unfold not.
+      intros.
+      apply pair_equal_spec in H1.
+      destruct H1.
+      subst.
+      lia.
+  Qed.
+
+  Lemma eq_dec (x y : (nat * nat)) : {x = y} + {x <> y}.
+  Proof.
+    destruct x, y.
+    decide equality; subst; apply eq_nat_dec.
+  Defined.
+
+  Lemma le_not_eq_lt : forall n n1,  n <= n1 -> n <> n1 -> n < n1.
+  Proof.
+    intros.
+    apply le_lt_or_eq in H.
+    destruct H.
+    - assumption.
+    - contradiction.
+  Qed. 
+
+  Lemma lt_eq_gt_dec (x y : (nat * nat)) : {lt x y} + {eq x y} + {lt y x}.
+  Proof.
+    destruct x, y.
+    unfold eq.
+    unfold lt.
+    bdestruct (n <? n1).
+    + left.
+      left.
+      left.
+      assumption.
+    + bdestruct (n =? n1); bdestruct (n0 =? n2).
+      * left.
+        right.
+        subst.
+        easy.
+      * bdestruct (n0 <? n2).
+        -- left.
+           left.
+           right.
+           split; assumption.
+        -- right.
+           right.
+           split.
+           symmetry; assumption.
+           apply le_not_eq_lt.
+           assumption.
+           apply not_eq_sym.
+           assumption.
+      * right.
+        left.
+        apply le_not_eq_lt.
+        assumption.
+        apply not_eq_sym.
+        assumption.
+      * right.
+        left.
+        apply le_not_eq_lt.
+        assumption.
+        apply not_eq_sym.
+        assumption.
+  Qed.
+
+  Definition compare (x y : t) : OrderedType.Compare lt eq x y.
+  Proof.
+    assert ({lt x y} + {eq x y} + {lt y x}) by apply lt_eq_gt_dec.
+    destruct H; 
+    [ destruct s | ];
+    [ apply LT | apply EQ | apply GT ];
+    assumption.
+  Defined.
+
+End OrderedNatPair.
