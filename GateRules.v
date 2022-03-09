@@ -114,19 +114,6 @@ Local Opaque ZX_CNOT_l.
 Local Opaque ZX_CNOT_r.
 Local Opaque ZX_CNOT.
 
-Local Transparent ZX_SWAP.
-Lemma ZX_SWAP_is_swap : ZX_semantics ⨉ = (/ 2 * / √ 2)%C .* swap.
-Proof.
-  simpl.
-  rewrite ZX_CNOT_is_cnot.
-  rewrite wire_identity_semantics.
-  unfold_spider.
-  autorewrite with Cexp_db.
-  solve_matrix;
-  C_field_simplify; try lca; try nonzero.
-Qed.
-Local Opaque ZX_SWAP.
-
 Lemma hadamard_edge_compat :
   forall nIn nMid nOut,
     forall zx0 zx1 : ZX nIn  nMid, zx0 ∝ zx1 ->

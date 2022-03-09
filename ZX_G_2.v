@@ -21,6 +21,7 @@ Inductive G2_ZX : nat -> nat -> Type :=
   | G2_Z_Spider_2_1 (α : R) : G2_ZX 2 1
   | G2_Cap : G2_ZX 0 2
   | G2_Cup : G2_ZX 2 0
+  | G2_Swap : G2_ZX 2 2
   | G2_Stack {nIn0 nIn1 nOut0 nOut1} (zx0 : G2_ZX nIn0 nOut0) (zx1 : G2_ZX nIn1 nOut1) :
         G2_ZX (nIn0 + nIn1) (nOut0 + nOut1)
   | G2_Compose {nIn nMid nOut} (zx0 : G2_ZX nIn nMid) (zx1 : G2_ZX nMid nOut) : G2_ZX nIn nOut.
@@ -29,6 +30,7 @@ Local Close Scope R_scope.
 Notation "⦰G2" := G2_Empty. (* \revemptyset *)
 Notation "⊂G2" := G2_Cap. (* \subset *)
 Notation "⊃G2" := G2_Cup. (* \supset *)
+Notation "⨉G2" := G2_Swap. (* \bigtimes *)
 Infix "⟷G2" := G2_Compose (left associativity, at level 40). (* \longleftrightarrow *)
 Infix "↕G2" := G2_Stack (left associativity, at level 40). (* \updownarrow *)
 
@@ -43,6 +45,7 @@ Fixpoint G2_ZX_semantics {nIn nOut} (zx : G2_ZX nIn nOut) :
   | G2_Z_Spider_2_1 α => G_ZX_semantics (G_Z_Spider_nIn_1 2 α)
   | G2_Cap => G_ZX_semantics (G_Cap)
   | G2_Cup => G_ZX_semantics (G_Cup)
+  | G2_Swap => G_ZX_semantics (G_Swap)
   | zx0 ↕G2 zx1 => (G2_ZX_semantics zx0) ⊗ (G2_ZX_semantics zx1)
   | @G2_Compose _ nMid _ zx0 zx1 => (G2_ZX_semantics zx1) × (nMid ⨂ hadamard) × (G2_ZX_semantics zx0)
   end.
@@ -57,6 +60,7 @@ Fixpoint G2_ZX_to_G_ZX {nIn nOut} (zx : G2_ZX nIn nOut) : G_ZX nIn nOut :=
   | G2_Z_Spider_2_1 α => G_Z_Spider_nIn_1 2 α
   | G2_Cap => G_Cap
   | G2_Cup => G_Cup
+  | G2_Swap => G_Swap
   | zx0 ↕G2 zx1 => (G2_ZX_to_G_ZX zx0) ↕G (G2_ZX_to_G_ZX zx1)
   | zx0 ⟷G2 zx1 => (G2_ZX_to_G_ZX zx0) ⟷G (G2_ZX_to_G_ZX zx1)
   end.
@@ -410,6 +414,7 @@ Fixpoint G_ZX_to_G2_ZX {nIn nOut} (zx : G_ZX nIn nOut) : G2_ZX nIn nOut :=
   | G_Z_Spider_nIn_1 nIn α => G_Spider_Out_to_G2_Spiders nIn α
   | G_Cap => G2_Cap
   | G_Cup => G2_Cup
+  | G_Swap => G2_Swap
   | zx0 ↕G zx1 => (G_ZX_to_G2_ZX zx0) ↕G2 (G_ZX_to_G2_ZX zx1)
   | zx0 ⟷G zx1 => (G_ZX_to_G2_ZX zx0) ⟷G2 (G_ZX_to_G2_ZX zx1)
   end.

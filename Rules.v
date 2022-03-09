@@ -244,6 +244,37 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma ZX_SWAP_self_inverse : ⨉ ⟷ ⨉ ∝ — ↕ —.
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  Msimpl.
+  simpl.
+  rewrite wire_identity_semantics.
+  restore_dims.
+  rewrite swap_swap.
+  rewrite id_kron.
+  easy.
+Qed.
+
+Local Transparent ZX_3_CNOT_SWAP.
+Lemma ZX_3_CNOT_SWAP_is_swap : ZX_3_CNOT_SWAP ∝ ⨉.
+Proof.
+  simpl.
+  prop_exist_non_zero (/ 2 * / √ 2)%C.
+  2: apply Cmult_neq_0; apply nonzero_div_nonzero; nonzero.
+  simpl.
+  rewrite ZX_CNOT_is_cnot.
+  rewrite wire_identity_semantics.
+  unfold_spider.
+  autorewrite with Cexp_db.
+  simpl.
+  Msimpl.
+  solve_matrix;
+  C_field_simplify; try lca; try nonzero.
+Qed.
+Local Opaque ZX_3_CNOT_SWAP.
+
 Ltac remove_wire := try repeat rewrite wire_removal_l;
                     try repeat rewrite nwire_removal_l;
                     try repeat rewrite wire_removal_r;
@@ -584,11 +615,11 @@ Proof.
 Theorem BiAlgebra_rule_Z_X : 
  (Z_Spider 2 1 0) ⟷ (X_Spider 1 2 0) ∝ Bi_Alg_Z_X.
 Proof.
- prop_exist_non_zero 4.
+ prop_exist_non_zero (√ 2).
  simpl.
  rewrite <- ZX_Z_is_Z_semantics. 
  rewrite <- ZX_X_is_X_semantics.
- rewrite ZX_SWAP_is_swap, wire_identity_semantics.
+ rewrite wire_identity_semantics.
  repeat rewrite ZX_semantics_equiv.
  unfold_dirac_spider.
  autorewrite with Cexp_db.
@@ -599,17 +630,8 @@ Proof.
  repeat rewrite hadamard_sa.
  repeat rewrite ket2bra.
  autorewrite with scalar_move_db.
- solve_matrix;
- try repeat rewrite (Cmult_assoc C2 (/C2) _);
- try repeat rewrite Cinv_r;
- try repeat rewrite Cmult_1_l;
- try rewrite Cinv_sqrt2_sqrt;
- try rewrite 2 Cmult_assoc;
- try lca;
- try (
-   apply C0_fst_neq;
-   simpl;
-   auto).
+ solve_matrix.
+ all : C_field_simplify; [reflexivity | nonzero].
 Qed.
 
 Theorem inverse_Z_Spider : forall nIn nOut α, ZX_semantics (Z_Spider nIn nOut α) = (ZX_semantics (Z_Spider nOut nIn (-α)))†.
@@ -694,6 +716,12 @@ Proof. intros. reflexivity. Qed.
 Lemma ColorSwap_Z : forall nIn nOut α, Z_Spider nIn nOut α ∝ ⊙ (X_Spider nIn nOut α).
 Proof. intros. reflexivity. Qed.
 
+Lemma ColorSwap_Cup : ⊃ ∝ ⊙ (⊃).
+Proof. intros. reflexivity. Qed.
+
+Lemma ColorSwap_Cap : ⊂ ∝ ⊙ (⊂).
+Proof. intros. reflexivity. Qed.
+
 Lemma ColorSwap_Compose : forall nIn nMid nOut (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
   (⊙ zx0 ⟷ ⊙ zx1) ∝ ⊙ (zx0 ⟷ zx1).
 Proof. intros. reflexivity. Qed.
@@ -743,6 +771,19 @@ Proof.
     rewrite <- nWire_2_Stack_Wire.
     rewrite nwire_l.
     reflexivity.
+  - simpl.
+    remove_empty.
+    symmetry.
+    prop_exist_non_zero (4 *
+    (Cexp (PI / 4) * / √ 2 * (Cexp (PI / 4) * / √ 2) *
+     (Cexp (PI / 4) * / √ 2 * (Cexp (PI / 4) * / √ 2)))).
+    Msimpl.
+    simpl.
+    rewrite ZX_H_is_H.
+    solve_matrix.
+    apply Cmult_neq_0; [ nonzero | ].
+    apply Cmult_neq_0; apply Cmult_neq_0; apply Cmult_neq_0; try nonzero.
+    all: apply nonzero_div_nonzero; nonzero.
   - simpl.
     rewrite IHzx1.
     rewrite IHzx2.
@@ -908,17 +949,6 @@ Proof.
   simpl.
  *)
 
-Transparent ZX_Z.
-Transparent ZX_X.
-(*
-Lemma Y_colorswap : ⊙ ZX_Y ∝ ZX_Y.
-Proof.
-  unfold ZX_Y; unfold ZX_Z; unfold ZX_X.
-  simpl.
-Qed.
- *)
-Local Opaque ZX_X ZX_Z ZX_Y.
-
 Lemma nH_colorswap : forall n, ⊙ (n ↑ □) ∝ (n ↑ □).
 Proof.
   intros.
@@ -968,34 +998,8 @@ Qed.
 
 Lemma swap_colorswap : ⊙ ⨉ ∝ ⨉.
 Proof.
-  rewrite ColorSwap_isBiHadamard.
-  prop_exist_non_zero (-1).
-  unfold BiHadamard.
   simpl.
-  rewrite kron_1_r.
-  rewrite ZX_H_is_H.
-  rewrite ZX_SWAP_is_swap.
-  rewrite Mscale_kron_dist_l.
-  rewrite Mscale_kron_dist_r.
-  rewrite Mscale_assoc.
-  rewrite <- Cexp_add.
-  rewrite Mscale_mult_dist_l.
-  rewrite 2 Mscale_mult_dist_r.
-  rewrite Mscale_assoc.
-  rewrite <- Cexp_add.
-  replace (PI / 4 + PI / 4 + (PI / 4 + PI / 4))%R with (PI)%R by (field_simplify;
-                                                                  unfold Rdiv;
-                                                                  rewrite Rmult_assoc;
-                                                                  rewrite Rmult_comm;
-                                                                  rewrite Rmult_assoc;
-                                                                  rewrite Rinv_l; try nonzero;
-                                                                  rewrite Rmult_1_r;
-                                                                  reflexivity).
-  rewrite Cexp_PI.
-  autorewrite with scalar_move_db.
-  apply Mscale_simplify; try reflexivity.
-  rewrite <- Mmult_assoc.
-  solve_matrix.
+  reflexivity.
 Qed.
 
 Ltac swap_colors := 
@@ -1029,12 +1033,10 @@ Proof.
   rewrite Mscale_1_l.
   simpl.
   unfold_spider.
-  rewrite ZX_SWAP_is_swap.
   rewrite wire_identity_semantics.
   simpl.
   Msimpl.
   autorewrite with scalar_move_db.
-  apply Mscale_simplify; try reflexivity.
   solve_matrix.
 Qed.  
 
@@ -1053,12 +1055,10 @@ Proof.
   prop_exist_non_zero 1.
   simpl.
   unfold_spider.
-  rewrite ZX_SWAP_is_swap.
   rewrite wire_identity_semantics.
   simpl.
   Msimpl.
   autorewrite with scalar_move_db.
-  apply Mscale_simplify; try reflexivity.
   solve_matrix.
 Qed.
 
@@ -1305,6 +1305,46 @@ Proof.
   rewrite <- ColorSwap_Compose.
   rewrite ColorSwap_involutive.
   apply H_edge_sandwich.
+Qed.
+
+Lemma Cup_is_Z_spider : ⊃ ∝ Z_Spider 2 0 0.
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  unfold ZX_semantics.
+  unfold Z_semantics.
+  solve_matrix.
+  autorewrite with Cexp_db.
+  easy.
+Qed.
+
+Lemma Cup_is_X_spider : ⊃ ∝ X_Spider 2 0 0.
+Proof.
+  rewrite ColorSwap_X.
+  rewrite ColorSwap_Cup.
+  apply ColorSwap_lift.
+  rewrite 2 ColorSwap_involutive.
+  apply Cup_is_Z_spider.
+Qed.
+
+Lemma Cap_is_Z_spider : ⊂ ∝ Z_Spider 0 2 0.
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  unfold ZX_semantics.
+  unfold Z_semantics.
+  solve_matrix.
+  autorewrite with Cexp_db.
+  easy.
+Qed.
+
+Lemma Cap_is_X_spider : ⊂ ∝ X_Spider 0 2 0.
+Proof.
+  rewrite ColorSwap_X.
+  rewrite ColorSwap_Cap.
+  apply ColorSwap_lift.
+  rewrite 2 ColorSwap_involutive.
+  apply Cap_is_Z_spider.
 Qed.
 
 Local Close Scope ZX_scope.

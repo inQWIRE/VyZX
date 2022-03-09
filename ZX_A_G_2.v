@@ -22,6 +22,7 @@ Inductive A_G2_ZX : nat (* #inputs *) -> nat (* #outputs *) -> Type :=
   | A_G2_Z_Spider_2_1  (α : R) : forall n : nat, A_G2_ZX 2 1
   | A_G2_Cap                   : forall n : nat, A_G2_ZX 0 2
   | A_G2_Cup                   : forall n : nat, A_G2_ZX 2 0
+  | A_G2_Swap                  : forall n : nat, A_G2_ZX 2 2
   | A_G2_Stack {nIn0 nIn1 nOut0 nOut1} 
                (zx0 : A_G2_ZX nIn0 nOut0) 
                (zx1 : A_G2_ZX nIn1 nOut1) : 
@@ -35,6 +36,7 @@ Local Close Scope R_scope.
 Notation "⦰AG2" := A_G2_Empty. (* \revemptyset *)
 Notation "⊂AG2" := A_G2_Cap. (* \subset *)
 Notation "⊃AG2" := A_G2_Cup. (* \supset *)
+Notation "⨉AG2" := A_G2_Swap. (* \bigtimes *)
 
 Fixpoint A_G2_ZX_semantics {nIn nOut} (zx : A_G2_ZX nIn nOut) : 
   Matrix (2 ^ nOut) (2 ^nIn) := 
@@ -47,6 +49,7 @@ Fixpoint A_G2_ZX_semantics {nIn nOut} (zx : A_G2_ZX nIn nOut) :
   | A_G2_Z_Spider_2_1 α _ => G2_ZX_semantics (G2_Z_Spider_2_1 α)
   | A_G2_Cap _ => G2_ZX_semantics (G2_Cap)
   | A_G2_Cup _ => G2_ZX_semantics (G2_Cup)
+  | A_G2_Swap _ => G2_ZX_semantics (G2_Swap)
   | A_G2_Stack zx0 zx1 _ => (A_G2_ZX_semantics zx0) ⊗ (A_G2_ZX_semantics zx1)
   | @A_G2_Compose _ nMid _ zx0 zx1 _ => (A_G2_ZX_semantics zx1) × (nMid ⨂ hadamard) × (A_G2_ZX_semantics zx0)
   end.
@@ -61,6 +64,7 @@ Fixpoint A_G2_ZX_to_G2_ZX {nIn nOut} (zx : A_G2_ZX nIn nOut) : G2_ZX nIn nOut :=
   | A_G2_Z_Spider_2_1 α _ => G2_Z_Spider_2_1 α
   | A_G2_Cap _ => G2_Cap
   | A_G2_Cup _ => G2_Cup
+  | A_G2_Swap _ => G2_Swap
   | A_G2_Stack zx0 zx1 _ => (A_G2_ZX_to_G2_ZX zx0) ↕G2 (A_G2_ZX_to_G2_ZX zx1)
   | A_G2_Compose zx0 zx1 _ => (A_G2_ZX_to_G2_ZX zx0) ⟷G2 (A_G2_ZX_to_G2_ZX zx1)
   end.
@@ -75,6 +79,7 @@ Fixpoint G2_ZX_to_A_G2_ZX_helper (base : nat) {nIn nOut} (zx : G2_ZX nIn nOut) :
   | G2_Z_Spider_2_1 α  => (A_G2_Z_Spider_2_1 α base , S base)
   | G2_Cap             => (A_G2_Cap base, S base)
   | G2_Cup             => (A_G2_Cup base, S base)
+  | G2_Swap            => (A_G2_Swap base, S base)
   | G2_Stack zx0 zx1   => (A_G2_Stack 
                             (fst (G2_ZX_to_A_G2_ZX_helper base zx0)) 
                             (fst (G2_ZX_to_A_G2_ZX_helper (snd (G2_ZX_to_A_G2_ZX_helper base zx0)) zx1)) 
@@ -100,6 +105,9 @@ Inductive In_A_G2_ZX : forall {nIn nOut : nat}, nat -> A_G2_ZX nIn nOut -> Prop 
   | In_Z_Spider_1_1 {α} n : In_A_G2_ZX n (A_G2_Z_Spider_1_1 α n)
   | In_Z_Spider_2_1 {α} n : In_A_G2_ZX n (A_G2_Z_Spider_2_1 α n)
   | In_Z_Spider_1_2 {α} n : In_A_G2_ZX n (A_G2_Z_Spider_1_2 α n)
+  | In_Cap n : In_A_G2_ZX n (A_G2_Cap n)
+  | In_Cup n : In_A_G2_ZX n (A_G2_Cup n)
+  | In_Swap n : In_A_G2_ZX n (A_G2_Swap n)
   | In_Stack_L {nIn0 nIn1 nOut0 nOut1 idnum : nat}
                (zx0 : A_G2_ZX nIn0 nOut0) (zx1 : A_G2_ZX nIn1 nOut1) n : 
                 In_A_G2_ZX n zx0 -> In_A_G2_ZX n (A_G2_Stack zx0 zx1 idnum)
@@ -127,6 +135,7 @@ Inductive WF_A_G2_ZX : forall {nIn nOut : nat}, A_G2_ZX nIn nOut -> Prop :=
   | WF_A_G2_Z_Spider_1_2 n α : WF_A_G2_ZX (A_G2_Z_Spider_1_2 n α)
   | WF_A_G2_Cap n : WF_A_G2_ZX (A_G2_Cap n)
   | WF_A_G2_Cup n : WF_A_G2_ZX (A_G2_Cup n)
+  | WF_A_G2_Swap n : WF_A_G2_ZX (A_G2_Swap n)
   | WF_A_G2_Stack : 
       forall (nIn0 nIn1 nOut0 nOut1 idnum : nat) (zx0 : A_G2_ZX nIn0 nOut0) (zx1 : A_G2_ZX nIn1 nOut1),
         (forall n, In_A_G2_ZX n zx0 -> ~ In_A_G2_ZX n zx1) -> 
@@ -199,8 +208,8 @@ Proof.
   generalize dependent base.
   generalize dependent n.
   induction zx; intros.
-  1 - 8: inversion H.
-  1 - 5: simpl; auto.
+  1 - 9: inversion H.
+  1 - 8: simpl; auto.
   (* Stack / Compose cases *)
   all: simpl in H.
   1: apply In_A_G2_ZX_Stack_Rev in H.
@@ -217,8 +226,8 @@ Proof.
   generalize dependent base.
   induction zx; intros.
   all: simpl; unfold not; intros Hcontra.
-  1-8: inversion Hcontra.
-  1-5: apply Nat.lt_neq in H; subst; congruence.
+  1-9: inversion Hcontra.
+  1-8: apply Nat.lt_neq in H; subst; congruence.
   all: simpl.
   1: apply In_A_G2_ZX_Stack_Rev in Hcontra.
   2: apply In_A_G2_ZX_Compose_Rev in Hcontra.
@@ -352,7 +361,6 @@ Module OrderedNatPair <: OrderedType with Definition t := (nat * nat)%type.
     | (a1, a2), (b1, b2) => (a1 < b1) \/ (a1 = b1 /\ a2 < b2)
     end.
 
-    
   Theorem eq_refl : forall x, eq x x.
     reflexivity.
   Qed.
@@ -472,3 +480,18 @@ Module OrderedNatPair <: OrderedType with Definition t := (nat * nat)%type.
   Defined.
 
 End OrderedNatPair.
+
+Module Test := Make OrderedNat.
+
+Definition test_empty := Test.empty nat.
+
+Check Test.mem 1 (Test.add 1 4 test_empty).
+
+Lemma teoajokasjio : forall x, (Test.mem 1 x) = true -> @Test.In nat 1 x.
+Proof.
+  intros.
+  apply Test.mem_2.
+  assumption.
+Qed.
+
+Print Test.

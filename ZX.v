@@ -13,6 +13,7 @@ Inductive ZX : nat -> nat -> Type :=
   | Z_Spider nIn nOut (α : R) : ZX nIn nOut
   | Cap : ZX 0 2
   | Cup : ZX 2 0
+  | Swap : ZX 2 2
   | Stack {nIn0 nIn1 nOut0 nOut1} (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1) :
       ZX (nIn0 + nIn1) (nOut0 + nOut1)
   | Compose {nIn nMid nOut} (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut) : ZX nIn nOut.
@@ -21,6 +22,7 @@ Local Close Scope R_scope.
 Notation "⦰" := Empty. (* \revemptyset *)
 Notation "⊂" := Cap. (* \subset *)
 Notation "⊃" := Cup. (* \supset *)
+Notation "⨉" := Swap. (* \bigtimes *)
 Infix "⟷" := Compose (left associativity, at level 40). (* \longleftrightarrow *)
 Infix "↕" := Stack (left associativity, at level 40). (* \updownarrow *)
 
@@ -176,6 +178,7 @@ Fixpoint ZX_semantics {nIn nOut} (zx : ZX nIn nOut) :
   | Z_Spider _ _ α => Z_semantics nIn nOut α
   | ⊃ => list2D_to_matrix [[C1;C0;C0;C1]]
   | ⊂ => list2D_to_matrix [[C1];[C0];[C0];[C1]]  
+  | ⨉ => swap
   | zx0 ↕ zx1 => (ZX_semantics zx0) ⊗ (ZX_semantics zx1)
   | zx0 ⟷ zx1 => (ZX_semantics zx1) × (ZX_semantics zx0)
   end.
@@ -236,6 +239,7 @@ Fixpoint ZX_Dirac_semantics {nIn nOut} (zx : ZX nIn nOut) :
   | Z_Spider _ _ α => Dirac_spider_semantics (bra 0) (bra 1) (ket 0) (ket 1) α
   | ⊃ => list2D_to_matrix [[C1;C0;C0;C1]]
   | ⊂ => list2D_to_matrix [[C1];[C0];[C0];[C1]]  
+  | ⨉ => swap
   | zx0 ↕ zx1 => (ZX_Dirac_semantics zx0) ⊗ (ZX_Dirac_semantics zx1)
   | zx0 ⟷ zx1 => (ZX_Dirac_semantics zx1) × (ZX_Dirac_semantics zx0)
   end.
@@ -890,6 +894,7 @@ Fixpoint Transpose {nIn nOut} (zx : ZX nIn nOut) : ZX nOut nIn :=
   | zx1 ↕ zx2 => (zx1 ⊺) ↕ (zx2 ⊺)
   | ⊂ => ⊃
   | ⊃ => ⊂
+  | ⨉ => ⨉
   end
   where "zx ⊺" := (Transpose zx).
 
@@ -924,6 +929,7 @@ Proof.
     reflexivity.
   - simpl; solve_matrix.
   - simpl; solve_matrix.
+  - simpl; solve_matrix.
   - simpl; rewrite IHzx1, IHzx2; rewrite <- kron_transpose; reflexivity.
   - simpl; rewrite IHzx1, IHzx2; rewrite <- Mmult_transpose; reflexivity.
 Qed.
@@ -933,7 +939,7 @@ Lemma ZX_semantics_Adjoint_comm {nIn nOut} : forall (zx : ZX nIn nOut),
 Proof.
   intros.
   induction zx.
-  1, 4, 5: ZXunfold; solve_matrix. (* Cap, Cup *)
+  1, 4, 5, 6: ZXunfold; solve_matrix. (* Cap, Cup, Swap *)
   3, 4: simpl; unfold Adjoint in IHzx1; unfold Adjoint in IHzx2; rewrite IHzx1, IHzx2;
         try rewrite <- kron_adjoint; try rewrite <- Mmult_adjoint;
         reflexivity. (* Compose, Stack *)
@@ -976,6 +982,9 @@ Proof.
   - reflexivity.
   - solve_matrix.
   - solve_matrix.
+  - simpl.
+    Msimpl.
+    solve_matrix.
   - simpl.
     rewrite IHzx1, IHzx2.
     rewrite 2 kron_n_m_split; try auto with wf_db.

@@ -16,6 +16,7 @@ Inductive H_ZX : nat -> nat -> Type :=
   | H_Z_Spider nIn nOut (α : R) : H_ZX nIn nOut
   | H_Cap : H_ZX 0 2
   | H_Cup : H_ZX 2 0
+  | H_Swap : H_ZX 2 2
   | H_Stack {nIn0 nIn1 nOut0 nOut1} (zx0 : H_ZX nIn0 nOut0) (zx1 : H_ZX nIn1 nOut1) :
         H_ZX (nIn0 + nIn1) (nOut0 + nOut1)
   | H_Compose {nIn nMid nOut} (zx0 : H_ZX nIn nMid) (zx1 : H_ZX nMid nOut) : H_ZX nIn nOut.
@@ -24,6 +25,7 @@ Local Close Scope R_scope.
 Notation "⦰H" := H_Empty. (* \revemptyset *)
 Notation "⊂H'" := H_Cap. (* \subset *)
 Notation "⊃H'" := H_Cup. (* \supset *)
+Notation "⨉H'" := H_Swap. (* \bigtimes *)
 Infix "⟷H" := H_Compose (left associativity, at level 40). (* \longleftrightarrow *)
 Infix "↕H" := H_Stack (left associativity, at level 40). (* \updownarrow *)
 
@@ -34,6 +36,7 @@ Fixpoint H_ZX_semantics {nIn nOut} (zx : H_ZX nIn nOut) :
   | H_Z_Spider nIn nOut α => ZX_semantics (Z_Spider nIn nOut α)
   | H_Cap => ZX_semantics Cap
   | H_Cup => ZX_semantics Cup
+  | H_Swap => ZX_semantics Swap
   | H_Stack zx0 zx1 => (H_ZX_semantics zx0) ⊗ (H_ZX_semantics zx1)
   | @H_Compose _ nMid _ zx0 zx1 => (H_ZX_semantics zx1) × (nMid ⨂ hadamard) × (H_ZX_semantics zx0)
   end.
@@ -44,6 +47,7 @@ Fixpoint H_ZX_to_ZX {nIn nOut} (zx : H_ZX nIn nOut) : ZX nIn nOut :=
   | H_Z_Spider nIn nOut α => (Z_Spider nIn nOut α)
   | H_Cap => Cap
   | H_Cup => Cup
+  | H_Swap => Swap
   | H_Stack zx0 zx1 => Stack (H_ZX_to_ZX zx0) (H_ZX_to_ZX zx1)
   | H_Compose zx0 zx1 => (H_ZX_to_ZX zx0) ⥈ (H_ZX_to_ZX zx1)
   end.
@@ -224,6 +228,7 @@ Fixpoint ZX_to_H_ZX {nIn nOut} (zx : ZX nIn nOut) : H_ZX nIn nOut :=
   | Z_Spider nIn nOut α => (H_Z_Spider nIn nOut α)
   | Cap => H_Cap
   | Cup => H_Cup
+  | Swap => H_Swap
   | Stack zx0 zx1 => H_Stack (ZX_to_H_ZX zx0) (ZX_to_H_ZX zx1)
   | @Compose _ nMid _ zx0 zx1 => H_Compose (ZX_to_H_ZX zx0) (H_Compose (H_nWire nMid) (ZX_to_H_ZX zx1))
   end.

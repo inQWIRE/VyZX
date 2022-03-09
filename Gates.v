@@ -37,10 +37,8 @@ Global Opaque ZX_CNOT.
 Definition ZX_FLIPPED_CNOT := 
     (— ↕ (Z_Spider 1 2 0%R)) ⟷ ((X_Spider 2 1 0%R) ↕ —).
    
-Definition ZX_SWAP : ZX 2 2 :=
+Definition ZX_3_CNOT_SWAP : ZX 2 2 :=
     ZX_CNOT ⟷ ZX_FLIPPED_CNOT ⟷ ZX_CNOT.
-Global Opaque ZX_SWAP.
-
-Notation "⨉" := ZX_SWAP.
+Global Opaque ZX_3_CNOT_SWAP.
 
 Local Close Scope ZX_scope.
