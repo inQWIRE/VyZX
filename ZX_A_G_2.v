@@ -127,6 +127,62 @@ Inductive In_A_G2_ZX : forall {nIn nOut : nat}, nat -> A_G2_ZX nIn nOut -> Prop 
                (zx0 : A_G2_ZX nIn nMid)
                (zx1 : A_G2_ZX nMid nOut) n : In_A_G2_ZX n (A_G2_Compose zx0 zx1 n).
 
+Lemma In_A_G2_ZX_dec : forall {nIn nOut : nat} (zx : A_G2_ZX nIn nOut) n,
+  {In_A_G2_ZX n zx} + {~ In_A_G2_ZX n zx}.
+Proof.
+  intros nIn nOut zx.
+  induction zx; intros.
+  1-9: bdestruct (n =? n0); [ left; subst; constructor | right ];
+    unfold not;
+    intros;
+    inversion H0;
+    subst;
+    contradiction.
+  all: specialize (IHzx1 n0).
+  all: specialize (IHzx2 n0).
+  all: destruct IHzx1, IHzx2.
+  1-2: left; apply In_Stack_L; assumption.
+  3-4: left; apply In_Compose_L; assumption.  
+  - left; apply In_Stack_R; assumption.
+  - bdestruct (n =? n0); [ left; subst; apply In_Stack | right ].
+    unfold not.
+    intros.
+    inversion H0;
+    inversion H11;
+    inversion H12;
+    subst nOut3 nIn3 nOut2 nIn2.
+    1-2 : apply inj_pair2_eq_dec in H16; [| apply eq_nat_dec].
+    1-2 : apply inj_pair2_eq_dec in H16; [| apply eq_nat_dec].
+    1-2 : apply inj_pair2_eq_dec in H18; [| apply eq_nat_dec].
+    1-2 : apply inj_pair2_eq_dec in H18; [| apply eq_nat_dec].
+    3 : apply inj_pair2_eq_dec in H15; [| apply eq_nat_dec].
+    3 : apply inj_pair2_eq_dec in H15; [| apply eq_nat_dec].
+    3 : apply inj_pair2_eq_dec in H17; [| apply eq_nat_dec].
+    3 : apply inj_pair2_eq_dec in H17; [| apply eq_nat_dec].
+    all: subst zx4 zx5.
+    3: subst n0 n3.
+    all: contradiction.
+  - left; apply In_Compose_R; assumption.
+  - bdestruct (n =? n0); [ left; subst; apply In_Compose | right ].
+    unfold not.
+    intros.
+    inversion H0.
+    inversion H6;
+    inversion H7.
+    subst nIn0 nOut0 nMid0.
+    2-3 : apply inj_pair2_eq_dec in H6; [| apply eq_nat_dec].
+    2-3 : apply inj_pair2_eq_dec in H6; [| apply eq_nat_dec].
+    2-3 : apply inj_pair2_eq_dec in H7; [| apply eq_nat_dec].
+    2-3 : apply inj_pair2_eq_dec in H7; [| apply eq_nat_dec].
+    1 : apply inj_pair2_eq_dec in H10; [| apply eq_nat_dec].
+    1 : apply inj_pair2_eq_dec in H10; [| apply eq_nat_dec].
+    1 : apply inj_pair2_eq_dec in H11; [| apply eq_nat_dec].
+    1 : apply inj_pair2_eq_dec in H11; [| apply eq_nat_dec].
+    all: subst zx4 zx5.
+    3: subst n0 n3.
+    all: contradiction.
+Qed.
+
 Inductive WF_A_G2_ZX : forall {nIn nOut : nat}, A_G2_ZX nIn nOut -> Prop :=
   | WF_Empty n               : WF_A_G2_ZX (⦰AG2 n)
   | WF_A_G2_Z_Spider_1_0 n α : WF_A_G2_ZX (A_G2_Z_Spider_1_0 n α)
@@ -811,60 +867,418 @@ Proof.
         -- unfold NatMaps.find in IHzx1_1.
            rewrite H3.
            apply (IHzx1_1 H17 _ _ valOut valIn); try assumption. 
-Abort.      
+Abort.
 
-
-Lemma id_populated_inmap : forall {nIn nOut} (zx : A_G2_ZX nIn nOut) n baseInMap baseOutMap, In_A_G2_ZX n zx -> NatMaps.In n (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx)) /\ NatMaps.In n (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx)).
+Lemma annotate_add_in : forall {nIn nOut} (zx : A_G2_ZX nIn nOut) n baseInMap baseOutMap, NatMaps.In n baseInMap -> NatMaps.In n (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx)).
 Proof.
   intros.
   generalize dependent baseInMap.
   generalize dependent baseOutMap.
   generalize dependent n.
-  induction zx;
-  try (
-    intros;
-    split;
-    inversion H;
-    simpl;
-    intros;
-    unfold NatMaps.In;
-    rewrite NatMaps.Raw.Proofs.In_alt;
+  induction zx; intros.
+  1-9: simpl;
+    unfold NatMaps.In in *;
+    rewrite NatMaps.Raw.Proofs.In_alt in *;
     apply NatMaps.Raw.Proofs.add_in;
-    left;
-    easy).
-  - intros.
-    simpl.
-    inversion H.
-    + subst.
-      inversion H10.
-      apply inj_pair2_eq_dec in H6; [ | apply eq_nat_dec ]. 
-      apply inj_pair2_eq_dec in H6; [ | apply eq_nat_dec ]. 
-      inversion H11.
-      apply inj_pair2_eq_dec in H7; [ | apply eq_nat_dec ]. 
-      apply inj_pair2_eq_dec in H7; [ | apply eq_nat_dec ].
-      subst.
-      destruct H10.
-      destruct H11.
-      destruct H0.
-      destruct H1.
-      destruct H2.
-      destruct H5.
-      specialize (IHzx1 n0 H4).
-      split.
-      * destruct (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1) eqn:H0.
-        destruct (A_G2_Edge_Annotator_Helper n1 n2 zx2) eqn:H1.
-        destruct zx1, zx2; simpl.
-        -- destruct (NatMaps.find (elt:=list nat) n5 n3).
-          destruct (NatMaps.find (elt:=list nat) n5 n4).
-          destruct (NatMaps.find (elt:=list nat) n6 n3).
-          destruct (NatMaps.find (elt:=list nat) n6 n4).
-          unfold NatMaps.In;
-          rewrite NatMaps.Raw.Proofs.In_alt.
-          replace n3 with (fst (A_G2_Edge_Annotator_Helper n1 n2 (⦰AG2 n6))); [ | rewrite H1; easy ].
-        admit.
-Abort.       
+    right;
+    assumption.
+  - simpl. 
+    destruct (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1) eqn:Hzx1.
+    destruct (A_G2_Edge_Annotator_Helper n1 n2 zx2) eqn:Hzx2.
+    assert (n1 = (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1))) by (rewrite Hzx1; easy).
+    assert (n2 = (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1))) by (rewrite Hzx1; easy).
+    assert (n3 = (fst (A_G2_Edge_Annotator_Helper n1 n2 zx2))) by (rewrite Hzx2; easy).
+    assert (n4 = (snd (A_G2_Edge_Annotator_Helper n1 n2 zx2))) by (rewrite Hzx2; easy).
+    rewrite H0 in *.
+    assert (exists valOut, NatMaps.find (get_id zx1) (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1)) = Some valOut).
+    {
+      apply all_lookup_id_fst.
+      easy.
+    }
+    destruct H4.
+    rewrite H4 in *.
+    rewrite <- H0 in *.
+    rewrite H1 in *.
+    assert (exists valOut, NatMaps.find (get_id zx1) (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1)) = Some valOut).
+    {
+      apply all_lookup_id_snd.
+      easy.
+    }
+    destruct H5.
+    rewrite H5 in *.
+    rewrite <- H1 in *.
+    rewrite H2 in *.
+    assert (exists valOut, NatMaps.find (get_id zx2) (fst (A_G2_Edge_Annotator_Helper n1 n2 zx2)) = Some valOut).
+    {
+      apply all_lookup_id_fst.
+      easy.
+    }
+    destruct H6.
+    rewrite H6 in *.
+    rewrite <- H2 in *.
+    rewrite H3 in *.
+    assert (exists valOut, NatMaps.find (get_id zx2) (snd (A_G2_Edge_Annotator_Helper n1 n2 zx2)) = Some valOut).
+    {
+      apply all_lookup_id_snd.
+      easy.
+    }
+    destruct H7.
+    rewrite H7 in *.
+    rewrite <- H3 in *.
+    simpl in H0.
+    unfold NatMaps.In in *;
+    repeat rewrite NatMaps.Raw.Proofs.In_alt in *;
+    apply NatMaps.Raw.Proofs.add_in.
+    rewrite <- NatMaps.Raw.Proofs.In_alt.
+    rewrite H2.
+    right.
+    apply IHzx2.
+    rewrite H0.
+    apply IHzx1.
+    rewrite NatMaps.Raw.Proofs.In_alt.
+    assumption.
+  - simpl. 
+    destruct (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1) eqn:Hzx1.
+    destruct (A_G2_Edge_Annotator_Helper n1 n2 zx2) eqn:Hzx2.
+    assert (n1 = (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1))) by (rewrite Hzx1; easy).
+    assert (n2 = (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1))) by (rewrite Hzx1; easy).
+    assert (n3 = (fst (A_G2_Edge_Annotator_Helper n1 n2 zx2))) by (rewrite Hzx2; easy).
+    assert (n4 = (snd (A_G2_Edge_Annotator_Helper n1 n2 zx2))) by (rewrite Hzx2; easy).
+    rewrite H0 in *.
+    assert (exists valOut, NatMaps.find (get_id zx1) (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1)) = Some valOut).
+    {
+      apply all_lookup_id_fst.
+      easy.
+    }
+    destruct H4.
+    rewrite H4 in *.
+    rewrite <- H0 in *.
+    rewrite H1 in *.
+    assert (exists valOut, NatMaps.find (get_id zx1) (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1)) = Some valOut).
+    {
+      apply all_lookup_id_snd.
+      easy.
+    }
+    destruct H5.
+    rewrite H5 in *.
+    rewrite <- H1 in *.
+    rewrite H2 in *.
+    assert (exists valOut, NatMaps.find (get_id zx2) (fst (A_G2_Edge_Annotator_Helper n1 n2 zx2)) = Some valOut).
+    {
+      apply all_lookup_id_fst.
+      easy.
+    }
+    destruct H6.
+    rewrite H6 in *.
+    rewrite <- H2 in *.
+    rewrite H3 in *.
+    assert (exists valOut, NatMaps.find (get_id zx2) (snd (A_G2_Edge_Annotator_Helper n1 n2 zx2)) = Some valOut).
+    {
+      apply all_lookup_id_snd.
+      easy.
+    }
+    destruct H7.
+    rewrite H7 in *.
+    rewrite <- H3 in *.
+    simpl in H0.
+    unfold NatMaps.In in *;
+    repeat rewrite NatMaps.Raw.Proofs.In_alt in *;
+    apply NatMaps.Raw.Proofs.add_in.
+    rewrite <- NatMaps.Raw.Proofs.In_alt.
+    rewrite H2.
+    right.
+    apply IHzx2.
+    rewrite H0.
+    apply IHzx1.
+    rewrite NatMaps.Raw.Proofs.In_alt.
+    assumption.
+Qed. 
 
-(* 
+
+Lemma annotate_add_out : forall {nIn nOut} (zx : A_G2_ZX nIn nOut) n baseInMap baseOutMap, NatMaps.In n baseOutMap -> NatMaps.In n (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx)).
+Proof.
+  intros.
+  generalize dependent baseInMap.
+  generalize dependent baseOutMap.
+  generalize dependent n.
+  induction zx; intros.
+  1-9: simpl;
+    unfold NatMaps.In in *;
+    rewrite NatMaps.Raw.Proofs.In_alt in *;
+    apply NatMaps.Raw.Proofs.add_in;
+    right;
+    assumption.
+  - simpl. 
+    destruct (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1) eqn:Hzx1.
+    destruct (A_G2_Edge_Annotator_Helper n1 n2 zx2) eqn:Hzx2.
+    assert (n1 = (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1))) by (rewrite Hzx1; easy).
+    assert (n2 = (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1))) by (rewrite Hzx1; easy).
+    assert (n3 = (fst (A_G2_Edge_Annotator_Helper n1 n2 zx2))) by (rewrite Hzx2; easy).
+    assert (n4 = (snd (A_G2_Edge_Annotator_Helper n1 n2 zx2))) by (rewrite Hzx2; easy).
+    rewrite H0 in *.
+    assert (exists valOut, NatMaps.find (get_id zx1) (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1)) = Some valOut).
+    {
+      apply all_lookup_id_fst.
+      easy.
+    }
+    destruct H4.
+    rewrite H4 in *.
+    rewrite <- H0 in *.
+    rewrite H1 in *.
+    assert (exists valOut, NatMaps.find (get_id zx1) (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1)) = Some valOut).
+    {
+      apply all_lookup_id_snd.
+      easy.
+    }
+    destruct H5.
+    rewrite H5 in *.
+    rewrite <- H1 in *.
+    rewrite H2 in *.
+    assert (exists valOut, NatMaps.find (get_id zx2) (fst (A_G2_Edge_Annotator_Helper n1 n2 zx2)) = Some valOut).
+    {
+      apply all_lookup_id_fst.
+      easy.
+    }
+    destruct H6.
+    rewrite H6 in *.
+    rewrite <- H2 in *.
+    rewrite H3 in *.
+    assert (exists valOut, NatMaps.find (get_id zx2) (snd (A_G2_Edge_Annotator_Helper n1 n2 zx2)) = Some valOut).
+    {
+      apply all_lookup_id_snd.
+      easy.
+    }
+    destruct H7.
+    rewrite H7 in *.
+    rewrite <- H3 in *.
+    simpl in H0.
+    unfold NatMaps.In in *;
+    repeat rewrite NatMaps.Raw.Proofs.In_alt in *;
+    apply NatMaps.Raw.Proofs.add_in.
+    rewrite <- NatMaps.Raw.Proofs.In_alt.
+    rewrite H3.
+    right.
+    apply IHzx2.
+    rewrite H1.
+    apply IHzx1.
+    rewrite NatMaps.Raw.Proofs.In_alt.
+    assumption.
+  - simpl. 
+    destruct (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1) eqn:Hzx1.
+    destruct (A_G2_Edge_Annotator_Helper n1 n2 zx2) eqn:Hzx2.
+    assert (n1 = (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1))) by (rewrite Hzx1; easy).
+    assert (n2 = (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1))) by (rewrite Hzx1; easy).
+    assert (n3 = (fst (A_G2_Edge_Annotator_Helper n1 n2 zx2))) by (rewrite Hzx2; easy).
+    assert (n4 = (snd (A_G2_Edge_Annotator_Helper n1 n2 zx2))) by (rewrite Hzx2; easy).
+    rewrite H0 in *.
+    assert (exists valOut, NatMaps.find (get_id zx1) (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1)) = Some valOut).
+    {
+      apply all_lookup_id_fst.
+      easy.
+    }
+    destruct H4.
+    rewrite H4 in *.
+    rewrite <- H0 in *.
+    rewrite H1 in *.
+    assert (exists valOut, NatMaps.find (get_id zx1) (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1)) = Some valOut).
+    {
+      apply all_lookup_id_snd.
+      easy.
+    }
+    destruct H5.
+    rewrite H5 in *.
+    rewrite <- H1 in *.
+    rewrite H2 in *.
+    assert (exists valOut, NatMaps.find (get_id zx2) (fst (A_G2_Edge_Annotator_Helper n1 n2 zx2)) = Some valOut).
+    {
+      apply all_lookup_id_fst.
+      easy.
+    }
+    destruct H6.
+    rewrite H6 in *.
+    rewrite <- H2 in *.
+    rewrite H3 in *.
+    assert (exists valOut, NatMaps.find (get_id zx2) (snd (A_G2_Edge_Annotator_Helper n1 n2 zx2)) = Some valOut).
+    {
+      apply all_lookup_id_snd.
+      easy.
+    }
+    destruct H7.
+    rewrite H7 in *.
+    rewrite <- H3 in *.
+    simpl in H0.
+    unfold NatMaps.In in *;
+    repeat rewrite NatMaps.Raw.Proofs.In_alt in *;
+    apply NatMaps.Raw.Proofs.add_in.
+    rewrite <- NatMaps.Raw.Proofs.In_alt.
+    rewrite H3.
+    right.
+    apply IHzx2.
+    rewrite H1.
+    apply IHzx1.
+    rewrite NatMaps.Raw.Proofs.In_alt.
+    assumption.
+Qed. 
+
+    
+
+
+
+Lemma populated_passthrough : forall {nIn nOut} (zx : A_G2_ZX nIn nOut) n baseInMap baseOutMap, NatMaps.In n baseInMap /\ NatMaps.In n baseOutMap -> NatMaps.In n (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx)) /\ NatMaps.In n (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx)).
+Proof.
+  intros nIn nOut zx.
+  induction zx; intros.
+  1-9: simpl;
+    unfold NatMaps.In in *;
+    rewrite 2 NatMaps.Raw.Proofs.In_alt;
+    split;
+    apply NatMaps.Raw.Proofs.add_in;
+    rewrite <- NatMaps.Raw.Proofs.In_alt;
+    right;
+    destruct H;
+    assumption.
+  - simpl.
+    destruct (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1) eqn:Hzx1.
+    destruct (A_G2_Edge_Annotator_Helper n1 n2 zx2) eqn:Hzx2.
+    assert (n1 = (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1))) by (rewrite Hzx1; easy).
+    assert (n2 = (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1))) by (rewrite Hzx1; easy).
+    assert (n3 = (fst (A_G2_Edge_Annotator_Helper n1 n2 zx2))) by (rewrite Hzx2; easy).
+    assert (n4 = (snd (A_G2_Edge_Annotator_Helper n1 n2 zx2))) by (rewrite Hzx2; easy).
+    destruct (NatMaps.find (elt:=list nat) (get_id zx1) n1).
+    destruct (NatMaps.find (elt:=list nat) (get_id zx1) n2).
+    destruct (NatMaps.find (elt:=list nat) (get_id zx2) n3).
+    destruct (NatMaps.find (elt:=list nat) (get_id zx2) n4).
+    all: simpl.
+    all: cut ((NatMaps.In (elt:=list nat) n0 (fst (A_G2_Edge_Annotator_Helper n1 n2 zx2))) /\
+              NatMaps.In (elt:=list nat) n0 (snd (A_G2_Edge_Annotator_Helper n1 n2 zx2)));
+    [ split; subst n3 n4;
+      unfold NatMaps.In;
+      rewrite NatMaps.Raw.Proofs.In_alt;
+      apply NatMaps.Raw.Proofs.add_in; right;
+      destruct H4;
+      unfold NatMaps.In in *;
+      rewrite <- NatMaps.Raw.Proofs.In_alt;
+      assumption |
+    ].
+    all: apply IHzx2.
+    all: subst n1 n2.
+    all: apply IHzx1.
+    all: apply H.
+  - simpl.
+    destruct (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1) eqn:Hzx1.
+    destruct (A_G2_Edge_Annotator_Helper n1 n2 zx2) eqn:Hzx2.
+    assert (n1 = (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1))) by (rewrite Hzx1; easy).
+    assert (n2 = (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1))) by (rewrite Hzx1; easy).
+    assert (n3 = (fst (A_G2_Edge_Annotator_Helper n1 n2 zx2))) by (rewrite Hzx2; easy).
+    assert (n4 = (snd (A_G2_Edge_Annotator_Helper n1 n2 zx2))) by (rewrite Hzx2; easy).
+    destruct (NatMaps.find (elt:=list nat) (get_id zx1) n1).
+    destruct (NatMaps.find (elt:=list nat) (get_id zx1) n2).
+    destruct (NatMaps.find (elt:=list nat) (get_id zx2) n3).
+    destruct (NatMaps.find (elt:=list nat) (get_id zx2) n4).
+    all: simpl.
+    all: cut ((NatMaps.In (elt:=list nat) n0 (fst (A_G2_Edge_Annotator_Helper n1 n2 zx2))) /\
+              NatMaps.In (elt:=list nat) n0 (snd (A_G2_Edge_Annotator_Helper n1 n2 zx2)));
+    [ split; subst n3 n4;
+      unfold NatMaps.In;
+      rewrite NatMaps.Raw.Proofs.In_alt;
+      apply NatMaps.Raw.Proofs.add_in; right;
+      destruct H4;
+      unfold NatMaps.In in *;
+      rewrite <- NatMaps.Raw.Proofs.In_alt;
+      assumption |
+    ].
+    all: apply IHzx2.
+    all: subst n1 n2.
+    all: apply IHzx1.
+    all: apply H.
+Qed.
+  
+Lemma id_populated_inmap : forall {nIn nOut} (zx : A_G2_ZX nIn nOut) n baseInMap baseOutMap, In_A_G2_ZX n zx -> NatMaps.In n (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx)) /\ NatMaps.In n (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx)).
+Proof.
+  intros.
+  generalize dependent baseInMap.
+  generalize dependent baseOutMap.
+  dependent induction H; subst.
+  1-9: intros;
+       unfold NatMaps.In;
+       rewrite 2 NatMaps.Raw.Proofs.In_alt;
+       split;
+       apply NatMaps.Raw.Proofs.add_in; 
+       left; 
+       easy.
+  all: intros.
+  all: simpl.
+  all: destruct (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx0) eqn:Hzx1;
+    destruct (A_G2_Edge_Annotator_Helper n0 n1 zx1) eqn:Hzx2;
+    assert (Hn0: n0 = (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx0))) by (rewrite Hzx1; easy);
+    assert (Hn1: n1 = (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx0))) by (rewrite Hzx1; easy);
+    assert (Hn2: n2 = (fst (A_G2_Edge_Annotator_Helper n0 n1 zx1))) by (rewrite Hzx2; easy);
+    assert (Hn3: n3 = (snd (A_G2_Edge_Annotator_Helper n0 n1 zx1))) by (rewrite Hzx2; easy);
+    rewrite Hn0;
+    assert (Hzx0f: exists valOut, NatMaps.find (get_id zx0) (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx0)) = Some valOut) by
+    (
+      apply all_lookup_id_fst;
+      easy
+    );
+    destruct Hzx0f as (x1, Hzx0f);
+    rewrite Hzx0f;
+    clear Hzx0f;
+    rewrite Hn1;
+    assert (Hzx0s: exists valOut, NatMaps.find (get_id zx0) (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx0)) = Some valOut) by
+    (
+      apply all_lookup_id_snd;
+      easy
+    );
+    destruct Hzx0s as (x2, Hzx0s);
+    rewrite Hzx0s;
+    clear Hzx0s;
+    rewrite Hn2;
+    assert (Hzx1f: exists valOut, NatMaps.find (get_id zx1) (fst (A_G2_Edge_Annotator_Helper n0 n1 zx1)) = Some valOut) by
+    (
+      apply all_lookup_id_fst;
+      easy
+    );
+    destruct Hzx1f as (x3, Hzx1f);
+    rewrite Hzx1f;
+    clear Hzx1f;
+    rewrite <- Hn2;
+    rewrite Hn3;
+    assert (Hzx1s: exists valOut, NatMaps.find (get_id zx1) (snd (A_G2_Edge_Annotator_Helper n0 n1 zx1)) = Some valOut) by
+    (
+      apply all_lookup_id_snd;
+      easy
+    );
+    destruct Hzx1s as (x4, Hzx1s);
+    rewrite Hzx1s;
+    clear Hzx1s;
+    rewrite <- Hn3.
+  1-2,4-5: unfold NatMaps.In;
+    rewrite 2 NatMaps.Raw.Proofs.In_alt;
+    rewrite Hn2, Hn3; simpl;
+    rewrite 2 NatMaps.Raw.Proofs.add_in;
+    cut ((NatMaps.In n (fst (A_G2_Edge_Annotator_Helper n0 n1 zx1))) /\ 
+         (NatMaps.In n (snd (A_G2_Edge_Annotator_Helper n0 n1 zx1)))); 
+    [ intros; split; right; 
+      destruct H0; 
+      unfold NatMaps.In in *; 
+      rewrite <- NatMaps.Raw.Proofs.In_alt; 
+      assumption 
+    | ].
+  1,3: apply populated_passthrough.
+  1-4: subst n0 n1.
+  1-4: apply IHIn_A_G2_ZX.
+  all: simpl.
+  all: unfold NatMaps.In;
+       rewrite 2 NatMaps.Raw.Proofs.In_alt;
+       rewrite Hn2, Hn3; simpl;
+       rewrite 2 NatMaps.Raw.Proofs.add_in;
+       split;
+       left;
+       easy.
+Qed.
+   
+
+        (* 
   Proof steps: 
   1. Prove id is populated after visist.
   2. Prove all ids are populated
