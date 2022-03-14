@@ -589,8 +589,8 @@ Fixpoint A_G2_Edge_Annotator_Helper (baseInMap baseOutMap : NatListNatMaps) {nIn
   | A_G2_Z_Spider_1_1 α id => (NatMaps.add id [id] baseInMap,  NatMaps.add id [id] baseOutMap)
   | A_G2_Z_Spider_1_2 α id => (NatMaps.add id [id] baseInMap,  NatMaps.add id [id; id] baseOutMap)
   | A_G2_Z_Spider_2_1 α id => (NatMaps.add id [id; id] baseInMap,  NatMaps.add id [id] baseOutMap)
-  | A_G2_Cap id            => (NatMaps.add id [] baseInMap,  NatMaps.add id [id] baseOutMap)
-  | A_G2_Cup id            => (NatMaps.add id [] baseInMap,  NatMaps.add id [id; id] baseOutMap)
+  | A_G2_Cap id            => (NatMaps.add id [] baseInMap,  NatMaps.add id [id; id] baseOutMap)
+  | A_G2_Cup id            => (NatMaps.add id [id; id] baseInMap,  NatMaps.add id [] baseOutMap)
   | A_G2_Swap id           => (NatMaps.add id [id; id] baseInMap,  NatMaps.add id [id; id] baseOutMap)
   | A_G2_Stack zx0 zx1 id  => let lId := get_id zx0 in
                               let rId := get_id zx1 in
@@ -608,7 +608,7 @@ Fixpoint A_G2_Edge_Annotator_Helper (baseInMap baseOutMap : NatListNatMaps) {nIn
                               match A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx0 with 
                               | (lIn, lOut) => match A_G2_Edge_Annotator_Helper lIn lOut zx1 with
                                               | (rIn, rOut) =>  match (NatMaps.find lId lIn, NatMaps.find lId lOut, NatMaps.find rId rIn, NatMaps.find rId rOut) with
-                                                                | (Some lIdIn, Some lIdOut, Some rIdIn, Some rIdOut) => (NatMaps.add id (lIdIn) rIn, NatMaps.add id (lIdOut) rOut)
+                                                                | (Some lIdIn, Some lIdOut, Some rIdIn, Some rIdOut) => (NatMaps.add id (lIdIn) rIn, NatMaps.add id (rIdOut) rOut)
                                                                 | _ =>  (NatMaps.add id [] rIn, NatMaps.add id [] rOut)
                                                                 end
                                               end
@@ -1276,9 +1276,99 @@ Proof.
        left;
        easy.
 Qed.
-   
 
-        (* 
+Lemma compare_eq: forall n m, n = m -> exists e, OrderedNat.compare n m = EQ e.
+Proof.
+  intros.
+  subst m.
+  unfold OrderedNat.compare.
+  destruct (OrderedNat.lt_eq_gt_dec n n); try destruct s.
+  - exfalso.
+    inversion l.
+    + contradict H.
+      apply Nat.neq_succ_diag_l.
+    + subst n.
+      apply le_S_gt in H.
+      contradict H.
+      apply Nat.nlt_succ_diag_l.
+  - exists e.
+    reflexivity.
+  - exfalso.
+    inversion l.
+    + contradict H. 
+      apply Nat.neq_succ_diag_l.
+    + subst n.
+      apply le_S_gt in H.
+      contradict H.
+      apply Nat.nlt_succ_diag_l.
+Qed.
+
+Lemma annotation_length_correct : forall {nIn nOut} (zx : A_G2_ZX nIn nOut) baseInMap baseOutMap, 
+                                  exists l1 l2, 
+                                    ((
+                                      (NatMaps.find (get_id zx) (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx)) = Some l1) 
+                                      /\ (NatMaps.find (get_id zx) (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx)) = Some l2)
+                                    ) 
+                                    /\ (length l1 = nIn /\ length l2 = nOut)).
+Proof.
+  intros.
+  generalize dependent baseInMap.
+  generalize dependent baseOutMap.
+  assert (forall n, exists e, OrderedNat.compare n n = EQ e).
+  {
+    intros.
+    apply compare_eq.
+    reflexivity.
+  }
+  induction zx; intros.
+  1-9: eexists; eexists; simpl;
+    unfold NatMaps.find;
+    unfold NatMaps.add;
+    simpl;
+    split;
+    [ split;
+      rewrite NatMaps.Raw.Proofs.add_find; try apply NatMaps.is_bst;
+      specialize (H n);
+      destruct H;
+      rewrite H;
+      reflexivity
+    | split;
+      reflexivity
+    ].
+  all: simpl; destruct (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1) eqn:Hzx1;
+  destruct (A_G2_Edge_Annotator_Helper n0 n1 zx2) eqn:Hzx2;
+  assert (Hn0: n0 = (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1))) by (rewrite Hzx1; easy);
+  assert (Hn1: n1 = (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1))) by (rewrite Hzx1; easy);
+  assert (Hn2: n2 = (fst (A_G2_Edge_Annotator_Helper n0 n1 zx2))) by (rewrite Hzx2; easy);
+  assert (Hn3: n3 = (snd (A_G2_Edge_Annotator_Helper n0 n1 zx2))) by (rewrite Hzx2; easy);
+  specialize (IHzx1 baseOutMap baseInMap);
+  specialize (IHzx2 n1 n0);
+  destruct IHzx1;
+  destruct H0; destruct H0; destruct H0; destruct H1;
+  destruct IHzx2;
+  destruct H4; destruct H4; destruct H4; destruct H5;
+  rewrite <- Hn0 in H0;
+  rewrite <- Hn1 in H2;
+  rewrite <- Hn2 in H4;
+  rewrite <- Hn3 in H6;
+  rewrite H0, H2, H4, H6. 
+  1: exists (x ++ x1); exists (x0 ++ x2).
+  2: exists x; exists x2.
+  all: split.
+  1,3:  unfold NatMaps.find;
+        unfold NatMaps.add;
+        simpl;
+        split; rewrite NatMaps.Raw.Proofs.add_find; try apply NatMaps.is_bst;
+        specialize (H n);
+        destruct H;
+        rewrite H; reflexivity.
+  all: split.
+  1,2: rewrite app_length.
+  all: subst.
+  all: easy.
+Qed.
+
+  (* 
   Proof steps: 
   1. Prove id is populated after visist.
   2. Prove all ids are populated
