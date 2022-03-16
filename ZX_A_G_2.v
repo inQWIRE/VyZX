@@ -969,9 +969,6 @@ Proof.
     assumption.
 Qed. 
 
-    
-
-
 
 Lemma populated_passthrough : forall {nIn nOut} (zx : A_G2_ZX nIn nOut) n baseInMap baseOutMap, NatMaps.In n baseInMap /\ NatMaps.In n baseOutMap -> NatMaps.In n (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx)) /\ NatMaps.In n (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx)).
 Proof.
@@ -1216,6 +1213,48 @@ Proof.
   all: subst.
   all: easy.
 Qed.
+
+
+Module NatPairMaps := Make OrderedNatPair.
+
+Definition NatPairNatMaps := NatPairMaps.t nat.
+Definition EmptyNatPairNatMaps := NatPairMaps.empty nat.
+
+Fixpoint A_G2_Edge_Annotator_Match_Helper (inAnnotation outAnnotation : NatListNatMaps) (base : NatPairNatMaps) {nIn nOut} (zx : A_G2_ZX nIn nOut) : NatPairNatMaps :=
+  match zx with  
+  | A_G2_Compose zx0 zx1 _ => let l_base := (A_G2_Edge_Annotator_Match_Helper inAnnotation outAnnotation base zx0) in 
+                              let r_base := A_G2_Edge_Annotator_Match_Helper inAnnotation outAnnotation l_base zx1 in
+                              let lId := get_id zx0 in
+                              let rId := get_id zx1 in
+                               match (NatMaps.find lId outAnnotation, NatMaps.find rId inAnnotation) with
+                                | (Some lIdOut, Some rIdIn) => 
+                                  match lIdOut, rIdIn with
+                                  | l :: lIdOut', r :: rIdIn' => 
+                                    match (NatPairMaps.find (l,r) r_base) with
+                                    | None => NatPairMaps.add (l,r) 1 r_base
+                                    | Some n => NatPairMaps.add (l,r) (S n) r_base
+                                    end
+                                  | _, _ => r_base
+                                  end
+                                | _ =>  r_base
+                                end
+  | A_G2_Stack zx0 zx1 _ => let l_base := (A_G2_Edge_Annotator_Match_Helper inAnnotation outAnnotation base zx0) in 
+                            let r_base := A_G2_Edge_Annotator_Match_Helper inAnnotation outAnnotation l_base zx1 in
+                            r_base
+  | _ => base
+  end.
+
+Definition A_G2_Edge_Annotator_Match (inAnnotation outAnnotation : NatListNatMaps) {nIn nOut} (zx : A_G2_ZX nIn nOut) :=
+  A_G2_Edge_Annotator_Match_Helper inAnnotation outAnnotation EmptyNatPairNatMaps zx.
+
+Definition Get_Input_Output_Adj (inAnnotation outAnnotation : NatListNatMaps) {nIn nOut} (zx : A_G2_ZX nIn nOut) :=
+  (NatMaps.find (get_id zx) inAnnotation, NatMaps.find (get_id zx) outAnnotation).
+
+Definition Get_Edge_Count (edgemap: NatPairNatMaps) from to : nat :=
+  match NatPairMaps.find (from, to) edgemap with
+  | None => 0
+  | Some n => n
+  end.
 
   (* 
   Proof steps: 
