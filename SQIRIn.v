@@ -262,24 +262,48 @@ Definition ZX_AS_CNOT : ZX_Arb_Swaps 2 2 := ZX_AS_Z_spider 1 2 0 ↕A ArbWire �
 Definition ZX_ucom_rot (x y z : R) : ZX_Arb_Swaps 1 1 := 
   ZX_AS_Y ⟷A ZX_AS_Z_spider 1 1 y ⟷A ZX_AS_Y ⟷A ZX_AS_X_spider 1 1 z ⟷A ZX_AS_Z_spider 1 1 x.
 
-Definition padZXCNOT {dim pos1 pos2 : nat} : pos1 <> pos2 -> pos1 < dim -> pos2 < dim -> ZX_Arb_Swaps dim dim.
+Definition CNOTInj {dim : nat} (pos1 pos2 : nat) : pos1 <> pos2 -> pos1 < dim -> pos2 < dim -> ZX_Arb_Swaps dim dim.
 Proof.
   intros.
+  assert (2 <= dim). {
   destruct dim; [ exfalso; apply (Nat.nlt_0_r pos1); assumption | ].
   destruct dim.
-  { destruct pos1, pos2.
-    - contradiction.
-    - apply lt_S_n in H1; exfalso; apply (Nat.nlt_0_r pos2); assumption.
-    - apply lt_S_n in H0; exfalso; apply (Nat.nlt_0_r pos1); assumption.
-    - apply lt_S_n in H0; exfalso; apply (Nat.nlt_0_r pos1); assumption.
-      }
-  replace (S (S dim)) with (dim + 2)%nat
-    by (rewrite <- plus_0_r; repeat rewrite <- plus_n_Sm; reflexivity).
+  - destruct pos1, pos2.
+    + contradiction.
+    + apply lt_S_n in H1; exfalso; apply (Nat.nlt_0_r pos2); assumption.
+    + apply lt_S_n in H0; exfalso; apply (Nat.nlt_0_r pos1); assumption.
+    + apply lt_S_n in H0; exfalso; apply (Nat.nlt_0_r pos1); assumption.
+  - repeat rewrite <- Nat.succ_le_mono. apply Nat.le_0_l. }
   remember (max pos1 pos2) as topwire.
   remember (min pos1 pos2) as botwire.
-  replace (dim + 2)%nat with ((dim - topwire) + topwire + 2)%nat.
-  - admit.
-  - 
+  assert (botwire < topwire). { 
+    subst. generalize dependent pos2.
+    induction pos1; intros.
+    - simpl.
+      destruct pos2.
+      + contradiction.
+      + apply Nat.lt_0_succ.
+    - destruct pos2.
+      + simpl.
+        apply Nat.lt_0_succ.
+      + simpl.
+        rewrite <- Nat.succ_lt_mono.
+        apply IHpos1.
+        * transitivity (S pos1); [ auto | assumption ].
+        * rewrite <- Nat.succ_inj_wd_neg.
+          assumption.
+        * transitivity (S pos2); [ auto | assumption ].
+          }
+  replace (dim)%nat with (dim - (S topwire) + (S topwire))%nat.
+  - apply (AS_Stack).
+    + apply nArbWire.
+    + replace topwire with (topwire - botwire + botwire)%nat.
+      * apply (AS_Stack).
+    admit.
+  - rewrite (Nat.sub_add topwire).
+  replace (S (S dim)) with (dim + 2)%nat
+   by (rewrite <- plus_0_r; repeat rewrite <- plus_n_Sm; reflexivity). - admit.
+  - rewrite (Nat.sub_add topwire dim); [ | apply Nat.lt_le_incl;
     by (apply Nat.sub_add; apply Nat.lt_le_incl; rewrite Heqtopwire; apply Nat.max_lub_lt; assumption).
   apply (@AS_Stack (dim - topwire)%nat topwire (dim - topwire)%nat topwire); [ apply nArbWire | ].
   replace topwire with (topwire - botwire + botwire)%nat
