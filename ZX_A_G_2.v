@@ -617,6 +617,35 @@ Fixpoint A_G2_Edge_Annotator_Helper (baseInMap baseOutMap : NatListNatMaps) {nIn
 
 Definition A_G2_Edge_Annotator {nIn nOut} (zx : A_G2_ZX nIn nOut) : (NatListNatMaps * NatListNatMaps) := (A_G2_Edge_Annotator_Helper EmptyNatListNatMaps EmptyNatListNatMaps zx).
 
+Lemma compare_eq: forall n m, n = m -> exists e, OrderedNat.compare n m = EQ e.
+Proof.
+  intros.
+  subst m.
+  unfold OrderedNat.compare.
+  destruct (OrderedNat.lt_eq_gt_dec n n); try destruct s.
+  - exfalso.
+    inversion l.
+    + contradict H.
+      apply Nat.neq_succ_diag_l.
+    + subst n.
+      apply le_S_gt in H.
+      contradict H.
+      apply Nat.nlt_succ_diag_l.
+  - exists e.
+    reflexivity.
+  - exfalso.
+    inversion l.
+    + contradict H. 
+      apply Nat.neq_succ_diag_l.
+    + subst n.
+      apply le_S_gt in H.
+      contradict H.
+      apply Nat.nlt_succ_diag_l.
+Qed.
+
+Corollary compare_eq' : forall n, exists e, OrderedNat.compare n n = EQ e.
+Proof. intros. apply compare_eq. trivial. Qed.
+
 Lemma all_lookup_id : forall {nIn nOut} (zx : A_G2_ZX nIn nOut) baseInMap baseOutMap x,
                               x = get_id zx ->
                               (exists valIn, NatMaps.find x (fst (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx)) = Some valIn) /\
@@ -633,19 +662,10 @@ Proof.
     unfold NatMaps.this;
     unfold NatMaps.add;
     rewrite NatMaps.Raw.Proofs.add_find; try apply NatMaps.is_bst;
-    destruct (OrderedNat.compare n n);
-    try reflexivity;
-      subst;
-      inversion l;
-      try (
-        apply Nat.neq_succ_diag_l in H;
-        contradiction
-      );
-      try (
-        apply le_Sn_le in H;
-        apply Nat.nle_succ_diag_l in H;
-        contradiction
-      ).
+    specialize (compare_eq' n) as Hcom;
+    destruct Hcom as [x Hcom];
+    rewrite Hcom;
+    reflexivity.
   all: split;
     simpl;
     destruct (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1) eqn:Hzx1;
@@ -654,32 +674,19 @@ Proof.
     assert (n1 = (snd (A_G2_Edge_Annotator_Helper baseInMap baseOutMap zx1))) by (rewrite Hzx1; easy);
     assert (n2 = (fst (A_G2_Edge_Annotator_Helper n0 n1 zx2))) by (rewrite Hzx2; easy);
     assert (n3 = (snd (A_G2_Edge_Annotator_Helper n0 n1 zx2))) by (rewrite Hzx2; easy);
-    destruct (NatMaps.find (elt:=list nat) (get_id zx1) n2),
-              (NatMaps.find (elt:=list nat) (get_id zx1) n3),
+    destruct (NatMaps.find (elt:=list nat) (get_id zx1) n0),
+              (NatMaps.find (elt:=list nat) (get_id zx1) n1),
               (NatMaps.find (elt:=list nat) (get_id zx2) n2),
               (NatMaps.find (elt:=list nat) (get_id zx2) n3);
-    subst n2 n3;
     simpl;
     unfold NatMaps.find;
     unfold NatMaps.this;
     unfold NatMaps.add;
     try rewrite NatMaps.Raw.Proofs.add_find; try apply NatMaps.is_bst;
-    destruct (OrderedNat.compare n n);
-      try inversion l3;
-      try inversion l2;
-      try inversion l1;
-      try inversion l0;
-      try inversion l;
-      try (
-        apply Nat.neq_succ_diag_l in H1;
-        contradiction
-      );
-      try (
-        apply le_Sn_le in H1;
-        apply Nat.nle_succ_diag_l in H1;
-        contradiction
-      );
-    try (eexists; reflexivity).
+    specialize (compare_eq' n) as Hcom;
+    destruct Hcom as [x Hcom];
+    rewrite Hcom;
+    eauto.
 Qed.
 
 Corollary all_lookup_id_fst : forall {nIn nOut} (zx : A_G2_ZX nIn nOut) baseInMap baseOutMap x,
@@ -1123,34 +1130,7 @@ Proof.
        easy.
 Qed.
 
-Lemma compare_eq: forall n m, n = m -> exists e, OrderedNat.compare n m = EQ e.
-Proof.
-  intros.
-  subst m.
-  unfold OrderedNat.compare.
-  destruct (OrderedNat.lt_eq_gt_dec n n); try destruct s.
-  - exfalso.
-    inversion l.
-    + contradict H.
-      apply Nat.neq_succ_diag_l.
-    + subst n.
-      apply le_S_gt in H.
-      contradict H.
-      apply Nat.nlt_succ_diag_l.
-  - exists e.
-    reflexivity.
-  - exfalso.
-    inversion l.
-    + contradict H. 
-      apply Nat.neq_succ_diag_l.
-    + subst n.
-      apply le_S_gt in H.
-      contradict H.
-      apply Nat.nlt_succ_diag_l.
-Qed.
 
-Corollary compare_eq' : forall n, exists e, OrderedNat.compare n n = EQ e.
-Proof. intros. apply compare_eq. trivial. Qed.
 
 Lemma annotation_length_correct : forall {nIn nOut} (zx : A_G2_ZX nIn nOut) baseInMap baseOutMap, 
                                   exists l1 l2, 
@@ -1338,7 +1318,7 @@ Definition remove_one_edge (edgemap : NatPairNatMaps) from to :=
   | Some _ => NatPairMaps.remove (from, to) edgemap
   end.
 
-Lemma remove_one_edge_does_leq_1 : forall (edgemap : NatPairNatMaps) from to,
+Lemma remove_one_edge_none : forall (edgemap : NatPairNatMaps) from to,
   NatPairMaps.find (from, to) edgemap = None ->
   ~ NatPairMaps.In (from, to) (remove_one_edge edgemap from to).
 Proof.
