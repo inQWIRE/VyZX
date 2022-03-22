@@ -295,7 +295,13 @@ Proof.
           assumption.
         * transitivity (S pos2); [ auto | assumption ].
           }
-  replace (dim)%nat with (dim - (S topwire) + (S topwire))%nat by lia.
+  replace (dim)%nat with (dim - (S topwire) + (S topwire))%nat
+    by (rewrite Nat.sub_add; 
+                [ reflexivity | 
+                  apply lt_le_S; 
+                  rewrite Heqtopwire; 
+                  apply Nat.max_lub_lt_iff; 
+                  split; assumption ]).
   apply (AS_Stack); [ apply nArbWire | ].
   apply (@AS_Compose (S topwire) (S topwire) (S topwire)).
   1: apply (@AS_Compose (S topwire) (S topwire) (S topwire)).
@@ -306,7 +312,7 @@ Proof.
   - destruct topwire.
     + exfalso.
       inversion H3.
-    + replace (S (S (topwire))) with (2 + topwire)%nat by lia.
+    + replace (S (S (topwire))) with (2 + topwire)%nat by reflexivity.
       apply AS_Stack; [ | apply nArbWire ].
       bdestruct (pos1 <=? pos2).
       * apply ZX_AS_CNOT.
@@ -319,6 +325,7 @@ Proof.
     apply AS_Stack; [ apply ArbWire | ].
     apply A_Swap.
 Defined.
+Print CNOTInj.
 
 Local Open Scope ucom.
 
