@@ -9,6 +9,7 @@ Require Export VyZX.Proportional.
 Require Export Rules.
 Require Import Matrix.
 Require Import Quantum.
+Require Import ZX_A_G_2.
 
 Local Open Scope R_scope.
 
@@ -294,30 +295,30 @@ Proof.
           assumption.
         * transitivity (S pos2); [ auto | assumption ].
           }
-  replace (dim)%nat with (dim - (S topwire) + (S topwire))%nat.
-  - apply (AS_Stack).
-    + apply nArbWire.
-    + replace topwire with (topwire - botwire + botwire)%nat.
-      * apply (AS_Stack).
-    admit.
-  - rewrite (Nat.sub_add topwire).
-  replace (S (S dim)) with (dim + 2)%nat
-   by (rewrite <- plus_0_r; repeat rewrite <- plus_n_Sm; reflexivity). - admit.
-  - rewrite (Nat.sub_add topwire dim); [ | apply Nat.lt_le_incl;
-    by (apply Nat.sub_add; apply Nat.lt_le_incl; rewrite Heqtopwire; apply Nat.max_lub_lt; assumption).
-  apply (@AS_Stack (dim - topwire)%nat topwire (dim - topwire)%nat topwire); [ apply nArbWire | ].
-  replace topwire with (topwire - botwire + botwire)%nat
-    by (apply Nat.sub_add; subst; transitivity pos1; [ apply Nat.le_min_l | apply Nat.le_max_l ]).
-  apply AS_Stack; [ | apply nArbWire ].
-  apply (@AS_Compose _ (topwire - botwire)); [ apply A_Swap | ].
-  
-  destruct (pos2 <? pos1) eqn:E.
-  - apply ZX_AS_CNOT.
-  
-  
-
-  replace pos1 with
-  (nArbWire (dim - pos1)) ↕A (A_Swap (pos1 - pos2)) ↕A (nArbWire pos2).
+  replace (dim)%nat with (dim - (S topwire) + (S topwire))%nat by lia.
+  apply (AS_Stack); [ apply nArbWire | ].
+  apply (@AS_Compose (S topwire) (S topwire) (S topwire)).
+  1: apply (@AS_Compose (S topwire) (S topwire) (S topwire)).
+  - (* SWAP up target *)
+    rewrite <- Nat.add_1_l.
+    apply AS_Stack; [ apply ArbWire | ].
+    apply A_Swap.
+  - destruct topwire.
+    + exfalso.
+      inversion H3.
+    + replace (S (S (topwire))) with (2 + topwire)%nat by lia.
+      apply AS_Stack; [ | apply nArbWire ].
+      bdestruct (pos1 <=? pos2).
+      * apply ZX_AS_CNOT.
+      * apply (@AS_Compose 2 2 2); [ | apply (@AS_Compose 2 2 2) ].
+        apply A_Swap.
+        apply ZX_AS_CNOT.
+        apply A_Swap.
+  - (* SWAP up target *)
+    rewrite <- Nat.add_1_l.
+    apply AS_Stack; [ apply ArbWire | ].
+    apply A_Swap.
+Defined.
 
 Local Open Scope ucom.
 
