@@ -303,25 +303,34 @@ Proof.
                   apply Nat.max_lub_lt_iff; 
                   split; assumption ]).
   apply (AS_Stack); [ apply nArbWire | ].
-  apply (@AS_Compose (S topwire) (S topwire) (S topwire)).
-  1: apply (@AS_Compose (S topwire) (S topwire) (S topwire)).
+  replace (S topwire) with ((S topwire) - (botwire) + (botwire))%nat
+    by (apply Nat.sub_add; 
+        constructor; 
+        apply Nat.lt_le_incl; 
+        apply H3).
+  apply AS_Stack; [ | apply nArbWire].
+  apply (@AS_Compose (S topwire - botwire) (S topwire - botwire) (S topwire - botwire)).
+  1: apply (@AS_Compose (S topwire - botwire) (S topwire - botwire) (S topwire - botwire)).
   - (* SWAP up target *)
     rewrite <- Nat.add_1_l.
+    rewrite <- Nat.add_sub_assoc; [ | apply Nat.lt_le_incl; apply H3 ].
     apply AS_Stack; [ apply ArbWire | ].
     apply A_Swap.
-  - destruct topwire.
-    + exfalso.
-      inversion H3.
-    + replace (S (S (topwire))) with (2 + topwire)%nat by reflexivity.
-      apply AS_Stack; [ | apply nArbWire ].
-      bdestruct (pos1 <=? pos2).
-      * apply ZX_AS_CNOT.
-      * apply (@AS_Compose 2 2 2); [ | apply (@AS_Compose 2 2 2) ].
-        apply A_Swap.
-        apply ZX_AS_CNOT.
-        apply A_Swap.
+  - (* CNOT Wires 1 & 2*)
+    destruct topwire; [ exfalso; inversion H3 | ]. (* Assert at least two wires *)
+    replace (S (S (topwire))) with (2 + topwire)%nat by reflexivity.
+    rewrite <- Nat.add_sub_assoc; [ | apply lt_n_Sm_le; apply H3 ].
+    apply AS_Stack; [ | apply nArbWire ].
+    bdestruct (pos1 <=? pos2).
+    + apply ZX_AS_CNOT.
+    + (* Add swaps on both sides of CNOT to flip control and target *)
+      apply (@AS_Compose 2 2 2); [ | apply (@AS_Compose 2 2 2) ].
+      apply A_Swap.
+      apply ZX_AS_CNOT.
+      apply A_Swap.
   - (* SWAP up target *)
     rewrite <- Nat.add_1_l.
+    rewrite <- Nat.add_sub_assoc; [ | apply Nat.lt_le_incl; apply H3 ].
     apply AS_Stack; [ apply ArbWire | ].
     apply A_Swap.
 Defined.
