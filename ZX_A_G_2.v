@@ -540,6 +540,9 @@ End OrderedNatPair.
 
 Module NatMaps := Make OrderedNat.
 
+Definition NatNatMaps := NatMaps.t nat.
+Definition EmptyNatNatMaps := NatMaps.empty nat.
+
 Definition NatListNatMaps := NatMaps.t (list nat).
 Definition EmptyNatListNatMaps := NatMaps.empty (list nat).
 
@@ -1415,7 +1418,74 @@ Proof.
   trivial.
 Qed.
 
+Fixpoint get_inputs_rec {nIn nOut} (zxa : A_G2_ZX nIn nOut) (offset : nat) (basemap : NatNatMaps) : NatNatMaps :=
+  match zxa with
+  | A_G2_Empty _ | A_G2_Z_Spider_0_1 _ _ | A_G2_Cap _ => basemap
+  | A_G2_Z_Spider_1_0 _ n | A_G2_Z_Spider_1_1 _ n | A_G2_Z_Spider_1_2 _ n => NatMaps.add offset n basemap
+  | A_G2_Z_Spider_2_1 _ n | A_G2_Cup n | A_G2_Swap n => NatMaps.add offset n (NatMaps.add (S offset) n basemap)
+  | @A_G2_Stack nIn0 nIn1 nOut0 nOut1 azx0 azx1 n => 
+      get_inputs_rec azx1 (offset + nIn0)%nat (get_inputs_rec azx0 offset basemap)
+  | A_G2_Compose azx0 azx1 n => get_inputs_rec azx0 offset basemap
+  end.
 
+Definition get_inputs {nIn nOut} (zxa : A_G2_ZX nIn nOut) : NatNatMaps := get_inputs_rec zxa 0 EmptyNatNatMaps.
+
+Ltac unfold_get_inputs := unfold get_inputs; unfold get_inputs_rec; simpl.
+
+Fixpoint get_outputs_rec {nIn nOut} (zxa : A_G2_ZX nIn nOut) (offset : nat) (basemap : NatNatMaps) : NatNatMaps :=
+  match zxa with
+  | A_G2_Empty _ | A_G2_Z_Spider_1_0 _ _ | A_G2_Cup _ => basemap
+  | A_G2_Z_Spider_0_1 _ n | A_G2_Z_Spider_1_1 _ n | A_G2_Z_Spider_2_1 _ n => NatMaps.add offset n basemap
+  | A_G2_Z_Spider_1_2 _ n | A_G2_Cap n | A_G2_Swap n => NatMaps.add offset n (NatMaps.add (S offset) n basemap)
+  | @A_G2_Stack nIn0 nIn1 nOut0 nOut1 azx0 azx1 n => 
+      get_outputs_rec azx1 (offset + nOut0)%nat (get_outputs_rec azx0 offset basemap)
+  | A_G2_Compose azx0 azx1 n => get_outputs_rec azx1 offset basemap
+  end.
+
+Definition get_outputs {nIn nOut} (zxa : A_G2_ZX nIn nOut) : NatNatMaps := get_outputs_rec zxa 0 EmptyNatNatMaps.
+
+Ltac unfold_get_outputs := unfold get_outputs; unfold get_outputs_rec; simpl.
+
+Definition test_compose :A_G2_ZX 2 1 :=
+  (A_G2_Compose (A_G2_Z_Spider_2_1 0 1%nat)
+                (A_G2_Z_Spider_1_1 0 2%nat) 
+                3%nat).
+
+Definition test_diagram : A_G2_ZX 3 3 :=
+  A_G2_Stack 
+    (A_G2_Compose (A_G2_Z_Spider_2_1 0 1%nat)
+                  (A_G2_Z_Spider_1_1 0 2%nat) 
+                  3%nat)
+    (A_G2_Z_Spider_1_2 0 4%nat) 5%nat.
+
+Definition test_inputs := get_inputs test_diagram.
+
+Definition test_outputs := get_outputs test_diagram.
+
+Lemma get_inputs_test_0 : NatMaps.find 0 test_inputs = Some 1.
+Proof.
+  unfold test_inputs.
+  unfold_get_inputs.
+  apply NatMaps.find_1.
+  apply NatMaps.add_2; [ auto | ].
+  apply NatMaps.add_1; auto.
+Qed.
+  
+Lemma get_outputs_test_c_0 : NatMaps.find 0 (get_outputs test_compose) = Some 2.
+Proof.
+  unfold_get_outputs.
+  apply NatMaps.find_1.
+  apply NatMaps.add_1; auto.
+Qed.
+
+Lemma get_outputs_test_0 : NatMaps.find 0 (get_outputs test_diagram) = Some 2.
+Proof.
+  unfold_get_outputs.
+  apply NatMaps.find_1.
+  apply NatMaps.add_2; auto.
+  apply NatMaps.add_2; auto.
+  apply NatMaps.add_1; auto.
+Qed.
 
   (* 
   Proof steps: 
