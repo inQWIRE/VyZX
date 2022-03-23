@@ -317,7 +317,7 @@ Proof.
     apply AS_Stack; [ apply ArbWire | ].
     apply A_Swap.
   - (* CNOT Wires 1 & 2*)
-    destruct topwire; [ exfalso; inversion H3 | ]. (* Assert at least two wires *)
+    destruct topwire; [ contradict H3; apply Nat.nlt_0_r | ]. (* Assert at least two wires *)
     replace (S (S (topwire))) with (2 + topwire)%nat by reflexivity.
     rewrite <- Nat.add_sub_assoc; [ | apply lt_n_Sm_le; apply H3 ].
     apply AS_Stack; [ | apply nArbWire ].
