@@ -1242,21 +1242,29 @@ Qed.
 
 Module NatPairMaps := Make OrderedNatPair.
 
-Definition NatPairNatMaps := NatPairMaps.t nat.
-Definition EmptyNatPairNatMaps := NatPairMaps.empty nat.
+Definition NatNatMapMaps := NatMaps.t NatNatMaps.
+Definition EmptyNatMapNatMaps := NatMaps.empty (NatNatMaps).
 
+Definition add_one_edge (edgemap : NatNatMapMaps) from to :=
+  match (NatMaps.find from edgemap) with
+  | None => NatMaps.add from (NatMaps.add to 1 EmptyNatNatMaps) edgemap
+  | Some m => 
+      match NatMaps.find to m with
+      | None => NatMaps.add from (NatMaps.add to 1 m) edgemap
+      | Some n => NatMaps.add from (NatMaps.add to (S n) m) edgemap
+      end
+  end.
 
-Fixpoint add_all_edges (base : NatPairNatMaps) (l : list (nat * nat)) :=
+Fixpoint add_all_edges (base : NatNatMapMaps) (l : list (nat * nat)) :=
   match l with
   | [] => base
   | el :: l' => let base' := add_all_edges base l' in
-            match (NatPairMaps.find el base') with
-            | None => NatPairMaps.add el 1 base'
-            | Some n => NatPairMaps.add el (S n) base'
-            end
+                let from := fst el in
+                let to := snd el in
+                add_one_edge base' from to
   end.
 
-Lemma add_all_edges_adds_all_edges : forall l base x, In x l -> NatPairMaps.In x (add_all_edges base l).
+Lemma add_all_edges_adds_all_edges : forall l base x, In x l -> (exists m, (NatMaps.find (fst x) (add_all_edges base l) = Some m /\ NatMaps.In (snd x) m)).
 Proof.
   intros.
   generalize dependent x.
@@ -1264,25 +1272,117 @@ Proof.
   simpl.
   destruct H.
   - subst a.
-    destruct (NatPairMaps.find (elt:=nat) x (add_all_edges base l)).
-    all: unfold NatPairMaps.add, NatPairMaps.In;
-         rewrite NatPairMaps.Raw.Proofs.In_alt; 
-         simpl.
-    all: apply NatPairMaps.Raw.Proofs.add_in.
-    all: left; trivial.
-  - unfold NatPairMaps.In in IHl.
-    destruct (NatPairMaps.find (elt:=nat) a (add_all_edges base l)).
-    all: unfold NatPairMaps.add, NatPairMaps.In;
-         rewrite NatPairMaps.Raw.Proofs.In_alt;
-         simpl.
-    all: apply NatPairMaps.Raw.Proofs.add_in.
-    all: right.
-    all: rewrite <- NatPairMaps.Raw.Proofs.In_alt.  
-    all: apply IHl.
-    all: exact H.
+    destruct x; simpl; unfold add_one_edge.
+    destruct (NatMaps.find (elt:=_) k (add_all_edges base l)).
+    + destruct (NatMaps.find (elt:= _ ) n n0); eexists; split.
+        * unfold NatMaps.add, NatMaps.find.
+          simpl.
+          rewrite NatMaps.Raw.Proofs.add_find; [ | apply NatMaps.is_bst].
+          specialize (compare_eq' k); intros.
+          destruct H; rewrite H.
+          reflexivity.
+        * unfold NatMaps.In.
+          rewrite NatMaps.Raw.Proofs.In_alt.
+          simpl.
+          apply NatMaps.Raw.Proofs.add_in.
+          left; easy.
+        * unfold NatMaps.add, NatMaps.find.
+          simpl.
+          rewrite NatMaps.Raw.Proofs.add_find; [ | apply NatMaps.is_bst].
+          specialize (compare_eq' k); intros.
+          destruct H; rewrite H.
+          reflexivity.
+        * unfold NatMaps.In.
+          rewrite NatMaps.Raw.Proofs.In_alt.
+          simpl.
+          apply NatMaps.Raw.Proofs.add_in.
+          left; easy.
+    + eexists; split.
+      * unfold NatMaps.find, NatMaps.add.
+        simpl.
+        rewrite NatMaps.Raw.Proofs.add_find; [ | apply NatMaps.is_bst].
+        specialize (compare_eq' k); intros.
+        destruct H; rewrite H.
+        reflexivity.
+      * unfold NatMaps.In.
+        rewrite NatMaps.Raw.Proofs.In_alt.
+        simpl.
+        constructor.
+        easy.
+  - unfold add_one_edge.
+    specialize (IHl x H).
+    destruct IHl.
+    destruct H0.
+    destruct x.
+    destruct a.
+    rename k0 into a0.
+    rename n0 into a1.
+    simpl in H0.
+    simpl in H1.
+    simpl.
+    destruct (NatMaps.find (elt:=NatNatMaps) a0 (add_all_edges base l)) eqn:Hfst.
+    + destruct (NatMaps.find (elt:=nat) a1 n0) eqn:Hsnd.
+      * unfold NatMaps.add, NatMaps.find in *.
+        simpl.
+        rewrite NatMaps.Raw.Proofs.add_find; [ | apply NatMaps.is_bst].
+        destruct (OrderedNat.compare k a0); eexists;
+        try (split; [apply H0 | apply H1]).
+        inversion e.
+        split.
+        simpl.
+        reflexivity.
+        unfold NatMaps.In.
+        rewrite NatMaps.Raw.Proofs.In_alt.
+        simpl.
+        apply NatMaps.Raw.Proofs.add_in.
+        subst.
+        subst.
+        rewrite H0 in Hfst.
+        inversion Hfst.
+        subst.
+        right.
+        unfold NatMaps.In in H1.
+        rewrite <- NatMaps.Raw.Proofs.In_alt.
+        apply H1.
+      * simpl.
+        unfold NatMaps.add, NatMaps.find in *.
+        simpl.
+        rewrite NatMaps.Raw.Proofs.add_find; [ | apply NatMaps.is_bst].
+        destruct (OrderedNat.compare k a0); eexists;
+        try (split; [apply H0 | apply H1]).
+        simpl.
+        inversion e.
+        subst.
+        rewrite H0 in Hfst.
+        inversion Hfst.
+        subst.
+        split.
+        reflexivity.
+        simpl.
+        unfold NatMaps.In.
+        rewrite NatMaps.Raw.Proofs.In_alt.
+        simpl.
+        rewrite NatMaps.Raw.Proofs.add_in.
+        right.
+        unfold NatMaps.In in H1.
+        rewrite <- NatMaps.Raw.Proofs.In_alt.
+        apply H1.
+    + simpl.
+      eexists.
+      unfold NatMaps.add, NatMaps.find in *.
+      simpl.
+      rewrite NatMaps.Raw.Proofs.add_find; [ | apply NatMaps.is_bst].
+      destruct (OrderedNat.compare k a0);
+      try (split; [apply H0 | apply H1]).
+      exfalso.
+      simpl.
+      inversion e.
+      subst.
+      rewrite Hfst in H0.
+      discriminate H0. 
 Qed.
 
-Fixpoint A_G2_Edge_Annotator_Match_Helper (inAnnotation outAnnotation : NatListNatMaps) (base : NatPairNatMaps) {nIn nOut} (zx : A_G2_ZX nIn nOut) : NatPairNatMaps :=
+Fixpoint A_G2_Edge_Annotator_Match_Helper (inAnnotation outAnnotation : NatListNatMaps) (base : NatNatMapMaps) {nIn nOut} (zx : A_G2_ZX nIn nOut) : NatNatMapMaps :=
   match zx with  
   | A_G2_Compose zx0 zx1 _ => let l_base := (A_G2_Edge_Annotator_Match_Helper inAnnotation outAnnotation base zx0) in 
                               let r_base := A_G2_Edge_Annotator_Match_Helper inAnnotation outAnnotation l_base zx1 in
@@ -1301,121 +1401,186 @@ Fixpoint A_G2_Edge_Annotator_Match_Helper (inAnnotation outAnnotation : NatListN
   end.
 
 Definition A_G2_Edge_Annotator_Match (inAnnotation outAnnotation : NatListNatMaps) {nIn nOut} (zx : A_G2_ZX nIn nOut) :=
-  A_G2_Edge_Annotator_Match_Helper inAnnotation outAnnotation EmptyNatPairNatMaps zx.
+  A_G2_Edge_Annotator_Match_Helper inAnnotation outAnnotation EmptyNatMapNatMaps zx.
 
 Definition Get_Input_Output_Adj (inAnnotation outAnnotation : NatListNatMaps) {nIn nOut} (zx : A_G2_ZX nIn nOut) :=
   (NatMaps.find (get_id zx) inAnnotation, NatMaps.find (get_id zx) outAnnotation).
 
 Notation Get_Edges edgemap := (NatPairMaps.elements edgemap).
 
-Definition Get_Edge_Count (edgemap : NatPairNatMaps) from to : nat :=
-  match NatPairMaps.find (from, to) edgemap with
+Definition Get_Edge_Count (edgemap : NatNatMapMaps) from to : nat :=
+  match NatMaps.find from edgemap with
   | None => 0
-  | Some n => n
+  | Some m => match NatMaps.find to m with
+              | None => 0
+              | Some n => n
+              end
   end.
 
-Definition remove_one_edge (edgemap : NatPairNatMaps) from to :=
-  match NatPairMaps.find (from, to) edgemap with
+Definition Edge_Exists (edgemap : NatNatMapMaps) from to := Get_Edge_Count edgemap from to <> 0.
+
+Definition remove_one_edge (edgemap : NatNatMapMaps) from to :=
+  match NatMaps.find from edgemap with
   | None => edgemap
-  | Some (S (S n)) => NatPairMaps.add (from, to) (S n) edgemap (* if there's more than one edge retain the edge but decrement *)
-  | Some _ => NatPairMaps.remove (from, to) edgemap
+  | Some m => NatMaps.add from (match NatMaps.find to m with
+                                | None => m
+                                | Some (S (S n)) => NatMaps.add to (S n) m (* if there's more than one edge retain the edge but decrement *)
+                                | Some _ => NatMaps.remove to m
+                                end) edgemap
   end.
 
-Lemma remove_one_edge_none : forall (edgemap : NatPairNatMaps) from to,
-  NatPairMaps.find (from, to) edgemap = None ->
-  ~ NatPairMaps.In (from, to) (remove_one_edge edgemap from to).
+
+
+Lemma remove_find : forall T m x y, x = y -> @NatMaps.find T y (NatMaps.remove x m) = None.
+Proof.
+  intros.
+  subst.
+  cut (~ @NatMaps.In T y (NatMaps.remove y m)); 
+  unfold NatMaps.In, NatMaps.remove, NatMaps.find; 
+  rewrite NatMaps.Raw.Proofs.In_alt;
+  simpl.
+  - intros.
+    apply NatMaps.Raw.Proofs.not_find_iff; [ apply NatMaps.Raw.Proofs.remove_bst; apply NatMaps.is_bst | ].
+    apply H.
+  - rewrite NatMaps.Raw.Proofs.remove_in; [ | apply NatMaps.is_bst ].
+    apply Classical_Prop.or_not_and.
+    left.
+    unfold not.
+    intros.
+    apply H.
+    easy.
+Qed.
+
+Lemma remove_one_edge_none : forall (edgemap : NatNatMapMaps) from to,
+  ~ Edge_Exists edgemap from to ->
+  ~ Edge_Exists (remove_one_edge edgemap from to) from to.
 Proof.
   intros.
   unfold remove_one_edge.
-  rewrite H.
-  unfold NatPairMaps.find in H.
-  unfold NatPairMaps.In.
-  rewrite NatPairMaps.Raw.Proofs.In_alt.
-  unfold not; intros.
-  apply NatPairMaps.Raw.Proofs.in_find in H0; [ | apply NatPairMaps.is_bst ].
-  contradiction.
+  unfold Edge_Exists in *.
+  unfold Get_Edge_Count in *.
+  destruct (NatMaps.find (elt:=NatNatMaps) from edgemap) eqn:Hf.
+  - destruct (NatMaps.find (elt:=nat) to n) eqn:Hs.
+    + destruct n0.
+      * apply Nat.eq_dne.
+        unfold NatMaps.find, NatMaps.add.
+        simpl.
+        rewrite NatMaps.Raw.Proofs.add_find; [ | apply NatMaps.is_bst ].
+        specialize (compare_eq' from); intros.
+        destruct H0.
+        rewrite H0.
+        unfold NatMaps.remove.
+        simpl.
+        specialize (remove_find nat n to to eq_refl); intros.
+        unfold NatMaps.find, NatMaps.remove in H1; simpl in H1.
+        rewrite H1.
+        easy.
+      * unfold not in H.
+        exfalso.
+        apply H.
+        intros.
+        inversion H0.
+    + apply Nat.eq_dne.
+      unfold NatMaps.find, NatMaps.add.
+      simpl.
+      rewrite NatMaps.Raw.Proofs.add_find; [ | apply NatMaps.is_bst ].
+      specialize (compare_eq' from); intros.
+      destruct H0.
+      rewrite H0.
+      unfold NatMaps.find in Hs.
+      rewrite Hs.
+      easy.
+  - simpl.
+    rewrite Hf.
+    assumption.
 Qed.
 
-Lemma remove_one_edge_does_leq_1 : forall (edgemap : NatPairNatMaps) from to n,
-  NatPairMaps.find (from, to) edgemap = Some n ->
-  n <= 1 ->
-  ~ NatPairMaps.In (from, to) (remove_one_edge edgemap from to).
+Lemma remove_one_edge_pred : forall edgemap from to n,
+  Get_Edge_Count edgemap from to = n ->
+  Get_Edge_Count (remove_one_edge edgemap from to) from to = pred n.
 Proof.
   intros.
   unfold remove_one_edge.
-  rewrite H.
-  assert (n = 0 \/ n = 1).
-  {
-    destruct n.
-    - left; easy.
-    - destruct n.
-      + right. easy.
-      + inversion H0.
-        contradict H2; apply Nat.nle_succ_0.
-  }
-  unfold NatPairMaps.In.
-  unfold NatPairMaps.remove; simpl.
-  rewrite NatPairMaps.Raw.Proofs.In_alt.
-  destruct H1; subst n; simpl.
-  all: unfold not; intros.
-  all: rewrite NatPairMaps.Raw.Proofs.remove_in in H1; try apply NatPairMaps.is_bst.
-  all: destruct H1.
-  all: contradiction.
+  unfold Get_Edge_Count in *.
+  destruct ( NatMaps.find (elt:=NatNatMaps) from edgemap) eqn:Hf.
+  - destruct (NatMaps.find (elt:=nat) to n0) eqn:Hs.
+    + subst n1.
+      unfold NatMaps.find, NatMaps.add.
+      simpl.
+      rewrite NatMaps.Raw.Proofs.add_find; [ | apply NatMaps.is_bst ]. 
+      specialize (compare_eq' from); intros.
+      destruct H.
+      rewrite H.
+      destruct n; [ | destruct n ].
+      1,2: specialize (remove_find nat n0 to to eq_refl); intros.
+      1,2: unfold NatMaps.find in H0; simpl in H0; unfold NatMaps.remove; simpl.
+      1,2: rewrite H0.
+      1,2: easy.
+      simpl.
+      rewrite NatMaps.Raw.Proofs.add_find; [ | apply NatMaps.is_bst ].
+      specialize (compare_eq' to); intros.
+      destruct H0; rewrite H0.
+      easy.
+    + unfold NatMaps.find, NatMaps.add.
+      simpl.
+      rewrite NatMaps.Raw.Proofs.add_find; [ | apply NatMaps.is_bst ].
+      specialize (compare_eq' from); intros.
+      destruct H0.
+      rewrite H0.
+      unfold NatMaps.find in Hs.
+      rewrite Hs.
+      subst.
+      easy.  
+  - rewrite Hf.
+    subst.
+    easy.   
 Qed.
 
-Lemma compare_eq_pair: forall n m, n = m -> exists e, OrderedNatPair.compare n m = EQ e.
+
+Lemma add_one_edge_succ : forall edgemap from to n,
+  Get_Edge_Count edgemap from to = n ->
+  Get_Edge_Count (add_one_edge edgemap from to) from to = S n.
 Proof.
   intros.
-  subst m.
-  unfold OrderedNatPair.compare.
-  destruct (OrderedNatPair.lt_eq_gt_dec n n); try destruct s; destruct n.
-  - exfalso.
-    inversion l.
-    + contradict H.
-      apply Nat.lt_irrefl.
-    + destruct H.
-      contradict H0.
-      apply Nat.lt_irrefl.
-  - exists e.
-    reflexivity.
-  - exfalso.
-    inversion l.
-    + contradict H. 
-      apply Nat.lt_irrefl.
-    + destruct H.
-      contradict H0.
-      apply Nat.lt_irrefl.
-Qed.
-
-Corollary compare_eq_pair' : forall n, exists e, OrderedNatPair.compare n n = EQ e.
-Proof. intros. apply compare_eq_pair. trivial. Qed.
-
-Lemma remove_one_edge_does_ge_1 : forall (edgemap : NatPairNatMaps) from to n,
-  NatPairMaps.find (from, to) edgemap = Some n ->
-  n > 1 ->
-  NatPairMaps.find (from, to) (remove_one_edge edgemap from to) = Some (pred n).
-Proof.
-  intros.
-  unfold remove_one_edge.
-  rewrite H.
-  assert (exists n', n = (S (S n'))).
-  {
-    destruct n.
-    - contradict H0.
-      apply Nat.nle_succ_0.
-    - destruct n.
-      + contradict H0;
-        apply Nat.lt_irrefl.
-      + eauto.  
-  }
-  destruct H1.
-  subst n.
-  unfold NatPairMaps.add, NatPairMaps.find; simpl.
-  rewrite NatPairMaps.Raw.Proofs.add_find; [ | apply NatPairMaps.is_bst ].
-  assert (exists e, OrderedNatPair.compare (from, to) (from, to) = EQ e) by apply compare_eq_pair'.
-  destruct H1.
-  rewrite H1.
-  trivial.
+  unfold add_one_edge.
+  unfold Get_Edge_Count in *.
+  destruct ( NatMaps.find (elt:=NatNatMaps) from edgemap) eqn:Hf.
+  - destruct (NatMaps.find (elt:=nat) to n0) eqn:Hs.
+    + subst n1.
+      unfold NatMaps.find, NatMaps.add.
+      simpl.
+      rewrite NatMaps.Raw.Proofs.add_find; [ | apply NatMaps.is_bst ]. 
+      specialize (compare_eq' from); intros.
+      destruct H.
+      rewrite H.
+      simpl.
+      rewrite NatMaps.Raw.Proofs.add_find; [ | apply NatMaps.is_bst ].
+      specialize (compare_eq' to); intros.
+      destruct H0; rewrite H0.
+      easy.
+    + unfold NatMaps.find, NatMaps.add.
+      simpl.
+      rewrite NatMaps.Raw.Proofs.add_find; [ | apply NatMaps.is_bst ].
+      specialize (compare_eq' from); intros.
+      destruct H0.
+      rewrite H0.
+      simpl.
+      rewrite NatMaps.Raw.Proofs.add_find; [ | apply NatMaps.is_bst ].
+      specialize (compare_eq' to); intros.
+      destruct H1; rewrite H1.
+      subst.
+      easy.
+  - unfold NatMaps.find, NatMaps.add.
+    simpl.
+    rewrite NatMaps.Raw.Proofs.add_find; [ | apply NatMaps.is_bst ].
+    specialize (compare_eq' from); intros.
+    destruct H0.
+    rewrite H0.
+    simpl.
+    specialize (compare_eq' to); intros.
+    destruct H1; rewrite H1.
+    subst.
+    easy.  
 Qed.
 
 Fixpoint get_inputs_rec {nIn nOut} (zxa : A_G2_ZX nIn nOut) (offset : nat) (basemap : NatNatMaps) : NatNatMaps :=
