@@ -1,4 +1,5 @@
 Require Import externals.SQIR.SQIR.SQIR.
+Require Import externals.SQIR.SQIR.UnitarySem.
 Require Import externals.QuantumLib.Quantum.
 Require Import Arith.
 Require Import Reals.
@@ -355,25 +356,78 @@ Print CNOTInj.
 
 Local Open Scope ucom.
 
+
+Definition CNOTInj_uncurry {dim : nat} (pos1 pos2 : nat) : pos1 <> pos2 /\ pos1 < dim /\ pos2 < dim -> ZX_Arb_Swaps dim dim.
+Proof.
+  intros.
+  destruct H.
+  destruct H0.
+  apply (CNOTInj pos1 pos2); assumption.
+Qed.
+
 (*
+Fixpoint base_ucom_to_ZX {dim} (c : base_ucom dim) (wt : uc_well_typed c) : ZX_Arb_Swaps dim dim.
+Proof.
+  induction c.
+  -  
 
-TODO : Fix this ingestion so that the CNOT has the proofs it needs. 
-       This can be accomplished by the fact that we will only take 
-       in well formed ucoms.
-
-Fixpoint base_ucom_to_ZX {dim} (c : base_ucom dim) : ZX_Arb_Swaps dim dim := .
-  match c with
-  | ucl ; ucr => base_ucom_to_ZX ucl ⟷A base_ucom_to_ZX ucr
-  | uapp1 U1 n => match U1 with
-                  | U_R θ ϕ λ => ZX_A_1_1_pad n (ZX_ucom_rot θ ϕ λ)
-                  end
-  | uapp2 U2 n m => match U2 with
-                 | U_CNOT => CNOTInj
+Fixpoint base_ucom_to_ZX {dim} (c : base_ucom dim) (wt : uc_well_typed c) : ZX_Arb_Swaps dim dim :=
+match c with
+| ucl ; ucr => match wt with
+               | WT_seq ucl ucr wt1 wt2 => base_ucom_to_ZX ucl wt1 ⟷A base_ucom_to_ZX ucr wt2
+               | _ => nArbWire dim
                 end
-  | uapp3 U3 n m l => match U3 with
-                   end
-  end.
- *)
+| uapp1 U1 n => match U1 with
+                | U_R θ ϕ λ => ZX_A_1_1_pad n (ZX_ucom_rot θ ϕ λ)
+                end
+| uapp2 U2 n m => match U2 with
+               | U_CNOT => CNOTInj_uncurry
+              end
+| uapp3 U3 n m l => match U3 with
+                 end
+end.
+*)
+
+Fixpoint base_ucom_to_ZX {dim} (c : base_ucom dim) : (uc_well_typed_b c = true) -> ZX_Arb_Swaps dim dim.
+Proof.
+  intros.
+  induction c.
+  - simpl in H.
+    apply andb_prop in H.
+    destruct H.
+    apply (@AS_Compose dim dim dim); [ apply IHc1 | apply IHc2]; assumption.
+  - inversion u.
+    apply (ZX_A_1_1_pad dim (ZX_ucom_rot H0 H1 H2)).
+  - inversion u.
+    apply (CNOTInj n n0);
+    simpl in H;
+    apply andb_prop in H;
+    destruct H;
+    apply andb_prop in H;
+    destruct H.
+    + apply beq_nat_false.
+      apply negb_true_iff.
+      apply H0.
+    + apply Nat.ltb_lt.
+      apply H.
+    + apply Nat.ltb_lt.
+      apply H1.
+  - apply nArbWire.
+Defined.
+
+Print base_ucom_to_ZX.
+
+Theorem equal_sem : forall dim (c : base_ucom dim) w, ZX_Arb_Swaps_Semantics (base_ucom_to_ZX c w) = uc_eval c.
+Proof.
+  intros dim c.
+  unfold base_ucom_to_ZX.
+  induction c; intros.
+  - simpl.
+    simpl in w.
+    clear_eq_ctx.
+Abort.
+
+ 
 
 Local Open Scope R_scope.
 
@@ -410,6 +464,8 @@ Proof. swap_colors_of (@increase_Z α). Qed.
 
 Lemma reduce_X {α} : X_Spider 1 1 α ∝ X_Spider 1 1 (α - (2 * PI)).
 Proof. swap_colors_of (@reduce_Z α). Qed.
+
+Theorem ingestion_equiv forall {dim} (u : base_ucom dim), exists c, uc_eval u = c .* ZX_Arb_Swaps_Semantics (ZX)  
 
 Local Close Scope ucom.
 Local Close Scope R_scope.

@@ -11,6 +11,7 @@ externals/QuantumLib/VectorStates.v
 externals/QuantumLib/Proportional.v
 
 externals/SQIR/SQIR/SQIR.v
+externals/SQIR/SQIR/UnitarySem.v
 
 ZX.v
 Gates.v 
