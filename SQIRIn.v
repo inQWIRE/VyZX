@@ -281,141 +281,57 @@ Qed.
 
 (* Injestion to ZX_Arb_Swaps *)
 
-Definition CNOTInj {dim : nat} (pos1 pos2 : nat) : pos1 <> pos2 -> pos1 < dim -> pos2 < dim -> ZX_Arb_Swaps dim dim.
+Definition Pad_Above {dim1 : nat} (dim2 : nat) (zxa : ZX_Arb_Swaps dim1 dim1) : ZX_Arb_Swaps dim2 dim2.
 Proof.
-  intros.
-  assert (2 <= dim). {
-  destruct dim; [ exfalso; apply (Nat.nlt_0_r pos1); assumption | ].
-  destruct dim.
-  - destruct pos1, pos2.
-    + contradiction.
-    + apply lt_S_n in H1; exfalso; apply (Nat.nlt_0_r pos2); assumption.
-    + apply lt_S_n in H0; exfalso; apply (Nat.nlt_0_r pos1); assumption.
-    + apply lt_S_n in H0; exfalso; apply (Nat.nlt_0_r pos1); assumption.
-  - repeat rewrite <- Nat.succ_le_mono. apply Nat.le_0_l. }
-  remember (max pos1 pos2) as topwire.
-  remember (min pos1 pos2) as botwire.
-  assert (botwire < topwire). { 
-    subst. generalize dependent pos2.
-    induction pos1; intros.
-    - simpl.
-      destruct pos2.
-      + contradiction.
-      + apply Nat.lt_0_succ.
-    - destruct pos2.
-      + simpl.
-        apply Nat.lt_0_succ.
-      + simpl.
-        rewrite <- Nat.succ_lt_mono.
-        apply IHpos1.
-        * transitivity (S pos1); [ auto | assumption ].
-        * rewrite <- Nat.succ_inj_wd_neg.
-          assumption.
-        * transitivity (S pos2); [ auto | assumption ].
-          }
-  replace (dim)%nat with (dim - (S topwire) + (S topwire))%nat
-    by (rewrite Nat.sub_add; 
-                [ reflexivity | 
-                  apply lt_le_S; 
-                  rewrite Heqtopwire; 
-                  apply Nat.max_lub_lt_iff; 
-                  split; assumption ]).
-  apply (AS_Stack); [ apply nArbWire | ].
-  replace (S topwire) with ((S topwire) - (botwire) + (botwire))%nat
-    by (apply Nat.sub_add; 
-        constructor; 
-        apply Nat.lt_le_incl; 
-        apply H3).
-  apply AS_Stack; [ | apply nArbWire].
-  apply (@AS_Compose (S topwire - botwire) (S topwire - botwire) (S topwire - botwire)).
-  1: apply (@AS_Compose (S topwire - botwire) (S topwire - botwire) (S topwire - botwire)).
-  - (* SWAP up target *)
-    rewrite <- Nat.add_1_l.
-    rewrite <- Nat.add_sub_assoc; [ | apply Nat.lt_le_incl; apply H3 ].
-    apply AS_Stack; [ apply ArbWire | ].
-    apply A_Swap.
-  - (* CNOT Wires 1 & 2*)
-    destruct topwire; [ contradict H3; apply Nat.nlt_0_r | ]. (* Assert at least two wires *)
-    replace (S (S (topwire))) with (2 + topwire)%nat by reflexivity.
-    rewrite <- Nat.add_sub_assoc; [ | apply lt_n_Sm_le; apply H3 ].
-    apply AS_Stack; [ | apply nArbWire ].
-    bdestruct (pos1 <=? pos2).
-    + apply ZX_AS_CNOT.
-    + (* Add swaps on both sides of CNOT to flip control and target *)
-      apply (@AS_Compose 2 2 2); [ | apply (@AS_Compose 2 2 2) ].
-      apply A_Swap.
-      apply ZX_AS_CNOT.
-      apply A_Swap.
-  - (* SWAP up target *)
-    rewrite <- Nat.add_1_l.
-    rewrite <- Nat.add_sub_assoc; [ | apply Nat.lt_le_incl; apply H3 ].
-    apply AS_Stack; [ apply ArbWire | ].
-    apply A_Swap.
+  destruct (dim1 <=? dim2) eqn:E; [ | apply nArbWire ].
+  replace dim2 with (dim2 - dim1 + dim1)%nat.
+  - apply AS_Stack; [ apply nArbWire | apply zxa ].
+  - apply Nat.sub_add.
+    apply leb_complete.
+    exact E.
 Defined.
-Print CNOTInj.
+
+Definition Pad_Below {dim1 : nat} (dim2 : nat) (zxa : ZX_Arb_Swaps dim1 dim1) : ZX_Arb_Swaps dim2 dim2.
+Proof.
+  destruct (dim1 <=? dim2) eqn:E; [ | apply nArbWire ].
+  replace dim2 with (dim1 + (dim2 - dim1))%nat.
+  - apply AS_Stack; [ apply zxa | apply nArbWire ].
+  - rewrite Nat.add_comm.
+    apply Nat.sub_add.
+    apply leb_complete.
+    exact E.
+Defined.
+
+Definition ASwapfromto {dim : nat} (pos1 pos2 : nat) : ZX_Arb_Swaps dim dim :=
+  if (pos1 <? pos2)
+     then Pad_Below dim (Pad_Above pos2 (A_Swap (pos2 - pos1)))
+     else Pad_Below dim (Pad_Above pos1 (A_Swap (pos1 - pos2))).
+
+Definition PaddedCnot {dim : nat} (control : nat) : ZX_Arb_Swaps dim dim :=
+  Pad_Below dim (Pad_Above (S control) ZX_AS_CNOT).
+
+Definition CNOTInj {dim : nat} (pos1 pos2 : nat) : ZX_Arb_Swaps dim dim :=
+  if (pos1 <? pos2)
+     then ASwapfromto pos2 (S pos1) ⟷A PaddedCnot pos1 ⟷A ASwapfromto pos2 (S pos1)
+     else ASwapfromto pos1 (S pos2) ⟷A ASwapfromto pos2 (S pos2) 
+          ⟷A PaddedCnot pos2 ⟷A ASwapfromto pos2 (S pos2) 
+          ⟷A ASwapfromto pos1 (S pos2).
 
 Local Open Scope ucom.
 
 
-Definition CNOTInj_uncurry {dim : nat} (pos1 pos2 : nat) : pos1 <> pos2 /\ pos1 < dim /\ pos2 < dim -> ZX_Arb_Swaps dim dim.
-Proof.
-  intros.
-  destruct H.
-  destruct H0.
-  apply (CNOTInj pos1 pos2); assumption.
-Qed.
-
-(*
-Fixpoint base_ucom_to_ZX {dim} (c : base_ucom dim) (wt : uc_well_typed c) : ZX_Arb_Swaps dim dim.
-Proof.
-  induction c.
-  -  
-
-Fixpoint base_ucom_to_ZX {dim} (c : base_ucom dim) (wt : uc_well_typed c) : ZX_Arb_Swaps dim dim :=
+Fixpoint base_ucom_to_ZX {dim} (c : base_ucom dim) : ZX_Arb_Swaps dim dim :=
 match c with
-| ucl ; ucr => match wt with
-               | WT_seq ucl ucr wt1 wt2 => base_ucom_to_ZX ucl wt1 ⟷A base_ucom_to_ZX ucr wt2
-               | _ => nArbWire dim
-                end
+| ucl ; ucr => base_ucom_to_ZX ucl ⟷A base_ucom_to_ZX ucr 
 | uapp1 U1 n => match U1 with
                 | U_R θ ϕ λ => ZX_A_1_1_pad n (ZX_ucom_rot θ ϕ λ)
                 end
 | uapp2 U2 n m => match U2 with
-               | U_CNOT => CNOTInj_uncurry
+               | U_CNOT => CNOTInj n m
               end
 | uapp3 U3 n m l => match U3 with
                  end
 end.
-*)
-
-Fixpoint base_ucom_to_ZX {dim} (c : base_ucom dim) : (uc_well_typed_b c = true) -> ZX_Arb_Swaps dim dim.
-Proof.
-  intros.
-  induction c.
-  - simpl in H.
-    apply andb_prop in H.
-    destruct H.
-    apply (@AS_Compose dim dim dim); [ apply IHc1 | apply IHc2]; assumption.
-  - inversion u.
-    apply (ZX_A_1_1_pad dim (ZX_ucom_rot H0 H1 H2)).
-  - inversion u.
-    apply (CNOTInj n n0);
-    simpl in H;
-    apply andb_prop in H;
-    destruct H;
-    apply andb_prop in H;
-    destruct H.
-    + apply beq_nat_false.
-      apply negb_true_iff.
-      apply H0.
-    + apply Nat.ltb_lt.
-      apply H.
-    + apply Nat.ltb_lt.
-      apply H1.
-  - apply nArbWire.
-Defined.
-
-Print base_ucom_to_ZX.
 
 Theorem equal_sem : forall dim (c : base_ucom dim) w, ZX_Arb_Swaps_Semantics (base_ucom_to_ZX c w) = uc_eval c.
 Proof.
