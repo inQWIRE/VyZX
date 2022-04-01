@@ -281,26 +281,52 @@ Qed.
 
 (* Injestion to ZX_Arb_Swaps *)
 
+Lemma sub_add_b : forall (dim1 dim2 : nat), dim1 <=? dim2 = true -> ((dim2 - dim1 + dim1) = dim2)%nat.
+Proof.
+  intros.
+  apply Nat.sub_add.
+  apply leb_complete.
+  apply H.
+Qed.
+
+
 Definition Pad_Above {dim1 : nat} (dim2 : nat) (zxa : ZX_Arb_Swaps dim1 dim1) : ZX_Arb_Swaps dim2 dim2.
 Proof.
-  destruct (dim1 <=? dim2) eqn:E; [ | apply nArbWire ].
-  replace dim2 with (dim2 - dim1 + dim1)%nat.
-  - apply AS_Stack; [ apply nArbWire | apply zxa ].
-  - apply Nat.sub_add.
-    apply leb_complete.
-    exact E.
+  specialize (le_dec dim1 dim2); intros.
+  destruct H; [ | apply nArbWire ].
+  rewrite <- (Nat.sub_add dim1 dim2); [ | exact l].
+  apply AS_Stack; [ apply nArbWire | apply zxa ].
 Defined.
+
+Lemma Pad_Above_Sem : forall {dim1} dim2 (zxa : ZX_Arb_Swaps dim1 dim1), dim1 <= dim2 -> ZX_Arb_Swaps_Semantics (Pad_Above dim2 zxa) = ZX_Arb_Swaps_Semantics ((nArbWire (dim2 - dim1)) ↕A zxa).
+Proof.
+  intros.
+  unfold Pad_Above.
+  destruct (le_dec dim1 dim2); [ | congruence ].
+  simplify_eqs.
+  replace (dim2 - dim1 + dim1 - dim1)%nat with (dim2 - dim1)%nat by lia.
+  easy.
+Qed.
 
 Definition Pad_Below {dim1 : nat} (dim2 : nat) (zxa : ZX_Arb_Swaps dim1 dim1) : ZX_Arb_Swaps dim2 dim2.
 Proof.
-  destruct (dim1 <=? dim2) eqn:E; [ | apply nArbWire ].
-  replace dim2 with (dim1 + (dim2 - dim1))%nat.
+  specialize (le_dec dim1 dim2); intros.
+  destruct H; [ | apply nArbWire ].
+  rewrite <- (Nat.sub_add dim1 dim2); [ | exact l].
+  rewrite Nat.add_comm.
   - apply AS_Stack; [ apply zxa | apply nArbWire ].
-  - rewrite Nat.add_comm.
-    apply Nat.sub_add.
-    apply leb_complete.
-    exact E.
 Defined.
+
+Lemma Pad_Below_Sem : forall {dim1} dim2 (zxa : ZX_Arb_Swaps dim1 dim1), dim1 <= dim2 -> ZX_Arb_Swaps_Semantics (Pad_Below dim2 zxa) = ZX_Arb_Swaps_Semantics (zxa ↕A (nArbWire (dim2 - dim1))).
+Proof.
+  intros.
+  unfold Pad_Below.
+  destruct (le_dec dim1 dim2); [ | congruence ].
+  simplify_eqs.
+  simpl_eq.
+  replace (dim1 + (dim2 - dim1) - dim1)%nat with (dim2 - dim1)%nat by lia.
+  easy.
+Qed.
 
 Definition ASwapfromto {dim : nat} (pos1 pos2 : nat) : ZX_Arb_Swaps dim dim :=
   if (pos1 <? pos2)
