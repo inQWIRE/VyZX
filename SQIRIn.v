@@ -333,6 +333,34 @@ Definition ASwapfromto {dim : nat} (pos1 pos2 : nat) : ZX_Arb_Swaps dim dim :=
      then Pad_Below dim (Pad_Above pos2 (A_Swap (pos2 - pos1)))
      else Pad_Below dim (Pad_Above pos1 (A_Swap (pos1 - pos2))).
 
+Lemma ASwapfromto_Sem_p1_le_p2 : forall {dim} pos1 pos2, pos1 < pos2 -> pos2 <= dim -> ZX_Arb_Swaps_Semantics (@ASwapfromto dim pos1 pos2) = ZX_Arb_Swaps_Semantics ((nArbWire (pos1) ↕A (A_Swap (pos2 - pos1)) ↕A nArbWire (dim - pos2))).
+Proof.
+  intros.
+  unfold ASwapfromto.
+  assert (pos1 <? pos2 = true) by (apply Nat.ltb_lt; assumption).
+  rewrite H1.
+  rewrite Pad_Below_Sem; [ | assumption ].
+  simpl.
+  rewrite Pad_Above_Sem; [ | apply Nat.le_sub_l ].
+  simpl.
+  replace (pos2 - (pos2 - pos1))%nat with pos1 by lia.
+  reflexivity.
+Qed.
+
+Lemma ASwapfromto_Sem_p2_le_p1 : forall {dim} pos1 pos2, pos1 > pos2 -> pos1 <= dim -> ZX_Arb_Swaps_Semantics (@ASwapfromto dim pos1 pos2) = ZX_Arb_Swaps_Semantics ((nArbWire (pos2) ↕A (A_Swap (pos1 - pos2)) ↕A nArbWire (dim - pos1))).
+Proof.
+  intros.
+  unfold ASwapfromto.
+  assert (pos1 <? pos2 = false) by (apply Nat.ltb_ge; apply Nat.lt_le_incl; assumption).
+  rewrite H1.
+  rewrite Pad_Below_Sem; [ | assumption ].
+  simpl.
+  rewrite Pad_Above_Sem; [ | apply Nat.le_sub_l ].
+  simpl.
+  replace (pos1 - (pos1 - pos2))%nat with pos2 by lia.
+  reflexivity.
+Qed.
+
 Definition PaddedCnot {dim : nat} (control : nat) : ZX_Arb_Swaps dim dim :=
   Pad_Below dim (Pad_Above (S control) ZX_AS_CNOT).
 
