@@ -364,6 +364,18 @@ Qed.
 Definition PaddedCnot {dim : nat} (control : nat) : ZX_Arb_Swaps dim dim :=
   Pad_Below dim (Pad_Above (S control) ZX_AS_CNOT).
 
+Lemma PaddedCnot_Sem : forall {dim} control, (control >= 1) -> (S control <= dim) -> ZX_Arb_Swaps_Semantics (@PaddedCnot dim control) = ZX_Arb_Swaps_Semantics ((nArbWire (pred control)) ↕A ZX_AS_CNOT ↕A (nArbWire (dim - S control))).
+Proof.
+  intros.
+  unfold PaddedCnot.
+  rewrite Pad_Below_Sem; [ | assumption ].
+  simpl.
+  rewrite Pad_Above_Sem; [ | apply le_n_S; assumption ].
+  simpl.
+  rewrite pred_of_minus.
+  reflexivity.
+Qed.
+
 Definition CNOTInj {dim : nat} (pos1 pos2 : nat) : ZX_Arb_Swaps dim dim :=
   if (pos1 <? pos2)
      then ASwapfromto pos2 (S pos1) ⟷A PaddedCnot pos1 ⟷A ASwapfromto pos2 (S pos1)
@@ -387,14 +399,17 @@ match c with
                  end
 end.
 
-Theorem equal_sem : forall dim (c : base_ucom dim) w, ZX_Arb_Swaps_Semantics (base_ucom_to_ZX c w) = uc_eval c.
+Theorem equal_sem : forall dim (c : base_ucom dim), uc_well_typed c -> ZX_Arb_Swaps_Semantics (base_ucom_to_ZX c) = uc_eval c.
 Proof.
   intros dim c.
-  unfold base_ucom_to_ZX.
   induction c; intros.
   - simpl.
-    simpl in w.
-    clear_eq_ctx.
+    inversion H.
+    rewrite IHc1, IHc2; [ | assumption | assumption ].
+    easy.
+  - simpl.
+    inversion H.
+    subst.
 Abort.
 
  
