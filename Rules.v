@@ -176,6 +176,8 @@ Proof.
   lma.
 Qed.
 
+
+
 Lemma nWire_Stack : forall n m, (n ↑ —) ↕ (m ↑ —) ∝ ((n + m) ↑ —).
 Proof.
   intros.
@@ -391,6 +393,41 @@ Proof.
   reflexivity.
 Qed.
 
+
+Print X_Spider.
+(*
+Lemma bi_pi_rule : forall nIn nOut α, 
+  (nStack1 nIn (Z_Spider 1 1 PI)) ⟷ (X_Spider nIn nOut α) ⟷ (nStack1 nOut (Z_Spider 1 1 PI)) ∝
+  X_Spider nIn nOut α.
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  rewrite Mscale_1_l.
+  simpl.
+  rewrite 2 nStack1_n_kron.
+  unfold Mmult.
+  prep_matrix_equality.
+  simpl.
+  unfold Z_semantics.
+  unfold kron.
+  bdestruct (x =? 0); bdestruct (y =? 0).
+  - subst; simpl.
+    unfold Mmult.
+    Locate "Σ^".
+    unfold kron.
+    simpl.
+
+  prep_matrix_equality.
+  unfold Mmult.
+  Msimpl.
+  unfold X_semantics.
+  simpl.
+  repeat rewrite kron_1_l; try auto with wf_db.
+  unfold Mmult.
+  simpl.
+  
+   simpl.*)
+
 Lemma hadamard_color_change_Z : forall nIn nOut α, 
   (nIn ↑ □) ⟷ (Z_Spider nIn nOut α) ∝ (X_Spider nIn nOut α) ⟷ (nOut ↑ □).
 Proof.
@@ -541,6 +578,442 @@ Proof.
   rewrite <- Z_0_eq_X_0.
   reflexivity.
 Qed.
+
+Fixpoint build_left_rec (nIn : nat) (α : R) : ZX (S nIn) 1 := 
+ match nIn with
+  | 0   => Z_Spider 1 1 α
+  | S l => (Z_Spider 2 1 0) ↕ (l ↑ Wire) ⟷ build_left_rec l (α)
+ end.
+
+Definition build_left (nIn : nat) (α : R) : ZX nIn 1 :=
+  match nIn with
+  | 0 => Z_Spider 0 1 α
+  | S k => build_left_rec k α
+  end.
+
+Lemma Grow_Z_Left_1 : forall n α,
+  Z_Spider (S (S n)) 1 α ∝ ((Z_Spider 2 1 0) ↕ (n ↑ Wire)) ⟷ (Z_Spider (S n) 1 α).
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  Msimpl.
+  simpl.
+  rewrite nwire_identity_semantics.
+  unfold Mmult.
+  prep_matrix_equality.
+  destruct x,y.
+  - unfold Z_semantics.
+    simpl. 
+    destruct (2 ^ n)%nat eqn:E.
+    + contradict E; apply Nat.pow_nonzero; easy.
+    + rewrite plus_0_r.
+      rewrite <- plus_n_Sm.
+      simpl.
+      C_field_simplify.
+      induction (n0 + n0)%nat.
+      * simpl.
+        C_field_simplify.
+        unfold kron.
+        simpl.
+        rewrite Nat.sub_diag.
+        unfold I.
+        simpl.
+        lca.
+      * simpl.
+        rewrite <- IHn1.
+        lca.
+  - unfold Z_semantics.
+    simpl.
+    destruct (2^n)%nat eqn:E.
+    + contradict E; apply Nat.pow_nonzero; easy.
+    + rewrite plus_0_r.
+      rewrite <- plus_n_Sm.
+      rewrite plus_Sn_m.
+      induction (n0 + n0)%nat.
+      * simpl.
+        rewrite Cmult_0_l.
+        rewrite Cplus_0_l.
+        rewrite Cplus_0_r.
+        rewrite Cmult_1_l.
+        unfold kron.
+        rewrite andb_false_l.
+        bdestruct (S y mod S n0 =? 0).
+        -- rewrite H.
+           unfold I.
+           rewrite <- Nat.div_exact in H; [| auto].
+           destruct (S y / S n0)%nat.
+           ++ rewrite Nat.mul_0_r in H.
+              discriminate H.
+           ++ lca.
+        -- unfold I.
+           destruct (S y mod S n0)%nat.
+           ++ contradict H.
+              reflexivity.
+           ++ simpl.
+              rewrite Nat.sub_diag.
+              simpl; lca.
+      * simpl.
+        simpl in IHn1.
+        rewrite <- IHn1.
+        lca.
+  - unfold Z_semantics.
+    replace (0 =? 2^ S (S n) - 1) with false.
+    + rewrite andb_false_r.
+      symmetry.
+      apply Csum_0; intros.
+      destruct x.
+      * rewrite andb_true_l.
+        unfold kron.
+        rewrite Nat.div_0_l; [| apply Nat.pow_nonzero; auto].
+        bdestruct (x0 =? 2 ^ S n - 1).
+        -- rewrite H.
+           rewrite Nat.mod_0_l; [| apply Nat.pow_nonzero; auto].
+           rewrite andb_false_r.
+           simpl.
+           rewrite plus_0_r.
+           rewrite <- Nat.add_sub_assoc.
+           ++ replace (2 ^ n)%nat with (1 * 2 ^ n)%nat at 1 by apply Nat.mul_1_l.
+              rewrite Nat.div_add_l; [| apply Nat.pow_nonzero; easy].
+              lca.
+           ++ auto.
+              assert (prf : forall n, (1 <= 2^n)%nat ).
+              { induction n0.
+                - auto.
+                - transitivity (2 ^ n0)%nat; [ assumption |].
+                  rewrite Nat.pow_succ_r; [| apply Nat.le_0_l].
+                  apply le_n_2n. }
+              apply prf.
+        -- lca.
+      * rewrite andb_false_l.
+        lca.
+    + rewrite Nat.pow_succ_r'.
+      destruct (2^S n)%nat eqn:E; [ contradict E; apply Nat.pow_nonzero; auto |].
+      rewrite Nat.mul_succ_l.
+      rewrite Nat.mul_1_l.
+      rewrite <- plus_n_Sm.
+      reflexivity.
+  - unfold Z_semantics.
+    bdestruct (x =? 0); bdestruct (S y =? 2 ^ S (S n) - 1).
+    + rewrite H, H0.
+      rewrite andb_true_l.
+      replace (1 =? 2 ^ 1 - 1)%nat with true by reflexivity.
+      rewrite Cexp_0.
+      replace (2 ^ 1 - 1)%nat with 1%nat by reflexivity.
+      replace (2 ^ 2 - 1)%nat with 3%nat by reflexivity.
+      rewrite plus_0_r.
+      unfold kron.
+      subst.
+      replace (2 ^ S (S n))%nat with (2^n + 2^n + 2^n + 2^n)%nat.
+      * rewrite <- Nat.add_sub_assoc.
+        -- replace (2 ^ n + 2 ^ n + 2 ^ n)%nat with (3 * 2 ^ n)%nat.
+           rewrite Nat.div_add_l; [| apply Nat.pow_nonzero; auto].
+           rewrite Nat.div_small.
+           rewrite plus_0_r.
+           rewrite Nat.add_mod; [| apply Nat.pow_nonzero; auto].
+           rewrite Nat.mod_mul; [| apply Nat.pow_nonzero; auto].
+           rewrite Nat.add_0_l.
+           rewrite Nat.mod_mod; [| apply Nat.pow_nonzero; auto].
+           assert (simplifyExpr :
+                    (fun y0 : nat =>
+                     (if true && (y0 =? 2 ^ S n - 1) then Cexp α else 0) *
+                     (match (y0 / 2 ^ n)%nat with
+                      | 0%nat | _ => if (y0 / 2 ^ n =? 1) && (3 =? 3) then C1 else 0
+                      end * I (2 ^ n) (y0 mod 2 ^ n) ((2 ^ n - 1) mod 2 ^ n))) =
+                    (fun y0 : nat =>
+                      if (y0 =? 2 ^ S n - 1) then Cexp α else 0)).
+          { apply functional_extensionality.
+            intros.
+            bdestruct (x =? 2 ^ S n - 1)%nat.
+            - rewrite H.
+              simpl.
+              rewrite plus_0_r.
+              rewrite <- Nat.add_sub_assoc.
+              replace ((2 ^ n + (2 ^ n - 1)) / 2 ^ n)%nat with 1%nat.
+              simpl.
+              rewrite Nat.add_mod; [| apply Nat.pow_nonzero; auto].
+              rewrite Nat.mod_same; [| apply Nat.pow_nonzero; auto].
+              rewrite Nat.add_0_l.
+              rewrite Nat.mod_mod; [| apply Nat.pow_nonzero; auto].
+              rewrite Nat.mod_small.
+              unfold I.
+              rewrite Nat.eqb_refl.
+              replace (2 ^ n - 1 <? 2 ^ n) with true.
+              lca.
+              + destruct (2 ^ n)%nat eqn:E.
+                * contradict E; apply Nat.pow_nonzero; easy.
+                * simpl.
+                  rewrite Nat.sub_0_r.
+                  symmetry.
+                  assert (prf : forall a, a <? S a = true).
+                  { induction a; auto. }
+                  apply prf.
+              + destruct (2 ^ n)%nat eqn:E; [ contradict E; apply Nat.pow_nonzero; easy |].
+                simpl.
+                rewrite Nat.sub_0_r.
+                apply Nat.lt_succ_diag_r.
+              + replace (2 ^ n + (2 ^ n - 1))%nat with (1 * 2 ^ n + (2 ^ n - 1))%nat.
+                * rewrite Nat.div_add_l; [| apply Nat.pow_nonzero; auto].
+                  rewrite Nat.div_small; [ lia |].
+                  destruct (2 ^ n)%nat eqn:E; [contradict E; apply Nat.pow_nonzero; easy |].
+                  simpl.
+                  rewrite Nat.sub_0_r.
+                  apply Nat.lt_succ_diag_r.
+                * rewrite mult_1_l; reflexivity.
+              + assert (prf : forall n, (1 <= 2^n)%nat ).
+                { induction n0.
+                  - auto.
+                  - transitivity (2 ^ n0)%nat; [ assumption |].
+                    rewrite Nat.pow_succ_r; [| apply Nat.le_0_l].
+                    apply le_n_2n. }
+                apply prf.
+            - rewrite andb_false_r.
+              lca. }
+          rewrite (@Csum_eq _ _ _ simplifyExpr).
+          ++ rewrite double_mult.
+             rewrite <- Nat.pow_succ_r'.
+             clear H0.
+             clear simplifyExpr.
+             induction n.
+             ** lca.
+             ** rewrite Nat.pow_succ_r'.
+                rewrite <- double_mult.
+                rewrite Csum_sum.
+                replace (fun x : nat => if 2 ^ S n + x =? 2 ^ S n + 2 ^ S n - 1 then Cexp α else 0)
+                   with (fun x : nat => if x =? 2 ^ S n - 1 then Cexp α else 0).
+                   --- rewrite <- IHn.
+                       rewrite Csum_0_bounded; [lca|].
+                       intros.
+                       rewrite double_mult.
+                       bdestruct (x =? 2 * 2 ^ S n - 1)%nat; [| lca].
+                       exfalso.
+                       lia.
+                   --- apply functional_extensionality.
+                       intros.
+                       replace (2 ^ S n + x =? 2 ^ S n + 2 ^ S n - 1)%nat
+                          with (x =? 2 ^ S n - 1)%nat; [ reflexivity |].
+                       clear IHn.
+                       assert (prf : forall a b c : nat,
+                       (b =? c)%nat = (a + b =? a + c)%nat).
+                        { intros. induction a; simpl; auto; reflexivity. }
+                        rewrite <- Nat.add_sub_assoc.
+                        apply prf.
+                        clear prf.
+                        assert (prf : forall n, (1 <= 2^n)%nat ).
+                          { induction n0.
+                            - auto.
+                            - transitivity (2 ^ n0)%nat; [ assumption |].
+                              rewrite Nat.pow_succ_r; [| apply Nat.le_0_l].
+                              apply le_n_2n. }
+                          apply prf.
+          ++ destruct (2 ^ n)%nat eqn:E; [ contradict E; apply Nat.pow_nonzero; easy | ].
+             simpl.
+             rewrite Nat.sub_0_r.
+             auto.
+          ++ lia.
+        -- assert (prf : forall n, (1 <= 2^n)%nat ).
+           { induction n0.
+             - auto.
+             - transitivity (2 ^ n0)%nat; [ assumption |].
+               rewrite Nat.pow_succ_r; [| apply Nat.le_0_l].
+               apply le_n_2n. }
+           apply prf.
+      * simpl.
+        lia.
+    + rewrite andb_false_r.
+      rewrite H.
+      simpl.
+      rewrite plus_0_r.
+      unfold kron.
+      symmetry.
+      apply Csum_0.
+      intros.
+      unfold I.
+      (*bdestruct (x0 mod 2 ^ n =? S y mod 2 ^ n)%nat.*)
+      simpl.
+      bdestruct (x0 =? 2 ^ n + 2 ^ n - 1)%nat.
+      * rewrite H1.
+        replace ((2 ^ n + 2 ^ n - 1) / 2 ^ n)%nat with 1%nat.
+        rewrite andb_true_l.
+        replace ((2 ^ n + 2 ^ n - 1) mod 2 ^ n)%nat with (2 ^ n - 1)%nat.
+        -- bdestruct (2 ^ n -1 =? S y mod 2 ^ n)%nat; bdestruct (S y / 2 ^ n =? 3)%nat.
+          ++ exfalso.
+             specialize (Nat.div_mod_eq (S y) (2^n)) as dmeq.
+             rewrite H3 in dmeq.
+             rewrite <- H2 in dmeq.
+             apply H0.
+             simpl.
+             repeat rewrite plus_0_r.
+             rewrite Nat.mul_comm in dmeq.
+             simpl in dmeq.
+             lia.
+          ++ lca.
+          ++ lca.
+          ++ lca.
+        -- rewrite <- Nat.add_sub_assoc.
+           rewrite Nat.add_mod; [| apply Nat.pow_nonzero; auto].
+           rewrite Nat.mod_same; [| apply Nat.pow_nonzero; auto].
+           simpl.
+           rewrite Nat.mod_mod; [| apply Nat.pow_nonzero; auto].
+           symmetry.
+           apply Nat.mod_small.
+           destruct (2 ^ n)%nat eqn:E;[ contradict E; apply Nat.pow_nonzero; auto | ].
+           simpl.
+           rewrite Nat.sub_0_r.
+           auto.
+           assert (prf : forall n, (1 <= 2^n)%nat ).
+             { induction n0.
+               - auto.
+               - transitivity (2 ^ n0)%nat; [ assumption |].
+                 rewrite Nat.pow_succ_r; [| apply Nat.le_0_l].
+                 apply le_n_2n. }
+           apply prf.
+        -- replace (2 ^ n + 2 ^ n - 1)%nat with (1 * 2 ^ n + (2 ^ n - 1))%nat by lia.
+           rewrite Nat.div_add_l; [| apply Nat.pow_nonzero; auto].
+           rewrite Nat.div_small.
+           lia.
+           destruct (2 ^ n)%nat eqn:E; [ contradict E; apply Nat.pow_nonzero; auto |].
+           simpl.
+           rewrite Nat.sub_0_r.
+           auto.
+      * lca.
+    + destruct x; [ destruct H; reflexivity | ].
+      simpl.
+      unfold kron.
+      rewrite Csum_0; [ reflexivity | ].
+      intros.
+      lca.
+    + rewrite andb_false_r.
+      destruct x; [ destruct H; reflexivity | ].
+      simpl.
+      unfold kron.
+      rewrite Csum_0; [ reflexivity | ].
+      intros.
+      lca.
+Qed.
+
+
+Lemma Grow_Z_Right_1 : forall n α,
+  Z_Spider 1 (S (S n)) α ∝ (Z_Spider 1 (S n) α) ⟷ ((Z_Spider 1 2 0) ↕ (n ↑ Wire)).
+Proof.
+  intros.
+  replace (Z_Spider 1 (S (S n))%nat α) with ((Z_Spider (S (S n))%nat 1 α)⊺) by reflexivity.
+  rewrite Grow_Z_Left_1.
+  simpl.
+  rewrite nstack1_transpose.
+  rewrite zx_transpose_wire.
+  reflexivity.
+Qed.
+
+Lemma Grow_Z_left : forall nIn nOut α,
+  Z_Spider (S (S nIn)) nOut α ∝ ((Z_Spider 2 1 0) ↕ (nIn ↑ Wire)) ⟷ (Z_Spider (S nIn) nOut α).
+Proof.
+  intros.
+  replace α%R with (0 + α)%R at 1 by lra.
+  rewrite <- Z_spider_1_1_fusion.
+  rewrite Grow_Z_Left_1.
+  rewrite ZX_Compose_assoc.
+  rewrite Z_spider_1_1_fusion.
+  replace (0+α)%R with α%R by lra.
+  reflexivity.
+Qed.
+
+Lemma Grow_Z_Right : forall nIn nOut α,
+  Z_Spider nIn (S (S nOut)) α ∝ (Z_Spider nIn (S nOut) α) ⟷ ((Z_Spider 1 2 0) ↕ (nOut ↑ Wire)).
+Proof.
+  intros.
+  replace α%R with (0 + α)%R at 1 by lra.
+  rewrite <- Z_spider_1_1_fusion.
+  rewrite Grow_Z_Right_1.
+  rewrite <- ZX_Compose_assoc.
+  rewrite Z_spider_1_1_fusion.
+  replace (0+α)%R with α%R by lra.
+  reflexivity.
+Qed.
+
+Lemma bp_left : 
+  (2 ↑ (X_Spider 1 1 PI)) ⟷ Z_Spider 2 1 0 ∝
+  Z_Spider 2 1 0 ⟷ X_Spider 1 1 PI.
+Proof. 
+  simpl.
+  remove_empty.
+  specialize (WF_ZX _ _ (X_Spider 1 1 PI ↕ X_Spider 1 1 PI ⟷ Z_Spider 2 1 0)) as wfLeft.
+  specialize (WF_ZX _ _ (Z_Spider 2 1 0 ⟷ X_Spider 1 1 PI)) as wfRight.
+  unfold WF_Matrix in wfLeft, wfRight.
+  simpl in wfLeft, wfRight.
+  prop_exist_non_zero 1.
+  Msimpl.
+  simpl.
+  prep_matrix_equality.
+  destruct x, y.
+  - admit.
+  - destruct y.
+    + admit.
+    + destruct y.
+      * admit.
+      * destruct y.
+        -- admit.
+        -- rewrite wfLeft; [| right ].
+           rewrite wfRight; [| right ].
+           reflexivity.
+           all: destruct y.
+           1,3: auto.
+           all: constructor;
+                repeat apply le_n_S;
+                apply Nat.le_0_l.
+  - destruct x.
+    + admit.
+    + rewrite wfLeft; [| left ].
+      rewrite wfRight; [| left ].
+      reflexivity.
+      all: destruct x; auto;
+           constructor;
+           repeat apply le_n_S;
+           apply Nat.le_0_l.
+  - destruct x.
+    + admit.
+    + rewrite wfLeft; [| left ].
+      rewrite wfRight; [| left ].
+      reflexivity.
+      all: destruct x; auto;
+           constructor;
+           repeat apply le_n_S;
+           apply Nat.le_0_l.
+Admitted.
+
+Lemma bp_right :
+  Z_Spider 1 2 0 ⟷ (2 ↑ X_Spider 1 1 PI) ∝
+  X_Spider 1 1 PI ⟷ Z_Spider 1 2 0.
+Proof.
+  rewrite <- zx_transpose_involutive.
+  replace ((Z_Spider 1 2 0 ⟷ (2 ↑ X_Spider 1 1 PI)) ⊺)
+  with ((2 ↑ (X_Spider 1 1 PI)) ⟷ Z_Spider 2 1 0)
+  by reflexivity.
+  rewrite bp_left.
+  reflexivity.
+Qed.
+
+Theorem bi_pi_rule : forall nIn nOut α,
+  ((S nIn) ↑ (X_Spider 1 1 PI)) ⟷ Z_Spider (S nIn) (S nOut) α ⟷ ((S nOut) ↑ (X_Spider 1 1 PI))
+  ∝ Z_Spider (S nIn) (S nOut) α.
+Proof.
+  induction nIn, nOut; intros.
+  - simpl.
+    remove_empty.
+    admit.
+  - rewrite Grow_Z_Right.
+    simpl.
+    rewrite ZX_Stack_assoc.
+    rewrite <- ZX_Stack_Compose_distr.
+    simpl.
+    remove_empty.
+
+
+  - intros; simpl.
+    replace (Z_Spider 0 0 α) with Empty.
+    + prop_exist_non_zero 1; solve_matrix.
+      destruct x; auto.
+      rewrite andb_false_r; auto.
+    + simpl.
 
 Theorem trivial_cap_cup : 
   ⊂ ⟷ ⊃ ∝ ⦰.
