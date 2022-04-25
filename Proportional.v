@@ -184,6 +184,35 @@ Add Parametric Morphism (nIn nOut : nat) : (@Transpose nIn nOut)
   with signature (@proportional nIn nOut) ==> (@proportional nOut nIn) as transpose_mor.
 Proof. apply transpose_compat. Qed.
 
+Lemma zx_transpose_involutive {nIn nOut} : forall (zx : ZX nIn nOut),
+ (zx ⊺) ⊺ ∝ zx.
+Proof.
+  intros.
+  induction zx; simpl.
+  7-8: rewrite IHzx1, IHzx2.
+  all: reflexivity.
+Qed.
+
+Transparent Wire.
+Lemma zx_transpose_wire : 
+  Wire ⊺ ∝ Wire.
+Proof.
+  unfold Wire.
+  reflexivity.
+Qed.
+Opaque Wire.
+
+Lemma nstack1_transpose : forall n (zx : ZX 1 1),
+  (n ↑ zx)⊺ ∝ n ↑ (zx ⊺).
+Proof.
+  intros.
+  induction n.
+  - easy.
+  - simpl.
+    rewrite IHn.
+    reflexivity.
+Qed.
+
 Lemma adjoint_compat : 
   forall nIn nOut,
     forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
