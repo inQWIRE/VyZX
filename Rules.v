@@ -942,49 +942,29 @@ Proof.
   simpl in wfLeft, wfRight.
   prop_exist_non_zero 1.
   Msimpl.
+  rewrite 2 ZX_semantics_equiv.
   simpl.
-  prep_matrix_equality.
-  destruct x, y.
-  - admit.
-  - destruct y.
-    + admit.
-    + destruct y.
-      * admit.
-      * destruct y.
-        -- admit.
-        -- rewrite wfLeft; [| right ].
-           rewrite wfRight; [| right ].
-           reflexivity.
-           all: destruct y.
-           1,3: auto.
-           all: constructor;
-                repeat apply le_n_S;
-                apply Nat.le_0_l.
-  - destruct x.
-    + admit.
-    + rewrite wfLeft; [| left ].
-      rewrite wfRight; [| left ].
-      reflexivity.
-      all: destruct x; auto;
-           constructor;
-           repeat apply le_n_S;
-           apply Nat.le_0_l.
-  - destruct x.
-    + admit.
-    + rewrite wfLeft; [| left ].
-      rewrite wfRight; [| left ].
-      reflexivity.
-      all: destruct x; auto;
-           constructor;
-           repeat apply le_n_S;
-           apply Nat.le_0_l.
-Admitted.
+  unfold_dirac_spider.
+  autorewrite with Cexp_db.
+  Msimpl.
+  rewrite hadamard_sa.
+  solve_matrix.
+Qed.
+
+Lemma ZX_transpose_involutive : forall {nIn nOut} (zx : ZX nIn nOut), (zx ⊺) ⊺ ∝ zx.
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  rewrite 2 ZX_semantics_Transpose_comm.
+  Msimpl.
+  apply transpose_involutive.
+Qed.
 
 Lemma bp_right :
   Z_Spider 1 2 0 ⟷ (2 ↑ X_Spider 1 1 PI) ∝
   X_Spider 1 1 PI ⟷ Z_Spider 1 2 0.
 Proof.
-  rewrite <- zx_transpose_involutive.
+  rewrite <- ZX_transpose_involutive.
   replace ((Z_Spider 1 2 0 ⟷ (2 ↑ X_Spider 1 1 PI)) ⊺)
   with ((2 ↑ (X_Spider 1 1 PI)) ⟷ Z_Spider 2 1 0)
   by reflexivity.
@@ -992,28 +972,7 @@ Proof.
   reflexivity.
 Qed.
 
-Theorem bi_pi_rule : forall nIn nOut α,
-  ((S nIn) ↑ (X_Spider 1 1 PI)) ⟷ Z_Spider (S nIn) (S nOut) α ⟷ ((S nOut) ↑ (X_Spider 1 1 PI))
-  ∝ Z_Spider (S nIn) (S nOut) α.
-Proof.
-  induction nIn, nOut; intros.
-  - simpl.
-    remove_empty.
-    admit.
-  - rewrite Grow_Z_Right.
-    simpl.
-    rewrite ZX_Stack_assoc.
-    rewrite <- ZX_Stack_Compose_distr.
-    simpl.
-    remove_empty.
 
-
-  - intros; simpl.
-    replace (Z_Spider 0 0 α) with Empty.
-    + prop_exist_non_zero 1; solve_matrix.
-      destruct x; auto.
-      rewrite andb_false_r; auto.
-    + simpl.
 
 Theorem trivial_cap_cup : 
   ⊂ ⟷ ⊃ ∝ ⦰.
@@ -1819,5 +1778,35 @@ Proof.
   rewrite 2 ColorSwap_involutive.
   apply Cap_is_Z_spider.
 Qed.
+
+
+Theorem bi_pi_rule : forall nIn nOut α,
+  ((S nIn) ↑ (X_Spider 1 1 PI)) ⟷ Z_Spider (S nIn) (S nOut) α ⟷ ((S nOut) ↑ (X_Spider 1 1 PI))
+  ∝ Z_Spider (S nIn) (S nOut) (- α).
+Proof.
+  induction nIn, nOut; intros.
+  - simpl.
+    remove_empty.
+    prop_exist_non_zero (Cexp α).
+    Msimpl.
+    rewrite 2 ZX_semantics_equiv.
+    simpl.
+    unfold_dirac_spider.
+    autorewrite with Cexp_db.
+    simpl.
+    Msimpl.
+    solve_matrix.
+  - rewrite Grow_Z_Right.
+    simpl.
+    remove_empty.
+    admit.
+  - intros; simpl.
+    replace (Z_Spider 0 0 α) with Empty.
+    + prop_exist_non_zero 1; solve_matrix.
+      destruct x; auto.    
+    (*  rewrite andb_false_r; auto.
+    + simpl. *)
+    admit.
+Abort.
 
 Local Close Scope ZX_scope.
