@@ -5,8 +5,6 @@ Require Export ZX.
 
 Local Open Scope ZX_scope.
 
-
-
 Lemma Scalar_general : forall (zx : ZX 0 0), ZX_semantics zx = ((ZX_semantics zx) 0%nat 0%nat) .* I 1.
 Proof.
   intros.
