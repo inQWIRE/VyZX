@@ -828,7 +828,6 @@ Proof.
       apply Csum_0.
       intros.
       unfold I.
-      (*bdestruct (x0 mod 2 ^ n =? S y mod 2 ^ n)%nat.*)
       simpl.
       bdestruct (x0 =? 2 ^ n + 2 ^ n - 1)%nat.
       * rewrite H1.
@@ -904,7 +903,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma Grow_Z_left : forall nIn nOut α,
+Lemma Grow_Z_Left : forall nIn nOut α,
   Z_Spider (S (S nIn)) nOut α ∝ ((Z_Spider 2 1 0) ↕ (nIn ↑ Wire)) ⟷ (Z_Spider (S nIn) nOut α).
 Proof.
   intros.
@@ -930,7 +929,90 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma bp_left : 
+
+Lemma Z_Induct : forall nIn nOut (f g : forall nIn2 nOut2, ZX nIn2 nOut2 -> ZX nIn2 nOut2) α,
+  (forall β, f _ _ (Z_Spider 2 1 β) ∝ g _ _ (Z_Spider 2 1 β)) ->
+  (forall β, f _ _ (Z_Spider 1 2 β) ∝ g _ _ (Z_Spider 1 2 β)) ->
+  (forall β, f _ _ (Z_Spider 1 1 β) ∝ g _ _ (Z_Spider 1 1 β)) ->
+  ((forall {nIn3 nMid nOut3} (zx1 : ZX nIn3 nMid) (zx2 : ZX nMid nOut3), 
+      f _ _ (zx1 ⟷ zx2) ∝ f _ _ zx1 ⟷ f _ _ zx2) /\
+   forall {nIn3 nMid nOut3} (zx1 : ZX nIn3 nMid) (zx2 : ZX nMid nOut3), 
+      g _ _ (zx1 ⟷ zx2) ∝ g _ _ zx1 ⟷ g _ _ zx2) ->
+  ((forall {nIn3 nOut3 nIn4 nOut4} (zx1 : ZX nIn3 nOut3) (zx2 : ZX nIn4 nOut4), 
+      f _ _ (zx1 ↕ zx2) ∝ f _ _ zx1 ↕ f _ _ zx2) /\
+   forall {nIn3 nOut3 nIn4 nOut4} (zx1 : ZX nIn3 nOut3) (zx2 : ZX nIn4 nOut4), 
+      g _ _ (zx1 ↕ zx2) ∝ g _ _ zx1 ↕ g _ _ zx2) ->
+  ((forall {nIn5 nOut5} (zx1 : ZX nIn5 nOut5) (zx2 : ZX nIn5 nOut5),
+      zx1 ∝ zx2 -> f _ _ zx1 ∝ f _ _ zx2)) ->
+  ((forall {nIn5 nOut5} (zx1 : ZX nIn5 nOut5) (zx2 : ZX nIn5 nOut5),
+      zx1 ∝ zx2 -> g _ _ zx1 ∝ g _ _ zx2)) ->
+    (f _ _ Empty ∝ Empty) /\ (g _ _ Empty ∝ Empty) ->
+  f _ _ (Z_Spider (S nIn) (S nOut) α) ∝ g _ _ (Z_Spider (S nIn) (S nOut) α).
+Proof.
+  intros nIn nOut f g α.
+  intros base21 base12 base11.
+  intros [compf compg] [stackf stackg].
+  intros compatf compatg.
+  intros [emptyf emptyg].
+  assert (nstackf : forall height (zx : ZX 1 1),
+    f _ _ (height ↑ zx) ∝ height ↑ (f _ _ zx)).
+    { induction height; intros; auto. simpl. 
+      rewrite (stackf 1%nat 1%nat height height); rewrite IHheight; reflexivity. }
+  assert (nstackg : forall height (zx : ZX 1 1),
+    g _ _ (height ↑ zx) ∝ height ↑ (g _ _ zx)).
+    { induction height; intros; auto. simpl. 
+      rewrite (stackg 1%nat 1%nat height height); rewrite IHheight; reflexivity. }
+  generalize dependent nOut.
+  induction nIn; induction nOut. 
+  - auto. 
+  - rewrite (compatf _ _ _ _ (Grow_Z_Right _ _ _)).
+    rewrite compf.
+    rewrite (stackf 1%nat 2%nat nOut nOut).
+    rewrite nstackf.
+    rewrite <- (compatf _ _ _ _ (identity_removal_Z)).
+    rewrite base11.
+    rewrite base12.
+    rewrite IHnOut.
+    rewrite (compatg _ _ _ _ (identity_removal_Z)).
+    rewrite <- nstackg.
+    rewrite <- stackg.
+    rewrite <- compg.
+    rewrite <- (compatg _ _ _ _ (Grow_Z_Right _ _ _)).
+    reflexivity.
+  - rewrite (compatf _ _ _ _ (Grow_Z_Left _ _ _)).
+    rewrite compf.
+    rewrite (stackf 2%nat 1%nat nIn nIn).
+    rewrite nstackf.
+    rewrite <- (compatf _ _ _ _ (identity_removal_Z)).
+    rewrite base11.
+    rewrite base21.
+    rewrite IHnIn.
+    rewrite (compatg _ _ _ _ (identity_removal_Z)).
+    rewrite <- nstackg.
+    rewrite <- stackg.
+    rewrite <- compg.
+    rewrite <- (compatg _ _ _ _ (Grow_Z_Left _ _ _)).
+    reflexivity.
+  - rewrite (compatf _ _ _ _ (Grow_Z_Right _ _ _)).
+    rewrite compf.
+    rewrite (stackf 1%nat 2%nat nOut nOut).
+    rewrite nstackf.
+    rewrite <- (compatf _ _ _ _ (identity_removal_Z)).
+    rewrite base11.
+    rewrite base12.
+    rewrite IHnOut.
+    rewrite (compatg _ _ _ _ (identity_removal_Z)).
+    rewrite <- nstackg.
+    rewrite <- stackg.
+    rewrite <- compg.
+    rewrite <- (compatg _ _ _ _ (Grow_Z_Right _ _ _)).
+    reflexivity.
+Qed.
+
+Definition bipi_X {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
+  (nIn ↑ X_Spider 1 1 PI) ⟷ zx ⟷ (nOut ↑ X_Spider 1 1 PI).
+
+Lemma bp_ : 
   (2 ↑ (X_Spider 1 1 PI)) ⟷ Z_Spider 2 1 0 ∝
   Z_Spider 2 1 0 ⟷ X_Spider 1 1 PI.
 Proof. 
@@ -950,6 +1032,17 @@ Proof.
   rewrite hadamard_sa.
   solve_matrix.
 Qed.
+
+Theorem bi_pi_rule : forall nIn nOut α,
+  bipi_X (Z_Spider (S nIn) (S nOut) α)
+  ∝ Invert_angles (Z_Spider (S nIn) (S nOut) α).
+Proof.
+  intros.
+  apply Z_Induct.
+  - 
+
+
+
 
 Lemma ZX_transpose_involutive : forall {nIn nOut} (zx : ZX nIn nOut), (zx ⊺) ⊺ ∝ zx.
 Proof.
