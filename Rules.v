@@ -42,11 +42,23 @@ Program Lemma ZX_Stack_assoc :
     (zx1 ↕ zx2) ↕ zx3 ∝ zx1 ↕ (zx2 ↕ zx3).
 Proof.
   intros.
+  prop_exist_non_zero 1.  
+  simpl_eqs.
+  Msimpl.
+  rewrite kron_assoc; try auto with wf_db.
+Qed.
+
+Program Lemma ZX_Stack_assoc' : 
+  forall {nIn1 nIn2 nIn3 nOut1 nOut2 nOut3}
+    (zx1 : ZX nIn1 nOut1) (zx2 : ZX nIn2 nOut2) (zx3 : ZX nIn3 nOut3),
+    zx1 ↕ (zx2 ↕ zx3) ∝ (zx1 ↕ zx2) ↕ zx3.
+Proof.
+  intros.
   prop_exist_non_zero 1.
-  destruct Nat.add_assoc.
-  destruct Nat.add_assoc.
-  simpl.
-  rewrite Mscale_1_l.
+  destruct eq_sym.
+  destruct eq_sym.
+  Msimpl.
+  simpl_eqs.
   restore_dims.
   rewrite kron_assoc; try auto with wf_db.
 Qed.
@@ -61,6 +73,7 @@ Proof.
   destruct plus_n_O.
   apply kron_1_r.
 Qed.
+
 
 Lemma ZX_Compose_Empty_r : forall {nIn} (zx : ZX nIn 0),
   zx ⟷ ⦰ ∝ zx.
@@ -116,6 +129,17 @@ Proof.
   simpl.
   rewrite ZX_Compose_Empty_r; clear_eq_ctx.
   reflexivity.
+Qed.
+
+Lemma nStack1_add : forall n m (zx : ZX 1 1),
+  (n ↑ zx) ↕ (m ↑ zx) ∝ ((n + m) ↑ zx).
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  simpl.
+  rewrite 3 nStack1_n_kron.
+  rewrite kron_n_m_split; try auto with wf_db.
+  lma.
 Qed.
 
 Ltac remove_empty := try repeat rewrite ZX_Compose_Empty_l;
@@ -929,7 +953,6 @@ Proof.
   reflexivity.
 Qed.
 
-
 Lemma Z_Induct : forall nIn nOut (f g : forall nIn2 nOut2, ZX nIn2 nOut2 -> ZX nIn2 nOut2) α,
   (forall β, f _ _ (Z_Spider 2 1 β) ∝ g _ _ (Z_Spider 2 1 β)) ->
   (forall β, f _ _ (Z_Spider 1 2 β) ∝ g _ _ (Z_Spider 1 2 β)) ->
@@ -1008,39 +1031,6 @@ Proof.
     rewrite <- (compatg _ _ _ _ (Grow_Z_Right _ _ _)).
     reflexivity.
 Qed.
-
-Definition bipi_X {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
-  (nIn ↑ X_Spider 1 1 PI) ⟷ zx ⟷ (nOut ↑ X_Spider 1 1 PI).
-
-Lemma bp_ : 
-  (2 ↑ (X_Spider 1 1 PI)) ⟷ Z_Spider 2 1 0 ∝
-  Z_Spider 2 1 0 ⟷ X_Spider 1 1 PI.
-Proof. 
-  simpl.
-  remove_empty.
-  specialize (WF_ZX _ _ (X_Spider 1 1 PI ↕ X_Spider 1 1 PI ⟷ Z_Spider 2 1 0)) as wfLeft.
-  specialize (WF_ZX _ _ (Z_Spider 2 1 0 ⟷ X_Spider 1 1 PI)) as wfRight.
-  unfold WF_Matrix in wfLeft, wfRight.
-  simpl in wfLeft, wfRight.
-  prop_exist_non_zero 1.
-  Msimpl.
-  rewrite 2 ZX_semantics_equiv.
-  simpl.
-  unfold_dirac_spider.
-  autorewrite with Cexp_db.
-  Msimpl.
-  rewrite hadamard_sa.
-  solve_matrix.
-Qed.
-
-Theorem bi_pi_rule : forall nIn nOut α,
-  bipi_X (Z_Spider (S nIn) (S nOut) α)
-  ∝ Invert_angles (Z_Spider (S nIn) (S nOut) α).
-Proof.
-  intros.
-  apply Z_Induct.
-  - 
-
 
 
 
@@ -1499,14 +1489,13 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma nStack1_colorswap : forall zx n ,
-  ⊙ zx ∝ zx -> ⊙ (n ↑ zx) ∝ (n ↑ zx).
+Lemma nStack1_colorswap : forall zx n, ⊙ (n ↑ zx) ∝ (n ↑ ⊙ zx).
 Proof.
   intros.
   subst.
   induction n; simpl.
   - exact empty_colorswap.
-  - rewrite H, IHn.
+  - rewrite IHn.
     reflexivity.
 Qed.
 
@@ -1873,33 +1862,139 @@ Proof.
 Qed.
 
 
-Theorem bi_pi_rule : forall nIn nOut α,
-  ((S nIn) ↑ (X_Spider 1 1 PI)) ⟷ Z_Spider (S nIn) (S nOut) α ⟷ ((S nOut) ↑ (X_Spider 1 1 PI))
-  ∝ Z_Spider (S nIn) (S nOut) (- α).
+Lemma Z_Spider_angle_2PI : forall nIn nOut α k, Z_Spider nIn nOut α ∝ (Z_Spider nIn nOut (α + IZR (2 * k) * PI)).
 Proof.
-  induction nIn, nOut; intros.
-  - simpl.
-    remove_empty.
-    prop_exist_non_zero (Cexp α).
-    Msimpl.
-    rewrite 2 ZX_semantics_equiv.
+  intros.
+  prop_exist_non_zero 1.
+  unfold ZX_semantics, Z_semantics.
+  rewrite Cexp_add.
+  rewrite Cexp_2nPI.
+  rewrite Cmult_1_r.
+  Msimpl.
+  reflexivity.
+Qed.
+
+Lemma X_Spider_angle_2PI : forall nIn nOut α k, X_Spider nIn nOut α ∝ (X_Spider nIn nOut (α + IZR (2 * k) * PI)).
+Proof.
+  swap_colors_of Z_Spider_angle_2PI.
+Qed.
+
+Definition bipi_X {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
+  (nIn ↑ X_Spider 1 1 PI) ⟷ zx ⟷ (nOut ↑ X_Spider 1 1 PI).
+  
+Definition bipi_Z {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
+  (nIn ↑ Z_Spider 1 1 PI) ⟷ zx ⟷ (nOut ↑ Z_Spider 1 1 PI).
+
+Lemma bp_11 : forall α,
+  bipi_X (Z_Spider 1 1 α)  ∝
+  Invert_angles (Z_Spider 1 1 α).
+Proof. 
+  intro α.
+  simpl.
+  remove_empty.
+  unfold bipi_X.
+  prop_exist_non_zero (Cexp α).
+  Msimpl.
+  rewrite 2 ZX_semantics_equiv.
+  simpl.
+  unfold_dirac_spider.
+  autorewrite with Cexp_db.
+  Msimpl.
+  rewrite hadamard_sa.
+  solve_matrix.
+Qed.
+
+Lemma bp_21 : forall α,
+  bipi_X (Z_Spider 2 1 α)  ∝
+  Invert_angles (Z_Spider 2 1 α).
+Proof. 
+  intro α.
+  simpl.
+  remove_empty.
+  unfold bipi_X.
+  prop_exist_non_zero (Cexp α).
+  Msimpl.
+  rewrite 2 ZX_semantics_equiv.
+  simpl.
+  unfold_dirac_spider.
+  autorewrite with Cexp_db.
+  Msimpl.
+  rewrite hadamard_sa.
+  solve_matrix.
+Qed.
+
+Lemma bp_12 : forall α,
+  bipi_X (Z_Spider 1 2 α)  ∝
+  Invert_angles (Z_Spider 1 2 α).
+Proof. 
+  intro α.
+  simpl.
+  remove_empty.
+  unfold bipi_X.
+  prop_exist_non_zero (Cexp α).
+  Msimpl.
+  rewrite 2 ZX_semantics_equiv.
+  simpl.
+  unfold_dirac_spider.
+  autorewrite with Cexp_db.
+  Msimpl.
+  rewrite hadamard_sa.
+  solve_matrix.
+Qed.
+
+Lemma X_pi_2 : X_Spider 1 1 PI ⟷ X_Spider 1 1 PI ∝ Wire.
+Proof.
+  intros.
+  rewrite X_spider_1_1_fusion.
+  replace (PI + PI)%R with (0 + IZR (2 * 1) * PI)%R by ((replace (IZR (2 * 1)) with 2%R by easy); lra).
+  rewrite <- X_Spider_angle_2PI.
+  apply identity_removal_X.
+Qed.
+
+Theorem bi_pi_rule_Z : forall nIn nOut α,
+  bipi_X (Z_Spider (S nIn) (S nOut) α)
+  ∝ Invert_angles (Z_Spider (S nIn) (S nOut) α).
+Proof.
+  intros.
+  apply Z_Induct.
+  - apply bp_21.
+  - apply bp_12.
+  - apply bp_11.
+  - split; intros.
+    + simpl.
+      unfold bipi_X.
+      simpl.
+      rewrite <- 3 ZX_Compose_assoc.
+      rewrite (ZX_Compose_assoc _ _ _ _  _ (nMid ↑ X_Spider 1 1 PI) (nMid ↑ X_Spider 1 1 PI)).
+      rewrite <- nStack1_compose.
+      rewrite X_pi_2.
+      rewrite nwire_r.
+      reflexivity.
+    + reflexivity.
+  - split; intros.
+    + simpl. unfold bipi_X.
+      rewrite 2 ZX_Stack_Compose_distr.
+      rewrite 2 nStack1_add.
+      reflexivity.
+    + reflexivity.
+  - simpl. 
+    intros.
+    unfold bipi_X.
     simpl.
-    unfold_dirac_spider.
-    autorewrite with Cexp_db.
-    simpl.
-    Msimpl.
-    solve_matrix.
-  - rewrite Grow_Z_Right.
-    simpl.
-    remove_empty.
-    admit.
-  - intros; simpl.
-    replace (Z_Spider 0 0 α) with Empty.
-    + prop_exist_non_zero 1; solve_matrix.
-      destruct x; auto.    
-    (*  rewrite andb_false_r; auto.
-    + simpl. *)
-    admit.
-Abort.
+    apply compose_compat; [ | reflexivity ].
+    apply compose_compat; [ reflexivity | ].
+    assumption.
+Qed.
+
+Theorem bi_pi_rule_X : forall nIn nOut α,
+  bipi_Z (X_Spider (S nIn) (S nOut) α)
+  ∝ Invert_angles (X_Spider (S nIn) (S nOut) α).
+Proof.
+  intros.
+  swap_colors.
+  rewrite 2 nStack1_colorswap.
+  simpl.
+  apply bi_pi_rule_Z.
+Qed.
 
 Local Close Scope ZX_scope.

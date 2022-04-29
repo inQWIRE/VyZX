@@ -184,6 +184,29 @@ Add Parametric Morphism (nIn nOut : nat) : (@Transpose nIn nOut)
   with signature (@proportional nIn nOut) ==> (@proportional nOut nIn) as transpose_mor.
 Proof. apply transpose_compat. Qed.
 
+Lemma zx_0_0_prop : forall (zx0 zx1 : ZX 0 0), (ZX_semantics zx0) 0%nat 0%nat <> 0 -> (ZX_semantics zx1) 0%nat 0%nat <> 0 -> zx0 ∝ zx1.
+Proof.
+  intros.
+  exists ((/ ZX_semantics zx1 0%nat 0%nat) * (ZX_semantics zx0 0%nat 0%nat)).
+  split; [ | apply Cmult_neq_0; [ apply nonzero_div_nonzero | ]; assumption].
+  rewrite (Scalar_general zx0).
+  rewrite (Scalar_general zx1).
+  rewrite Mscale_assoc.
+  assert (WF_Matrix (I 1)) by (auto with wf_db).
+  unfold WF_Matrix in H1.
+  prep_matrix_equality.
+  assert (Hs: forall n, (S n >= 1)%nat) by (intros; simpl; apply le_n_S; apply Nat.le_0_l).
+  destruct x, y.
+  (* throwaway cases *)
+  2-4: (unfold scale; rewrite H1; C_field_simplify; try reflexivity; try split; try assumption; unfold I; replace ((0 =? 0) && (0 <? 1)) with true by auto; try apply C1_neq_C0; try (right; apply Hs); try (left; apply Hs)).
+  (* Actually interesting case *)
+  simpl.
+  unfold scale.
+  unfold I.
+  replace ((0 =? 0) && (0 <? 1)) with true by auto.
+  C_field_simplify; [ lca | assumption].
+Qed.
+
 Lemma zx_transpose_involutive {nIn nOut} : forall (zx : ZX nIn nOut),
  (zx ⊺) ⊺ ∝ zx.
 Proof.
