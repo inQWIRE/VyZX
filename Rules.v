@@ -10,7 +10,7 @@ Local Open Scope ZX_scope.
 (* TODO: Move into quantum lib *)
 Hint Rewrite Mscale_kron_dist_l Mscale_kron_dist_r Mscale_mult_dist_l Mscale_mult_dist_r Mscale_assoc : scalar_move_db.
 
-Lemma ZX_Compose_assoc : forall nIn nMid1 nMid2 nOut
+Lemma ZX_Compose_assoc : forall {nIn nMid1 nMid2 nOut}
                               (zx1 : ZX nIn nMid1) (zx2 : ZX nMid1 nMid2) (zx3 : ZX nMid2 nOut),
      (zx1 ⟷ zx2) ⟷ zx3 ∝ zx1 ⟷ (zx2 ⟷ zx3).
 Proof.
@@ -162,7 +162,7 @@ Lemma ZX_semantics_Stack : forall nIn nMid nOut
 Proof. reflexivity. Qed.
 
 Lemma ZX_Stack_Compose_distr : 
-  forall nIn1 nMid12 nIn3 nOut2 nMid34 nOut4 
+  forall {nIn1 nMid12 nIn3 nOut2 nMid34 nOut4}
     (zx1 : ZX nIn1 nMid12) (zx2 : ZX nMid12 nOut2) (zx3 : ZX nIn3 nMid34) (zx4 : ZX nMid34 nOut4),
     (zx1 ⟷ zx2) ↕ (zx3 ⟷ zx4) ∝ (zx1 ↕ zx3) ⟷ (zx2 ↕ zx4).
 Proof.
@@ -202,7 +202,7 @@ Qed.
 
 
 
-Lemma nWire_Stack : forall n m, (n ↑ —) ↕ (m ↑ —) ∝ ((n + m) ↑ —).
+Lemma nWire_Stack : forall {n m}, (n ↑ —) ↕ (m ↑ —) ∝ ((n + m) ↑ —).
 Proof.
   intros.
   prop_exist_non_zero 1.
@@ -214,7 +214,7 @@ Proof.
   lma.
 Qed.
 
-Lemma nWire_Compose : forall n, (n ↑ —) ⟷ (n ↑ —) ∝ n ↑ —.
+Lemma nWire_Compose : forall {n}, (n ↑ —) ⟷ (n ↑ —) ∝ n ↑ —.
 Proof.
   intros.
   prop_exist_non_zero 1.
@@ -230,7 +230,7 @@ Proof.
   apply nWire_Compose.
 Qed.
 
-Lemma wire_removal_l : forall nOut (zx : ZX 1 nOut), — ⟷ zx ∝ zx.
+Lemma wire_removal_l : forall {nOut} (zx : ZX 1 nOut), — ⟷ zx ∝ zx.
 Proof.
   intros.
   prop_exist_non_zero 1.
@@ -240,7 +240,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma nwire_removal_l: forall n nOut (zx : ZX n nOut), (n ↑ —) ⟷ zx ∝ zx.
+Lemma nwire_removal_l: forall {n nOut} (zx : ZX n nOut), (n ↑ —) ⟷ zx ∝ zx.
 Proof.
   intros.
   prop_exist_non_zero 1.
@@ -250,7 +250,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma wire_removal_r : forall nIn (zx : ZX nIn 1), zx ⟷ — ∝ zx.
+Lemma wire_removal_r : forall {nIn} (zx : ZX nIn 1), zx ⟷ — ∝ zx.
 Proof.
   intros.
   prop_exist_non_zero 1.
@@ -260,7 +260,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma nwire_removal_r: forall n nIn (zx : ZX nIn n), zx ⟷ (n ↑ —) ∝ zx.
+Lemma nwire_removal_r: forall {n nIn} (zx : ZX nIn n), zx ⟷ (n ↑ —) ∝ zx.
 Proof.
   intros.
   prop_exist_non_zero 1.
@@ -308,7 +308,7 @@ Ltac remove_wire := try repeat rewrite wire_removal_l;
 
 Global Hint Resolve Nat.mul_1_r : program_db.
 
-Program Lemma nStack_1_nStack : forall n (zx : ZX 1 1), (n ↑ zx) ∝ (n ⇑ zx).
+Program Lemma nStack_1_nStack : forall {n} (zx : ZX 1 1), (n ↑ zx) ∝ (n ⇑ zx).
 Proof.
   intros.
   unfold eq_rect.
@@ -320,7 +320,7 @@ Proof.
     reflexivity.
 Qed.
 
-Program Lemma nStack_nStack_1 : forall n (zx : ZX 1 1), (n ⇑ zx) ∝ (n ↑ zx).
+Program Lemma nStack_nStack_1 : forall {n} (zx : ZX 1 1), (n ⇑ zx) ∝ (n ↑ zx).
 Proof.
   intros.
   symmetry.
@@ -334,7 +334,7 @@ Proof.
     reflexivity.
 Qed. 
 
-Lemma nStack1_compose : forall (zx0 zx1 : ZX 1 1) n, 
+Lemma nStack1_compose : forall (zx0 zx1 : ZX 1 1) {n}, 
   n ↑ (zx0 ⟷ zx1) ∝ (n ↑ zx0) ⟷ (n ↑ zx1).
 Proof.
   intros.
@@ -344,12 +344,12 @@ Proof.
     remove_empty.
     reflexivity.
   - simpl.
-    rewrite <- (ZX_Stack_Compose_distr _ _ _ _ _ _ zx0 zx1).
+    rewrite <- (ZX_Stack_Compose_distr zx0 zx1).
     rewrite IHn.
     reflexivity.
 Qed. 
 
-Lemma nH_composition : forall n, 
+Lemma nH_composition : forall {n}, 
   (n ↑ □) ⟷ (n ↑ □) ∝ n ↑ —.
 Proof.
   intros.
@@ -358,7 +358,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma wire_stack_identity : forall n, 
+Lemma wire_stack_identity : forall {n}, 
   ZX_semantics (n ⇑ —) = I (2 ^ n).
 Proof.
   intros.
@@ -374,7 +374,7 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma nwire_r : forall nIn nOut (zx : ZX nIn nOut), 
+Lemma nwire_r : forall {nIn nOut} (zx : ZX nIn nOut), 
   zx ⟷ (nOut ↑ —) ∝ zx.
 Proof.
   intros.
@@ -386,7 +386,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma nwire_l : forall nIn nOut (zx : ZX nIn nOut), 
+Lemma nwire_l : forall {nIn nOut} (zx : ZX nIn nOut), 
   (nIn ↑ —) ⟷ zx ∝ zx.
 Proof.
   intros.
@@ -399,7 +399,7 @@ Proof.
 Qed.
 
 Lemma stack_wire_pad_l_r : 
-  forall nIn0 nIn1 nOut0 nOut1 (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1), 
+  forall {nIn0 nIn1 nOut0 nOut1} (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1), 
   zx0 ↕ zx1 ∝ ((nIn0 ↑ —) ⟷ zx0) ↕ (zx1 ⟷ (nOut1 ↑ —)).
 Proof.
   intros.
@@ -408,7 +408,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma stack_wire_pad_r_l : forall nIn0 nIn1 nOut0 nOut1 (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1), 
+Lemma stack_wire_pad_r_l : forall {nIn0 nIn1 nOut0 nOut1} (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1), 
   zx0 ↕ zx1 ∝ (zx0 ⟷ (nOut0 ↑ —)) ↕ ((nIn1 ↑ —) ⟷ zx1).
 Proof.
   intros.
@@ -452,7 +452,7 @@ Proof.
   
    simpl.*)
 
-Lemma hadamard_color_change_Z : forall nIn nOut α, 
+Lemma hadamard_color_change_Z : forall {nIn nOut} α, 
   (nIn ↑ □) ⟷ (Z_Spider nIn nOut α) ∝ (X_Spider nIn nOut α) ⟷ (nOut ↑ □).
 Proof.
   intros.
@@ -479,7 +479,7 @@ Proof.
   rewrite Mmult_1_l; try auto with wf_db.
 Qed.
 
-Lemma hadamard_color_change_X : forall nIn nOut α, 
+Lemma hadamard_color_change_X : forall {nIn nOut} α, 
   (nIn ↑ □) ⟷ (X_Spider nIn nOut α) ∝ (Z_Spider nIn nOut α) ⟷ (nOut ↑ □).
 Proof.
   intros.
@@ -506,7 +506,7 @@ Proof.
   rewrite Mmult_1_r; try auto with wf_db.
 Qed.
 
-Lemma bi_hadamard_color_change_Z : forall nIn nOut α, 
+Lemma bi_hadamard_color_change_Z : forall {nIn nOut} α, 
   (nIn ↑ □) ⟷ (Z_Spider nIn nOut α) ⟷ (nOut ↑ □) ∝ 
   X_Spider nIn nOut α.
 Proof.
@@ -518,7 +518,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma bi_hadamard_color_change_X : forall nIn nOut α, 
+Lemma bi_hadamard_color_change_X : forall {nIn nOut} α, 
   (nIn ↑ □) ⟷ (X_Spider nIn nOut α) ⟷ (nOut ↑ □) ∝ 
   Z_Spider nIn nOut α.
 Proof.
@@ -530,7 +530,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma Z_spider_1_1_fusion_eq : forall nIn nOut α β, 
+Lemma Z_spider_1_1_fusion_eq : forall {nIn nOut} α β, 
   ZX_semantics ((Z_Spider nIn 1 α) ⟷ (Z_Spider 1 nOut β)) =
   ZX_semantics (Z_Spider nIn nOut (α + β)).
 Proof.
@@ -571,7 +571,7 @@ Proof.
       lca.
 Qed.
 
-Lemma Z_spider_1_1_fusion : forall nIn nOut α β, 
+Lemma Z_spider_1_1_fusion : forall {nIn nOut} α β, 
   (Z_Spider nIn 1 α) ⟷ (Z_Spider 1 nOut β) ∝
   Z_Spider nIn nOut (α + β).
 Proof.
@@ -615,7 +615,7 @@ Definition build_left (nIn : nat) (α : R) : ZX nIn 1 :=
   | S k => build_left_rec k α
   end.
 
-Lemma Grow_Z_Left_1 : forall n α,
+Lemma Grow_Z_Left_1 : forall {n} α,
   Z_Spider (S (S n)) 1 α ∝ ((Z_Spider 2 1 0) ↕ (n ↑ Wire)) ⟷ (Z_Spider (S n) 1 α).
 Proof.
   intros.
@@ -915,7 +915,7 @@ Proof.
 Qed.
 
 
-Lemma Grow_Z_Right_1 : forall n α,
+Lemma Grow_Z_Right_1 : forall {n} α,
   Z_Spider 1 (S (S n)) α ∝ (Z_Spider 1 (S n) α) ⟷ ((Z_Spider 1 2 0) ↕ (n ↑ Wire)).
 Proof.
   intros.
@@ -927,7 +927,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma Grow_Z_Left : forall nIn nOut α,
+Lemma Grow_Z_Left : forall {nIn nOut} α,
   Z_Spider (S (S nIn)) nOut α ∝ ((Z_Spider 2 1 0) ↕ (nIn ↑ Wire)) ⟷ (Z_Spider (S nIn) nOut α).
 Proof.
   intros.
@@ -940,7 +940,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma Grow_Z_Right : forall nIn nOut α,
+Lemma Grow_Z_Right : forall {nIn nOut} α,
   Z_Spider nIn (S (S nOut)) α ∝ (Z_Spider nIn (S nOut) α) ⟷ ((Z_Spider 1 2 0) ↕ (nOut ↑ Wire)).
 Proof.
   intros.
@@ -953,24 +953,24 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma Z_Induct : forall nIn nOut (f g : forall nIn2 nOut2, ZX nIn2 nOut2 -> ZX nIn2 nOut2) α,
-  (forall β, f _ _ (Z_Spider 2 1 β) ∝ g _ _ (Z_Spider 2 1 β)) ->
-  (forall β, f _ _ (Z_Spider 1 2 β) ∝ g _ _ (Z_Spider 1 2 β)) ->
-  (forall β, f _ _ (Z_Spider 1 1 β) ∝ g _ _ (Z_Spider 1 1 β)) ->
+Lemma Z_Induct : forall {nIn nOut} (f g : forall {nIn2 nOut2}, ZX nIn2 nOut2 -> ZX nIn2 nOut2) α,
+  (forall β, f (Z_Spider 2 1 β) ∝ g (Z_Spider 2 1 β)) ->
+  (forall β, f (Z_Spider 1 2 β) ∝ g (Z_Spider 1 2 β)) ->
+  (forall β, f (Z_Spider 1 1 β) ∝ g (Z_Spider 1 1 β)) ->
   ((forall {nIn3 nMid nOut3} (zx1 : ZX nIn3 nMid) (zx2 : ZX nMid nOut3), 
-      f _ _ (zx1 ⟷ zx2) ∝ f _ _ zx1 ⟷ f _ _ zx2) /\
+      f (zx1 ⟷ zx2) ∝ f zx1 ⟷ f zx2) /\
    forall {nIn3 nMid nOut3} (zx1 : ZX nIn3 nMid) (zx2 : ZX nMid nOut3), 
-      g _ _ (zx1 ⟷ zx2) ∝ g _ _ zx1 ⟷ g _ _ zx2) ->
+      g (zx1 ⟷ zx2) ∝ g zx1 ⟷ g zx2) ->
   ((forall {nIn3 nOut3 nIn4 nOut4} (zx1 : ZX nIn3 nOut3) (zx2 : ZX nIn4 nOut4), 
-      f _ _ (zx1 ↕ zx2) ∝ f _ _ zx1 ↕ f _ _ zx2) /\
+      f (zx1 ↕ zx2) ∝ f zx1 ↕ f zx2) /\
    forall {nIn3 nOut3 nIn4 nOut4} (zx1 : ZX nIn3 nOut3) (zx2 : ZX nIn4 nOut4), 
-      g _ _ (zx1 ↕ zx2) ∝ g _ _ zx1 ↕ g _ _ zx2) ->
+      g (zx1 ↕ zx2) ∝ g zx1 ↕ g zx2) ->
   ((forall {nIn5 nOut5} (zx1 : ZX nIn5 nOut5) (zx2 : ZX nIn5 nOut5),
-      zx1 ∝ zx2 -> f _ _ zx1 ∝ f _ _ zx2)) ->
+      zx1 ∝ zx2 -> f zx1 ∝ f zx2)) ->
   ((forall {nIn5 nOut5} (zx1 : ZX nIn5 nOut5) (zx2 : ZX nIn5 nOut5),
-      zx1 ∝ zx2 -> g _ _ zx1 ∝ g _ _ zx2)) ->
-    (f _ _ Empty ∝ Empty) /\ (g _ _ Empty ∝ Empty) ->
-  f _ _ (Z_Spider (S nIn) (S nOut) α) ∝ g _ _ (Z_Spider (S nIn) (S nOut) α).
+      zx1 ∝ zx2 -> g zx1 ∝ g zx2)) ->
+    (f Empty ∝ Empty) /\ (g Empty ∝ Empty) ->
+  f (Z_Spider (S nIn) (S nOut) α) ∝ g (Z_Spider (S nIn) (S nOut) α).
 Proof.
   intros nIn nOut f g α.
   intros base21 base12 base11.
@@ -988,7 +988,7 @@ Proof.
   generalize dependent nOut.
   induction nIn; induction nOut. 
   - auto. 
-  - rewrite (compatf _ _ _ _ (Grow_Z_Right _ _ _)).
+  - rewrite (compatf _ _ _ _ (Grow_Z_Right _)).
     rewrite compf.
     rewrite (stackf 1%nat 2%nat nOut nOut).
     rewrite nstackf.
@@ -1000,9 +1000,9 @@ Proof.
     rewrite <- nstackg.
     rewrite <- stackg.
     rewrite <- compg.
-    rewrite <- (compatg _ _ _ _ (Grow_Z_Right _ _ _)).
+    rewrite <- (compatg _ _ _ _ (Grow_Z_Right _)).
     reflexivity.
-  - rewrite (compatf _ _ _ _ (Grow_Z_Left _ _ _)).
+  - rewrite (compatf _ _ _ _ (Grow_Z_Left _)).
     rewrite compf.
     rewrite (stackf 2%nat 1%nat nIn nIn).
     rewrite nstackf.
@@ -1014,9 +1014,9 @@ Proof.
     rewrite <- nstackg.
     rewrite <- stackg.
     rewrite <- compg.
-    rewrite <- (compatg _ _ _ _ (Grow_Z_Left _ _ _)).
+    rewrite <- (compatg _ _ _ _ (Grow_Z_Left _)).
     reflexivity.
-  - rewrite (compatf _ _ _ _ (Grow_Z_Right _ _ _)).
+  - rewrite (compatf _ _ _ _ (Grow_Z_Right _)).
     rewrite compf.
     rewrite (stackf 1%nat 2%nat nOut nOut).
     rewrite nstackf.
@@ -1028,10 +1028,9 @@ Proof.
     rewrite <- nstackg.
     rewrite <- stackg.
     rewrite <- compg.
-    rewrite <- (compatg _ _ _ _ (Grow_Z_Right _ _ _)).
+    rewrite <- (compatg _ _ _ _ (Grow_Z_Right _)).
     reflexivity.
 Qed.
-
 
 
 Lemma ZX_transpose_involutive : forall {nIn nOut} (zx : ZX nIn nOut), (zx ⊺) ⊺ ∝ zx.
@@ -1136,7 +1135,7 @@ Proof.
  all : C_field_simplify; [reflexivity | nonzero].
 Qed.
 
-Theorem inverse_Z_Spider : forall nIn nOut α, ZX_semantics (Z_Spider nIn nOut α) = (ZX_semantics (Z_Spider nOut nIn (-α)))†.
+Theorem inverse_Z_Spider : forall {nIn nOut} α, ZX_semantics (Z_Spider nIn nOut α) = (ZX_semantics (Z_Spider nOut nIn (-α)))†.
 Proof.
   intros; simpl.
   rewrite <- Z_semantics_adj.
@@ -1144,7 +1143,7 @@ Proof.
   reflexivity.
 Qed.
 
-Theorem inverse_X_Spider : forall nIn nOut α, ZX_semantics (X_Spider nIn nOut α) = (ZX_semantics (X_Spider nOut nIn (-α)))†.
+Theorem inverse_X_Spider : forall {nIn nOut} α, ZX_semantics (X_Spider nIn nOut α) = (ZX_semantics (X_Spider nOut nIn (-α)))†.
 Proof.
   intros; simpl.
   rewrite <- X_semantics_adj.
@@ -1212,10 +1211,10 @@ Proof.
   solve_matrix.
 Qed.
 
-Lemma ColorSwap_X : forall nIn nOut α, X_Spider nIn nOut α ∝ ⊙ (Z_Spider nIn nOut α).
+Lemma ColorSwap_X : forall {nIn nOut} α, X_Spider nIn nOut α ∝ ⊙ (Z_Spider nIn nOut α).
 Proof. intros. reflexivity. Qed.
 
-Lemma ColorSwap_Z : forall nIn nOut α, Z_Spider nIn nOut α ∝ ⊙ (X_Spider nIn nOut α).
+Lemma ColorSwap_Z : forall {nIn nOut} α, Z_Spider nIn nOut α ∝ ⊙ (X_Spider nIn nOut α).
 Proof. intros. reflexivity. Qed.
 
 Lemma ColorSwap_Cup : ⊃ ∝ ⊙ (⊃).
@@ -1224,11 +1223,11 @@ Proof. intros. reflexivity. Qed.
 Lemma ColorSwap_Cap : ⊂ ∝ ⊙ (⊂).
 Proof. intros. reflexivity. Qed.
 
-Lemma ColorSwap_Compose : forall nIn nMid nOut (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
+Lemma ColorSwap_Compose : forall {nIn nMid nOut} (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
   (⊙ zx0 ⟷ ⊙ zx1) ∝ ⊙ (zx0 ⟷ zx1).
 Proof. intros. reflexivity. Qed.
 
-Lemma ColorSwap_Stack : forall nIn0 nIn1 nOut0 nOut1 (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1),
+Lemma ColorSwap_Stack : forall {nIn0 nIn1 nOut0 nOut1} (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1),
   (⊙ zx0 ↕ ⊙ zx1) ∝ ⊙ (zx0 ↕ zx1).
 Proof. intros. reflexivity. Qed.
 
@@ -1252,7 +1251,7 @@ Proof.
     rewrite <- ZX_Compose_assoc.
     rewrite <- H_comm_cap.
     rewrite ZX_Compose_assoc.
-    rewrite  <- (ZX_Stack_Compose_distr _ _ _ _ _ _ ZX_H ZX_H).
+    rewrite  <- (ZX_Stack_Compose_distr ZX_H ZX_H).
     rewrite ZX_H_H_is_Wire.
     rewrite Wire_Compose.
     rewrite <- nWire_2_Stack_Wire.
@@ -1267,7 +1266,7 @@ Proof.
     rewrite ZX_Compose_assoc.
     rewrite H_comm_cup.
     rewrite <- ZX_Compose_assoc.
-    rewrite <- (ZX_Stack_Compose_distr _ _ _ _ _ _ — —).
+    rewrite <- (ZX_Stack_Compose_distr — —).
     rewrite ZX_H_H_is_Wire.
     rewrite Wire_Compose.
     rewrite <- nWire_2_Stack_Wire.
@@ -1296,14 +1295,14 @@ Proof.
     rewrite IHzx1.
     rewrite IHzx2.
     rewrite 3 ZX_Compose_assoc.
-    rewrite <- (ZX_Compose_assoc _ _ _ _ (nMid ↑ □)).
+    rewrite <- (ZX_Compose_assoc (nMid ↑ □)).
     rewrite nH_composition.
     rewrite nwire_l.
     rewrite 2 ZX_Compose_assoc.
     reflexivity.
 Qed.
 
-Lemma ColorSwap_comp : forall nIn nOut,
+Lemma ColorSwap_comp : forall {nIn nOut},
   forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
   ⊙ zx0 ∝ ⊙ zx1.
 Proof.
@@ -1314,7 +1313,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma ColorSwap_lift : forall nIn nOut (zx0 zx1 : ZX nIn nOut),
+Lemma ColorSwap_lift : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut),
   ⊙ zx0 ∝ ⊙ zx1 -> zx0 ∝ zx1.
 Proof.
   intros.
@@ -1340,7 +1339,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma colorswap_eq_n_Stack : forall nIn nOut (zx : ZX nIn nOut) n, ⊙ zx ∝ zx -> ⊙ (n ⇑ zx) ∝ (n ⇑ zx).
+Lemma colorswap_eq_n_Stack : forall {nIn nOut} (zx : ZX nIn nOut) n, ⊙ zx ∝ zx -> ⊙ (n ⇑ zx) ∝ (n ⇑ zx).
 Proof.
   intros.
   induction n; simpl; try exact empty_colorswap.
@@ -1358,7 +1357,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma nWire_colorswap : forall n, ⊙ (n ↑ —) ∝ (n ↑ —).
+Lemma nWire_colorswap : forall {n}, ⊙ (n ↑ —) ∝ (n ↑ —).
 Proof.
   intros.
   apply colorswap_eq_n_Stack_1.
@@ -1451,14 +1450,14 @@ Proof.
   simpl.
  *)
 
-Lemma nH_colorswap : forall n, ⊙ (n ↑ □) ∝ (n ↑ □).
+Lemma nH_colorswap : forall {n}, ⊙ (n ↑ □) ∝ (n ↑ □).
 Proof.
   intros.
   apply colorswap_eq_n_Stack_1.
   exact H_colorswap.
 Qed.
 
-Lemma compose_colorswap : forall nIn nMid nOut (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
+Lemma compose_colorswap : forall {nIn nMid nOut} (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
   ⊙ zx0 ∝ zx0 -> ⊙ zx1 ∝ zx1 -> ⊙ (zx0 ⟷ zx1) ∝ (zx0 ⟷ zx1).
 Proof.
   intros.
@@ -1467,7 +1466,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma stack_colorswap : forall nIn nMid nOut (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
+Lemma stack_colorswap : forall {nIn nMid nOut} (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut),
   ⊙ zx0 ∝ zx0 -> ⊙ zx1 ∝ zx1 -> ⊙ (zx0 ↕ zx1) ∝ (zx0 ↕ zx1).
 Proof.
   intros.
@@ -1476,7 +1475,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma nStack1_colorswap : forall zx n, ⊙ (n ↑ zx) ∝ (n ↑ ⊙ zx).
+Lemma nStack1_colorswap : forall zx {n}, ⊙ (n ↑ zx) ∝ (n ↑ ⊙ zx).
 Proof.
   intros.
   subst.
@@ -1486,7 +1485,7 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma nStack_colorswap : forall nIn nOut (zx : ZX nIn nOut) n,
+Lemma nStack_colorswap : forall {nIn nOut} (zx : ZX nIn nOut) n,
   ⊙ zx ∝ zx -> ⊙ (n ⇑ zx) ∝ (n ⇑ zx).
 Proof.
   intros.
@@ -1504,7 +1503,9 @@ Proof.
 Qed.
 
 Ltac swap_colors := 
-  apply ColorSwap_lift; simpl; try rewrite wire_colorswap; try rewrite H_colorswap; try rewrite nWire_colorswap; try rewrite nH_colorswap; try rewrite swap_colorswap.
+  apply ColorSwap_lift; simpl; repeat (try rewrite wire_colorswap; try rewrite H_colorswap; try rewrite nWire_colorswap; 
+                               try rewrite nH_colorswap; try rewrite swap_colorswap; try rewrite nStack1_colorswap; 
+                               try rewrite nStack_colorswap).
 
 Ltac swap_colors_of proof := 
   intros; swap_colors; try apply proof.
@@ -1655,7 +1656,7 @@ Qed.
 Lemma X_spider_1_1_fusion : forall α β, 
   (X_Spider 1 1 α) ⟷ (X_Spider 1 1 β) ∝ X_Spider 1 1 (α + β).
 Proof.
-  swap_colors_of Z_spider_1_1_fusion.
+  swap_colors_of (@Z_spider_1_1_fusion 1 1).
 Qed.
  
 Lemma Z_double_H_connection : forall α β,
@@ -1679,7 +1680,7 @@ Proof.
     swap_colors_of Z_double_H_connection.
 Qed.
 
-Lemma Empty_H_edge : forall nIn nOut (zx0 : ZX nIn 0) (zx1 : ZX 0 nOut),
+Lemma Empty_H_edge : forall {nIn nOut} (zx0 : ZX nIn 0) (zx1 : ZX 0 nOut),
   zx0 ⥈ zx1 ∝ zx0 ⟷ zx1.
 Proof.
   intros; simpl.
@@ -1689,7 +1690,7 @@ Proof.
   reflexivity.
 Qed. 
 
-Lemma H_edge_ColorSwap_inv_l : forall nMid nOut (zx0 : ZX 0 nMid) (zx1 : ZX nMid nOut), 
+Lemma H_edge_ColorSwap_inv_l : forall {nMid nOut} (zx0 : ZX 0 nMid) (zx1 : ZX nMid nOut), 
   zx0 ∝ ⊙ zx0 -> zx0 ⥈ zx1 ∝ zx0 ⟷ zx1.
 Proof.
   intros.
@@ -1701,7 +1702,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma H_edge_ColorSwap_inv_r : forall nIn nMid (zx0 : ZX nIn nMid) (zx1 : ZX nMid 0), 
+Lemma H_edge_ColorSwap_inv_r : forall {nIn nMid} (zx0 : ZX nIn nMid) (zx1 : ZX nMid 0), 
   zx1 ∝ ⊙ zx1 -> zx0 ⥈ zx1 ∝ zx0 ⟷ zx1.
 Proof.
   intros.
@@ -1713,35 +1714,35 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma H_edge_cap : forall nOut (zx : ZX 2 nOut), ⊂ ⥈ zx ∝ ⊂ ⟷ zx.
+Lemma H_edge_cap : forall {nOut} (zx : ZX 2 nOut), ⊂ ⥈ zx ∝ ⊂ ⟷ zx.
 Proof.
   intros.
   apply H_edge_ColorSwap_inv_l.
   reflexivity.
 Qed.
 
-Lemma H_edge_cup : forall nIn (zx : ZX nIn 2), zx ⥈ ⊃ ∝ zx ⟷ ⊃.
+Lemma H_edge_cup : forall {nIn} (zx : ZX nIn 2), zx ⥈ ⊃ ∝ zx ⟷ ⊃.
 Proof.
   intros.
   apply H_edge_ColorSwap_inv_r.
   reflexivity.
 Qed.
 
-Lemma H_edge_empty_l : forall nOut (zx : ZX 0 nOut), ⦰ ⥈ zx ∝ ⦰ ⟷ zx.
+Lemma H_edge_empty_l : forall {nOut} (zx : ZX 0 nOut), ⦰ ⥈ zx ∝ ⦰ ⟷ zx.
 Proof.
   intros.
   apply H_edge_ColorSwap_inv_l.
   reflexivity.
 Qed.
 
-Lemma H_edge_empty_r : forall nIn (zx : ZX nIn 0), zx ⥈ ⦰ ∝ zx ⟷ ⦰.
+Lemma H_edge_empty_r : forall {nIn} (zx : ZX nIn 0), zx ⥈ ⦰ ∝ zx ⟷ ⦰.
 Proof.
   intros.
   apply H_edge_ColorSwap_inv_r.
   reflexivity.
 Qed.
 
-Lemma H_edge_H_removal_l : forall nOut (zx : ZX 1 nOut), □ ⥈ zx ∝ zx.
+Lemma H_edge_H_removal_l : forall {nOut} (zx : ZX 1 nOut), □ ⥈ zx ∝ zx.
 Proof.
   intros.
   unfold hadamard_edge.
@@ -1751,7 +1752,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma H_edge_nH_removal_l : forall n nOut (zx : ZX n nOut), (n ↑ □) ⥈ zx ∝ zx.
+Lemma H_edge_nH_removal_l : forall n {nOut} (zx : ZX n nOut), (n ↑ □) ⥈ zx ∝ zx.
 Proof.
   intros.
   unfold hadamard_edge.
@@ -1760,7 +1761,7 @@ Proof.
   reflexivity.
 Qed.
   
-Lemma H_edge_H_removal_r : forall nIn (zx : ZX nIn 1), zx ⥈ □ ∝ zx.
+Lemma H_edge_H_removal_r : forall {nIn} (zx : ZX nIn 1), zx ⥈ □ ∝ zx.
 Proof.
   intros.
   unfold hadamard_edge.
@@ -1771,7 +1772,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma H_edge_nH_removal_r : forall n nIn (zx : ZX nIn n), zx ⥈ (n ↑ □) ∝ zx.
+Lemma H_edge_nH_removal_r : forall n {nIn} (zx : ZX nIn n), zx ⥈ (n ↑ □) ∝ zx.
 Proof.
   intros.
   unfold hadamard_edge.
@@ -1781,7 +1782,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma H_edge_sandwich : forall nIn nMid0 nMid1 nOut (zx0 : ZX nIn nMid0) (zx1 : ZX nMid0 nMid1) (zx2 : ZX nMid1 nOut),
+Lemma H_edge_sandwich : forall {nIn nMid0 nMid1 nOut} (zx0 : ZX nIn nMid0) (zx1 : ZX nMid0 nMid1) (zx2 : ZX nMid1 nOut),
   zx0 ⥈ zx1 ⥈ zx2 ∝ zx0 ⟷ ⊙ zx1 ⟷ zx2.
 Proof.
   intros.
@@ -1796,7 +1797,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma H_edge_sandwich' : forall nIn nMid0 nMid1 nOut (zx0 : ZX nIn nMid0) (zx1 : ZX nMid0 nMid1) (zx2 : ZX nMid1 nOut),
+Lemma H_edge_sandwich' : forall {nIn nMid0 nMid1 nOut} (zx0 : ZX nIn nMid0) (zx1 : ZX nMid0 nMid1) (zx2 : ZX nMid1 nOut),
   zx0 ⥈ zx1 ⥈ zx2 ∝ BiHadamard (⊙ zx0 ⟷ zx1 ⟷ ⊙ zx2).
 Proof.
   intros.
@@ -1849,7 +1850,7 @@ Proof.
 Qed.
 
 
-Lemma Z_Spider_angle_2PI : forall nIn nOut α k, Z_Spider nIn nOut α ∝ (Z_Spider nIn nOut (α + IZR (2 * k) * PI)).
+Lemma Z_Spider_angle_2PI : forall {nIn nOut} α k, Z_Spider nIn nOut α ∝ (Z_Spider nIn nOut (α + IZR (2 * k) * PI)).
 Proof.
   intros.
   prop_exist_non_zero 1.
@@ -1861,9 +1862,10 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma X_Spider_angle_2PI : forall nIn nOut α k, X_Spider nIn nOut α ∝ (X_Spider nIn nOut (α + IZR (2 * k) * PI)).
+Lemma X_Spider_angle_2PI : forall {nIn nOut} α k, X_Spider nIn nOut α ∝ (X_Spider nIn nOut (α + IZR (2 * k) * PI)).
 Proof.
-  swap_colors_of Z_Spider_angle_2PI.
+  intros nIn nOut.
+  swap_colors_of (@Z_Spider_angle_2PI nIn nOut).
 Qed.
 
 Definition bipi_X {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
@@ -1938,7 +1940,7 @@ Proof.
   apply identity_removal_X.
 Qed.
 
-Theorem bi_pi_rule_Z : forall nIn nOut α,
+Theorem bi_pi_rule_Z : forall {nIn nOut} α,
   bipi_X (Z_Spider (S nIn) (S nOut) α)
   ∝ Invert_angles (Z_Spider (S nIn) (S nOut) α).
 Proof.
@@ -1952,7 +1954,7 @@ Proof.
       unfold bipi_X.
       simpl.
       rewrite <- 3 ZX_Compose_assoc.
-      rewrite (ZX_Compose_assoc _ _ _ _  _ (nMid ↑ X_Spider 1 1 PI) (nMid ↑ X_Spider 1 1 PI)).
+      rewrite (ZX_Compose_assoc _ (nMid ↑ X_Spider 1 1 PI) (nMid ↑ X_Spider 1 1 PI)).
       rewrite <- nStack1_compose.
       rewrite X_pi_2.
       rewrite nwire_r.
@@ -1976,13 +1978,12 @@ Proof.
     unfold bipi_X; remove_empty; reflexivity.
 Qed.
 
-Theorem bi_pi_rule_X : forall nIn nOut α,
+Theorem bi_pi_rule_X : forall {nIn nOut} α,
   bipi_Z (X_Spider (S nIn) (S nOut) α)
   ∝ Invert_angles (X_Spider (S nIn) (S nOut) α).
 Proof.
   intros.
   swap_colors.
-  rewrite 2 nStack1_colorswap.
   simpl.
   apply bi_pi_rule_Z.
 Qed.
