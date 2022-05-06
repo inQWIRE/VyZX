@@ -255,6 +255,22 @@ Add Parametric Morphism (nIn nOut : nat) : (@Adjoint nIn nOut)
   with signature (@proportional nIn nOut) ==> (@proportional nOut nIn) as adj_mor.
 Proof. apply adjoint_compat. Qed.
 
+Lemma Invert_angles_compat : 
+  forall nIn nOut,
+    forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
+    (Invert_angles zx0) ∝ (Invert_angles zx1).
+Proof.
+  intros.
+  rewrite (transpose_involutive_eq zx0), (transpose_involutive_eq zx1).
+  apply transpose_compat in H.
+  apply adjoint_compat in H.
+  apply H.
+Qed.
+
+Add Parametric Morphism (nIn nOut : nat) : (@Invert_angles nIn nOut)
+  with signature (@proportional nIn nOut) ==> (@proportional nIn nOut) as inva_mor.
+Proof. apply Invert_angles_compat. Qed.
+
 Lemma colorswap_compat :
   forall nIn nOut,
     forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->

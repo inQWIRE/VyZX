@@ -898,6 +898,14 @@ Fixpoint Transpose {nIn nOut} (zx : ZX nIn nOut) : ZX nOut nIn :=
   end
   where "zx ⊺" := (Transpose zx).
 
+Lemma transpose_involutive_eq : forall {nIn nOut} (zx : ZX nIn nOut),
+  zx = (zx ⊺)⊺.
+Proof.
+  intros; induction zx; try auto.
+  all: simpl; rewrite <- IHzx1, <- IHzx2; auto.
+Qed.
+
+
 Fixpoint Invert_angles {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut :=
   match zx with
   | Z_Spider mIn mOut α => Z_Spider mIn mOut (-α)
