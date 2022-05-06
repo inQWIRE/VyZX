@@ -1043,19 +1043,6 @@ Proof.
   apply transpose_involutive.
 Qed.
 
-Lemma bp_right :
-  Z_Spider 1 2 0 ⟷ (2 ↑ X_Spider 1 1 PI) ∝
-  X_Spider 1 1 PI ⟷ Z_Spider 1 2 0.
-Proof.
-  rewrite <- ZX_transpose_involutive.
-  replace ((Z_Spider 1 2 0 ⟷ (2 ↑ X_Spider 1 1 PI)) ⊺)
-  with ((2 ↑ (X_Spider 1 1 PI)) ⟷ Z_Spider 2 1 0)
-  by reflexivity.
-  rewrite bp_left.
-  reflexivity.
-Qed.
-
-
 
 Theorem trivial_cap_cup : 
   ⊂ ⟷ ⊃ ∝ ⦰.
@@ -1984,6 +1971,9 @@ Proof.
     apply compose_compat; [ | reflexivity ].
     apply compose_compat; [ reflexivity | ].
     assumption.
+  - apply Invert_angles_compat.
+  - split; [ | reflexivity ].
+    unfold bipi_X; remove_empty; reflexivity.
 Qed.
 
 Theorem bi_pi_rule_X : forall nIn nOut α,
