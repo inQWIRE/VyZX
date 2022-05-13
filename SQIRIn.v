@@ -558,18 +558,50 @@ Proof.
       easy.
 Qed.
 
-Lemma rot_sem_eq : forall {dim} a b c n, n < dim -> @uc_eval dim (uapp1 (U_R a b c) n) = ZX_Arb_Swaps_Semantics (@ZX_A_1_1_pad dim n (ZX_ucom_rot a b c)).
+Lemma rot_sem_base : forall a b c, ZX_Arb_Swaps_Semantics (ZX_ucom_rot a b c) = rotation a b c.
+Admitted.
+
+Lemma pad_1_1_sem_eq : forall {dim} n (zx : ZX_Arb_Swaps 1 1) A, WF_Matrix A -> ZX_Arb_Swaps_Semantics zx = A -> n < dim -> Pad.pad_u dim n A = ZX_Arb_Swaps_Semantics (@ZX_A_1_1_pad dim n zx).
 Proof.
   intros.
   simpl.
   generalize dependent n.
   induction dim; intros.
-  - unfold Pad.pad_u, Pad.pad.
-    assert (n + 1 <=? 0 = false) by (apply leb_correct_conv; lia).
-    rewrite H0.
-    simpl.
-    admit.
-Abort.
+  - exfalso.
+    lia.
+  - simpl.
+    destruct n.
+    Set Printing Implicit.
+    + unfold Pad.pad_u, Pad.pad.
+      assert (0 + 1 <=? S dim = true) by (apply leb_correct; lia).
+      rewrite H2.
+      Msimpl.
+      simpl.
+      rewrite nArbWire_semantics.
+      replace (dim - 0)%nat with dim by lia.
+      apply kron_simplify; [ | easy].
+      easy.
+    + simpl.
+      rewrite <- IHdim; [ | lia ].
+      unfold Pad.pad_u, Pad.pad.
+      assert (S n + 1 <=? S dim = true) by (apply leb_correct; lia).
+      assert (n + 1 <=? dim = true) by (apply leb_correct; lia).
+      rewrite H2, H3.
+      rewrite ArbWire_semantics.
+      rewrite (kron_assoc (I (2 ^ n)) _ _); try auto with wf_db.
+      restore_dims.
+      rewrite <- (kron_assoc (I 2) _ _); try auto with wf_db.
+      rewrite id_kron.
+      replace (2 * 2 ^ n)%nat with (2 ^ (S n))%nat by reflexivity.
+      rewrite <- kron_assoc; try auto with wf_db.
+Qed.
+
+Lemma rot_sem_eq : forall {dim} a b c n, n < dim -> @uc_eval dim (uapp1 (U_R a b c) n) = ZX_Arb_Swaps_Semantics (@ZX_A_1_1_pad dim n (ZX_ucom_rot a b c)).
+Proof.
+  intros.
+  apply pad_1_1_sem_eq; try auto with wf_db.
+  apply rot_sem_base.
+Qed.
 
 Theorem equal_sem : forall dim (c : base_ucom dim), uc_well_typed c -> ZX_Arb_Swaps_Semantics (base_ucom_to_ZX c) = uc_eval c.
 Proof.
