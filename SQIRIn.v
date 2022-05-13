@@ -9,6 +9,7 @@ Require Export Gates.
 Require Export VyZX.Proportional.
 Require Export Rules.
 Require Import Matrix.
+Require Import Setoid.
 Require Import Quantum.
 Require Import ZX_A_G_2.
 
@@ -45,6 +46,8 @@ Definition ZX_AS_X : ZX_Arb_Swaps 1 1 := ZX_AS_X_spider 1 1 PI.
 Definition ZX_AS_Y : ZX_Arb_Swaps 1 1 := AS_Compose ZX_AS_Z ZX_AS_X.
 
 Definition ZX_AS_CNOT : ZX_Arb_Swaps 2 2 := ZX_AS_Z_spider 1 2 0 ↕A ArbWire ⟷A (ArbWire ↕A ZX_AS_X_spider 2 1 0).
+
+Definition ZX_AS_CNOT_flipped : ZX_Arb_Swaps 2 2 := ZX_AS_X_spider 1 2 0 ↕A ArbWire ⟷A (ArbWire ↕A ZX_AS_Z_spider 2 1 0).
 
 Definition ZX_ucom_rot (x y z : R) : ZX_Arb_Swaps 1 1 := 
   ZX_AS_Y ⟷A ZX_AS_Z_spider 1 1 y ⟷A ZX_AS_Y ⟷A ZX_AS_X_spider 1 1 z ⟷A ZX_AS_Z_spider 1 1 x.
@@ -170,6 +173,8 @@ Proof.
     try intros; simpl in H; repeat destruct H; try discriminate; try (subst; easy). (* Case of 4 lists length 1 *)
 Qed.
 
+Global Hint Resolve WF_ZX_Arb_Swap_Semantics : wf_db.
+
 (* Semantics for useful definitions and notations *)
 
 Lemma nStack1A_n_kron : forall n (zx : ZX_Arb_Swaps 1 1), ZX_Arb_Swaps_Semantics (n ↑A zx) = n ⨂ ZX_Arb_Swaps_Semantics zx.
@@ -192,6 +197,21 @@ Proof.
 Qed.
 
 Opaque ArbWire.
+
+
+Lemma nArbWire_semantics : forall n, ZX_Arb_Swaps_Semantics (nArbWire n) = I (2 ^ n).
+Proof.
+  intros.
+  simpl.
+  induction n.
+  - easy.
+  - simpl.
+    replace (2 ^ n + (2 ^ n + 0))%nat with (2 * 2 ^ n)%nat by lia.
+    rewrite <- id_kron.
+    rewrite <- IHn.
+    rewrite ArbWire_semantics.
+    easy.
+Qed.
 
 Lemma A_Swap_2_is_swap : A_Swap_semantics 2 = swap.
 Proof.
@@ -278,6 +298,84 @@ Proof.
   symmetry.
   apply A_Swap_Correct.
 Qed.
+
+
+Definition Arb_Swaps_proportional {nIn nOut} (zx0 : ZX_Arb_Swaps nIn nOut) (zx1 : ZX_Arb_Swaps nIn nOut) :=
+  proportional_general ZX_Arb_Swaps_Semantics zx0 zx1.
+
+Infix "∝A" := Arb_Swaps_proportional (at level 70).
+
+Lemma Arb_Swaps_proportional_refl : forall {nIn nOut} (zx : ZX_Arb_Swaps nIn nOut), zx ∝A zx.
+Proof.
+  intros.
+  apply proportional_general_refl.
+Qed.
+
+Lemma Arb_Swaps_proportional_symm : forall {nIn nOut} (zx0 zx1 : ZX_Arb_Swaps nIn nOut),
+  zx0 ∝A zx1 -> zx1 ∝A zx0.
+Proof.
+  intros.
+  apply proportional_general_symm; assumption.
+Qed.
+
+Lemma Arb_Swaps_proportional_trans : forall {nIn nOut} (zx0 zx1 zx2 : ZX_Arb_Swaps nIn nOut),
+  zx0 ∝A zx1 -> zx1 ∝A zx2 -> zx0 ∝A zx2.
+Proof.
+  intros.
+  apply (proportional_general_trans _ _ _ ZX_Arb_Swaps_Semantics zx0 zx1 zx2); assumption.
+Qed.
+
+Add Parametric Relation (nIn nOut : nat) : (ZX_Arb_Swaps nIn nOut) (@Arb_Swaps_proportional nIn nOut)
+  reflexivity proved by Arb_Swaps_proportional_refl
+  symmetry proved by Arb_Swaps_proportional_symm
+  transitivity proved by Arb_Swaps_proportional_trans
+  as zx_Arb_Swaps_prop_equiv_rel.
+
+Lemma Arb_Swaps_stack_compat :
+  forall nIn0 nOut0 nIn1 nOut1,
+    forall zx0 zx1 : ZX_Arb_Swaps nIn0 nOut0, zx0 ∝A zx1 ->
+    forall zx2 zx3 : ZX_Arb_Swaps nIn1 nOut1, zx2 ∝A zx3 ->
+    zx0 ↕A zx2 ∝A zx1 ↕A zx3.
+Proof.
+  intros.
+  destruct H; destruct H; destruct H0; destruct H0.
+  exists (x * x0).
+  split.
+  - simpl; rewrite H; rewrite H0.
+    lma.
+  - apply Cmult_neq_0; try assumption.
+Qed.
+
+Add Parametric Morphism (nIn0 nOut0 nIn1 nOut1 : nat) : (@AS_Stack nIn0 nIn1 nOut0 nOut1)
+  with signature (@Arb_Swaps_proportional nIn0 nOut0) ==> (@Arb_Swaps_proportional nIn1 nOut1) ==> 
+                 (@Arb_Swaps_proportional (nIn0 + nIn1) (nOut0 + nOut1)) as Arb_Swaps_stack_mor.
+Proof. apply Arb_Swaps_stack_compat; assumption. Qed.
+
+Lemma Arb_Swaps_compose_compat :
+  forall nIn nMid nOut,
+    forall zx0 zx1 : ZX_Arb_Swaps nIn  nMid, zx0 ∝A zx1 ->
+    forall zx2 zx3 : ZX_Arb_Swaps nMid nOut, zx2 ∝A zx3 ->
+    (AS_Compose zx0 zx2) ∝A (AS_Compose zx1 zx3).
+Proof.
+  intros.
+  destruct H; destruct H; destruct H0; destruct H0.
+  simpl.
+  exists (x * x0).
+  split.
+  - simpl; rewrite H; rewrite H0.
+    rewrite Mscale_mult_dist_r.
+    rewrite Mscale_mult_dist_l.
+    restore_dims.
+    rewrite Mscale_mult_dist_l.
+    rewrite Mscale_assoc.
+    reflexivity.
+  - apply Cmult_neq_0; try assumption.
+Qed.
+
+Add Parametric Morphism (nIn nMid nOut : nat)  : (@AS_Compose nIn nMid nOut)
+  with signature (@Arb_Swaps_proportional nIn nMid) ==> (@Arb_Swaps_proportional nMid nOut) ==> 
+                 (@Arb_Swaps_proportional nIn nOut) as Arb_Swaps_compose_mor.
+Proof. apply Arb_Swaps_compose_compat; assumption. Qed.
 
 (* Injestion to ZX_Arb_Swaps *)
 
@@ -399,6 +497,80 @@ match c with
                  end
 end.
 
+
+Program Lemma ZX_AS_Stack_assoc : forall {nIn0 nOut0 nIn1 nOut1 nIn2 nOut2} (zx0 : ZX_Arb_Swaps nIn0 nOut0) (zx1 : ZX_Arb_Swaps nIn1 nOut1) (zx2 : ZX_Arb_Swaps nIn2 nOut2),
+                          zx0 ↕A (zx1 ↕A zx2) ∝A zx0 ↕A zx1 ↕A zx2.
+Proof.
+  intros.
+  prop_exist_non_zero (RtoC 1).  
+  simpl_eqs.
+  Msimpl.
+  rewrite kron_assoc; auto with wf_db.
+Qed.
+
+Program Lemma ZX_AS_Stack_assoc' : forall {nIn0 nOut0 nIn1 nOut1 nIn2 nOut2} (zx0 : ZX_Arb_Swaps nIn0 nOut0) (zx1 : ZX_Arb_Swaps nIn1 nOut1) (zx2 : ZX_Arb_Swaps nIn2 nOut2),
+                        zx0 ↕A zx1 ↕A zx2 ∝A zx0 ↕A (zx1 ↕A zx2).
+Proof.
+  intros.
+  prop_exist_non_zero (RtoC 1).  
+  simpl_eqs.
+  Msimpl.
+  rewrite kron_assoc; auto with wf_db.
+Qed.
+
+Lemma nArbWire_r : forall n, nArbWire (n + 1) ∝A (nArbWire n) ↕A ArbWire.
+Proof.
+  intros.
+  induction n.
+  - simpl.
+    unfold nArbWire.
+    simpl.
+    prop_exist_non_zero (RtoC 1).
+    simpl.
+    Msimpl; auto with wf_db.
+  - simpl.
+    unfold nArbWire in *.
+    simpl.
+    rewrite IHn.
+    rewrite ZX_AS_Stack_assoc.
+    simpl_eqs.
+    easy.
+Qed.
+
+
+Lemma ZX_A_1_1_pad_growth: forall dim zx n, n < dim -> @ZX_A_1_1_pad (dim + 1) n zx ∝A @ZX_A_1_1_pad dim n zx ↕A ArbWire.
+Proof.
+  intro dim.
+  induction dim; intros.
+  - simpl.
+    exfalso.
+    lia.
+  - simpl.
+    destruct n.
+    + specialize (IHdim zx 0).
+      rewrite nArbWire_r.
+      rewrite (ZX_AS_Stack_assoc' zx _ _).
+      simpl_eqs.
+      easy.
+    + rewrite IHdim; [ | lia ].
+      rewrite (ZX_AS_Stack_assoc' ArbWire _ _).
+      simpl_eqs.
+      easy.
+Qed.
+
+Lemma rot_sem_eq : forall {dim} a b c n, n < dim -> @uc_eval dim (uapp1 (U_R a b c) n) = ZX_Arb_Swaps_Semantics (@ZX_A_1_1_pad dim n (ZX_ucom_rot a b c)).
+Proof.
+  intros.
+  simpl.
+  generalize dependent n.
+  induction dim; intros.
+  - unfold Pad.pad_u, Pad.pad.
+    assert (n + 1 <=? 0 = false) by (apply leb_correct_conv; lia).
+    rewrite H0.
+    simpl.
+    admit.
+Abort.
+
 Theorem equal_sem : forall dim (c : base_ucom dim), uc_well_typed c -> ZX_Arb_Swaps_Semantics (base_ucom_to_ZX c) = uc_eval c.
 Proof.
   intros dim c.
@@ -450,7 +622,7 @@ Proof. swap_colors_of (@increase_Z α). Qed.
 Lemma reduce_X {α} : X_Spider 1 1 α ∝ X_Spider 1 1 (α - (2 * PI)).
 Proof. swap_colors_of (@reduce_Z α). Qed.
 
-Theorem ingestion_equiv forall {dim} (u : base_ucom dim), exists c, uc_eval u = c .* ZX_Arb_Swaps_Semantics (ZX)  
+Theorem ingestion_equiv forall {dim} (u : base_ucom dim), exists c, uc_eval u = c .* ZX_Arb_Swaps_Semantics (ZX) 
 
 Local Close Scope ucom.
 Local Close Scope R_scope.
