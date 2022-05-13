@@ -366,7 +366,6 @@ Proof.
     rewrite Mscale_mult_dist_r.
     rewrite Mscale_mult_dist_l.
     restore_dims.
-    rewrite Mscale_mult_dist_l.
     rewrite Mscale_assoc.
     reflexivity.
   - apply Cmult_neq_0; try assumption.
