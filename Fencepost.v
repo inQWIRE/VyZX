@@ -35,7 +35,7 @@ Proof. unfold not; intros; inversion H. Qed.
 
 Inductive ZX_FencePred : forall {nIn nOut}, ZX nIn nOut -> Prop :=
   | IsPost {nIn0 nOut0} : forall (zx : ZX nIn0 nOut0), ZX_PostPred zx -> ZX_FencePred zx
-  | Compose {nIn0 nMid0 nOut0} : 
+  | FenceCompose {nIn0 nMid0 nOut0} : 
     forall (zxl : ZX nIn0 nMid0) (zxr : ZX nMid0 nOut0),
       ZX_FencePred zxl -> ZX_FencePred zxr ->
       ZX_FencePred (zxl ⟷ zxr).

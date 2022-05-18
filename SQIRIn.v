@@ -1,6 +1,6 @@
+Require Import externals.QuantumLib.Quantum.
 Require Import externals.SQIR.SQIR.SQIR.
 Require Import externals.SQIR.SQIR.UnitarySem.
-Require Import externals.QuantumLib.Quantum.
 Require Import Arith.
 Require Import Reals.
 Require Import Complex.
@@ -12,6 +12,9 @@ Require Import Matrix.
 Require Import Setoid.
 Require Import Quantum.
 Require Import ZX_A_G_2.
+Require Import Fencepost.
+Require Import Coq.Logic.Eqdep_dec.
+Require Import Coq.Arith.Peano_dec.
 
 Local Open Scope R_scope.
 
@@ -22,6 +25,7 @@ Local Open Scope R_scope.
    arbitrary swap instead of a 2x2 swap *)
 Inductive ZX_Arb_Swaps : nat -> nat -> Type := 
   | AS_Empty   : ZX_Arb_Swaps 0 0
+  | AS_Base_Swap  : ZX_Arb_Swaps 2 2
   | ZX_AS_X_spider nIn nOut (α : R) : ZX_Arb_Swaps nIn nOut
   | ZX_AS_Z_spider nIn nOut (α : R) : ZX_Arb_Swaps nIn nOut
   | AS_Cap : ZX_Arb_Swaps 0 2
@@ -50,7 +54,7 @@ Definition ZX_AS_CNOT : ZX_Arb_Swaps 2 2 := ZX_AS_Z_spider 1 2 0 ↕A ArbWire �
 Definition ZX_AS_CNOT_flipped : ZX_Arb_Swaps 2 2 := ZX_AS_X_spider 1 2 0 ↕A ArbWire ⟷A (ArbWire ↕A ZX_AS_Z_spider 2 1 0).
 
 Definition ZX_ucom_rot (x y z : R) : ZX_Arb_Swaps 1 1 := 
-  ZX_AS_Y ⟷A ZX_AS_Z_spider 1 1 y ⟷A ZX_AS_Y ⟷A ZX_AS_X_spider 1 1 z ⟷A ZX_AS_Z_spider 1 1 x.
+  ZX_AS_Y ⟷A ZX_AS_Z_spider 1 1 y ⟷A ZX_AS_Y ⟷A ZX_AS_X_spider 1 1 x ⟷A ZX_AS_Z_spider 1 1 z.
 
 Reserved Notation "n ↑A zx" (at level 41).
 Fixpoint nStack1 n (zx : ZX_Arb_Swaps 1 1) : ZX_Arb_Swaps n n :=
@@ -71,6 +75,10 @@ Fixpoint ZX_A_1_1_pad {dim} : nat -> ZX_Arb_Swaps 1 1 -> ZX_Arb_Swaps dim dim :=
              | S m => ArbWire ↕A (@ZX_A_1_1_pad k m zx)
              end
     end.
+
+Definition ZX_ucom_rot_FencePost {dim} n (x y z : R) : ZX_Arb_Swaps dim dim := 
+  ZX_A_1_1_pad n ZX_AS_Z ⟷A ZX_A_1_1_pad n ZX_AS_X ⟷A ZX_A_1_1_pad n (ZX_AS_Z_spider 1 1 y) ⟷A (ZX_A_1_1_pad n ZX_AS_Z ⟷A ZX_A_1_1_pad n ZX_AS_X) ⟷A ZX_A_1_1_pad n (ZX_AS_X_spider 1 1 x) ⟷A ZX_A_1_1_pad n (ZX_AS_Z_spider 1 1 z).
+   
 
 (* Conversion  to base ZX diagrams *)
 
@@ -97,12 +105,81 @@ Definition A_Swap_ZX (n : nat) : ZX n n :=
         (ZX_bottom_to_top k ↕ —) (S k) (Nat.add_1_r k)
   end.
 
+Inductive ZX_A_PostPred : forall {nIn nOut}, ZX_Arb_Swaps nIn nOut -> Prop := 
+  | A_Post_Empty                         : ZX_A_PostPred AS_Empty
+  | A_Post_Cap                           : ZX_A_PostPred AS_Cap
+  | A_Post_Cup                           : ZX_A_PostPred AS_Cup
+  | A_Post_Base_Swap                     : ZX_A_PostPred AS_Base_Swap
+  | A_Post_Z {nIn0 nOut0 α}              : ZX_A_PostPred (ZX_AS_Z_spider nIn0 nOut0 α)
+  | A_Post_X {nIn0 nOut0 α}              : ZX_A_PostPred (ZX_AS_X_spider nIn0 nOut0 α)
+  | A_Post_Stack {nIn0 nOut0 nIn1 nOut1} : 
+      forall (zx0 : ZX_Arb_Swaps nIn0 nOut0) (zx1 : ZX_Arb_Swaps nIn1 nOut1),
+        ZX_A_PostPred zx0 -> ZX_A_PostPred zx1 -> ZX_A_PostPred (zx0 ↕A zx1).
+
+Inductive ZX_A_FencePred : forall {nIn nOut}, ZX_Arb_Swaps nIn nOut -> Prop :=
+| A_IsPost {nIn0 nOut0}              : forall (zx : ZX_Arb_Swaps nIn0 nOut0), ZX_A_PostPred zx -> ZX_A_FencePred zx
+| A_FenceSwap {n} : ZX_A_FencePred (A_Swap n)
+| A_FenceCompose {nIn0 nMid0 nOut0}  : 
+  forall (zxl : ZX_Arb_Swaps nIn0 nMid0) (zxr : ZX_Arb_Swaps nMid0 nOut0),
+    ZX_A_FencePred zxl -> ZX_A_FencePred zxr ->
+    ZX_A_FencePred (zxl ⟷A zxr).
+
+Fixpoint ZX_to_ZX_Arb {nIn nOut : nat} (zx : ZX  nIn nOut) : ZX_Arb_Swaps nIn nOut :=
+  match zx with
+  | Empty           => AS_Empty
+  | X_Spider inp out a  => ZX_AS_X_spider inp out a
+  | Z_Spider inp out a  => ZX_AS_Z_spider inp out a
+  | Cap             => AS_Cap
+  | Cup             => AS_Cup
+  | Stack zx1 zx2   => AS_Stack (ZX_to_ZX_Arb zx1) (ZX_to_ZX_Arb zx2)
+  | Compose zx1 zx2 => AS_Compose (ZX_to_ZX_Arb zx1) (ZX_to_ZX_Arb zx2)
+  | Swap           => AS_Base_Swap
+  end.
+
+Lemma ZX_PostPred_to_A : forall {nIn nOut : nat} (zx : ZX nIn nOut), ZX_PostPred zx -> ZX_A_PostPred (ZX_to_ZX_Arb zx).
+Proof.
+  intros.
+  induction zx; try (simpl; constructor).
+  all: inversion H.
+  1: apply IHzx1.
+  2: apply IHzx2.
+  all: inversion H9; inversion H10; subst.
+  all:  apply inj_pair2_eq_dec in H14; [| apply eq_nat_dec];  apply inj_pair2_eq_dec in H14; [| apply eq_nat_dec].
+  all: apply inj_pair2_eq_dec in H16; [| apply eq_nat_dec];  apply inj_pair2_eq_dec in H16; [| apply eq_nat_dec].
+  all: subst.
+  all: assumption.
+Qed.
+
+Ltac crush_existT :=
+  (match goal with 
+  | [ H : existT ?eq0 ?nIn (existT ?eq1 ?nOut0 ?zx4) = existT ?eq0 ?nIn0 (existT ?eq1 ?nOut0 ?zx1) |- _ ] => 
+      apply inj_pair2_eq_dec in H; [| apply eq_nat_dec];  apply inj_pair2_eq_dec in H; [| apply eq_nat_dec]; subst zx1
+  end). (* TODO : FIXME *)
+
+Lemma ZX_FencePred_to_A : forall {nIn nOut : nat} (zx : ZX nIn nOut), ZX_FencePred zx -> ZX_A_FencePred (ZX_to_ZX_Arb zx).
+Proof.
+  intros.
+  induction zx.
+  all: inversion H; subst.
+  1-8: apply inj_pair2_eq_dec in H0; [| apply eq_nat_dec];  apply inj_pair2_eq_dec in H0; [| apply eq_nat_dec]; subst.
+  1-7: apply A_IsPost.
+  1-7: apply ZX_PostPred_to_A.
+  1-7: assumption.
+  - inversion H3.
+  - apply inj_pair2_eq_dec in H1; [| apply eq_nat_dec];  apply inj_pair2_eq_dec in H1; [| apply eq_nat_dec]; subst.
+   apply inj_pair2_eq_dec in H5; [| apply eq_nat_dec];  apply inj_pair2_eq_dec in H5; [| apply eq_nat_dec]; subst.
+   simpl.
+   apply A_FenceCompose; [ apply IHzx1 | apply IHzx2 ]; assumption.
+Qed.
+
+
 Fixpoint ZX_Arb_to_ZX {nIn nOut : nat} (zxa : ZX_Arb_Swaps nIn nOut) : ZX nIn nOut :=
   match zxa with
   | AS_Empty           => Empty
   | ZX_AS_X_spider inp out a  => X_Spider inp out a
   | ZX_AS_Z_spider inp out a  => Z_Spider inp out a
   | AS_Cap             => Cap
+  | AS_Base_Swap       => ⨉
   | AS_Cup             => Cup
   | AS_Stack zx1 zx2   => Stack (ZX_Arb_to_ZX zx1) (ZX_Arb_to_ZX zx2)
   | AS_Compose zx1 zx2 => Compose (ZX_Arb_to_ZX zx1) (ZX_Arb_to_ZX zx2)
@@ -135,6 +212,7 @@ Fixpoint ZX_Arb_Swaps_Semantics {nIn nOut : nat} (zxa : ZX_Arb_Swaps nIn nOut) :
   | AS_Empty           => I 1
   | ZX_AS_X_spider _ _ a      => X_semantics nIn nOut a
   | ZX_AS_Z_spider _ _ a      => Z_semantics nIn nOut a
+  | AS_Base_Swap             => ZX_semantics ⨉
   | AS_Cap             => ZX_semantics Cap
   | AS_Cup             => ZX_semantics Cup
   | AS_Stack zx0 zx1   => ZX_Arb_Swaps_Semantics zx0 ⊗ ZX_Arb_Swaps_Semantics zx1
@@ -289,7 +367,7 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma ZX_Arb_to_ZX_semantics {nIn nOut} : 
+Program Lemma ZX_Arb_to_ZX_semantics {nIn nOut} : 
   forall (zxa : ZX_Arb_Swaps nIn nOut), 
     (ZX_Arb_Swaps_Semantics zxa) = (ZX_semantics (ZX_Arb_to_ZX zxa)).
 Proof.
@@ -298,7 +376,6 @@ Proof.
   symmetry.
   apply A_Swap_Correct.
 Qed.
-
 
 Definition Arb_Swaps_proportional {nIn nOut} (zx0 : ZX_Arb_Swaps nIn nOut) (zx1 : ZX_Arb_Swaps nIn nOut) :=
   proportional_general ZX_Arb_Swaps_Semantics zx0 zx1.
@@ -487,7 +564,7 @@ Fixpoint base_ucom_to_ZX {dim} (c : base_ucom dim) : ZX_Arb_Swaps dim dim :=
 match c with
 | ucl ; ucr => base_ucom_to_ZX ucl ⟷A base_ucom_to_ZX ucr 
 | uapp1 U1 n => match U1 with
-                | U_R θ ϕ λ => ZX_A_1_1_pad n (ZX_ucom_rot θ ϕ λ)
+                | U_R θ ϕ λ => ZX_ucom_rot_FencePost n θ ϕ λ
                 end
 | uapp2 U2 n m => match U2 with
                | U_CNOT => CNOTInj n m
@@ -527,6 +604,7 @@ Proof.
     prop_exist_non_zero (RtoC 1).
     simpl.
     Msimpl; auto with wf_db.
+    apply WF_ZX_Arb_Swap_Semantics.
   - simpl.
     unfold nArbWire in *.
     simpl.
@@ -535,6 +613,118 @@ Proof.
     simpl_eqs.
     easy.
 Qed.
+
+Lemma ZX_A_1_1_pad_distr : forall {dim} zx0 zx1 n, (@ZX_A_1_1_pad dim n zx0) ⟷A (@ZX_A_1_1_pad dim n zx1) ∝A (@ZX_A_1_1_pad dim n (zx0 ⟷A zx1)).
+Proof.
+  intro dim.
+  induction dim; intros.
+  - simpl.
+    prop_exist_non_zero 1%R.
+    simpl.
+    Msimpl.
+    easy.
+  - simpl.
+    destruct n.
+    + prop_exist_non_zero 1%R; simpl.
+      restore_dims.
+      rewrite kron_mixed_product.
+      rewrite nArbWire_semantics.
+      Msimpl.
+      easy.
+    + unfold Arb_Swaps_proportional, proportional_general in IHdim.
+      specialize (IHdim zx0 zx1 n).
+      destruct IHdim as [c  IHdim].
+      destruct IHdim as [IHdim cneq0].
+      prop_exist_non_zero c; [ clear cneq0 | assumption].
+      simpl.
+      restore_dims.
+      rewrite kron_mixed_product. 
+      rewrite ArbWire_semantics.
+      rewrite <- Mscale_kron_dist_r.
+      Msimpl.
+      apply kron_simplify; [ easy | ].
+      apply IHdim.
+Qed.
+
+Lemma ZX_A_1_1_pad_FencePost : forall {dim} zx n, ZX_A_PostPred zx -> ZX_A_PostPred (@ZX_A_1_1_pad dim n zx).
+Proof.
+  intro dim.
+  induction dim; intros.
+  - simpl; constructor.
+  - simpl.
+    replace (S dim) with (1 + dim)%nat by lia.
+    Check eq_rect.
+    Search (S _ = 1 + _)%nat.
+    assert (forall n, S n = 1 + n)%nat by lia.
+Admitted.
+
+Lemma ZX_A_Compose_assoc : forall {nIn nMid0 nMid1 nOut} (zx0 : ZX_Arb_Swaps nIn nMid0) (zx1 : ZX_Arb_Swaps nMid0 nMid1) (zx2 : ZX_Arb_Swaps nMid1 nOut), zx0 ⟷A zx1 ⟷A zx2 ∝A zx0 ⟷A (zx1 ⟷A zx2).
+Proof.
+  intros.
+  prop_exist_non_zero 1%R.
+  Msimpl.
+  simpl.
+  rewrite Mmult_assoc.
+  easy.
+Qed.
+
+
+Lemma ZX_ucom_rot_FencePost_is_ZX_ucom_rot : forall dim n x y z, (@ZX_ucom_rot_FencePost dim n x y z) ∝A @ZX_A_1_1_pad dim n (ZX_ucom_rot x y z).
+Proof.
+  intros.
+  unfold ZX_ucom_rot, ZX_ucom_rot_FencePost, ZX_AS_Y.
+  repeat rewrite ZX_A_1_1_pad_distr.
+  easy.
+Qed.
+
+Lemma ZX_ucom_rot_FencePost_FencePred: forall dim n x y z, ZX_A_FencePred (@ZX_ucom_rot_FencePost dim n x y z).
+Proof.
+  intros.
+  unfold ZX_ucom_rot_FencePost.
+  apply A_FenceCompose.
+  apply A_FenceCompose.
+  apply A_FenceCompose; apply A_FenceCompose.
+  apply A_FenceCompose.
+  all : constructor; apply ZX_A_1_1_pad_FencePost; constructor.
+Qed.
+
+Lemma ArbWire_PostPred : forall n, ZX_A_PostPred (nArbWire n).
+Admitted.
+
+Lemma Pad_Above_PostPred : forall {dim1 : nat} (dim2 : nat) (zxa : ZX_Arb_Swaps dim1 dim1), ZX_A_PostPred zxa -> ZX_A_PostPred (@Pad_Above dim1 dim2 zxa).
+Proof.
+  intros.
+  unfold Pad_Above.
+  destruct le_dec.
+  - simpl_eqs.
+    constructor.
+    apply ArbWire_PostPred.
+    assumption.
+  - apply ArbWire_PostPred.
+Qed.
+
+Lemma Pad_Below_PostPred : forall {dim1 : nat} (dim2 : nat) (zxa : ZX_Arb_Swaps dim1 dim1), ZX_A_PostPred zxa -> ZX_A_PostPred (@Pad_Above dim1 dim2 zxa).
+Proof.
+  intros.
+  unfold Pad_Above.
+  destruct le_dec.
+  - simpl_eqs.
+    constructor.
+    apply ArbWire_PostPred.
+    assumption.
+  - apply ArbWire_PostPred.
+Qed.
+
+Lemma ZX_CNOTInj_Fencepred : forall dim n m, ZX_A_FencePred (@CNOTInj dim n m).
+Proof.
+  intros.
+  unfold CNOTInj.
+  destruct (n <? m).
+  unfold ASwapfromto.
+  bdestruct (m <? S n);
+  apply A_FenceCompose; try apply A_FenceCompose; unfold PaddedCnot.
+  (* TODO: Build equivalence fence post conforming A_Swap using decomposition we use for deconstructing to ZX *)
+Abort.
 
 
 Lemma ZX_A_1_1_pad_growth: forall dim zx n, n < dim -> @ZX_A_1_1_pad (dim + 1) n zx ∝A @ZX_A_1_1_pad dim n zx ↕A ArbWire.
@@ -560,10 +750,11 @@ Qed.
 Lemma rot_sem_base : forall a b c, ZX_Arb_Swaps_Semantics (ZX_ucom_rot a b c) = rotation a b c.
 Admitted.
 
-Lemma pad_1_1_sem_eq : forall {dim} n (zx : ZX_Arb_Swaps 1 1) A, WF_Matrix A -> ZX_Arb_Swaps_Semantics zx = A -> n < dim -> Pad.pad_u dim n A = ZX_Arb_Swaps_Semantics (@ZX_A_1_1_pad dim n zx).
+Lemma pad_1_1_sem_eq : forall {dim} n (zx : ZX_Arb_Swaps 1 1) A, ZX_Arb_Swaps_Semantics zx = A -> n < dim -> Pad.pad_u dim n A = ZX_Arb_Swaps_Semantics (@ZX_A_1_1_pad dim n zx).
 Proof.
   intros.
   simpl.
+  assert (WF_Matrix A) by (rewrite <- H; auto with wf_db).
   generalize dependent n.
   induction dim; intros.
   - exfalso.
@@ -598,24 +789,57 @@ Qed.
 Lemma rot_sem_eq : forall {dim} a b c n, n < dim -> @uc_eval dim (uapp1 (U_R a b c) n) = ZX_Arb_Swaps_Semantics (@ZX_A_1_1_pad dim n (ZX_ucom_rot a b c)).
 Proof.
   intros.
-  apply pad_1_1_sem_eq; try auto with wf_db.
+  apply pad_1_1_sem_eq; [ | assumption ].
   apply rot_sem_base.
 Qed.
 
-Theorem equal_sem : forall dim (c : base_ucom dim), uc_well_typed c -> ZX_Arb_Swaps_Semantics (base_ucom_to_ZX c) = uc_eval c.
+Lemma CNOT_sem_eq : forall {dim} n n0, exists c, @uc_eval dim (uapp2 U_CNOT n n0) = c .* ZX_Arb_Swaps_Semantics (@CNOTInj dim n n0) /\ c <> 0%R.
 Proof.
-  intros dim c.
-  induction c; intros.
+Admitted.
+
+Theorem equal_sem : forall dim (u : base_ucom dim), uc_well_typed u -> exists (c : C), ZX_Arb_Swaps_Semantics (base_ucom_to_ZX u) = c .* uc_eval u /\ c <> 0%R.
+Proof.
+  intros dim u.
+  induction u; intros.
   - simpl.
-    inversion H.
-    rewrite IHc1, IHc2; [ | assumption | assumption ].
+    inversion H; subst.
+    specialize (IHu1 H2).
+    specialize (IHu2 H3).
+    destruct IHu1 as [c1 [IHu1 Hc1]].
+    destruct IHu2 as [c2 [IHu2 Hc2]].
+    exists (c1 * c2).
+    split; [ | apply Cmult_neq_0; assumption ].
+    rewrite IHu1, IHu2.
+    autorewrite with scalar_move_db.
     easy.
   - simpl.
+    dependent destruction u.
     inversion H.
-    subst.
-Abort.
-
- 
+    assert (forall (dim n : nat) (x y z : R),
+    ZX_ucom_rot_FencePost n x y z ∝A ZX_A_1_1_pad n (ZX_ucom_rot x y z)) by exact ZX_ucom_rot_FencePost_is_ZX_ucom_rot.
+    specialize (H3 dim n r r0 r1).
+    unfold Arb_Swaps_proportional, proportional_general in H3.
+    destruct H3 as [c1 [Hucom_rot Hc1]].
+    rewrite Hucom_rot.
+    rewrite <- rot_sem_eq; [ | assumption ].
+    simpl.
+    eauto.
+  - simpl.
+    dependent destruction u.
+    assert (exists c, @uc_eval dim (uapp2 U_CNOT n n0) = c .* ZX_Arb_Swaps_Semantics (@CNOTInj dim n n0) /\ c <> 0%R) by apply CNOT_sem_eq.
+    destruct H0 as [c1 [HCnot Hc1]].
+    simpl in HCnot.
+    rewrite HCnot.
+    exists (/ c1).
+    autorewrite with scalar_move_db.
+    Check Mscale_1_l.
+    rewrite <- (Mscale_1_l _ _ (ZX_Arb_Swaps_Semantics _)). 
+    split; [ | apply nonzero_div_nonzero; assumption ].
+    apply Mscale_simplify; [ lma | ].
+    symmetry; apply Cinv_l.
+    assumption.
+  - dependent destruction u.
+Qed.
 
 Local Open Scope R_scope.
 
@@ -652,8 +876,6 @@ Proof. swap_colors_of (@increase_Z α). Qed.
 
 Lemma reduce_X {α} : X_Spider 1 1 α ∝ X_Spider 1 1 (α - (2 * PI)).
 Proof. swap_colors_of (@reduce_Z α). Qed.
-
-Theorem ingestion_equiv forall {dim} (u : base_ucom dim), exists c, uc_eval u = c .* ZX_Arb_Swaps_Semantics (ZX) 
 
 Local Close Scope ucom.
 Local Close Scope R_scope.
