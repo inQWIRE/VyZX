@@ -646,17 +646,47 @@ Proof.
       apply IHdim.
 Qed.
 
+Lemma S_PostPred : forall n (zx : ZX_Arb_Swaps n n) (zx1 : ZX_Arb_Swaps 1 1), ZX_A_PostPred zx -> ZX_A_PostPred zx1 -> ZX_A_PostPred (AS_Stack zx1 zx).
+Proof.
+  intros.
+  constructor; assumption.
+Qed.
+
+Lemma ArbWire_PostPred : ZX_A_PostPred (ArbWire).
+Proof.
+  Local Transparent ArbWire.
+  unfold ArbWire.
+  constructor.
+  Local Opaque ArbWire.
+Qed.
+
+Lemma nStack1_PostPred : forall n (zx : ZX_Arb_Swaps 1 1), ZX_A_PostPred zx -> ZX_A_PostPred (nStack1 n zx).
+Proof.
+  intros.
+  induction n.
+  - simpl; constructor.
+  - simpl; apply S_PostPred; assumption.
+Qed.  
+
+Lemma nArbWire_PostPred : forall n, ZX_A_PostPred (nArbWire n).
+  intros.
+  unfold nArbWire.
+  apply nStack1_PostPred.
+  apply ArbWire_PostPred.
+Qed.
+
 Lemma ZX_A_1_1_pad_FencePost : forall {dim} zx n, ZX_A_PostPred zx -> ZX_A_PostPred (@ZX_A_1_1_pad dim n zx).
 Proof.
   intro dim.
   induction dim; intros.
   - simpl; constructor.
   - simpl.
-    replace (S dim) with (1 + dim)%nat by lia.
-    Check eq_rect.
-    Search (S _ = 1 + _)%nat.
-    assert (forall n, S n = 1 + n)%nat by lia.
-Admitted.
+    destruct n.
+    + apply S_PostPred; [ apply nArbWire_PostPred | assumption ].
+    + apply S_PostPred; [ | apply ArbWire_PostPred ].
+      apply IHdim.
+      assumption.
+Qed.
 
 Lemma ZX_A_Compose_assoc : forall {nIn nMid0 nMid1 nOut} (zx0 : ZX_Arb_Swaps nIn nMid0) (zx1 : ZX_Arb_Swaps nMid0 nMid1) (zx2 : ZX_Arb_Swaps nMid1 nOut), zx0 ⟷A zx1 ⟷A zx2 ∝A zx0 ⟷A (zx1 ⟷A zx2).
 Proof.
@@ -688,8 +718,7 @@ Proof.
   all : constructor; apply ZX_A_1_1_pad_FencePost; constructor.
 Qed.
 
-Lemma ArbWire_PostPred : forall n, ZX_A_PostPred (nArbWire n).
-Admitted.
+
 
 Lemma Pad_Above_PostPred : forall {dim1 : nat} (dim2 : nat) (zxa : ZX_Arb_Swaps dim1 dim1), ZX_A_PostPred zxa -> ZX_A_PostPred (@Pad_Above dim1 dim2 zxa).
 Proof.
@@ -698,9 +727,9 @@ Proof.
   destruct le_dec.
   - simpl_eqs.
     constructor.
-    apply ArbWire_PostPred.
+    apply nArbWire_PostPred.
     assumption.
-  - apply ArbWire_PostPred.
+  - apply nArbWire_PostPred.
 Qed.
 
 Lemma Pad_Below_PostPred : forall {dim1 : nat} (dim2 : nat) (zxa : ZX_Arb_Swaps dim1 dim1), ZX_A_PostPred zxa -> ZX_A_PostPred (@Pad_Above dim1 dim2 zxa).
@@ -710,9 +739,9 @@ Proof.
   destruct le_dec.
   - simpl_eqs.
     constructor.
-    apply ArbWire_PostPred.
+    apply nArbWire_PostPred.
     assumption.
-  - apply ArbWire_PostPred.
+  - apply nArbWire_PostPred.
 Qed.
 
 Lemma ZX_CNOTInj_Fencepred : forall dim n m, ZX_A_FencePred (@CNOTInj dim n m).
@@ -748,6 +777,15 @@ Proof.
 Qed.
 
 Lemma rot_sem_base : forall a b c, ZX_Arb_Swaps_Semantics (ZX_ucom_rot a b c) = rotation a b c.
+Proof.
+  intros.
+  unfold ZX_ucom_rot.
+  simpl.
+  unfold rotation.
+  unfold_spider.
+  autorewrite with Cexp_db.
+  replace (1 ⨂ hadamard) with hadamard.
+  2: { simpl. Msimpl; try apply WF_hadamard; easy. }
 Admitted.
 
 Lemma pad_1_1_sem_eq : forall {dim} n (zx : ZX_Arb_Swaps 1 1) A, ZX_Arb_Swaps_Semantics zx = A -> n < dim -> Pad.pad_u dim n A = ZX_Arb_Swaps_Semantics (@ZX_A_1_1_pad dim n zx).
