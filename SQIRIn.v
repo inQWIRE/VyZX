@@ -463,90 +463,133 @@ Proof.
   apply H.
 Qed.
 
+Lemma add_sub_mid' : forall a b c, (a - b + b - b + c)%nat = (a - b + c)%nat.
+Proof. intros; lia. Qed.
 
-Definition Pad_Above {dim1 : nat} (dim2 : nat) (zxa : ZX_Arb_Swaps dim1 dim1) : ZX_Arb_Swaps dim2 dim2.
+Definition Pad_Above {nIn nOut : nat} (dim : nat) (zxa : ZX_Arb_Swaps nIn nOut) : ZX_Arb_Swaps dim ((dim - nIn) + nOut).
 Proof.
-  specialize (le_dec dim1 dim2); intros.
-  destruct H; [ | apply nArbWire ].
-  rewrite <- (Nat.sub_add dim1 dim2); [ | exact l].
-  apply AS_Stack; [ apply nArbWire | apply zxa ].
+  specialize (le_dec nIn dim); intros.
+  destruct H.
+  - rewrite <- (Nat.sub_add nIn dim); [ | exact l].
+    rewrite add_sub_mid'.
+    apply AS_Stack; [ apply nArbWire | apply zxa ].
+  - apply ZX_AS_Z_spider; apply 0%R.
 Defined.
 
-Lemma Pad_Above_Sem : forall {dim1} dim2 (zxa : ZX_Arb_Swaps dim1 dim1), dim1 <= dim2 -> ZX_Arb_Swaps_Semantics (Pad_Above dim2 zxa) = ZX_Arb_Swaps_Semantics ((nArbWire (dim2 - dim1)) ↕A zxa).
+Lemma Pad_Above_Sem : forall {nIn nOut} dim (zxa : ZX_Arb_Swaps nIn nOut), nIn <= dim -> ZX_Arb_Swaps_Semantics (Pad_Above dim zxa) = ZX_Arb_Swaps_Semantics ((nArbWire (dim - nIn)) ↕A zxa).
 Proof.
   intros.
   unfold Pad_Above.
-  destruct (le_dec dim1 dim2); [ | congruence ].
+  destruct (le_dec nIn dim); [ | congruence ].
   simplify_eqs.
-  replace (dim2 - dim1 + dim1 - dim1)%nat with (dim2 - dim1)%nat by lia.
+  unfold eq_rec_r.
+  unfold eq_rec.
+  simpl_eqs.
+  replace (dim - nIn + nIn - nIn)%nat with (dim - nIn)%nat by lia.
   easy.
 Qed.
 
-Definition Pad_Below {dim1 : nat} (dim2 : nat) (zxa : ZX_Arb_Swaps dim1 dim1) : ZX_Arb_Swaps dim2 dim2.
+Program Definition Pad_Above_Fence {nIn nOut : nat} (dim : nat) (zxa : ZX_Arb_Swaps nIn nOut) : ZX_Arb_Swaps dim ((dim - nIn) + nOut) :=
+  match zxa with
+  | @AS_Compose nIn nMid nOut zx1 zx2 => (Pad_Above dim zx1) ⟷A (Pad_Above (dim - nIn + nMid) zx2)
+  | _ => Pad_Above dim zxa
+  end.
+
+Lemma add_sub_mid : forall a b, (b + (a - b) - b)%nat = (a - b)%nat.
+Proof. intros; lia. Qed.
+
+
+Definition Pad_Below {nIn nOut : nat} (dim : nat) (zxa : ZX_Arb_Swaps nIn nOut) : ZX_Arb_Swaps dim (nOut + (dim - nIn)).
 Proof.
-  specialize (le_dec dim1 dim2); intros.
-  destruct H; [ | apply nArbWire ].
-  rewrite <- (Nat.sub_add dim1 dim2); [ | exact l].
-  rewrite Nat.add_comm.
-  - apply AS_Stack; [ apply zxa | apply nArbWire ].
+  specialize (le_dec nIn dim); intros.
+  destruct H.
+  - rewrite <- (Nat.sub_add nIn dim); [ | exact l].
+    rewrite Nat.add_comm.
+    apply AS_Stack; [ apply zxa |  ].
+    rewrite add_sub_mid.
+    apply nArbWire.
+  - apply ZX_AS_Z_spider; apply 0%R.
 Defined.
 
-Lemma Pad_Below_Sem : forall {dim1} dim2 (zxa : ZX_Arb_Swaps dim1 dim1), dim1 <= dim2 -> ZX_Arb_Swaps_Semantics (Pad_Below dim2 zxa) = ZX_Arb_Swaps_Semantics (zxa ↕A (nArbWire (dim2 - dim1))).
+Lemma Pad_Below_Sem : forall {nIn nOut} dim (zxa : ZX_Arb_Swaps nIn nOut), nIn <= dim -> ZX_Arb_Swaps_Semantics (Pad_Below dim zxa) = ZX_Arb_Swaps_Semantics (zxa ↕A (nArbWire (dim - nIn))).
 Proof.
   intros.
   unfold Pad_Below.
-  destruct (le_dec dim1 dim2); [ | congruence ].
+  destruct (le_dec nIn dim); [ | congruence ].
   simplify_eqs.
-  simpl_eq.
-  replace (dim1 + (dim2 - dim1) - dim1)%nat with (dim2 - dim1)%nat by lia.
+  simpl_eqs.
+  unfold eq_rec_r.
+  unfold eq_rec.
+  simpl_eqs.
   easy.
 Qed.
 
-Definition ASwapfromto {dim : nat} (pos1 pos2 : nat) : ZX_Arb_Swaps dim dim :=
+Program Definition ASwapfromto {dim : nat} (pos1 pos2 : nat) (prf1 : pos1 <= dim) (prf2 : pos2 <= dim) : ZX_Arb_Swaps dim dim :=
   if (pos1 <? pos2)
      then Pad_Below dim (Pad_Above pos2 (A_Swap (pos2 - pos1)))
      else Pad_Below dim (Pad_Above pos1 (A_Swap (pos1 - pos2))).
+Next Obligation. intros; lia. Qed.
+Next Obligation. intros; lia. Qed.
 
-Lemma ASwapfromto_Sem_p1_le_p2 : forall {dim} pos1 pos2, pos1 < pos2 -> pos2 <= dim -> ZX_Arb_Swaps_Semantics (@ASwapfromto dim pos1 pos2) = ZX_Arb_Swaps_Semantics ((nArbWire (pos1) ↕A (A_Swap (pos2 - pos1)) ↕A nArbWire (dim - pos2))).
+Lemma lt_ge_trans : forall {x y z}, x < y -> y <= z -> x <= z.
+Proof. intros. lia. Qed.
+
+Lemma ASwapfromto_Sem_p1_le_p2 : forall {dim} pos1 pos2 (prf : pos1 < pos2) (prf2 : pos2 <= dim), ZX_Arb_Swaps_Semantics (@ASwapfromto dim pos1 pos2 (lt_ge_trans prf prf2) prf2) = ZX_Arb_Swaps_Semantics ((nArbWire (pos1) ↕A (A_Swap (pos2 - pos1)) ↕A nArbWire (dim - pos2))).
 Proof.
   intros.
   unfold ASwapfromto.
   assert (pos1 <? pos2 = true) by (apply Nat.ltb_lt; assumption).
-  rewrite H1.
+  rewrite H.
+  simpl_eqs.
   rewrite Pad_Below_Sem; [ | assumption ].
   simpl.
   rewrite Pad_Above_Sem; [ | apply Nat.le_sub_l ].
   simpl.
   replace (pos2 - (pos2 - pos1))%nat with pos1 by lia.
+  replace (pos1 + (pos2 - pos1) + (dim - pos2) - pos2)%nat with (dim - pos2)%nat by lia.
   reflexivity.
 Qed.
 
-Lemma ASwapfromto_Sem_p2_le_p1 : forall {dim} pos1 pos2, pos1 > pos2 -> pos1 <= dim -> ZX_Arb_Swaps_Semantics (@ASwapfromto dim pos1 pos2) = ZX_Arb_Swaps_Semantics ((nArbWire (pos2) ↕A (A_Swap (pos1 - pos2)) ↕A nArbWire (dim - pos1))).
+Lemma ASwapfromto_Sem_p2_le_p1 : forall {dim} pos1 pos2 (prf : pos2 < pos1) (prf2 : pos1 <= dim), ZX_Arb_Swaps_Semantics (@ASwapfromto dim pos1 pos2 prf2 (lt_ge_trans prf prf2)) = ZX_Arb_Swaps_Semantics ((nArbWire (pos2) ↕A (A_Swap (pos1 - pos2)) ↕A nArbWire (dim - pos1))).
 Proof.
   intros.
   unfold ASwapfromto.
   assert (pos1 <? pos2 = false) by (apply Nat.ltb_ge; apply Nat.lt_le_incl; assumption).
-  rewrite H1.
+  rewrite H.
+  simpl_eqs.
   rewrite Pad_Below_Sem; [ | assumption ].
   simpl.
   rewrite Pad_Above_Sem; [ | apply Nat.le_sub_l ].
   simpl.
   replace (pos1 - (pos1 - pos2))%nat with pos2 by lia.
+  replace (pos2 + (pos1 - pos2) + (dim - pos1) - pos1)%nat with (dim - pos1)%nat by lia.
   reflexivity.
 Qed.
 
-Definition PaddedCnot {dim : nat} (control : nat) : ZX_Arb_Swaps dim dim :=
-  Pad_Below dim (Pad_Above (S control) ZX_AS_CNOT).
 
-Lemma PaddedCnot_Sem : forall {dim} control, (control >= 1) -> (S control <= dim) -> ZX_Arb_Swaps_Semantics (@PaddedCnot dim control) = ZX_Arb_Swaps_Semantics ((nArbWire (pred control)) ↕A ZX_AS_CNOT ↕A (nArbWire (dim - S control))).
+Program Definition PaddedCnotFencePost {dim : nat} (control : nat) (prf : S control <= dim) (prf2 : control >= 1) := (Pad_Below (S dim) (Pad_Above (S control) (ZX_AS_Z_spider 1 2 0 ↕A ArbWire))) ⟷A (Pad_Below (S (S dim)) (Pad_Above (S control) (ArbWire ↕A ZX_AS_X_spider 2 1 0))).
+Next Obligation.
+  intros. lia. 
+Qed.
+
+Program Definition PaddedCnot {dim : nat} (control : nat) (prf : S control <= dim) (prf2 : control >= 1) : ZX_Arb_Swaps dim dim :=
+  Pad_Below dim (Pad_Above (S control) ZX_AS_CNOT).
+Next Obligation.
+  intros. lia. 
+Qed.
+
+
+
+Lemma PaddedCnotFencpost_Sem : forall {dim} control (Hc : control >= 1) (Hdim : S control <= dim), ZX_Arb_Swaps_Semantics (@PaddedCnot dim control Hdim Hc) = ZX_Arb_Swaps_Semantics (@PaddedCnotFencePost dim control Hdim Hc).
 Proof.
   intros.
   unfold PaddedCnot.
+  unfold PaddedCnotFencePost.
+  simpl_eqs.
   rewrite Pad_Below_Sem; [ | assumption ].
+  unfold ZX_AS_CNOT.
+  rewrite (Pad_Above_Sem); [ | apply le_n_S; assumption ].
   simpl.
-  rewrite Pad_Above_Sem; [ | apply le_n_S; assumption ].
-  simpl.
-  rewrite pred_of_minus.
   reflexivity.
 Qed.
 
@@ -579,6 +622,7 @@ Program Lemma ZX_AS_Stack_assoc : forall {nIn0 nOut0 nIn1 nOut1 nIn2 nOut2} (zx0
 Proof.
   intros.
   prop_exist_non_zero (RtoC 1).  
+  prop_exist_non_zero (RtoC 1). 
   simpl_eqs.
   Msimpl.
   rewrite kron_assoc; auto with wf_db.
@@ -752,6 +796,7 @@ Proof.
   unfold ASwapfromto.
   bdestruct (m <? S n);
   apply A_FenceCompose; try apply A_FenceCompose; unfold PaddedCnot.
+  (* IDEA: Use Pad_{Below, Above} to destruct fences and pad each post individually *)
   (* TODO: Build equivalence fence post conforming A_Swap using decomposition we use for deconstructing to ZX *)
 Abort.
 
@@ -786,6 +831,7 @@ Proof.
   autorewrite with Cexp_db.
   replace (1 ⨂ hadamard) with hadamard.
   2: { simpl. Msimpl; try apply WF_hadamard; easy. }
+  solve_matrix.
 Admitted.
 
 Lemma pad_1_1_sem_eq : forall {dim} n (zx : ZX_Arb_Swaps 1 1) A, ZX_Arb_Swaps_Semantics zx = A -> n < dim -> Pad.pad_u dim n A = ZX_Arb_Swaps_Semantics (@ZX_A_1_1_pad dim n zx).
