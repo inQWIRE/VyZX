@@ -4,6 +4,40 @@ Require Import externals.QuantumLib.Proportional.
 Require Import externals.QuantumLib.VectorStates.
 Require Import Coq.Logic.Eqdep_dec.
 
+
+Local Open Scope R_scope.
+Definition isZero (a : R) : bool := true.
+
+Definition isWire {nIn nOut} (D : ZX nIn nOut) : bool :=
+  match D with
+  | X_Spider _ _ r | Z_Spider _ _ r => 
+      match Req_EM_T r 0 with
+      | left _ => true
+      | _ => false
+      end
+  | _ => false
+  end.
+
+Fixpoint allWires {nIn nOut} (D : ZX nIn nOut) : bool :=
+  match D with
+  | Compose D1 D2 | Stack D1 D2 => allWires D1 && allWires D2
+  | other => isWire other
+  end.
+
+Fixpoint isSparseFencepost {nIn nOut} (D : ZX nIn nOut) : bool := 
+  match D with
+  | Compose DL DR => isSparseFencepost DL && isSparseFencepost DR
+  | Stack   DT DB => (allWires DT && isSparseFencepost DB) || (isSparseFencepost DT && allWires DB)
+  | _ => true
+  end.
+
+Fixpoint noComposes {nIn nOut} (D : ZX nIn nOut) : bool :=
+  match D with
+  | Compose _ _ => false
+  | Stack DT DB => noComposes DT && noComposes DB
+  | _ => true
+  end.
+
 Inductive ZX_PostPred : forall {nIn nOut}, ZX nIn nOut -> Prop := 
   | Post_Empty                         : ZX_PostPred Empty
   | Post_Cap                           : ZX_PostPred Cap
@@ -14,6 +48,24 @@ Inductive ZX_PostPred : forall {nIn nOut}, ZX nIn nOut -> Prop :=
   | Post_Stack {nIn0 nOut0 nIn1 nOut1} : 
       forall (zx0 : ZX nIn0 nOut0) (zx1 : ZX nIn1 nOut1),
               ZX_PostPred zx0 -> ZX_PostPred zx1 -> ZX_PostPred (zx0 ↕ zx1).
+
+Lemma PostPred_reflect {nIn nOut} : forall (zx : ZX nIn nOut),  reflect (ZX_PostPred zx) (noComposes zx).
+Proof.
+  intros.
+  induction zx; (try (constructor; constructor)).
+  - simpl; destruct (noComposes zx1), (noComposes zx2).
+    1: constructor; constructor; 
+       [ inversion IHzx1; assumption
+       | inversion IHzx2; assumption ].
+    all: constructor; unfold not; intros;
+         inversion H; subst; inversion IHzx1; inversion IHzx2;
+         apply (inj_pair2_eq_dec _ Nat.eq_dec) in H9;
+         apply (inj_pair2_eq_dec _ Nat.eq_dec) in H9;
+         apply (inj_pair2_eq_dec _ Nat.eq_dec) in H10;
+         apply (inj_pair2_eq_dec _ Nat.eq_dec) in H10; subst;
+         contradiction.
+  - constructor; unfold not; intros C; inversion C.
+Qed.
 
 Lemma Post_Unstack_L {nIn0 nOut0 nIn1 nOut1} {zx0 : ZX nIn0 nOut0} {zx1 : ZX nIn1 nOut1} :
   ZX_PostPred (zx0 ↕ zx1) -> ZX_PostPred zx0.
@@ -33,12 +85,60 @@ Lemma Post_NoComp {nIn nMid nOut} {zx0 : ZX nIn nMid} {zx1 : ZX nMid nOut} :
   ~ (ZX_PostPred (zx0 ⟷ zx1)).
 Proof. unfold not; intros; inversion H. Qed.
 
+Fixpoint isFencepost {nIn nOut} (D : ZX nIn nOut) : bool :=
+  match D with
+  | Compose DL DR => isFencepost DL && isFencepost DR
+  | other => noComposes other
+  end.
+
 Inductive ZX_FencePred : forall {nIn nOut}, ZX nIn nOut -> Prop :=
   | IsPost {nIn0 nOut0} : forall (zx : ZX nIn0 nOut0), ZX_PostPred zx -> ZX_FencePred zx
   | FenceCompose {nIn0 nMid0 nOut0} : 
     forall (zxl : ZX nIn0 nMid0) (zxr : ZX nMid0 nOut0),
       ZX_FencePred zxl -> ZX_FencePred zxr ->
       ZX_FencePred (zxl ⟷ zxr).
+
+Lemma FencePred_reflect {nIn nOut} : forall (zx : ZX nIn nOut),  reflect (ZX_FencePred zx) (isFencepost zx).
+Proof.
+  intros.
+  induction zx; try (constructor; constructor; constructor).
+  - simpl.
+    destruct (noComposes zx1) eqn:E1, (noComposes zx2) eqn:E2.
+    1:  constructor; constructor;
+        specialize (PostPred_reflect zx1); specialize (PostPred_reflect zx2); intros PP2 PP1;
+        rewrite E1 in PP1; rewrite E2 in PP2;
+        inversion PP1; inversion PP2;
+        constructor; assumption.
+    all:  constructor; unfold not; intros C;
+          inversion C; subst;
+          apply (inj_pair2_eq_dec _ Nat.eq_dec) in H;
+          apply (inj_pair2_eq_dec _ Nat.eq_dec) in H; subst;
+          inversion H2; subst;
+          apply (inj_pair2_eq_dec _ Nat.eq_dec) in H9;
+          apply (inj_pair2_eq_dec _ Nat.eq_dec) in H9;
+          apply (inj_pair2_eq_dec _ Nat.eq_dec) in H10;
+          apply (inj_pair2_eq_dec _ Nat.eq_dec) in H10; subst;
+          specialize (PostPred_reflect zx2); specialize (PostPred_reflect zx1); intros PP1 PP2;
+          rewrite E2 in PP2;
+          rewrite E1 in PP1;
+          inversion PP1;
+          inversion PP2;
+          contradiction.
+  - simpl.
+    destruct (isFencepost zx1), (isFencepost zx2).
+    1: constructor; apply FenceCompose; [ inversion IHzx1 | inversion IHzx2 ]; assumption.
+    all:  constructor; unfold not; intros C;
+          inversion C;
+          [ apply (inj_pair2_eq_dec _ Nat.eq_dec) in H;
+            apply (inj_pair2_eq_dec _ Nat.eq_dec) in H; subst;
+            inversion H2
+          | apply (inj_pair2_eq_dec _ Nat.eq_dec) in H0;
+            apply (inj_pair2_eq_dec _ Nat.eq_dec) in H0; subst;
+            apply (inj_pair2_eq_dec _ Nat.eq_dec) in H4;
+            apply (inj_pair2_eq_dec _ Nat.eq_dec) in H4; subst;
+            inversion IHzx1; inversion IHzx2;
+            contradiction ].
+Qed.
 
 Lemma Fence_Unstack_L {nIn0 nOut0 nIn1 nOut1} {zx0 : ZX nIn0 nOut0} {zx1 : ZX nIn1 nOut1} :
   ZX_FencePred (zx0 ↕ zx1) -> ZX_PostPred zx0.
