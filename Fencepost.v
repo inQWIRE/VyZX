@@ -252,7 +252,8 @@ Inductive ZX_Sparse_Obj : nat -> nat -> Type :=
   | S_X_Spider nIn nOut (α : R) : ZX_Sparse_Obj nIn nOut
   | S_Z_Spider nIn nOut (α : R) : ZX_Sparse_Obj nIn nOut
   | S_Cap : ZX_Sparse_Obj 0 2
-  | S_Cup : ZX_Sparse_Obj 2 0.
+  | S_Cup : ZX_Sparse_Obj 2 0
+  | S_Swap : ZX_Sparse_Obj 2 2.
 
 Inductive ZX_Sparse_Post : nat -> nat -> Type :=
   | SP_Stack {nIn nOut} above (object : ZX_Sparse_Obj nIn nOut) below : ZX_Sparse_Post (above + nIn + below) (above + nOut + below).
@@ -280,3 +281,28 @@ Fixpoint ZX_Sparse_Fence_to_ZX {nIn nOut} (f : ZX_Sparse_Fence nIn nOut) : ZX nI
   | SP_Post p => ZX_Sparse_Post_to_ZX p
   | SP_Fence_Comp f1 f2 => ZX_Sparse_Fence_to_ZX f1 ⟷ ZX_Sparse_Fence_to_ZX f2
   end.
+
+
+Definition ZX_Sparse_Obj_semantics {nIn nOut} (obj : ZX_Sparse_Obj nIn nOut) : Matrix (2 ^ nOut) (2 ^ nIn) :=
+  match obj with
+  | S_Empty => I 1
+  | S_X_Spider _ _ α => X_semantics nIn nOut α
+  | S_Z_Spider _ _ α => Z_semantics nIn nOut α
+  | S_Cup => list2D_to_matrix [[C1;C0;C0;C1]]
+  | S_Cap => list2D_to_matrix [[C1];[C0];[C0];[C1]]  
+  | S_Swap => swap
+  end.
+
+Definition ZX_Sparse_Post_semantics {nIn nOut} (zxs : ZX_Sparse_Post nIn nOut) : Matrix (2 ^ nOut) (2 ^ nIn) :=
+  match zxs with
+  | SP_Stack above obj below =>
+      I (2 ^ above) ⊗ ZX_Sparse_Obj_semantics obj ⊗ I (2 ^ below)
+  end.
+
+Fixpoint ZX_Sparse_Fence_semantics {nIn nOut} (zxs : ZX_Sparse_Fence nIn nOut) : Matrix (2 ^ nOut) (2 ^ nIn) :=
+  match zxs with
+  | SP_Post zxsp => ZX_Sparse_Post_semantics zxsp
+  | SP_Fence_Comp _ _ _ zxf1 zxf2 =>
+      ZX_Sparse_Fence_semantics zxf2 × ZX_Sparse_Fence_semantics zxf1
+  end.
+
