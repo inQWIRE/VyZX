@@ -259,5 +259,24 @@ Inductive ZX_Sparse_Post : nat -> nat -> Type :=
 
 Inductive ZX_Sparse_Fence : nat -> nat -> Type :=
   | SP_Post {nIn nOut} (p : ZX_Sparse_Post nIn nOut) : ZX_Sparse_Fence nIn nOut
-  | SP_Fence_Comp nIn nMid nOut (f1 : ZX_Sparse_Fence nIn nMid) (f2 : ZX_Sparse_Fence nMid nOut) : ZX_Sparse_Fence nIn nOut.
+  | SP_Fence_Comp {nIn nMid nOut} (f1 : ZX_Sparse_Fence nIn nMid) (f2 : ZX_Sparse_Fence nMid nOut) : ZX_Sparse_Fence nIn nOut.
 
+Definition ZX_Spare_Obj_to_ZX {nIn nOut} (o : ZX_Sparse_Obj nIn nOut) : ZX nIn nOut :=
+  match o with
+  | S_Empty => ⦰
+  | S_X_Spider nIn nOut α => X_Spider nIn nOut α 
+  | S_Z_Spider nIn nOut α => Z_Spider nIn nOut α 
+  | S_Cap => Cap
+  | S_Cup => Cup
+  end.
+
+Definition ZX_Sparse_Post_to_ZX {nIn nOut} (p : ZX_Sparse_Post nIn nOut) : ZX nIn nOut :=
+  match p with 
+  | SP_Stack above object below  => (nWire above ↕ ZX_Spare_Obj_to_ZX object ↕ nWire below)
+  end.
+
+Fixpoint ZX_Sparse_Fence_to_ZX {nIn nOut} (f : ZX_Sparse_Fence nIn nOut) : ZX nIn nOut :=
+  match f with
+  | SP_Post p => ZX_Sparse_Post_to_ZX p
+  | SP_Fence_Comp f1 f2 => ZX_Sparse_Fence_to_ZX f1 ⟷ ZX_Sparse_Fence_to_ZX f2
+  end.
