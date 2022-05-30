@@ -247,3 +247,17 @@ Proof.
       apply (FenceP_to_Fence _ _ _ H).
 Defined.
 
+Definition ZX_Sparse_Obj : nat -> nat -> Type :=
+  | S_Empty : ZX_Sparse_Obj 0 0
+  | S_X_Spider nIn nOut (α : R) : ZX_Sparse_Obj nIn nOut
+  | S_Z_Spider nIn nOut (α : R) : ZX_Sparse_Obj nIn nOut
+  | S_Cap : ZX_Sparse_Obj 0 2
+  | S_Cup : ZX_Sparse_Obj 2 0.
+
+Definition ZX_Sparse_Post : nat -> nat -> Type :=
+  | SP_Stack {nIn nOut} above (object : ZX_Sparse_Obj) below : ZX_Sparse_Post (above + nIn + below) (above + nOut + below).
+
+Fixpoint ZX_Sparse_Fence : nat -> nat -> Type :=
+  | SP_Post nIn nOut : ZX_Sparse_Post nIn nOut
+  | SP_Fence_Comp nIn nMid nOut (f1 : ZX_Sparse_Fence nIn nMid) (f2 : ZX_Sparse_Fence nMid nOut) : ZX_Sparse_Fence nIn nOut.
+
