@@ -489,11 +489,21 @@ Proof.
   easy.
 Qed.
 
-Program Definition Pad_Above_Fence {nIn nOut : nat} (dim : nat) (zxa : ZX_Arb_Swaps nIn nOut) : ZX_Arb_Swaps dim ((dim - nIn) + nOut) :=
-  match zxa with
-  | @AS_Compose nIn nMid nOut zx1 zx2 => (Pad_Above dim zx1) ⟷A (Pad_Above (dim - nIn + nMid) zx2)
-  | _ => Pad_Above dim zxa
-  end.
+Fixpoint Pad_Above_Fence {nIn nOut : nat} (dim : nat) (zxa : ZX_Arb_Swaps nIn nOut) : ZX_Arb_Swaps dim ((dim - nIn) + nOut).
+Proof.
+  remember zxa.
+  destruct zxa.
+  1-7: apply Pad_Above; assumption.
+  eapply (AS_Compose).
+  - apply Pad_Above_Fence.
+    apply zxa1.
+  - rewrite Nat.add_comm.
+    rewrite (Nat.add_comm _ nOut).
+    apply AS_Stack.
+    apply zxa2.
+    apply nArbWire.
+  - apply Pad_Above; assumption.
+Qed.
 
 Lemma add_sub_mid : forall a b, (b + (a - b) - b)%nat = (a - b)%nat.
 Proof. intros; lia. Qed.
@@ -578,8 +588,6 @@ Next Obligation.
   intros. lia. 
 Qed.
 
-
-
 Lemma PaddedCnotFencpost_Sem : forall {dim} control (Hc : control >= 1) (Hdim : S control <= dim), ZX_Arb_Swaps_Semantics (@PaddedCnot dim control Hdim Hc) = ZX_Arb_Swaps_Semantics (@PaddedCnotFencePost dim control Hdim Hc).
 Proof.
   intros.
@@ -593,7 +601,7 @@ Proof.
   reflexivity.
 Qed.
 
-Definition CNOTInj {dim : nat} (pos1 pos2 : nat) : ZX_Arb_Swaps dim dim :=
+Program Definition CNOTInj {dim : nat} (pos1 pos2 : nat) : ZX_Arb_Swaps dim dim :=
   if (pos1 <? pos2)
      then ASwapfromto pos2 (S pos1) ⟷A PaddedCnot pos1 ⟷A ASwapfromto pos2 (S pos1)
      else ASwapfromto pos1 (S pos2) ⟷A ASwapfromto pos2 (S pos2) 
@@ -761,8 +769,6 @@ Proof.
   apply A_FenceCompose.
   all : constructor; apply ZX_A_1_1_pad_FencePost; constructor.
 Qed.
-
-
 
 Lemma Pad_Above_PostPred : forall {dim1 : nat} (dim2 : nat) (zxa : ZX_Arb_Swaps dim1 dim1), ZX_A_PostPred zxa -> ZX_A_PostPred (@Pad_Above dim1 dim2 zxa).
 Proof.
