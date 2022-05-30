@@ -1,4 +1,5 @@
 Require Import ZX.
+Require Import Rules.
 Require Import externals.QuantumLib.Quantum.
 Require Import externals.QuantumLib.Proportional.
 Require Import externals.QuantumLib.VectorStates.
@@ -248,12 +249,12 @@ Proof.
 Defined.
 
 Inductive ZX_Sparse_Obj : nat -> nat -> Type :=
-  | S_Empty : ZX_Sparse_Obj 0 0
-  | S_X_Spider nIn nOut (α : R) : ZX_Sparse_Obj nIn nOut
-  | S_Z_Spider nIn nOut (α : R) : ZX_Sparse_Obj nIn nOut
-  | S_Cap : ZX_Sparse_Obj 0 2
-  | S_Cup : ZX_Sparse_Obj 2 0
-  | S_Swap : ZX_Sparse_Obj 2 2.
+  | SO_Empty : ZX_Sparse_Obj 0 0
+  | SO_X_Spider nIn nOut (α : R) : ZX_Sparse_Obj nIn nOut
+  | SO_Z_Spider nIn nOut (α : R) : ZX_Sparse_Obj nIn nOut
+  | SO_Cap : ZX_Sparse_Obj 0 2
+  | SO_Cup : ZX_Sparse_Obj 2 0
+  | SO_Swap : ZX_Sparse_Obj 2 2.
 
 Inductive ZX_Sparse_Post : nat -> nat -> Type :=
   | SP_Stack {nIn nOut} above (object : ZX_Sparse_Obj nIn nOut) below : ZX_Sparse_Post (above + nIn + below) (above + nOut + below).
@@ -283,22 +284,31 @@ Fixpoint ZX_Sparse_Fence_to_ZX {nIn nOut} (f : ZX_Sparse_Fence nIn nOut) : ZX nI
   | SF_Fence_Comp f1 f2 => ZX_Sparse_Fence_to_ZX f1 ⟷ ZX_Sparse_Fence_to_ZX f2
   end.
 
-
 Definition ZX_Sparse_Obj_semantics {nIn nOut} (obj : ZX_Sparse_Obj nIn nOut) : Matrix (2 ^ nOut) (2 ^ nIn) :=
   match obj with
   | SO_Empty => I 1
   | SO_X_Spider _ _ α => X_semantics nIn nOut α
   | SO_Z_Spider _ _ α => Z_semantics nIn nOut α
-  | SO_Cup => list2D_to_matrix [[C1;C0;C0;C1]]
-  | SO_Cap => list2D_to_matrix [[C1];[C0];[C0];[C1]]  
+  | SO_Cup => ZX_semantics Cup
+  | SO_Cap => ZX_semantics Cap
   | SO_Swap => swap
   end.
+
+Lemma WF_ZX_Sparse_Obj_semantics : forall {nIn nOut} (obj : ZX_Sparse_Obj nIn nOut), WF_Matrix (ZX_Sparse_Obj_semantics obj).
+Proof. Opaque ZX_semantics. intros; destruct obj; simpl; restore_dims; auto with wf_db. Transparent ZX_semantics. Qed.
+
+Global Hint Resolve WF_ZX_Sparse_Obj_semantics : wf_db.
 
 Definition ZX_Sparse_Post_semantics {nIn nOut} (zxs : ZX_Sparse_Post nIn nOut) : Matrix (2 ^ nOut) (2 ^ nIn) :=
   match zxs with
   | SP_Stack above obj below =>
       I (2 ^ above) ⊗ ZX_Sparse_Obj_semantics obj ⊗ I (2 ^ below)
   end.
+
+Lemma WF_ZX_Sparse_Post_semantics : forall {nIn nOut} (p : ZX_Sparse_Post nIn nOut), WF_Matrix (ZX_Sparse_Post_semantics p).
+Proof. intros; destruct p; simpl; auto with wf_db. Qed.
+
+Global Hint Resolve WF_ZX_Sparse_Post_semantics : wf_db.
 
 Fixpoint ZX_Sparse_Fence_semantics {nIn nOut} (zxs : ZX_Sparse_Fence nIn nOut) : Matrix (2 ^ nOut) (2 ^ nIn) :=
   match zxs with
@@ -307,3 +317,41 @@ Fixpoint ZX_Sparse_Fence_semantics {nIn nOut} (zxs : ZX_Sparse_Fence nIn nOut) :
       ZX_Sparse_Fence_semantics zxf2 × ZX_Sparse_Fence_semantics zxf1
   end.
 
+Lemma WF_ZX_Sparse_Fence_semantics : forall {nIn nOut} (f : ZX_Sparse_Fence nIn nOut), WF_Matrix (ZX_Sparse_Fence_semantics f).
+Proof. intros; induction f; simpl; auto with wf_db. Qed.
+
+Global Hint Resolve WF_ZX_Sparse_Fence_semantics : wf_db.
+
+Lemma ZX_Sparse_Obj_semantics_conversion : forall {nIn nOut} (obj : ZX_Sparse_Obj nIn nOut), ZX_Sparse_Obj_semantics obj = ZX_semantics (ZX_Sparse_Obj_to_ZX obj).
+Proof. destruct obj; easy. Qed.
+
+Lemma ZX_Sparse_Post_semantics_conversion : forall {nIn nOut} (p : ZX_Sparse_Post nIn nOut), ZX_Sparse_Post_semantics p = ZX_semantics (ZX_Sparse_Post_to_ZX p).
+Proof.
+  destruct p.
+  simpl.
+  rewrite ZX_Sparse_Obj_semantics_conversion.
+  rewrite 2 nwire_identity_semantics.
+  easy.
+Qed.
+
+Lemma ZX_Sparse_Fence_semantics_conversion : forall {nIn nOut} (f : ZX_Sparse_Fence nIn nOut), ZX_Sparse_Fence_semantics f = ZX_semantics (ZX_Sparse_Fence_to_ZX f).
+Proof.
+  intros.
+  induction f.
+  + apply ZX_Sparse_Post_semantics_conversion.
+  + simpl.
+    rewrite IHf1, IHf2.
+    easy.
+Qed.  
+
+Definition Height_Used_In {nIn nOut} (p : ZX_Sparse_Post nIn nOut) h :=
+  match p with
+  | @SP_Stack nInObj _ above _ _ => h >= above \/ h < (above + nInObj)
+  end.
+
+Definition Height_Used_Out {nIn nOut} (p : ZX_Sparse_Post nIn nOut) h :=
+  match p with
+  | @SP_Stack _ nOutObj above _ _ => h >= above \/ h < (above + nOutObj)
+  end.
+
+Definition NonInterference {nIn0 nOut0} (p0 : ZX_Sparse_Post nIn0 nOut0) {nIn1 nOut1} (p1 : ZX_Sparse_Post nIn1 nOut1) := forall h, Height_Used_Out p0 h -> ~(Height_Used_In p1 h).
