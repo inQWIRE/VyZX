@@ -259,38 +259,39 @@ Inductive ZX_Sparse_Post : nat -> nat -> Type :=
   | SP_Stack {nIn nOut} above (object : ZX_Sparse_Obj nIn nOut) below : ZX_Sparse_Post (above + nIn + below) (above + nOut + below).
 
 Inductive ZX_Sparse_Fence : nat -> nat -> Type :=
-  | SP_Post {nIn nOut} (p : ZX_Sparse_Post nIn nOut) : ZX_Sparse_Fence nIn nOut
-  | SP_Fence_Comp {nIn nMid nOut} (f1 : ZX_Sparse_Fence nIn nMid) (f2 : ZX_Sparse_Fence nMid nOut) : ZX_Sparse_Fence nIn nOut.
+  | SF_Post {nIn nOut} (p : ZX_Sparse_Post nIn nOut) : ZX_Sparse_Fence nIn nOut
+  | SF_Fence_Comp {nIn nMid nOut} (f1 : ZX_Sparse_Fence nIn nMid) (f2 : ZX_Sparse_Fence nMid nOut) : ZX_Sparse_Fence nIn nOut.
 
-Definition ZX_Spare_Obj_to_ZX {nIn nOut} (o : ZX_Sparse_Obj nIn nOut) : ZX nIn nOut :=
+Definition ZX_Sparse_Obj_to_ZX {nIn nOut} (o : ZX_Sparse_Obj nIn nOut) : ZX nIn nOut :=
   match o with
-  | S_Empty => ⦰
-  | S_X_Spider nIn nOut α => X_Spider nIn nOut α 
-  | S_Z_Spider nIn nOut α => Z_Spider nIn nOut α 
-  | S_Cap => Cap
-  | S_Cup => Cup
+  | SO_Empty => ⦰
+  | SO_X_Spider nIn nOut α => X_Spider nIn nOut α 
+  | SO_Z_Spider nIn nOut α => Z_Spider nIn nOut α 
+  | SO_Cap => Cap
+  | SO_Cup => Cup
+  | SO_Swap => Swap
   end.
 
 Definition ZX_Sparse_Post_to_ZX {nIn nOut} (p : ZX_Sparse_Post nIn nOut) : ZX nIn nOut :=
   match p with 
-  | SP_Stack above object below  => (nWire above ↕ ZX_Spare_Obj_to_ZX object ↕ nWire below)
+  | SP_Stack above object below  => (nWire above ↕ ZX_Sparse_Obj_to_ZX object ↕ nWire below)
   end.
 
 Fixpoint ZX_Sparse_Fence_to_ZX {nIn nOut} (f : ZX_Sparse_Fence nIn nOut) : ZX nIn nOut :=
   match f with
-  | SP_Post p => ZX_Sparse_Post_to_ZX p
-  | SP_Fence_Comp f1 f2 => ZX_Sparse_Fence_to_ZX f1 ⟷ ZX_Sparse_Fence_to_ZX f2
+  | SF_Post p => ZX_Sparse_Post_to_ZX p
+  | SF_Fence_Comp f1 f2 => ZX_Sparse_Fence_to_ZX f1 ⟷ ZX_Sparse_Fence_to_ZX f2
   end.
 
 
 Definition ZX_Sparse_Obj_semantics {nIn nOut} (obj : ZX_Sparse_Obj nIn nOut) : Matrix (2 ^ nOut) (2 ^ nIn) :=
   match obj with
-  | S_Empty => I 1
-  | S_X_Spider _ _ α => X_semantics nIn nOut α
-  | S_Z_Spider _ _ α => Z_semantics nIn nOut α
-  | S_Cup => list2D_to_matrix [[C1;C0;C0;C1]]
-  | S_Cap => list2D_to_matrix [[C1];[C0];[C0];[C1]]  
-  | S_Swap => swap
+  | SO_Empty => I 1
+  | SO_X_Spider _ _ α => X_semantics nIn nOut α
+  | SO_Z_Spider _ _ α => Z_semantics nIn nOut α
+  | SO_Cup => list2D_to_matrix [[C1;C0;C0;C1]]
+  | SO_Cap => list2D_to_matrix [[C1];[C0];[C0];[C1]]  
+  | SO_Swap => swap
   end.
 
 Definition ZX_Sparse_Post_semantics {nIn nOut} (zxs : ZX_Sparse_Post nIn nOut) : Matrix (2 ^ nOut) (2 ^ nIn) :=
@@ -301,8 +302,8 @@ Definition ZX_Sparse_Post_semantics {nIn nOut} (zxs : ZX_Sparse_Post nIn nOut) :
 
 Fixpoint ZX_Sparse_Fence_semantics {nIn nOut} (zxs : ZX_Sparse_Fence nIn nOut) : Matrix (2 ^ nOut) (2 ^ nIn) :=
   match zxs with
-  | SP_Post zxsp => ZX_Sparse_Post_semantics zxsp
-  | SP_Fence_Comp _ _ _ zxf1 zxf2 =>
+  | SF_Post zxsp => ZX_Sparse_Post_semantics zxsp
+  | SF_Fence_Comp zxf1 zxf2 =>
       ZX_Sparse_Fence_semantics zxf2 × ZX_Sparse_Fence_semantics zxf1
   end.
 
