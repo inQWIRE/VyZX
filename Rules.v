@@ -603,6 +603,122 @@ Proof.
   reflexivity.
 Qed.
 
+Definition isWire (zx : ZX 1 1) : bool.
+Proof.
+  destruct zx eqn:E.
+  2,3: destruct (total_order_T α 0); [destruct s |]; [ | apply true | ]; apply false.
+  all: apply false.
+Defined.
+
+Lemma isWire_prop_wire : forall (zx : ZX 1 1),
+  isWire zx = true -> zx ∝ —.
+Proof.
+  intros.
+  dependent destruction zx.
+  - unfold isWire in H;
+    destruct (total_order_T α 0); [ destruct s |]; [ inversion H | clear H | inversion H ]; subst;
+    apply identity_removal_X.
+  - unfold isWire in H;
+    destruct (total_order_T α 0); [ destruct s |]; [ inversion H | clear H | inversion H ]; subst;
+    apply identity_removal_Z.
+  - assert (plus_or_lem : forall (a b : nat), (a + b = 1)%nat -> (a = 1)%nat /\ (b = 0)%nat \/ (b = 1)%nat /\ (a = 0)%nat).
+    { intros; destruct a; [ auto | ]; destruct a; [ auto | ]; inversion H0. }
+    apply plus_or_lem in x0, x1; clear plus_or_lem.
+    destruct x0 as [HIn | HIn]; destruct x1 as [HOut | HOut]; destruct HIn, HOut; subst;
+    inversion H.
+  - simpl in H; inversion H.
+Qed.
+
+Fixpoint allWire {n m} (zx : ZX n m) : bool.
+Proof.
+  refine (
+  match zx with
+  | Compose zx0 zx1 | Stack zx0 zx1 => allWire _ _ zx0 && allWire _ _ zx1
+  | otherwise => _
+  end).
+  all: destruct (n =? 1) eqn:En, (m =? 1) eqn:Em; [ | apply false | apply false | apply false ].
+  all: apply beq_nat_true in En, Em; subst;
+       apply (isWire otherwise).
+Defined.
+
+Lemma allWire_restrics_dimension {n m} (zx : ZX n m) : 
+  allWire zx = true -> n = m.
+Proof.
+  intros.
+  induction zx; try reflexivity.
+  - unfold allWire in H.
+    destruct nIn; destruct nOut; simpl in H.
+    + reflexivity.
+    + destruct nOut; inversion H.
+    + destruct nIn; inversion H.
+    + destruct nIn.
+      * destruct nOut.
+        -- reflexivity.
+        -- inversion H.
+      * destruct nOut; inversion H.
+  - unfold allWire in H.
+    destruct nIn; destruct nOut; simpl in H.
+    + reflexivity.
+    + destruct nOut; inversion H.
+    + destruct nIn; inversion H.
+    + destruct nIn.
+      * destruct nOut.
+        -- reflexivity.
+        -- inversion H.
+      * destruct nOut; inversion H.
+  - inversion H.
+  - inversion H.
+  - simpl in H.
+    destruct (andb_prop _ _ H).
+    rewrite IHzx1, IHzx2; try assumption.
+    easy.
+  - simpl in H.
+    destruct (andb_prop _ _ H).
+    rewrite IHzx1; auto.
+Qed.
+
+Lemma allWire_Stack {n} (zx : ZX n n) :
+  allWire zx = true -> zx ∝ (n ↑ Wire).
+Proof.
+  dependent induction zx; intros.
+  1: reflexivity.
+  1,2: unfold allWire in H;
+    destruct nIn; [ inversion H | ];
+    destruct nIn; [ | inversion H ];
+    simpl in H;
+    unfold eq_rec_r in H;
+    rewrite <- eq_rec_eq in H;
+    rewrite <- eq_rec_eq in H;
+    apply isWire_prop_wire in H;
+    subst;
+    simpl;
+    remove_empty;
+    assumption.
+  - inversion H.
+  - rewrite <- nStack1_add.
+    bdestruct (nIn0 =? nOut0); bdestruct (nIn1 =? nOut1); inversion x; subst.
+    + apply inj_pair2 in H5; subst;
+      simpl in H; destruct (andb_prop _ _ H);
+      rewrite IHzx1, IHzx2; try auto; try easy.
+    + rewrite Nat.add_cancel_l in x0;
+      symmetry in x0;
+      contradiction.
+    + rewrite Nat.add_cancel_r in x0;
+      symmetry in x0;
+      contradiction.
+    + 
+      
+      assert (contra : zx1 ↕ zx2 = zx0).
+      apply JMeq_eq in x.
+      admit (* Final case, nIn0 <> nOut0 and nIn1 <> nOut1 *).
+  - bdestruct (nIn =? nMid); subst.
+    + simpl in H. destruct (andb_prop _ _ H).
+      rewrite (IHzx1 zx1); auto.
+      rewrite (IHzx2 zx2); auto.
+      remove_wire.
+      reflexivity.
+Admitted.
+
 Fixpoint build_left_rec (nIn : nat) (α : R) : ZX (S nIn) 1 := 
  match nIn with
   | 0   => Z_Spider 1 1 α
@@ -1986,6 +2102,69 @@ Proof.
   swap_colors.
   simpl.
   apply bi_pi_rule_Z.
+Qed.
+
+Fixpoint LeftColumnOutput {nIn nOut} (zx : ZX nIn nOut) : nat :=
+  match zx with
+  | Empty => 0
+  | Z_Spider nIn nOut α => nOut 
+  | X_Spider nIn nOut α => nOut
+  | Cap => 2
+  | Cup => 0
+  | Swap => 2
+  | Stack zx1 zx2 => LeftColumnOutput zx1 + LeftColumnOutput zx2
+  | Compose zx1 zx2 => LeftColumnOutput zx1
+  end.
+
+Fixpoint LeftColumn {nIn nOut} (zx : ZX nIn nOut) :
+  ZX nIn (LeftColumnOutput zx) :=
+  match zx as z in (ZX zIn zOut) return (ZX zIn (LeftColumnOutput z)) with
+  | ⦰ => ⦰
+  | X_Spider nIn0 nOut0 α => X_Spider nIn0 nOut0 α
+  | Z_Spider nIn0 nOut0 α => Z_Spider nIn0 nOut0 α
+  | ⊂ => ⊂
+  | ⊃ => ⊃
+  | ⨉ => ⨉
+  | Stack zx0 zx1 =>
+       LeftColumn zx0 ↕ LeftColumn zx1
+  | Compose zx0 zx1 =>
+      LeftColumn zx0
+  end.
+
+Fixpoint ShaveLeft {nIn nOut} (zx : ZX nIn nOut) : ZX (LeftColumnOutput zx) nOut :=
+  match zx as z in (ZX zIn zOut) return (ZX (LeftColumnOutput z) zOut) with
+  | X_Spider nIn0 nOut0 α | Z_Spider nIn0 nOut0 α => nOut0 ↑ —
+  | ⦰ | ⊃ => ⦰
+  | Stack zx0 zx1 => ShaveLeft zx0 ↕ ShaveLeft zx1
+  | Compose zx0 zx1 => ShaveLeft zx0 ⟷ zx1
+  | _ => 2 ↑ —
+  end.
+
+Lemma LeftColumnComposeShaveLeft {nIn nOut} : forall (zx : ZX nIn nOut),
+  zx ∝ (LeftColumn zx) ⟷ (ShaveLeft zx).
+Proof.
+  induction zx.
+  - remove_empty. reflexivity.
+  - simpl. remove_wire. reflexivity.
+  - simpl. remove_wire. reflexivity.
+  - simpl. remove_empty. 
+    rewrite <- nWire_2_Stack_Wire.
+    remove_wire.
+    reflexivity.
+  - simpl. remove_empty. reflexivity.
+  - simpl. remove_empty.
+    rewrite <- nWire_2_Stack_Wire.
+    remove_wire.
+    reflexivity.
+  - simpl.
+    rewrite <- ZX_Stack_Compose_distr.
+    rewrite <- IHzx1.
+    rewrite <- IHzx2.
+    reflexivity.
+  - simpl.
+    rewrite <- ZX_Compose_assoc.
+    rewrite <- IHzx1.
+    reflexivity.
 Qed.
 
 Local Close Scope ZX_scope.
