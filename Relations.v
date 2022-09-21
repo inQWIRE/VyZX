@@ -1,5 +1,5 @@
-Require Import externals.QuantumLib.Quantum.
-Require Import externals.QuantumLib.VectorStates.
+Require Import QuantumLib.Quantum.
+Require Import QuantumLib.VectorStates.
 Require Import Setoid.
 Require Export ZX.
 Require Export Gates.

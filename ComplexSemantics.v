@@ -1,5 +1,5 @@
 Require Export ZX.
-Require Import externals.QuantumLib.Quantum.
+Require Import QuantumLib.Quantum.
 
 Local Open Scope ZX_scope.
 

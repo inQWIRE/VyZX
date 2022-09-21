@@ -1,4 +1,4 @@
-Require Import externals.QuantumLib.Quantum.
+Require Import QuantumLib.Quantum.
 Require Export ZX.
 Require Export Gates.
 Require Export VyZX.Proportional.

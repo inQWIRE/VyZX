@@ -1,7 +1,7 @@
-Require Import externals.QuantumLib.Quantum.
-Require Import externals.QuantumLib.VectorStates.
-Require Import externals.QuantumLib.Matrix.
-Require Export ZX.
+Require Import QuantumLib.Quantum.
+Require Import QuantumLib.VectorStates.
+Require Import QuantumLib.Matrix.
+Require Import ZX.
 
 Local Open Scope ZX_scope.
 

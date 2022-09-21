@@ -1,8 +1,8 @@
 Require Import ZX.
 Require Import Rules.
-Require Import externals.QuantumLib.Quantum.
-Require Import externals.QuantumLib.Proportional.
-Require Import externals.QuantumLib.VectorStates.
+Require Import QuantumLib.Quantum.
+Require Import QuantumLib.Proportional.
+Require Import QuantumLib.VectorStates.
 Require Import Coq.Logic.Eqdep_dec.
 
 
