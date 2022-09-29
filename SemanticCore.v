@@ -1,9 +1,9 @@
 (** Contains the definitions for Z and X spider semantics, their equivalence, and well
     formedness *)
 
-Require Export externals.QuantumLib.Quantum.
-Require Export externals.QuantumLib.Proportional.
-Require Export externals.QuantumLib.VectorStates.
+Require Export QuantumLib.Quantum.
+Require Import QuantumLib.Proportional.
+Require Export QuantumLib.VectorStates.
 
 
 (* Sparse Matrix Definition *)
@@ -17,6 +17,27 @@ Definition Z_semantics (n m : nat) (α : R) : Matrix (2 ^ m) (2 ^ n) :=
                   end
   | _, _ => if ((x =? 2^m-1) && (y =? 2^n-1)) then Cexp α else C0
   end.
+
+Lemma Z_semantics_0_0 (n m : nat) (α : R) : 
+  Z_semantics (S n) (S m) α 0%nat 0%nat = 1.
+Proof. reflexivity. Qed.
+
+Lemma Z_semantics_max_max (n m : nat) (α : R) : 
+  Z_semantics (S n) (S m) α (2^(S m) - 1)%nat (2^(S n) - 1)%nat = Cexp α.
+Proof. 
+  unfold Z_semantics.
+  simpl.
+  destruct (2^m)%nat eqn:Em.
+  { contradict Em; apply Nat.pow_nonzero; easy. }
+  destruct (2^n)%nat eqn:En.
+  { contradict En; apply Nat.pow_nonzero; easy. }
+  simpl.
+  repeat rewrite Nat.sub_0_r;
+  repeat rewrite Nat.add_0_r;
+  repeat rewrite <- plus_n_Sm;
+  repeat rewrite Nat.eqb_refl.
+  reflexivity.
+Qed.
 
 Definition X_semantics (n m : nat) (α : R) : Matrix (2 ^ m) (2 ^ n) :=
   (m ⨂ hadamard) × (Z_semantics n m α) × (n ⨂ hadamard).
