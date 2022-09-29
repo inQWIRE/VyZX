@@ -1,41 +1,49 @@
-Require Import externals.QuantumLib.Quantum.
-Require Export ZX.
-Require Export Scalars.
+Require Import ZXCore.
 Require Import Setoid.
 
-Local Open Scope ZX_scope.
+(* A generalized form of proportionality which can be used to build notions for other IRs easily *)
 
-Definition proportional_constructible {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX nIn nOut) :=
-  exists c c' θ, ZX_semantics zx0 = ((√ 2) ^ c * (1 / ((√ 2) ^ c')))%R * Cexp θ .* ZX_semantics zx1.
+Open Scope ZX_scope.
 
-Definition proportional_general {T n m} (eval : T -> (Matrix n m)) (t0 t1 : T) := 
-  exists (c : C), eval t0 = c .* eval t1 /\ c <> 0.
+Definition proportional_general {T_0 m_0 n_0 T_1 m_1 n_1} 
+(eval_0 : T_0 -> (Matrix m_0 n_0)) (eval_1 : T_1 -> (Matrix m_1 n_1)) (t_0 : T_0) (t_1 : T_1) := 
+  exists (c : C), eval_0 t_0 = c .* eval_1 t_1 /\ c <> 0.
+Notation " t1 '≡' t2 'by' eval" := (proportional_general eval eval t1 t2) (at level 10). (* \equiv *)
 
-Definition proportional {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX nIn nOut) :=
-  proportional_general ZX_semantics zx0 zx1.
+(* ZX Proportionality *)
 
+Definition proportional {n_0 m_0 n_1 m_1} 
+(zx_0 : ZX n_0 m_0) (zx_1 : ZX n_1 m_1) :=
+  (n_0 = n_1 /\ m_0 = m_1) /\ zx_0 ≡ zx_1 by ZX_semantics.
+Notation "zx0 ∝ zx1" := (proportional zx0 zx1) (at level 60) : ZX_scope. (* \propto *)
+
+Lemma Proportional_restricts_dimension {n_0 m_0 n_1 m_1} (zx_0 : ZX n_0 m_0) (zx_1 : ZX n_1 m_1) :
+  zx_0 ∝ zx_1 -> n_0 = n_1 /\ m_0 = m_1.
+Proof. intros; destruct H; assumption. Qed.
+ 
 Ltac prop_exist_non_zero c := exists c; split; try apply nonzero_div_nonzero; try nonzero.
+Ltac prep_proportional := unfold proportional; intros; split; [split; lia | ].
 
-Infix "∝'" := proportional_constructible (at level 70).
-
-Infix "∝" := proportional (at level 70).
-
-Lemma proportional_general_refl : forall T n m eval (t : T), @proportional_general T n m eval t t.
+Lemma proportional_general_refl : forall T n m eval (t : T), 
+  @proportional_general T n m T n m eval eval t t.
 Proof.
   prop_exist_non_zero 1.
   intros.
   lma.
 Qed.
 
-Lemma proportional_general_symm : forall T n m eval (t0 t1 : T), @proportional_general T n m eval t0 t1 -> @proportional_general T n m eval t1 t0.
+Lemma proportional_general_symm : 
+  forall T_0 n_0 m_0 T_1 n_1 m_1 eval_0 eval_1 (t0 : T_0) (t1: T_1), 
+  @proportional_general T_0 n_0 m_0 T_1 n_1 m_1 eval_0 eval_1 t0 t1 -> 
+  @proportional_general T_1 n_1 m_1 T_0 n_0 m_0 eval_1 eval_0 t1 t0.
 Proof.
   intros.
   destruct H.
   exists (/x).
-  intros.
   destruct H.
   split.
   - rewrite H.  
+    Msimpl.
     rewrite Mscale_assoc.
     rewrite Cinv_l; try lma.
     apply H0.
@@ -43,8 +51,13 @@ Proof.
     apply H0.
 Qed.
 
-Lemma proportional_general_trans : forall T n m eval (t0 t1 t2 : T), 
-    @proportional_general T n m eval t0 t1 -> @proportional_general T n m eval t1 t2 -> @proportional_general T n m eval t0 t2.
+Lemma proportional_general_trans : 
+  forall T_0 n_0 m_0 eval_0 (t0 : T_0) 
+         T_1 n_1 m_1 eval_1 (t1 : T_1) 
+         T_2 n_2 m_2 eval_2 (t2 : T_2),
+    @proportional_general T_0 n_0 m_0 T_1 n_1 m_1 eval_0 eval_1 t0 t1 -> 
+    @proportional_general T_1 n_1 m_1 T_2 n_2 m_2 eval_1 eval_2 t1 t2 -> 
+    @proportional_general T_0 n_0 m_0 T_2 n_2 m_2 eval_0 eval_2 t0 t2.
 Proof.
   intros.
   destruct H.
@@ -55,55 +68,61 @@ Proof.
   split.
   - rewrite <- Mscale_assoc.
     rewrite <- H0.
-    rewrite <- H.
+    rewrite H.
     reflexivity.
   - apply Cmult_neq_0; try assumption. 
 Qed.
 
-Lemma proportional_refl : forall {nIn nOut} (zx : ZX nIn nOut), zx ∝ zx.
-Proof.
-  intros.
-  apply proportional_general_refl.
+
+Lemma proportional_refl : forall {n m} (zx : ZX n m), proportional zx zx.
+Proof. 
+  prep_proportional; apply proportional_general_refl. 
 Qed.
 
-Lemma proportional_symm : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut),
-  zx0 ∝ zx1 -> zx1 ∝ zx0.
-Proof.
-  intros.
-  apply proportional_general_symm; assumption.
-Qed.
+Lemma proportional_symm : forall {n_0 m_0 n_1 m_1} (zx_0 : ZX n_0 m_0) (zx_1 : ZX n_1 m_1),
+  zx_0 ∝ zx_1 -> zx_1 ∝ zx_0.
+Proof. prep_proportional; apply proportional_general_symm; apply H. Qed.
 
-Lemma proportional_trans : forall {nIn nOut} (zx0 zx1 zx2 : ZX nIn nOut),
+Lemma proportional_trans : forall {n_0 m_0 n_1 m_1 n_2 m_2} 
+  (zx0 : ZX n_0 m_0) (zx1 : ZX n_1 m_1) (zx2 : ZX n_2 m_2),
   zx0 ∝ zx1 -> zx1 ∝ zx2 -> zx0 ∝ zx2.
-Proof.
+Proof. 
   intros.
-  apply (proportional_general_trans _ _ _ ZX_semantics zx0 zx1 zx2); assumption.
+  destruct H, H0; destruct H, H0.
+  prep_proportional.
+  apply (proportional_general_trans _ _ _ _ _ _ n_1 m_1 ZX_semantics zx1); assumption.
 Qed.
 
-Add Parametric Relation (nIn nOut : nat) : (ZX nIn nOut) (@proportional nIn nOut)
+Add Parametric Relation (n m : nat) : (ZX n m) (proportional)
   reflexivity proved by proportional_refl
   symmetry proved by proportional_symm
   transitivity proved by proportional_trans
   as zx_prop_equiv_rel.
 
 Lemma stack_compat :
-  forall nIn0 nOut0 nIn1 nOut1,
-    forall zx0 zx1 : ZX nIn0 nOut0, zx0 ∝ zx1 ->
-    forall zx2 zx3 : ZX nIn1 nOut1, zx2 ∝ zx3 ->
-    zx0 ↕ zx2 ∝ zx1 ↕ zx3.
+  forall n_0 m_0 n_1 m_1 n_2 m_2 n_3 m_3,
+    forall (zx0 : ZX n_0 m_0) (zx2 : ZX n_2 m_2), zx0 ∝ zx2 ->
+    forall (zx1 : ZX n_1 m_1) (zx3 : ZX n_3 m_3), zx1 ∝ zx3 ->
+    zx0 ↕ zx1 ∝ zx2 ↕ zx3.
 Proof.
-  intros.
-  destruct H; destruct H; destruct H0; destruct H0.
+  prep_proportional.
+  repeat destruct H, H0.
+  destruct H1, H2.
+  destruct H0, H.
+  unfold proportional_general.
   exists (x * x0).
   split.
   - simpl; rewrite H; rewrite H0.
+    Msimpl.
     lma.
   - apply Cmult_neq_0; try assumption.
 Qed.
 
-Add Parametric Morphism (nIn0 nOut0 nIn1 nOut1 : nat) : (@Stack nIn0 nIn1 nOut0 nOut1)
-  with signature (@proportional nIn0 nOut0) ==> (@proportional nIn1 nOut1) ==> 
-                 (@proportional (nIn0 + nIn1) (nOut0 + nOut1)) as stack_mor.
+Add Parametric Morphism (n0 m0 n1 m1 : nat) : Stack
+  with signature 
+    (@proportional n0 m0 n0 m0) ==> 
+    (@proportional n1 m1 n1 m1) ==> 
+    proportional as stack_mor.
 Proof. apply stack_compat; assumption. Qed.
 
 Lemma nStack_compat :
@@ -120,9 +139,10 @@ Proof.
     reflexivity.
 Qed.
 
-Add Parametric Morphism (nIn nOut n : nat) : (nStack n)
-  with signature (@proportional nIn nOut) ==> 
-                 (@proportional (n * nIn) (n * nOut)) as nstack_mor.
+Add Parametric Morphism (n m d : nat) : (nStack d)
+  with signature 
+      (@proportional n m n m) ==> 
+      proportional as nstack_mor.
 Proof. apply nStack_compat. Qed.
 
 Lemma nStack1_compat :
@@ -140,21 +160,32 @@ Proof.
 Qed. 
 
 Add Parametric Morphism (n : nat) : (nStack1 n)
-  with signature (@proportional 1 1) ==> 
-                 (@proportional n n) as nstack1_mor.
+  with signature 
+      (@proportional 1 1 1 1) ==> 
+      (@proportional n n n n) as nstack1_mor.
 Proof. apply nStack1_compat. Qed. 
 
 Lemma compose_compat :
-  forall nIn nMid nOut,
-    forall zx0 zx1 : ZX nIn  nMid, zx0 ∝ zx1 ->
-    forall zx2 zx3 : ZX nMid nOut, zx2 ∝ zx3 ->
-    zx0 ⟷ zx2 ∝ zx1 ⟷ zx3.
+  forall n0 m01 n1 n2 m23 n3,
+    forall (zx0 : ZX n0 m01) (zx2 : ZX n2 m23), zx0 ∝ zx2 ->
+    forall (zx1 : ZX m01 n1) (zx3 : ZX m23 n3), zx1 ∝ zx3 ->
+    zx0 ⟷ zx1 ∝ zx2 ⟷ zx3.
 Proof.
   intros.
   destruct H; destruct H; destruct H0; destruct H0.
+  generalize dependent zx1; generalize dependent zx3;
+  generalize dependent zx0; generalize dependent zx2.
+  destruct H, H0, H2, H4.
+  intros.
+  destruct H1, H3;
+  destruct H, H0.
+  prep_proportional.
+  unfold proportional_general.
   exists (x * x0).
   split.
-  - simpl; rewrite H; rewrite H0.
+  - simpl.
+    rewrite H; rewrite H0.
+    Msimpl.
     rewrite Mscale_mult_dist_r.
     rewrite Mscale_mult_dist_l.
     rewrite Mscale_assoc.
@@ -162,71 +193,70 @@ Proof.
   - apply Cmult_neq_0; try assumption.
 Qed.
 
-Add Parametric Morphism (nIn nMid nOut : nat)  : (@Compose nIn nMid nOut)
-  with signature (@proportional nIn nMid) ==> (@proportional nMid nOut) ==> 
-                 (@proportional nIn nOut) as compose_mor.
+Add Parametric Morphism (n o m : nat)  : Compose
+  with signature (@proportional n m n m) ==> (@proportional m o m o) ==> 
+                 (@proportional n o n o) as compose_mor.
 Proof. apply compose_compat; assumption. Qed.
 
 Lemma transpose_compat : 
   forall nIn nOut,
     forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
-    (zx0 ⊺) ∝ (zx1 ⊺).
+    (zx0⊤) ∝ (zx1⊤).
 Proof.
   intros.
-  destruct H; destruct H; exists x; split; try assumption.
-  rewrite 2 ZX_semantics_Transpose_comm.
-  rewrite H.
+  destruct H; destruct H; destruct H0; destruct H0.
+  prep_proportional; exists x; split; auto.
+  rewrite 2 ZX_semantics_transpose_comm.
+  rewrite H0.
   rewrite Mscale_trans.
   reflexivity.
 Qed.
 
-Add Parametric Morphism (nIn nOut : nat) : (@Transpose nIn nOut)
-  with signature (@proportional nIn nOut) ==> (@proportional nOut nIn) as transpose_mor.
+Add Parametric Morphism (n m : nat) : transpose
+  with signature 
+      (@proportional n m n m) ==> 
+      (@proportional m n m n) as transpose_mor.
 Proof. apply transpose_compat. Qed.
 
-Lemma zx_0_0_prop : forall (zx0 zx1 : ZX 0 0), (ZX_semantics zx0) 0%nat 0%nat <> 0 -> (ZX_semantics zx1) 0%nat 0%nat <> 0 -> zx0 ∝ zx1.
+Lemma adjoint_compat : 
+  forall n0 m0 n1 m1,
+    forall (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
+      zx0 ∝ zx1 -> (zx0 †) ∝ (zx1 †).
 Proof.
   intros.
-  exists ((/ ZX_semantics zx1 0%nat 0%nat) * (ZX_semantics zx0 0%nat 0%nat)).
-  split; [ | apply Cmult_neq_0; [ apply nonzero_div_nonzero | ]; assumption].
-  rewrite (Scalar_general zx0).
-  rewrite (Scalar_general zx1).
-  rewrite Mscale_assoc.
-  assert (WF_Matrix (I 1)) by (auto with wf_db).
-  unfold WF_Matrix in H1.
-  prep_matrix_equality.
-  assert (Hs: forall n, (S n >= 1)%nat) by (intros; simpl; apply le_n_S; apply Nat.le_0_l).
-  destruct x, y.
-  (* throwaway cases *)
-  2-4: (unfold scale; rewrite H1; C_field_simplify; try reflexivity; try split; try assumption; unfold I; replace ((0 =? 0) && (0 <? 1)) with true by auto; try apply C1_neq_C0; try (right; apply Hs); try (left; apply Hs)).
-  (* Actually interesting case *)
-  simpl.
-  unfold scale.
-  unfold I.
-  replace ((0 =? 0) && (0 <? 1)) with true by auto.
-  C_field_simplify; [ lca | assumption].
+  destruct H; destruct H.
+  destruct H0; destruct H0. 
+  prep_proportional.
+  unfold proportional_general.
+  exists (x ^*)%C; split.
+  - rewrite 2 ZX_semantics_adjoint_comm.
+    rewrite H0.
+    Msimpl.
+    rewrite Mscale_adj.
+    reflexivity.
+  - apply Cconj_neq_0.
+    assumption. 
 Qed.
 
-Lemma zx_transpose_involutive {nIn nOut} : forall (zx : ZX nIn nOut),
- (zx ⊺) ⊺ ∝ zx.
+Add Parametric Morphism (n m : nat) : (@adjoint n m)
+  with signature (@proportional n m n m) ==> proportional as adj_mor.
+Proof. apply adjoint_compat. Qed.
+
+Theorem ZX_eq_prop : forall {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX nIn nOut),
+  ZX_semantics zx0 = ZX_semantics zx1 -> zx0 ∝ zx1.
 Proof.
   intros.
-  induction zx; simpl.
-  7-8: rewrite IHzx1, IHzx2.
-  all: reflexivity.
+  prep_proportional.
+  unfold proportional_general.
+  rewrite H.
+  exists C1.
+  split; [ lma | nonzero].
 Qed.
 
-Transparent Wire.
-Lemma zx_transpose_wire : 
-  Wire ⊺ ∝ Wire.
-Proof.
-  unfold Wire.
-  reflexivity.
-Qed.
-Opaque Wire.
+(* Useful Lemmas *)
 
 Lemma nstack1_transpose : forall n (zx : ZX 1 1),
-  (n ↑ zx)⊺ ∝ n ↑ (zx ⊺).
+  (n ↑ zx)⊤ ∝ n ↑ (zx ⊤).
 Proof.
   intros.
   induction n.
@@ -236,279 +266,9 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma adjoint_compat : 
-  forall nIn nOut,
-    forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
-    (zx0 ‡) ∝ (zx1 ‡).
+Lemma transpose_wire : Wire ⊤ ∝ Wire.
 Proof.
-  intros.
-  destruct H; destruct H; exists (x^*); split.
-  - rewrite 2 ZX_semantics_Adjoint_comm.
-    rewrite H.
-    rewrite Mscale_adj.
-    reflexivity.
-  - apply Cconj_neq_0.
-    assumption. 
+  prep_proportional.
+  prop_exist_non_zero 1.
+  simpl; lma.
 Qed.
-
-Add Parametric Morphism (nIn nOut : nat) : (@Adjoint nIn nOut)
-  with signature (@proportional nIn nOut) ==> (@proportional nOut nIn) as adj_mor.
-Proof. apply adjoint_compat. Qed.
-
-Lemma Invert_angles_compat : 
-  forall nIn nOut,
-    forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
-    (Invert_angles zx0) ∝ (Invert_angles zx1).
-Proof.
-  intros.
-  rewrite (transpose_involutive_eq zx0), (transpose_involutive_eq zx1).
-  apply transpose_compat in H.
-  apply adjoint_compat in H.
-  apply H.
-Qed.
-
-Add Parametric Morphism (nIn nOut : nat) : (@Invert_angles nIn nOut)
-  with signature (@proportional nIn nOut) ==> (@proportional nIn nOut) as inva_mor.
-Proof. apply Invert_angles_compat. Qed.
-
-Lemma colorswap_compat :
-  forall nIn nOut,
-    forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
-    (⊙ zx0) ∝ (⊙ zx1).
-Proof.
-  intros.
-  destruct H; destruct H; exists x; split; try assumption.
-  rewrite 2 ZX_semantics_Colorswap_comm.
-  rewrite H.
-  rewrite Mscale_mult_dist_r.
-  rewrite Mscale_mult_dist_l.
-  reflexivity.
-Qed.
-
-Add Parametric Morphism (nIn nOut : nat) : (@ColorSwap nIn nOut)
-  with signature (@proportional nIn nOut) ==> (@proportional nIn nOut) as colorswap_mor.
-Proof. apply colorswap_compat. Qed.
-
-Lemma sqrt2_pow_n_neq_0 : forall n : nat, (√ 2 ^ n <> 0)%R.
-Proof.
-  intro n; induction n.
-  - apply R1_neq_R0.
-  - replace (S n) with (1 + n)%nat by easy.
-    rewrite pow_add.
-    simpl.
-    rewrite Rmult_1_r.
-    apply Rmult_integral_contrapositive.
-    split.
-    + apply sqrt2_neq_0.
-    + apply IHn.
-Qed.
-
-Lemma sqrt2_pow_n_neq_0' : forall n : nat, (√ 2 ^ n)%R <> 0.
-Proof.
-  intro n; induction n.
-  - apply R1_neq_R0.
-  - replace (S n) with (1 + n)%nat by easy.
-    rewrite pow_add.
-    simpl.
-    rewrite Rmult_1_r.
-    apply Rmult_integral_contrapositive.
-    split.
-    + apply sqrt2_neq_0.
-    + apply IHn.
-Qed.
-
-Lemma prop_c_to_prop : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut),
-  zx0 ∝' zx1 -> zx0 ∝ zx1.
-Proof.
-  intros.
-  destruct H; destruct H; destruct H.
-  exists ((√ 2 ^ x * (1 / √ 2 ^ x0))%R * Cexp x1).
-  split.
-  - assumption.
-  - apply Cmult_neq_0; try apply Cexp_nonzero.
-    apply C0_fst_neq.
-    simpl.
-    replace (1 / √ 2 ^ x0)%R with (/ √ 2 ^ x0)%R by lra.
-    rewrite Rinv_pow; try apply sqrt2_neq_0.
-    apply Rmult_integral_contrapositive_currified; 
-      try apply pow_nonzero; try apply Rinv_neq_0_compat; apply sqrt2_neq_0.
-Qed.
-
-Lemma proportional_refl_c : forall {nIn nOut} (zx : ZX nIn nOut), zx ∝' zx.
-Proof.
-  intros.
-  unfold proportional.
-  exists 0%nat.
-  exists 0%nat.
-  exists 0.
-  simpl.
-  autorewrite with Cexp_db.
-  replace ((1 * (1 / 1))%R * C1) with C1 by lca.
-  rewrite Mscale_1_l.
-  reflexivity.
-Qed.
-
-Lemma proportional_trans_c : forall {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX nIn nOut) (zx2 : ZX nIn nOut), 
-  zx0 ∝' zx1 -> zx1 ∝' zx2 -> zx0 ∝' zx2.
-Proof.
-  intros.
-  destruct H as [c01 H].
-  destruct H as [c'01 H].
-  destruct H as [θ01 H01].
-  destruct H0 as [c12 H0]. 
-  destruct H0 as [c'12 H0].
-  destruct H0 as [θ12 H12].
-  exists (c01 + c12)%nat.
-  exists (c'01 + c'12)%nat.
-  exists (θ01 + θ12)%R.
-  rewrite pow_add.
-  rewrite H01.
-  rewrite H12.
-  rewrite Mscale_assoc.
-  apply Mscale_simplify; try easy.
-  autorewrite with Cexp_db.
-  rewrite pow_add.
-  replace 1%R with (1 * 1)%R by lra.
-  rewrite <- Rmult_div; try apply sqrt2_pow_n_neq_0.
-  repeat rewrite RtoC_mult.
-  repeat rewrite Cmult_assoc.
-  repeat rewrite mult_assoc.
-  lca. 
-Qed.
-
-Lemma proportional_symm_c : forall {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX nIn nOut), zx0 ∝' zx1 -> zx1 ∝' zx0.
-Proof.
-  intros.
-  destruct H as [c H].
-  destruct H as [c' H].
-  destruct H as [θ H].
-  unfold proportional.
-  exists c'.
-  exists c.
-  exists (-θ)%R.
-  rewrite H.
-  replace (ZX_semantics zx1) with (1 .* ZX_semantics zx1) by apply Mscale_1_l.
-  rewrite Mscale_assoc.
-  apply Mscale_simplify; try easy
-  repeat rewrite RtoC_mult.
-  repeat rewrite Cmult_assoc.
-  repeat rewrite mult_assoc.
-  - lma.
-  - replace ((√ 2 ^ c' * (1 / √ 2 ^ c))%R * Cexp (- θ) * ((√ 2 ^ c * (1 / √ 2 ^ c'))%R * Cexp θ)) with ((((√ 2 ^ c')%R * (1 / √ 2 ^ c')%R) * ((1 / √ 2 ^ c))%R * (√ 2 ^ c)%R) * Cexp (- θ) * Cexp θ) by lca.
-    rewrite <- RtoC_mult.
-    replace (√ 2 ^ c' * (1 / √ 2 ^ c'))%R with (√ 2 ^ c' * / (√ 2 ^ c'))%R by lra.
-    rewrite Rinv_r; try apply sqrt2_pow_n_neq_0.
-    rewrite Cmult_1_l.
-    rewrite <- RtoC_mult.
-    replace (1 / √ 2 ^ c * √ 2 ^ c)%R with (√ 2 ^ c * / √ 2 ^ c )%R by lra.
-    rewrite Rinv_r; try apply sqrt2_pow_n_neq_0.
-    rewrite Cmult_1_l.
-    rewrite Cexp_mul_neg_l.
-    reflexivity.
-Qed.
-
-Add Parametric Relation (nIn nOut : nat) : (ZX nIn nOut ) (@proportional nIn nOut)
-  reflexivity proved by proportional_refl
-  symmetry proved by proportional_symm
-  transitivity proved by proportional_trans
-  as uc_equiv_rel.
-
-Lemma proportional_C2 : forall nIn nOut (zx0 zx1 : ZX nIn nOut) c2 c12 csqrt2 c1sqrt2 θ, ZX_semantics zx0 = (2 ^ c2 * (1 / (2 ^ c12)) * (√ 2) ^ csqrt2 * (1 / ((√ 2) ^ c1sqrt2)))%R * Cexp θ .* ZX_semantics zx1 -> zx0 ∝' zx1.
-Proof.
-  intros.
-  unfold proportional.
-  exists (2 * c2 + csqrt2)%nat.
-  exists (2 * c12 + c1sqrt2)%nat.
-  exists θ.
-  rewrite H.
-  apply Mscale_simplify; try easy.
-  apply Cmult_simplify; try easy.
-  rewrite <- pow2_sqrt2.
-  rewrite <- pow_mult.
-  rewrite <- pow_mult.
-  repeat rewrite pow2_sqrt2.
-  replace (√ 2 ^ (2 * c2) * (1 / √ 2 ^ (2 * c12)) * √ 2 ^ csqrt2 * (1 / √ 2 ^ c1sqrt2))%R with (√ 2 ^ (2 * c2) * √ 2 ^ csqrt2 * (1 / √ 2 ^ (2 * c12)) *  (1 / √ 2 ^ c1sqrt2))%R by lra.
-  rewrite <- Rdef_pow_add.
-  rewrite Rmult_assoc.
-  rewrite Rmult_div; try apply sqrt2_pow_n_neq_0.
-  rewrite Rmult_1_l.
-  rewrite <- Rdef_pow_add.
-  reflexivity.
-Qed.
-
-Definition build_prop_constants c c' θ := (((Scalar_Cexp_alpha_times_sqrt_2 θ) ↕ (Scalar_1_div_sqrt_2)) ↕ ((c ⇑ Scalar_sqrt_2 ) ↕ (c' ⇑ Scalar_1_div_sqrt_2 ))).
-
-Theorem ZX_prop_explicit_eq : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut) c c' θ,  ZX_semantics zx0 = ((√ 2) ^ c * (1 / ((√ 2) ^ c')))%R * Cexp θ .* ZX_semantics zx1-> ZX_semantics zx0 = ZX_semantics (Stack (build_prop_constants c c' θ) zx1).
-Proof.
-  intros nIn nOut zx0 zx1 c c' θ H.
-  unfold build_prop_constants.
-  simpl.
-  rewrite Scalar_X_alpha_Z_PI_sqrt_2.
-  rewrite Scalar_X_Z_triple_1_sqrt_2.
-  rewrite (Scalar_n_stack Scalar_sqrt_2 (√ 2) c); try exact Scalar_X_alpha_Z_0_sqrt_2.
-  rewrite (Scalar_n_stack Scalar_1_div_sqrt_2 (C1 / √ 2) c'); try exact Scalar_X_Z_triple_1_sqrt_2.
-  rewrite H.
-  rewrite Scalar_kron.
-  repeat rewrite Mscale_kron_dist_r.
-  repeat rewrite Mscale_kron_dist_l.
-  repeat rewrite Mscale_assoc.
-  replace (2 ^ (c * 0 + c' * 0))%nat with 1%nat; try rewrite 2 mult_0_r; try rewrite plus_0_l; try repeat rewrite Nat.pow_0_r; try reflexivity. (* Magic to fix dims *)
-  Msimpl.
-  rewrite Scalar_kron.
-  repeat rewrite Mscale_assoc.
-  rewrite Mscale_kron_dist_l.
-  Msimpl.
-  repeat rewrite mult_1_l.
-  apply Mscale_simplify; try reflexivity.
-  C_field_simplify; try apply Csqrt2_neq_0.
-  rewrite RtoC_mult.
-  rewrite <- RtoC_pow.
-  rewrite RtoC_div; try apply pow_nonzero; try apply sqrt2_neq_0.
-  rewrite <- RtoC_pow.
-  C_field_simplify; try apply Cpow_nonzero; try apply sqrt2_neq_0; try apply Csqrt2_neq_0.
-  rewrite Cdiv_unfold.
-  rewrite Cmult_1_l.
-  replace (√ 2 ^ c * Cexp θ * √ 2 ^ c' * (/ √ 2) ^ c') with ((√ 2 ^ c * √ 2 ^ c' * (/ √ 2) ^ c') * Cexp θ) by lca.
-  apply Cmult_simplify; try reflexivity.
-  rewrite <- Cmult_assoc.
-  replace (√ 2 ^ c' * (/ √ 2) ^ c') with C1.
-  lca.
-  rewrite Cpow_inv; try apply Csqrt2_neq_0; try intros; try apply Cpow_nonzero; try apply sqrt2_neq_0.
-  rewrite Cinv_r; try apply Cpow_nonzero; try apply sqrt2_neq_0.
-  reflexivity.
-Qed.
-
-Theorem ZX_c_prop_eq : forall {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX nIn nOut), zx0 ∝' zx1 -> exists (zxconst : ZX 0 0), ZX_semantics zx0 = ZX_semantics (Stack zxconst zx1).
-Proof.
-  intros nIn nOut zx0 zx1 H.
-  unfold proportional in H.
-  destruct H as [c H].
-  destruct H as [c' H].
-  destruct H as [θ H].
-  replace 0%nat with (c * 0 + c' * 0)%nat by lia.
-  exists (build_prop_constants c c' θ).
-  apply ZX_prop_explicit_eq.
-  assumption.
-Qed.
-
-Theorem ZX_eq_c_prop : forall {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX nIn nOut), ZX_semantics zx0 = (ZX_semantics zx1) -> zx0 ∝' zx1.
-Proof.
-  intros.
-  unfold proportional.
-  exists 0%nat.
-  exists 0%nat.
-  exists 0.
-  rewrite H.
-  autorewrite with Cexp_db.
-  lma.
-Qed.
-
-Theorem ZX_eq_prop : forall {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX nIn nOut), ZX_semantics zx0 = (ZX_semantics zx1) -> zx0 ∝ zx1.
-Proof.
-  intros.
-  apply prop_c_to_prop.
-  apply ZX_eq_c_prop.
-  assumption.
-Qed.
-
-Local Close Scope ZX_scope.
