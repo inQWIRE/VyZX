@@ -197,7 +197,7 @@ Proof.
   simpl.
   rewrite wire_identity_semantics.
   rewrite kron_1_r.
-  lma.
+  lma.updated somethi
 Qed.
 
 
@@ -677,7 +677,7 @@ Proof.
     rewrite IHzx1; auto.
 Qed.
 
-Lemma allWire_Stack {n} (zx : ZX n n) :
+(* Lemma allWire_Stack {n} (zx : ZX n n) :
   allWire zx = true -> zx ∝ (n ↑ Wire).
 Proof.
   dependent induction zx; intros.
@@ -717,7 +717,7 @@ Proof.
       rewrite (IHzx2 zx2); auto.
       remove_wire.
       reflexivity.
-Admitted.
+Admitted. *)
 
 Fixpoint build_left_rec (nIn : nat) (α : R) : ZX (S nIn) 1 := 
  match nIn with

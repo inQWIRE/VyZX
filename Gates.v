@@ -1,44 +1,62 @@
-Require Import externals.QuantumLib.Quantum.
-Require Export ZX.
+Require Import ZXCore.
+From VyZX Require Import Proportional.
 
 Local Open Scope ZX_scope.
 
-Definition ZX_H := 
-    (Z_Spider 1 1 (PI/2)) ⟷ (X_Spider 1 1 (PI/2)) ⟷ (Z_Spider 1 1 (PI/2)).
-Global Opaque ZX_H.
+(** Gate Definitions in the ZX Calculus *)
 
-Notation "□" := (ZX_H). (* \square*) 
+Notation "'_S_'" := (Z 1 1 (PI / 2)) (at level 40).
+Notation "'_T_'" := (Z 1 1 (PI / 4)) (at level 40).
+Notation "'_Z_'" := (Z 1 1 PI) (at level 40).
+Notation "'_X_'" := (X 1 1 PI) (at level 40).
+Notation "'_Y_'" := (_Z_ ⟷ _X_) (at level 40).
 
-Definition hadamard_edge {nIn nMid nOut} (zx0 : ZX nIn nMid) (zx1 : ZX nMid nOut) : ZX nIn nOut := 
-    (zx0 ⟷ (nMid ↑ □) ⟷ zx1).
+Notation "'_H_'" := 
+    ((Z 1 1 (PI/2)) ⟷ (X 1 1 (PI/2)) ⟷ (Z 1 1 (PI/2)))
+    (at level 40).
 
-Notation "zx0 ⥈ zx1" := (hadamard_edge zx0 zx1) (left associativity, at level 40). (* \leftrightarrowcircle *)
+Notation "'_CNOT_'" :=
+  ((Z 1 2 0 ↕ —) ⟷ (— ↕ X 2 1 0)).
 
-Definition ZX_CNOT_l : ZX 2 2 :=  
-        ((Z_Spider 1 2 0%R) ↕ —) ⟷ (— ↕ (X_Spider 2 1 0%R)).
-Global Opaque ZX_CNOT_l.
+Notation "'_CNOT_R'" :=
+  ((— ↕ X 1 2 0) ⟷ (Z 2 1 0 ↕ —)).
 
-Definition ZX_CNOT_r : ZX 2 2 := 
-    (— ↕ (X_Spider 1 2 0%R)) ⟷ ((Z_Spider 2 1 0%R) ↕ —).
-Global Opaque ZX_CNOT_r.
+Notation "'_NOTC_'" :=
+  ((— ↕ Z 1 2 0 ) ⟷ (X 2 1 0 ↕ —)).
 
-Definition ZX_S : ZX 1 1 := Z_Spider 1 1 (PI / 2).
-Definition ZX_T : ZX 1 1 := Z_Spider 1 1 (PI / 4).
-Definition ZX_Z : ZX 1 1 := Z_Spider 1 1 PI.
-Definition ZX_X : ZX 1 1 := X_Spider 1 1 PI.
-Definition ZX_Y : ZX 1 1 := ZX_Z ⟷ ZX_X.
-Global Opaque ZX_Z.
-Global Opaque ZX_X.
-Global Opaque ZX_Y.
+Notation "'_NOTC_R'" :=
+  ((X 1 2 0 ↕ —) ⟷ (— ↕ Z 2 1 0 )).
 
-Notation ZX_CNOT := ZX_CNOT_l.
-Global Opaque ZX_CNOT.
+(** Gate rewriting rules *)
 
-Definition ZX_FLIPPED_CNOT := 
-    (— ↕ (Z_Spider 1 2 0%R)) ⟷ ((X_Spider 2 1 0%R) ↕ —).
-   
-Definition ZX_3_CNOT_SWAP : ZX 2 2 :=
-    ZX_CNOT ⟷ ZX_FLIPPED_CNOT ⟷ ZX_CNOT.
-Global Opaque ZX_3_CNOT_SWAP.
+Lemma _H_is_Box : _H_ ∝ □.
+Proof.
+  prep_proportional.
+  prop_exist_non_zero (Cexp (PI/4)).
+  simpl.
+  unfold X_semantics, Z_semantics.
+  Msimpl.
+  solve_matrix;
+  field_simplify_eq [Cexp_PI2 Cexp_PI4 Ci2 Csqrt2_sqrt2_inv Csqrt2_inv]; 
+  try apply c_proj_eq; try simpl; try R_field_simplify; try reflexivity; (try split; try apply RtoC_neq; try apply sqrt2_neq_0; try auto).
+Qed.
 
-Local Close Scope ZX_scope.
+Lemma _H_H_is_wire : □ ⟷ □ ∝ —.
+Proof.
+  prep_proportional.
+  prop_exist_non_zero 1; Msimpl; simpl.
+  apply MmultHH.
+Qed.
+
+Lemma _CNOT_equiv :
+  _CNOT_R ∝ _CNOT_.
+Proof.
+  prep_proportional.
+  prop_exist_non_zero 1.
+  simpl.
+  Msimpl.
+  restore_dims.
+  
+  rewrite (kron_mixed_product (Z_semantics 2 1 0) (I 2) (I 2) (X_semantics 1 2 0)).
+  
+
