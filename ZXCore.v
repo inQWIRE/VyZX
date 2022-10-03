@@ -54,7 +54,7 @@ Fixpoint ZX_semantics {n m} (zx : ZX n m) :
   | — => I 2
   | □ => hadamard
   | zx0 ↕ zx1 => (ZX_semantics zx0) ⊗ (ZX_semantics zx1) 
-  | @Sequence _ mid _ _ _ zx0 zx1 => @Mmult _ _ mid (ZX_semantics zx1) (ZX_semantics zx0)
+  | @Sequence n mid _ m _ zx0 zx1 => @Mmult (2^m) (2^mid) (2^n) (ZX_semantics zx1) (ZX_semantics zx0)
   end.
 
 Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) : 
@@ -69,7 +69,7 @@ Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) :
   | — => I 2
   | □ => hadamard
   | zx0 ↕ zx1 => (ZX_dirac_sem zx0) ⊗ (ZX_dirac_sem zx1)
-  | @Sequence _ mid _ _ _ zx0 zx1 => @Mmult _ _ mid (ZX_dirac_sem zx1) (ZX_dirac_sem zx0)
+  | @Sequence n mid _ m eq_refl zx0 zx1 => (ZX_dirac_sem zx1) × (ZX_dirac_sem zx0)
   end.
 
 Lemma ZX_semantic_equiv : forall n m (zx : ZX n m),
@@ -79,7 +79,7 @@ Proof.
   induction zx; try lma; simpl.
   rewrite X_semantics_equiv; reflexivity.
   rewrite Z_semantics_equiv; reflexivity.
-  all: rewrite IHzx1, IHzx2; reflexivity.
+  all: subst; rewrite IHzx1, IHzx2; reflexivity.
 Qed.
 
 Theorem WF_ZX : forall nIn nOut (zx : ZX nIn nOut), WF_Matrix (ZX_semantics zx).
@@ -284,6 +284,7 @@ Proof.
     rewrite IHzx1, IHzx2.
     rewrite Mmult_assoc.
     restore_dims.
+    subst.
     rewrite <- 2 Mmult_assoc with (m_1 ⨂ hadamard) _ _.
     rewrite kron_n_mult.
     rewrite MmultHH.
