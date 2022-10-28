@@ -12,15 +12,11 @@ Notation " t1 '≡' t2 'by' eval" := (proportional_general eval eval t1 t2) (at 
 
 (* ZX Proportionality *)
 
-Definition proportional {n_0 m_0 n_1 m_1} 
-(zx_0 : ZX n_0 m_0) (zx_1 : ZX n_1 m_1) :=
-  (n_0 = n_1 /\ m_0 = m_1) /\ zx_0 ≡ zx_1 by ZX_semantics.
+Definition proportional {n m} 
+(zx_0 : ZX n m) (zx_1 : ZX n m) :=
+  zx_0 ≡ zx_1 by ZX_semantics.
 Notation "zx0 ∝ zx1" := (proportional zx0 zx1) (at level 60) : ZX_scope. (* \propto *)
 
-Lemma Proportional_restricts_dimension {n_0 m_0 n_1 m_1} (zx_0 : ZX n_0 m_0) (zx_1 : ZX n_1 m_1) :
-  zx_0 ∝ zx_1 -> n_0 = n_1 /\ m_0 = m_1.
-Proof. intros; destruct H; assumption. Qed.
- 
 Ltac prop_exist_non_zero c := exists c; split; try apply nonzero_div_nonzero; try nonzero.
 Ltac prep_proportional := unfold proportional; intros; split; [split; lia | ].
 
@@ -74,23 +70,20 @@ Proof.
 Qed.
 
 
-Lemma proportional_refl : forall {n m} (zx : ZX n m), proportional zx zx.
-Proof. 
-  prep_proportional; apply proportional_general_refl. 
-Qed.
+Lemma proportional_refl : forall {n m} (zx : ZX n m), 
+  zx ∝ zx.
+Proof. intros; apply proportional_general_refl. Qed.
 
-Lemma proportional_symm : forall {n_0 m_0 n_1 m_1} (zx_0 : ZX n_0 m_0) (zx_1 : ZX n_1 m_1),
+Lemma proportional_symm : forall {n m} (zx_0 : ZX n m) (zx_1 : ZX n m),
   zx_0 ∝ zx_1 -> zx_1 ∝ zx_0.
-Proof. prep_proportional; apply proportional_general_symm; apply H. Qed.
+Proof. intros; apply proportional_general_symm; apply H. Qed.
 
-Lemma proportional_trans : forall {n_0 m_0 n_1 m_1 n_2 m_2} 
-  (zx0 : ZX n_0 m_0) (zx1 : ZX n_1 m_1) (zx2 : ZX n_2 m_2),
+Lemma proportional_trans : forall {n m} 
+  (zx0 : ZX n m) (zx1 : ZX n m) (zx2 : ZX n m),
   zx0 ∝ zx1 -> zx1 ∝ zx2 -> zx0 ∝ zx2.
 Proof. 
   intros.
-  destruct H, H0; destruct H, H0.
-  prep_proportional.
-  apply (proportional_general_trans _ _ _ _ _ _ n_1 m_1 ZX_semantics zx1); assumption.
+  apply (proportional_general_trans _ _ _ _ _ _ n m ZX_semantics zx1); assumption.
 Qed.
 
 Add Parametric Relation (n m : nat) : (ZX n m) (proportional)
@@ -100,28 +93,22 @@ Add Parametric Relation (n m : nat) : (ZX n m) (proportional)
   as zx_prop_equiv_rel.
 
 Lemma stack_compat :
-  forall n_0 m_0 n_1 m_1 n_2 m_2 n_3 m_3,
-    forall (zx0 : ZX n_0 m_0) (zx2 : ZX n_2 m_2), zx0 ∝ zx2 ->
-    forall (zx1 : ZX n_1 m_1) (zx3 : ZX n_3 m_3), zx1 ∝ zx3 ->
+  forall n0 m0 n1 m1,
+    forall (zx0 : ZX n0 m0) (zx2 : ZX n0 m0), zx0 ∝ zx2 ->
+    forall (zx1 : ZX n1 m1) (zx3 : ZX n1 m1), zx1 ∝ zx3 ->
     zx0 ↕ zx1 ∝ zx2 ↕ zx3.
 Proof.
-  prep_proportional.
-  repeat destruct H, H0.
-  destruct H1, H2.
-  destruct H0, H.
-  unfold proportional_general.
-  exists (x * x0).
-  split.
-  - simpl; rewrite H; rewrite H0.
-    Msimpl.
-    lma.
-  - apply Cmult_neq_0; try assumption.
+  intros n0 m0 n1 m1 zx0 zx2 [x [Hzx0 Hx]] zx1 zx3 [x0 [Hzx1 Hx0]].
+  prop_exist_non_zero (x * x0); [ | (apply Cmult_neq_0; auto)]. 
+  simpl.
+  rewrite Hzx0, Hzx1.
+  lma.
 Qed.
 
 Add Parametric Morphism (n0 m0 n1 m1 : nat) : Stack
   with signature 
-    (@proportional n0 m0 n0 m0) ==> 
-    (@proportional n1 m1 n1 m1) ==> 
+    (@proportional n0 m0) ==> 
+    (@proportional n1 m1) ==> 
     proportional as stack_mor.
 Proof. apply stack_compat; assumption. Qed.
 
@@ -141,7 +128,7 @@ Qed.
 
 Add Parametric Morphism (n m d : nat) : (nStack d)
   with signature 
-      (@proportional n m n m) ==> 
+      (@proportional n m) ==> 
       proportional as nstack_mor.
 Proof. apply nStack_compat. Qed.
 
@@ -161,96 +148,88 @@ Qed.
 
 Add Parametric Morphism (n : nat) : (nStack1 n)
   with signature 
-      (@proportional 1 1 1 1) ==> 
-      (@proportional n n n n) as nstack1_mor.
+      (@proportional 1 1) ==> 
+      (@proportional n n) as nstack1_mor.
 Proof. apply nStack1_compat. Qed. 
 
 Lemma compose_compat :
-  forall n0 m01 n1 n2 m23 n3,
-    forall (zx0 : ZX n0 m01) (zx2 : ZX n2 m23), zx0 ∝ zx2 ->
-    forall (zx1 : ZX m01 n1) (zx3 : ZX m23 n3), zx1 ∝ zx3 ->
+  forall n m o,
+    forall (zx0 : ZX n m) (zx2 : ZX n m), zx0 ∝ zx2 ->
+    forall (zx1 : ZX m o) (zx3 : ZX m o), zx1 ∝ zx3 ->
     zx0 ⟷ zx1 ∝ zx2 ⟷ zx3.
 Proof.
-  intros.
-  destruct H; destruct H; destruct H0; destruct H0.
-  generalize dependent zx1; generalize dependent zx3;
-  generalize dependent zx0; generalize dependent zx2.
-  destruct H, H0, H2, H4.
-  intros.
-  destruct H1, H3;
-  destruct H, H0.
-  prep_proportional.
-  unfold proportional_general.
-  exists (x * x0).
-  split.
-  - simpl.
-    rewrite H; rewrite H0.
-    Msimpl.
-    rewrite Mscale_mult_dist_r.
-    rewrite Mscale_mult_dist_l.
-    rewrite Mscale_assoc.
-    reflexivity.
-  - apply Cmult_neq_0; try assumption.
+  intros n m o zx0 zx2 [x [Hzx0 Hx]] zx1 zx3 [x0 [Hzx1 Hx0]].
+  prop_exist_non_zero (x * x0); [ | (apply Cmult_neq_0; auto)]. 
+  simpl.
+  rewrite Hzx0, Hzx1.
+  rewrite Mscale_mult_dist_r.
+  rewrite Mscale_mult_dist_l.
+  rewrite Mscale_assoc.
+  auto.
 Qed.
 
 Add Parametric Morphism (n o m : nat)  : Compose
-  with signature (@proportional n m n m) ==> (@proportional m o m o) ==> 
-                 (@proportional n o n o) as compose_mor.
+  with signature (@proportional n m) ==> (@proportional m o) ==> 
+                 (@proportional n o) as compose_mor.
 Proof. apply compose_compat; assumption. Qed.
 
+Lemma cast_compat :
+  forall n m n' m' prfn prfm,
+    forall (zx0 : ZX n m) (zx1 : ZX n m), zx0 ∝ zx1 ->
+    Cast n' m' prfn prfm zx0 ∝ Cast n' m' prfn prfm zx1.
+Proof.
+  intros n m n' m' Hn Hm zx0 zx1 [x [Hzx0 Hx]].
+  subst.
+  prop_exist_non_zero x; auto.
+Qed.
+
+Add Parametric Morphism (n m : nat) : (Cast n m eq_refl eq_refl)
+  with signature (@proportional n m) ==> 
+                 (@proportional n m) as cast_mor.
+Proof. apply cast_compat. Qed.
+
 Lemma transpose_compat : 
-  forall nIn nOut,
-    forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
+  forall n m,
+    forall zx0 zx1 : ZX n m, zx0 ∝ zx1 ->
     (zx0⊤) ∝ (zx1⊤).
 Proof.
-  intros.
-  destruct H; destruct H; destruct H0; destruct H0.
-  prep_proportional; exists x; split; auto.
+  intros n m zx0 zx1 [x [Hzx0 Hx]].
+  prop_exist_non_zero x; auto.
   rewrite 2 ZX_semantics_transpose_comm.
-  rewrite H0.
+  rewrite Hzx0.
   rewrite Mscale_trans.
-  reflexivity.
+  auto.
 Qed.
 
 Add Parametric Morphism (n m : nat) : transpose
   with signature 
-      (@proportional n m n m) ==> 
-      (@proportional m n m n) as transpose_mor.
+      (@proportional n m) ==> 
+      (@proportional m n) as transpose_mor.
 Proof. apply transpose_compat. Qed.
 
 Lemma adjoint_compat : 
-  forall n0 m0 n1 m1,
-    forall (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
+  forall n m,
+    forall (zx0 : ZX n m) (zx1 : ZX n m),
       zx0 ∝ zx1 -> (zx0 †) ∝ (zx1 †).
 Proof.
-  intros.
-  destruct H; destruct H.
-  destruct H0; destruct H0. 
-  prep_proportional.
-  unfold proportional_general.
-  exists (x ^*)%C; split.
-  - rewrite 2 ZX_semantics_adjoint_comm.
-    rewrite H0.
-    Msimpl.
-    rewrite Mscale_adj.
-    reflexivity.
-  - apply Cconj_neq_0.
-    assumption. 
+  intros n m zx0 zx1 [x [Hzx0 Hx]].
+  prop_exist_non_zero (x ^*)%C; try apply Cconj_neq_0; auto.
+  rewrite 2 ZX_semantics_adjoint_comm.
+  rewrite Hzx0.
+  rewrite Mscale_adj.
+  easy.
 Qed.
 
 Add Parametric Morphism (n m : nat) : (@adjoint n m)
-  with signature (@proportional n m n m) ==> proportional as adj_mor.
+  with signature (@proportional n m) ==> proportional as adj_mor.
 Proof. apply adjoint_compat. Qed.
 
-Theorem ZX_eq_prop : forall {nIn nOut} (zx0 : ZX nIn nOut) (zx1 : ZX nIn nOut),
+Theorem ZX_eq_prop : forall {n m} (zx0 : ZX n m) (zx1 : ZX n m),
   ZX_semantics zx0 = ZX_semantics zx1 -> zx0 ∝ zx1.
 Proof.
   intros.
-  prep_proportional.
-  unfold proportional_general.
-  rewrite H.
-  exists C1.
-  split; [ lma | nonzero].
+  prop_exist_non_zero 1.
+  rewrite H; lma.
 Qed.
 
 (* Useful Lemmas *)
@@ -268,7 +247,6 @@ Qed.
 
 Lemma transpose_wire : Wire ⊤ ∝ Wire.
 Proof.
-  prep_proportional.
   prop_exist_non_zero 1.
   simpl; lma.
 Qed.
