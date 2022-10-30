@@ -115,7 +115,7 @@ Lemma ZX_Stack_Empty_l : forall {nIn nOut} (zx : ZX nIn nOut),
   ⦰ ↕ zx ∝ zx.
 Proof.
   intros.
-    prop_exist_non_zero 1.
+  prop_exist_non_zero 1.
   simpl.
   rewrite kron_1_l; try auto with wf_db.
   lma.
@@ -136,7 +136,7 @@ Lemma ZX_Compose_Empty_r : forall {nIn} (zx : ZX nIn 0),
   zx ⟷ ⦰ ∝ zx.
 Proof. 
   intros.
-    prop_exist_non_zero 1.
+  prop_exist_non_zero 1.
   simpl.
   Msimpl.
   reflexivity.
@@ -146,11 +146,78 @@ Lemma ZX_Compose_Empty_l : forall {nOut} (zx : ZX 0 nOut),
   ⦰ ⟷ zx ∝ zx.
 Proof. 
   intros.
-    prop_exist_non_zero 1.
+  prop_exist_non_zero 1.
   simpl. 
   Msimpl.
   reflexivity.
 Qed.
+
+Lemma nwire_removal_l: forall {n nOut} (zx : ZX n nOut), (n ↑ —) ⟷ zx ∝ zx.
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  simpl.
+  replace (n ↑ —) with (nWire n) by easy.
+  rewrite nWire_semantics.
+  Msimpl.
+  reflexivity.
+Qed.
+
+Lemma wire_removal_l : forall {nOut} (zx : ZX 1 nOut), — ⟷ zx ∝ zx.
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  simpl.
+  Msimpl.
+  reflexivity.
+Qed.
+
+Lemma wire_removal_r : forall {nIn} (zx : ZX nIn 1), zx ⟷ — ∝ zx.
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  simpl.
+  Msimpl.
+  reflexivity.
+Qed.
+
+Lemma nwire_removal_r: forall {n nIn} (zx : ZX nIn n), zx ⟷ (n ↑ —) ∝ zx.
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  simpl.
+  replace (n ↑ —) with (nWire n) by easy.
+  rewrite nWire_semantics.
+  Msimpl.
+  reflexivity.
+Qed.
+
+Lemma Z_0_is_wire : Z 1 1 0 ∝ —.
+Proof.
+  intros.
+  prop_exist_non_zero 1.
+  simpl.
+  unfold Z_semantics.
+  autorewrite with Cexp_db.
+  solve_matrix.
+  assert (forall x y, (x =? 0) && (y =? 0) = (x =? y) && (x <=? 0))%nat.
+  {
+    intros.
+    bdestruct (x0 <=? 0).
+    - apply Nat.le_0_r in H; subst.
+      rewrite Nat.eqb_refl, andb_true_r, andb_true_l.
+      destruct y0; easy.
+    - rewrite andb_false_r.
+      destruct x0; easy.
+  }
+  rewrite H.
+  easy.
+Qed.
+
+Lemma X_0_is_wire : X 1 1 0 ∝ —.
+Proof.
+  (* TODO: Waiting on colorswap *)
+Admitted.
 
 (* Automation *)
 
@@ -158,15 +225,22 @@ Qed.
   (fun n => @ZX_Compose_Empty_l n)
   (fun n => @ZX_Compose_Empty_r n)
   (fun n => @ZX_Stack_Empty_l n)
-  (fun n => @ZX_Stack_Empty_r n) : remove_empty_db.
+  (fun n => @ZX_Stack_Empty_r n) 
+  (fun n => @nwire_removal_l n) 
+  (fun n => @nwire_removal_r n)
+  @wire_removal_l
+  @wire_removal_r
+  X_0_is_wire
+  Z_0_is_wire
+  : cleanup_zx_db.
 
-Ltac remove_empty := autorewrite with remove_empty_db.
+Ltac cleanup_zx := autorewrite with cleanup_zx_db.
 
 Lemma WrapOver : forall n m α,
   Z (S n) m α ∝ (Wire ↕ Z n (S m) α) ⟷ (Cup ↕ nWire m).
 Proof.
   intros.
-    prop_exist_non_zero 1.
+  prop_exist_non_zero 1.
   Msimpl.
   simpl.
   rewrite nWire_semantics.
