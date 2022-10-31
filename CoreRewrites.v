@@ -28,16 +28,62 @@ Proof.
   prop_exist_non_zero 1.  
   simpl.
   Msimpl.
+  rewrite (@Cast_semantics (n0 + (n1 + n2)) _ ((n0 + n1) + n2)%nat).
   rewrite kron_assoc; auto with wf_db.
 Qed.
 
 Lemma cast_id :
-  forall {n m} (zx : ZX n m),
-    zx ∝ Cast n m eq_refl eq_refl zx.
+  forall {n m} prfn prfm (zx : ZX n m),
+    Cast n m prfn prfm zx ∝ zx.
 Proof.
   intros; subst.
   prop_exist_non_zero 1.
+  rewrite Cast_semantics.
   simpl; lma.
+Qed.
+
+Lemma cast_compose :
+  forall {n n' m m' o} prfn prfm (zx0 : ZX n m) (zx1 : ZX m' o),
+    Cast n' m' prfn prfm zx0 ⟷ zx1 ∝ Cast n' o prfn eq_refl (zx0 ⟷ Cast m o (eq_sym prfm) eq_refl zx1).
+Proof. Admitted.
+
+Lemma cast_stack_l : forall {nTop nTop' mTop mTop' nBot mBot} eqnTop eqmTop 
+                            (zxTop : ZX nTop mTop) (zxBot : ZX nBot mBot),
+  (Cast nTop' mTop' eqnTop eqmTop zxTop) ↕ zxBot ∝ 
+  Cast (nTop' + nBot) (mTop' + mBot)  
+       (f_equal2_plus _ _ _ _ (eqnTop) eq_refl)
+       (f_equal2_plus _ _ _ _ (eqmTop) eq_refl)
+       (zxTop ↕ zxBot).
+Proof.
+  intros.
+  subst.
+  repeat rewrite cast_id.
+  reflexivity.
+Qed.
+
+Lemma cast_stack_r : forall {nTop mTop nBot nBot' mBot mBot'} eqnBot eqmBot 
+                            (zxTop : ZX nTop mTop) (zxBot : ZX nBot mBot),
+  zxTop ↕ (Cast nBot' mBot' eqnBot eqmBot zxBot) ∝ 
+  Cast (nTop + nBot') (mTop + mBot')  
+       (f_equal2_plus _ _ _ _ eq_refl eqnBot)
+       (f_equal2_plus _ _ _ _ eq_refl eqmBot)
+       (zxTop ↕ zxBot).
+Proof.
+  intros.
+  subst.
+  repeat rewrite cast_id.
+  reflexivity.
+Qed.
+
+Lemma cast_simplify :
+  forall {n n' m m'} prfn0 prfm0 prfn1 prfm1  (zx0 zx1 : ZX n m),
+  zx0 ∝ zx1 ->
+  Cast n' m' prfn0 prfm0 zx0 ∝ Cast n' m' prfn1 prfm1 zx1.
+Proof. intros; subst. rewrite H. 
+  prop_exist_non_zero 1.
+  Msimpl.
+  repeat rewrite Cast_semantics.
+  reflexivity.
 Qed.
 
 Lemma cast_contract :
@@ -53,44 +99,38 @@ Proof.
   simpl; lma.
 Qed.
 
-Lemma cast_swap :
-  forall {n0 m0 n1 m1} prfn prfm (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
+Lemma cast_symm :
+  forall {n0 m0 n1 m1} prfn prfm prfn' prfm' (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
     Cast n1 m1 prfn prfm zx0 ∝ zx1 <->
-    zx0 ∝ Cast n0 m0 (eq_sym prfn) (eq_sym prfm) zx1.
+    zx0 ∝ Cast n0 m0 prfn' prfm' zx1.
 Proof.
   intros.
   split; intros.
   - subst.
-    rewrite <- H.
-    rewrite <- 2 cast_id.
+    rewrite cast_id.
+    rewrite cast_id in H.
     easy.
   - subst.
-    rewrite H.
-    rewrite <- 2 cast_id.
+    rewrite cast_id.
+    rewrite cast_id in H.
     easy.
 Qed.
 
+
 Lemma cast_backwards :
-  forall {n0 m0 n1 m1} prfn prfm (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
+  forall {n0 m0 n1 m1} prfn prfm prfn' prfm' (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
     Cast n1 m1 prfn prfm zx0 ∝ zx1 <->
-    Cast n0 m0 (eq_sym prfn) (eq_sym prfm) zx1 ∝ zx0.
+    Cast n0 m0 prfn' prfm' zx1 ∝ zx0.
 Proof.
   intros.
   split; symmetry; subst. 
-  apply cast_swap; easy.
-  rewrite <- H.
-  rewrite <- 2 cast_id.
+  rewrite cast_id.
+  rewrite cast_id in H.
+  auto.
+  rewrite cast_id.
+  rewrite cast_id in H.
   easy.
 Qed.
-
-Lemma Test : forall n m (zx0 : ZX n m) (zx1 : ZX n m),
-  zx0 ∝ zx1.
-Proof.
-  intros.
-  unfold proportional.
-  replace n with (S n - 1)%nat at 2 by lia.
-  replace m with (S m - 1)%nat at 2 by lia.
-Admitted.
 
 (* Distributivity *)
 
@@ -129,6 +169,7 @@ Proof.
   prop_exist_non_zero 1.
   simpl.
   Msimpl.
+  rewrite (@Cast_semantics n m (n + 0) (m + 0)).
   reflexivity.
 Qed.
 
@@ -236,6 +277,41 @@ Admitted.
 
 Ltac cleanup_zx := autorewrite with cleanup_zx_db.
 
+Lemma nstack1_split : forall n m (zx : ZX 1 1),
+  (n + m) ↑ zx ∝ 
+  (n ↑ zx) ↕ (m ↑ zx).
+Proof.
+  intros.
+  induction n.
+  - simpl. cleanup_zx. easy.
+  - simpl.
+    rewrite IHn.
+    rewrite (ZX_Stack_assoc zx).
+    rewrite cast_id.
+    reflexivity.
+Qed.
+
+Lemma nstack_split : forall n m {nIn mOut} (zx : ZX nIn mOut),
+  (n + m) ⇑ zx ∝ 
+  Cast _ _ (Nat.mul_add_distr_r _ _ _) (Nat.mul_add_distr_r _ _ _) ((n ⇑ zx) ↕ (m ⇑ zx)).
+Proof.
+  intros.
+  dependent induction n.
+  - simpl. rewrite cast_id.
+    cleanup_zx. easy.
+  - simpl.
+    rewrite IHn.
+    simpl.
+    rewrite cast_stack_r.
+    rewrite <- cast_symm.
+    rewrite cast_contract.
+    rewrite ZX_Stack_assoc.
+    apply cast_simplify.
+    reflexivity.
+    Unshelve.
+    all: lia.
+Qed.
+
 Lemma WrapOver : forall n m α,
   Z (S n) m α ∝ (Wire ↕ Z n (S m) α) ⟷ (Cup ↕ nWire m).
 Proof.
@@ -262,11 +338,6 @@ Proof.
     unfold Mmult, kron; simpl.
     rewrite H, H0.
     simpl.
-    rewrite <- plus_n_Sm.
-    simpl.
-    repeat rewrite Nat.mod_0_l by (apply Nat.pow_nonzero; auto).
-    repeat rewrite Nat.div_0_l by (apply Nat.pow_nonzero; auto).
-    repeat rewrite plus_0_r.
 Admitted.
 
 

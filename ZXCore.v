@@ -21,8 +21,16 @@ Inductive ZX : nat -> nat -> Type :=
   | X_Spider n m (α : R) : ZX n m
   | Z_Spider n m (α : R) : ZX n m
   | Stack {n_0 m_0 n_1 m_1} (zx0 : ZX n_0 m_0) (zx1 : ZX n_1 m_1) : ZX (n_0 + n_1) (m_0 + m_1)
-  | Compose {n m o} (zx0 : ZX n m) (zx1 : ZX m o) : ZX n o
-  | Cast (n m : nat) {n' m'} (eqIn : n = n') (eqOut : m = m') (zx : ZX n' m') : ZX n m.
+  | Compose {n m o} (zx0 : ZX n m) (zx1 : ZX m o) : ZX n o.
+
+Definition Cast (n m : nat) {n' m'} (eqIn : n = n') (eqOut : m = m') (zx : ZX n' m') : ZX n m :=
+match eqIn in (_ = y) return (ZX y m' -> ZX n m) with
+| eq_refl =>
+    fun zx0 : ZX n m' =>
+    match eqOut in (_ = y) return (ZX n y -> ZX n m) with
+    | eq_refl => fun zx1 : ZX n m => zx1
+    end zx0
+end zx.
 
 (* Notations for the ZX diagrams *)
 Notation "⦰" := Empty : ZX_scope. (* \revemptyset *)
@@ -41,7 +49,7 @@ Notation "$ A" := (Cast _ _ _ _ A) (at level 49) : ZX_scope.
     and one based on dirac notation. *)
 
 Fixpoint ZX_semantics {n m} (zx : ZX n m) : 
-  Matrix (2 ^ m) (2 ^n) := 
+  Matrix (2 ^ m) (2 ^ n) := 
   match zx with
   | ⦰ => I 1
   | X _ _ α => X_semantics n m α
@@ -53,11 +61,18 @@ Fixpoint ZX_semantics {n m} (zx : ZX n m) :
   | □ => hadamard
   | zx0 ↕ zx1 => (ZX_semantics zx0) ⊗ (ZX_semantics zx1) 
   | Compose zx0 zx1 => (ZX_semantics zx1) × (ZX_semantics zx0)
-  | $ zx => ZX_semantics zx
   end.
 
+Lemma Cast_semantics : forall {n m n' m'} {eqn eqm} (zx : ZX n m),
+  ZX_semantics (Cast n' m' eqn eqm zx) = ZX_semantics zx.
+Proof.
+  intros.
+  subst.
+  easy.
+Qed.
+
 Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) : 
-  Matrix (2 ^ m) (2 ^n) := 
+  Matrix (2 ^ m) (2 ^ n) := 
   match zx with
   | ⦰ => I 1
   | X _ _ α => X_dirac_semantics n m α
@@ -69,7 +84,6 @@ Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) :
   | □ => hadamard
   | zx0 ↕ zx1 => (ZX_dirac_sem zx0) ⊗ (ZX_dirac_sem zx1)
   | zx0 ⟷ zx1 => (ZX_dirac_sem zx1) × (ZX_dirac_sem zx0)
-  | $ zx => ZX_dirac_sem zx
   end.
 
 Lemma ZX_semantic_equiv : forall n m (zx : ZX n m),
@@ -80,7 +94,6 @@ Proof.
   rewrite X_semantics_equiv; reflexivity.
   rewrite Z_semantics_equiv; reflexivity.
   1,2: subst; rewrite IHzx1, IHzx2; reflexivity.
-  assumption.
 Qed.
 
 Theorem WF_ZX : forall nIn nOut (zx : ZX nIn nOut), WF_Matrix (ZX_semantics zx).
@@ -91,7 +104,6 @@ Proof.
     apply WF_list2D_to_matrix;
     try easy; (* case list of length 4 *)
     try intros; simpl in H; repeat destruct H; try discriminate; try (subst; easy). (* Case of 4 lists length 1 *)
-    subst; easy.
 Qed.
 
 #[export] Hint Resolve WF_ZX : wf_db.
@@ -165,7 +177,6 @@ Fixpoint transpose {nIn nOut} (zx : ZX nIn nOut) : ZX nOut nIn :=
   | zx1 ↕ zx2 => (zx1 ⊤) ↕ (zx2 ⊤)
   | ⊂ => ⊃
   | ⊃ => ⊂
-  | Cast n m prfn prfm zx => Cast m n prfm prfn (zx ⊤) 
   | other => other
   end
   where "zx ⊤" := (transpose zx) : ZX_scope.
@@ -175,8 +186,6 @@ Lemma transpose_involutive_eq : forall {nIn nOut} (zx : ZX nIn nOut),
 Proof.
   intros; induction zx; try auto.
   1,2: simpl; rewrite <- IHzx1, <- IHzx2; try rewrite eq_sym_involutive; auto.
-  subst; simpl; rewrite <- IHzx.
-  reflexivity.
 Qed.
 
 (* Negating the angles of a diagram, complex conjugate *)
@@ -188,7 +197,6 @@ Fixpoint conjugate {n m} (zx : ZX n m) : ZX n m :=
   | X n m α => X n m (-α)
   | zx0 ⟷ zx1 => (zx0^*) ⟷ (zx1^*)
   | zx1 ↕ zx2 => zx1^* ↕ zx2^*
-  | Cast n m prfn prfm zx => Cast n m prfn prfm (zx ^*)
   | other => other
   end
   where "zx ^*" := (conjugate zx) : ZX_scope.
@@ -215,7 +223,6 @@ Proof.
   - simpl; rewrite Z_semantics_transpose; reflexivity.
   - simpl; rewrite IHzx1, IHzx2; rewrite <- kron_transpose; reflexivity.
   - simpl; rewrite IHzx1, IHzx2; restore_dims; rewrite Mmult_transpose; reflexivity.
-  - subst; simpl; auto.
 Qed.
 
 Lemma ZX_semantics_adjoint_comm {nIn nOut} : forall (zx : ZX nIn nOut),
@@ -233,7 +240,6 @@ Proof.
   - simpl; rewrite Z_semantics_adj; reflexivity.
   - simpl; fold (zx1†); fold (zx2†); rewrite IHzx1, IHzx2; rewrite <- kron_adjoint; reflexivity.
   - simpl; fold (zx1†); fold(zx2†); rewrite IHzx1, IHzx2; restore_dims; rewrite Mmult_adjoint; reflexivity.
-  - subst; simpl; auto.
 Qed.
 
 Opaque adjoint.
@@ -245,7 +251,6 @@ Fixpoint ColorSwap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut :=
   | Z n m α   => X n m α
   | zx1 ↕ zx2 => (⊙ zx1) ↕ (⊙ zx2)
   | zx0 ⟷ zx1 => (⊙zx0) ⟷ (⊙zx1)
-  | Cast n m nprf mprf zx => Cast n m nprf mprf (⊙ zx)
   | otherwise => otherwise
   end
   where "⊙ zx" := (ColorSwap zx) : ZX_scope.
@@ -289,7 +294,6 @@ Proof.
     Msimpl.
     repeat rewrite Mmult_assoc.
     reflexivity.
-  - simpl; subst; auto.
 Qed.
 
 Local Close Scope ZX_scope.
