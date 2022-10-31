@@ -23,14 +23,12 @@ Inductive ZX : nat -> nat -> Type :=
   | Stack {n_0 m_0 n_1 m_1} (zx0 : ZX n_0 m_0) (zx1 : ZX n_1 m_1) : ZX (n_0 + n_1) (m_0 + m_1)
   | Compose {n m o} (zx0 : ZX n m) (zx1 : ZX m o) : ZX n o.
 
-Definition Cast (n m : nat) {n' m'} (eqIn : n = n') (eqOut : m = m') (zx : ZX n' m') : ZX n m :=
-match eqIn in (_ = y) return (ZX y m' -> ZX n m) with
-| eq_refl =>
-    fun zx0 : ZX n m' =>
-    match eqOut in (_ = y) return (ZX n y -> ZX n m) with
-    | eq_refl => fun zx1 : ZX n m => zx1
-    end zx0
-end zx.
+Definition Cast (n m : nat) {n' m'} (eqIn : n = n') (eqOut : m = m') (zx : ZX n' m') : ZX n m.
+Proof.
+  destruct eqIn.
+  destruct eqOut.
+  exact zx.
+Defined.
 
 (* Notations for the ZX diagrams *)
 Notation "⦰" := Empty : ZX_scope. (* \revemptyset *)
