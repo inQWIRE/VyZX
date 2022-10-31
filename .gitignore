@@ -160,3 +160,6 @@ $RECYCLE.BIN/
 # Coq Makefile
 CoqMakefile
 CoqMakefile.conf
+
+Makefile
+Makefile.conf
