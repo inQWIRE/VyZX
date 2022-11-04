@@ -520,7 +520,7 @@ Lemma ZX_H_H_ZX_sem : exists c, H_ZX_semantics (ZX_to_H_ZX □) = c .* hadamard 
 Proof.
   apply ZX_H_ZX_matrix_compat.
   rewrite ZX_H_is_H.
-  prop_exist_non_zero (Cexp (PI / 4)).
+  prop_exists_nonzero (Cexp (PI / 4)).
 Qed.
 Local Opaque H_ZX_H.
 
@@ -528,7 +528,7 @@ Local Opaque H_ZX_H.
 Lemma nHadamard_H_semantics : forall n, exists c, H_ZX_semantics (ZX_to_H_ZX (n ↑ □)) = c .* n ⨂ hadamard /\ c <> C0.
 Proof.
   intros.
-  induction n; try (prop_exist_non_zero 1%R; lma).
+  induction n; try (prop_exists_nonzero 1%R; lma).
   simpl.
   destruct IHn.
   assert (exists c, H_ZX_semantics (ZX_to_H_ZX □) = c .* hadamard /\ c <> C0) by apply ZX_H_H_ZX_sem.
@@ -553,7 +553,7 @@ Lemma H_ZX_ZX_involutive : forall nIn nOut (zx : H_ZX nIn nOut), ZX_to_H_ZX (H_Z
 Proof.
   intros.
   unfold H_proportional, proportional_general.
-  induction zx; try (prop_exist_non_zero 1%R; autorewrite with Cexp_db; Msimpl; simpl; reflexivity) (* non compositional cases *); 
+  induction zx; try (prop_exists_nonzero 1%R; autorewrite with Cexp_db; Msimpl; simpl; reflexivity) (* non compositional cases *); 
     try (destruct IHzx1, IHzx2 (* Stack / Compose *); simpl; destruct H, H0).
   - simpl.
     exists (x0 * x); split; try (apply Cmult_neq_0; assumption).
@@ -590,7 +590,7 @@ Proof.
   assert (exists (c : C), H_ZX_semantics (ZX_to_H_ZX (nWire (n))) = c .* I (2 ^ (n)) /\ c <> C0).
   {
     apply ZX_H_ZX_matrix_compat.
-    prop_exist_non_zero 1%R.
+    prop_exists_nonzero 1%R.
     Msimpl.
     apply nwire_identity_semantics.
   }
@@ -610,7 +610,7 @@ Qed.
 Lemma ZX_H_ZX_involutive : forall nIn nOut (zx : ZX nIn nOut), H_ZX_to_ZX (ZX_to_H_ZX zx) ∝ zx.
 Proof.
   intros.
-  induction zx; try (prop_exist_non_zero 1%R; autorewrite with Cexp_db; Msimpl; simpl; reflexivity) (* non compositional cases *); 
+  induction zx; try (prop_exists_nonzero 1%R; autorewrite with Cexp_db; Msimpl; simpl; reflexivity) (* non compositional cases *); 
   try (destruct IHzx1, IHzx2 (* Stack / Compose *); simpl; destruct H, H0).
   - simpl.
     rewrite 2 H_nWire_ZX_to_H_ZX_nWire.
@@ -666,7 +666,7 @@ Proof.
     {
       apply H_ZX_ZX_matrix_compat.
       rewrite H_nWire_identity.
-      prop_exist_non_zero 1%R.
+      prop_exists_nonzero 1%R.
       lma.
     }
     destruct H3.

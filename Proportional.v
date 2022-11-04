@@ -17,13 +17,13 @@ Definition proportional {n m}
   zx_0 ≡ zx_1 by ZX_semantics.
 Notation "zx0 ∝ zx1" := (proportional zx0 zx1) (at level 60) : ZX_scope. (* \propto *)
 
-Ltac prop_exist_non_zero c := exists c; split; try apply nonzero_div_nonzero; try nonzero.
+Ltac prop_exists_nonzero c := exists c; split; try apply nonzero_div_nonzero; try nonzero.
 Ltac prep_proportional := unfold proportional; intros; split; [split; lia | ].
 
 Lemma proportional_general_refl : forall T n m eval (t : T), 
   @proportional_general T n m T n m eval eval t t.
 Proof.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   intros.
   lma.
 Qed.
@@ -99,7 +99,7 @@ Lemma stack_compat :
     zx0 ↕ zx1 ∝ zx2 ↕ zx3.
 Proof.
   intros n0 m0 n1 m1 zx0 zx2 [x [Hzx0 Hx]] zx1 zx3 [x0 [Hzx1 Hx0]].
-  prop_exist_non_zero (x * x0); [ | (apply Cmult_neq_0; auto)]. 
+  prop_exists_nonzero (x * x0); [ | (apply Cmult_neq_0; auto)]. 
   simpl.
   rewrite Hzx0, Hzx1.
   lma.
@@ -159,7 +159,7 @@ Lemma compose_compat :
     zx0 ⟷ zx1 ∝ zx2 ⟷ zx3.
 Proof.
   intros n m o zx0 zx2 [x [Hzx0 Hx]] zx1 zx3 [x0 [Hzx1 Hx0]].
-  prop_exist_non_zero (x * x0); [ | (apply Cmult_neq_0; auto)]. 
+  prop_exists_nonzero (x * x0); [ | (apply Cmult_neq_0; auto)]. 
   simpl.
   rewrite Hzx0, Hzx1.
   rewrite Mscale_mult_dist_r.
@@ -180,7 +180,7 @@ Lemma cast_compat :
 Proof.
   intros n m n' m' Hn Hm zx0 zx1 [x [Hzx0 Hx]].
   subst.
-  prop_exist_non_zero x; auto.
+  prop_exists_nonzero x; auto.
 Qed.
 
 Add Parametric Morphism (n m : nat) : (Cast n m eq_refl eq_refl)
@@ -194,7 +194,7 @@ Lemma transpose_compat :
     (zx0⊤) ∝ (zx1⊤).
 Proof.
   intros n m zx0 zx1 [x [Hzx0 Hx]].
-  prop_exist_non_zero x; auto.
+  prop_exists_nonzero x; auto.
   rewrite 2 ZX_semantics_transpose_comm.
   rewrite Hzx0.
   rewrite Mscale_trans.
@@ -213,7 +213,7 @@ Lemma adjoint_compat :
       zx0 ∝ zx1 -> (zx0 †) ∝ (zx1 †).
 Proof.
   intros n m zx0 zx1 [x [Hzx0 Hx]].
-  prop_exist_non_zero (x ^*)%C; try apply Cconj_neq_0; auto.
+  prop_exists_nonzero (x ^*)%C; try apply Cconj_neq_0; auto.
   rewrite 2 ZX_semantics_adjoint_comm.
   rewrite Hzx0.
   rewrite Mscale_adj.
@@ -228,7 +228,7 @@ Theorem ZX_eq_prop : forall {n m} (zx0 : ZX n m) (zx1 : ZX n m),
   ZX_semantics zx0 = ZX_semantics zx1 -> zx0 ∝ zx1.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   rewrite H; lma.
 Qed.
 
@@ -247,6 +247,6 @@ Qed.
 
 Lemma transpose_wire : Wire ⊤ ∝ Wire.
 Proof.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl; lma.
 Qed.

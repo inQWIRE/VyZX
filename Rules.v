@@ -16,7 +16,7 @@ Lemma ZX_Compose_assoc : forall {nIn nMid1 nMid2 nOut}
 Proof.
   intros.
   simpl.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   rewrite Mmult_assoc.
   lma.
@@ -26,7 +26,7 @@ Lemma ZX_Stack_Empty_l : forall {nIn nOut} (zx : ZX nIn nOut),
   ⦰ ↕ zx ∝ zx.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   rewrite kron_1_l; try auto with wf_db.
   lma.
@@ -42,7 +42,7 @@ Program Lemma ZX_Stack_assoc :
     (zx1 ↕ zx2) ↕ zx3 ∝ zx1 ↕ (zx2 ↕ zx3).
 Proof.
   intros.
-  prop_exist_non_zero 1.  
+  prop_exists_nonzero 1.  
   simpl_eqs.
   Msimpl.
   rewrite kron_assoc; try auto with wf_db.
@@ -54,7 +54,7 @@ Program Lemma ZX_Stack_assoc' :
     zx1 ↕ (zx2 ↕ zx3) ∝ (zx1 ↕ zx2) ↕ zx3.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   destruct eq_sym.
   destruct eq_sym.
   Msimpl.
@@ -67,7 +67,7 @@ Program Lemma ZX_Stack_Empty_r : forall {nIn nOut : nat} (zx : ZX nIn nOut),
   zx ↕ ⦰ ∝ zx.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   Msimpl.
   destruct plus_n_O.
   destruct plus_n_O.
@@ -79,7 +79,7 @@ Lemma ZX_Compose_Empty_r : forall {nIn} (zx : ZX nIn 0),
   zx ⟷ ⦰ ∝ zx.
 Proof. 
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   Msimpl.
   reflexivity.
@@ -89,7 +89,7 @@ Lemma ZX_Compose_Empty_l : forall {nOut} (zx : ZX 0 nOut),
   ⦰ ⟷ zx ∝ zx.
 Proof. 
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl. 
   Msimpl.
   reflexivity.
@@ -135,7 +135,7 @@ Lemma nStack1_add : forall n m (zx : ZX 1 1),
   (n ↑ zx) ↕ (m ↑ zx) ∝ ((n + m) ↑ zx).
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   rewrite 3 nStack1_n_kron.
   rewrite kron_n_m_split; try auto with wf_db.
@@ -167,7 +167,7 @@ Lemma ZX_Stack_Compose_distr :
     (zx1 ⟷ zx2) ↕ (zx3 ⟷ zx4) ∝ (zx1 ↕ zx3) ⟷ (zx2 ↕ zx4).
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   Msimpl.
   simpl.
   restore_dims.
@@ -185,7 +185,7 @@ Qed.
 
 Lemma nWire_1_Wire : (1 ↑ —) ∝ Wire.
 Proof.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   rewrite nwire_identity_semantics.
   rewrite wire_identity_semantics.
   lma.
@@ -193,7 +193,7 @@ Qed.
 
 Lemma nWire_2_Stack_Wire : (2 ↑ —) ∝ — ↕ Wire.
 Proof.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   rewrite wire_identity_semantics.
   rewrite kron_1_r.
@@ -205,7 +205,7 @@ Qed.
 Lemma nWire_Stack : forall {n m}, (n ↑ —) ↕ (m ↑ —) ∝ ((n + m) ↑ —).
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   rewrite 3 nwire_identity_semantics.
   rewrite Mscale_1_l.
@@ -217,7 +217,7 @@ Qed.
 Lemma nWire_Compose : forall {n}, (n ↑ —) ⟷ (n ↑ —) ∝ n ↑ —.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   rewrite nwire_identity_semantics.
   rewrite Mmult_1_l; try auto with wf_db.
@@ -233,7 +233,7 @@ Qed.
 Lemma wire_removal_l : forall {nOut} (zx : ZX 1 nOut), — ⟷ zx ∝ zx.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   rewrite wire_identity_semantics.
   Msimpl.
@@ -243,7 +243,7 @@ Qed.
 Lemma nwire_removal_l: forall {n nOut} (zx : ZX n nOut), (n ↑ —) ⟷ zx ∝ zx.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   rewrite nwire_identity_semantics.
   Msimpl.
@@ -253,7 +253,7 @@ Qed.
 Lemma wire_removal_r : forall {nIn} (zx : ZX nIn 1), zx ⟷ — ∝ zx.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   rewrite wire_identity_semantics.
   Msimpl.
@@ -263,7 +263,7 @@ Qed.
 Lemma nwire_removal_r: forall {n nIn} (zx : ZX nIn n), zx ⟷ (n ↑ —) ∝ zx.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   rewrite nwire_identity_semantics.
   Msimpl.
@@ -273,7 +273,7 @@ Qed.
 Lemma ZX_SWAP_self_inverse : ⨉ ⟷ ⨉ ∝ — ↕ —.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   Msimpl.
   simpl.
   rewrite wire_identity_semantics.
@@ -287,7 +287,7 @@ Local Transparent ZX_3_CNOT_SWAP.
 Lemma ZX_3_CNOT_SWAP_is_swap : ZX_3_CNOT_SWAP ∝ ⨉.
 Proof.
   simpl.
-  prop_exist_non_zero (/ 2 * / √ 2)%C.
+  prop_exists_nonzero (/ 2 * / √ 2)%C.
   2: apply Cmult_neq_0; apply nonzero_div_nonzero; nonzero.
   simpl.
   rewrite ZX_CNOT_is_cnot.
@@ -379,7 +379,7 @@ Lemma nwire_r : forall {nIn nOut} (zx : ZX nIn nOut),
 Proof.
   intros.
   simpl.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   rewrite nwire_identity_semantics.
   Msimpl.
@@ -391,7 +391,7 @@ Lemma nwire_l : forall {nIn nOut} (zx : ZX nIn nOut),
 Proof.
   intros.
   simpl.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   rewrite nwire_identity_semantics.
   Msimpl.
@@ -425,7 +425,7 @@ Lemma bi_pi_rule : forall nIn nOut α,
   X_Spider nIn nOut α.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   rewrite Mscale_1_l.
   simpl.
   rewrite 2 nStack1_n_kron.
@@ -456,7 +456,7 @@ Lemma hadamard_color_change_Z : forall {nIn nOut} α,
   (nIn ↑ □) ⟷ (Z_Spider nIn nOut α) ∝ (X_Spider nIn nOut α) ⟷ (nOut ↑ □).
 Proof.
   intros.
-  prop_exist_non_zero (Cexp (PI / 4 * (INR nIn - INR nOut))).
+  prop_exists_nonzero (Cexp (PI / 4 * (INR nIn - INR nOut))).
   simpl.
   rewrite 2 nStack1_n_kron.
   rewrite ZX_H_is_H.
@@ -483,7 +483,7 @@ Lemma hadamard_color_change_X : forall {nIn nOut} α,
   (nIn ↑ □) ⟷ (X_Spider nIn nOut α) ∝ (Z_Spider nIn nOut α) ⟷ (nOut ↑ □).
 Proof.
   intros.
-  prop_exist_non_zero (Cexp (PI / 4 * (INR nIn - INR nOut))).
+  prop_exists_nonzero (Cexp (PI / 4 * (INR nIn - INR nOut))).
   simpl.
   rewrite 2 nStack1_n_kron.
   rewrite ZX_H_is_H.
@@ -575,7 +575,7 @@ Lemma Z_spider_1_1_fusion : forall {nIn nOut} α β,
   (Z_Spider nIn 1 α) ⟷ (Z_Spider 1 nOut β) ∝
   Z_Spider nIn nOut (α + β).
 Proof.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   Msimpl.
   apply Z_spider_1_1_fusion_eq.
 Qed.
@@ -583,7 +583,7 @@ Qed.
 Lemma Z_0_eq_X_0 : 
   Z_Spider 1 1 0 ∝ X_Spider 1 1 0.
 Proof.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   rewrite Mscale_1_l.
   unfold_spider; simpl.
@@ -735,7 +735,7 @@ Lemma Grow_Z_Left_1 : forall {n} α,
   Z_Spider (S (S n)) 1 α ∝ ((Z_Spider 2 1 0) ↕ (n ↑ Wire)) ⟷ (Z_Spider (S n) 1 α).
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   Msimpl.
   simpl.
   rewrite nwire_identity_semantics.
@@ -1152,7 +1152,7 @@ Qed.
 Lemma ZX_transpose_involutive : forall {nIn nOut} (zx : ZX nIn nOut), (zx ⊺) ⊺ ∝ zx.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   rewrite 2 ZX_semantics_Transpose_comm.
   Msimpl.
   apply transpose_involutive.
@@ -1161,13 +1161,13 @@ Qed.
 
 Theorem trivial_cap_cup : 
   ⊂ ⟷ ⊃ ∝ ⦰.
-Proof. prop_exist_non_zero 2; solve_matrix. Qed.
+Proof. prop_exists_nonzero 2; solve_matrix. Qed.
 
 Definition back_forth : ZX 1 1 := (— ↕ ⊂) ⟷ (⊃ ↕ —).
 
 Theorem back_forth_is_Wire : back_forth ∝ —.
 Proof.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl. 
   rewrite wire_identity_semantics.
   solve_matrix.
@@ -1176,7 +1176,7 @@ Qed.
 Definition forth_back : ZX 1 1 := (⊂ ↕ —) ⟷ (— ↕ ⊃).
 Theorem forth_back_is_Wire : forth_back ∝ —.
 Proof.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl. 
   rewrite wire_identity_semantics.
   solve_matrix.
@@ -1185,7 +1185,7 @@ Qed.
 Theorem Hopf_rule_Z_X : 
   (Z_Spider 1 2 0) ⟷ (X_Spider 2 1 0) ∝ (Z_Spider 1 0 0) ⟷ (X_Spider 0 1 0).
 Proof.
-  prop_exist_non_zero (/C2).
+  prop_exists_nonzero (/C2).
   simpl.
   unfold X_semantics; simpl.
   rewrite kron_1_l; try auto with wf_db.
@@ -1232,7 +1232,7 @@ Proof.
 Theorem BiAlgebra_rule_Z_X : 
  (Z_Spider 2 1 0) ⟷ (X_Spider 1 2 0) ∝ Bi_Alg_Z_X.
 Proof.
- prop_exist_non_zero (√ 2).
+ prop_exists_nonzero (√ 2).
  simpl.
  rewrite <- ZX_Z_is_Z_semantics. 
  rewrite <- ZX_X_is_X_semantics.
@@ -1304,7 +1304,7 @@ Qed.
 Lemma H_comm_cap : (⊂ ⟷ (□ ↕ —)) ∝ (⊂ ⟷ (— ↕ □)).
 Proof.
   unfold proportional.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   Msimpl.
   simpl.
   rewrite wire_identity_semantics.
@@ -1317,7 +1317,7 @@ Qed.
 Lemma H_comm_cup : ((□ ↕ —) ⟷ ⊃) ∝ ((— ↕ □) ⟷ ⊃).
 Proof.
   unfold proportional.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   Msimpl.
   simpl.
   rewrite wire_identity_semantics.
@@ -1391,7 +1391,7 @@ Proof.
   - simpl.
     remove_empty.
     symmetry.
-    prop_exist_non_zero (4 *
+    prop_exists_nonzero (4 *
     (Cexp (PI / 4) * / √ 2 * (Cexp (PI / 4) * / √ 2) *
      (Cexp (PI / 4) * / √ 2 * (Cexp (PI / 4) * / √ 2)))).
     Msimpl.
@@ -1508,7 +1508,7 @@ Local Opaque ZX_X ZX_Z.
 
 Lemma ZX_K1_Z_base : Z_Spider 1 1 PI ⟷ X_Spider 1 1 0 ∝ X_Spider 1 1 0 ⟷ Z_Spider 1 1 PI.
 Proof.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   Msimpl; simpl.
   prep_matrix_equality.
   unfold Mmult.
@@ -1560,7 +1560,7 @@ Qed.
 (*
 Lemma ZX_K2_Z {α} : Z_Spider 1 1 PI ⟷ X_Spider 1 1 α ∝ X_Spider 1 1 (-α) ⟷ Z_Spider 1 1 PI.
 Proof.
-  prop_exist_non_zero 1; Msimpl.
+  prop_exists_nonzero 1; Msimpl.
   rewrite <- adjoint_involutive.
   rewrite <- ZX_semantics_Adjoint_comm.
   simpl.
@@ -1647,7 +1647,7 @@ Lemma Z_commutes_through_swap_t : forall α,
   ⨉ ⟷ (— ↕ (Z_Spider 1 1 α)).
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   rewrite Mscale_1_l.
   simpl.
   unfold_spider.
@@ -1670,7 +1670,7 @@ Lemma Z_commutes_through_swap_b : forall α,
   ⨉ ⟷ ((Z_Spider 1 1 α) ↕ —).
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   unfold_spider.
   rewrite wire_identity_semantics.
@@ -1737,7 +1737,7 @@ Lemma Z_1_1_Wire_Cup : forall α,
   (— ↕ (Z_Spider 1 1 α)) ⟷ ⊃ ∝ ((Z_Spider 1 1 α) ↕ —) ⟷ ⊃.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   rewrite Mscale_1_l.
   simpl.
   unfold_spider.
@@ -1749,7 +1749,7 @@ Lemma Z_1_1_Wire_Cap : forall α,
   ⊂ ⟷ (— ↕ (Z_Spider 1 1 α)) ∝ ⊂ ⟷ ((Z_Spider 1 1 α) ↕ —).
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   rewrite Mscale_1_l.
   simpl.
   unfold_spider.
@@ -1779,7 +1779,7 @@ Lemma Z_double_H_connection : forall α β,
   (Z_Spider 1 2 α) ⥈ (Z_Spider 2 1 β) ∝ (Z_Spider 1 0 α) ⟷ (Z_Spider 0 1 β).
 Proof.
   intros.
-  prop_exist_non_zero (Cexp (PI / 4) * (Cexp (PI / 4)) * / C2); try apply Cmult_neq_0; try apply nonzero_div_nonzero; try apply Cmult_neq_0; try nonzero.
+  prop_exists_nonzero (Cexp (PI / 4) * (Cexp (PI / 4)) * / C2); try apply Cmult_neq_0; try apply nonzero_div_nonzero; try apply Cmult_neq_0; try nonzero.
   simpl; Msimpl.
   rewrite ZX_H_is_H.
   autorewrite with scalar_move_db.
@@ -1928,7 +1928,7 @@ Qed.
 Lemma Cup_is_Z_spider : ⊃ ∝ Z_Spider 2 0 0.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   unfold ZX_semantics.
   unfold Z_semantics.
   solve_matrix.
@@ -1948,7 +1948,7 @@ Qed.
 Lemma Cap_is_Z_spider : ⊂ ∝ Z_Spider 0 2 0.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   unfold ZX_semantics.
   unfold Z_semantics.
   solve_matrix.
@@ -1969,7 +1969,7 @@ Qed.
 Lemma Z_Spider_angle_2PI : forall {nIn nOut} α k, Z_Spider nIn nOut α ∝ (Z_Spider nIn nOut (α + IZR (2 * k) * PI)).
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   unfold ZX_semantics, Z_semantics.
   rewrite Cexp_add.
   rewrite Cexp_2nPI.
@@ -1998,7 +1998,7 @@ Proof.
   simpl.
   remove_empty.
   unfold bipi_X.
-  prop_exist_non_zero (Cexp α).
+  prop_exists_nonzero (Cexp α).
   Msimpl.
   rewrite 2 ZX_semantics_equiv.
   simpl.
@@ -2017,7 +2017,7 @@ Proof.
   simpl.
   remove_empty.
   unfold bipi_X.
-  prop_exist_non_zero (Cexp α).
+  prop_exists_nonzero (Cexp α).
   Msimpl.
   rewrite 2 ZX_semantics_equiv.
   simpl.
@@ -2036,7 +2036,7 @@ Proof.
   simpl.
   remove_empty.
   unfold bipi_X.
-  prop_exist_non_zero (Cexp α).
+  prop_exists_nonzero (Cexp α).
   Msimpl.
   rewrite 2 ZX_semantics_equiv.
   simpl.

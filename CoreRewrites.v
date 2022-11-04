@@ -11,7 +11,7 @@ Lemma ZX_Compose_assoc : forall {n m0 m1 o}
   zx1 ⟷ zx2 ⟷ zx3 ∝ zx1 ⟷ (zx2 ⟷ zx3).
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   Msimpl.
   rewrite Mmult_assoc.
@@ -25,7 +25,7 @@ Lemma ZX_Stack_assoc :
                         (zx0 ↕ (zx1 ↕ zx2)).
 Proof.                                                      
   intros.
-  prop_exist_non_zero 1.  
+  prop_exists_nonzero 1.  
   simpl.
   Msimpl.
   rewrite (@Cast_semantics (n0 + (n1 + n2)) _ ((n0 + n1) + n2)%nat).
@@ -37,7 +37,7 @@ Lemma cast_id :
     Cast n m prfn prfm zx ∝ zx.
 Proof.
   intros; subst.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   rewrite Cast_semantics.
   simpl; lma.
 Qed.
@@ -80,7 +80,7 @@ Lemma cast_simplify :
   zx0 ∝ zx1 ->
   Cast n' m' prfn0 prfm0 zx0 ∝ Cast n' m' prfn1 prfm1 zx1.
 Proof. intros; subst. rewrite H. 
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   Msimpl.
   repeat rewrite Cast_semantics.
   reflexivity.
@@ -95,7 +95,7 @@ Lemma cast_contract :
       zx.
 Proof.
   intros; subst.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl; lma.
 Qed.
 
@@ -140,7 +140,7 @@ Lemma ZX_Stack_Compose_distr :
     (zx1 ⟷ zx2) ↕ (zx3 ⟷ zx4) ∝ (zx1 ↕ zx3) ⟷ (zx2 ↕ zx4).
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   Msimpl.
   simpl.
   show_dimensions.
@@ -155,7 +155,7 @@ Lemma ZX_Stack_Empty_l : forall {nIn nOut} (zx : ZX nIn nOut),
   ⦰ ↕ zx ∝ zx.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   rewrite kron_1_l; try auto with wf_db.
   lma.
@@ -166,7 +166,7 @@ Lemma ZX_Stack_Empty_r : forall {n m : nat} (zx : ZX n m),
     Cast (n + 0) (m + 0) (Nat.add_0_r _) (Nat.add_0_r _) zx.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   Msimpl.
   rewrite (@Cast_semantics n m (n + 0) (m + 0)).
@@ -177,7 +177,7 @@ Lemma ZX_Compose_Empty_r : forall {nIn} (zx : ZX nIn 0),
   zx ⟷ ⦰ ∝ zx.
 Proof. 
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   Msimpl.
   reflexivity.
@@ -187,7 +187,7 @@ Lemma ZX_Compose_Empty_l : forall {nOut} (zx : ZX 0 nOut),
   ⦰ ⟷ zx ∝ zx.
 Proof. 
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl. 
   Msimpl.
   reflexivity.
@@ -196,7 +196,7 @@ Qed.
 Lemma nwire_removal_l: forall {n nOut} (zx : ZX n nOut), (n ↑ —) ⟷ zx ∝ zx.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   replace (n ↑ —) with (nWire n) by easy.
   rewrite nWire_semantics.
@@ -207,7 +207,7 @@ Qed.
 Lemma wire_removal_l : forall {nOut} (zx : ZX 1 nOut), — ⟷ zx ∝ zx.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   Msimpl.
   reflexivity.
@@ -216,7 +216,7 @@ Qed.
 Lemma wire_removal_r : forall {nIn} (zx : ZX nIn 1), zx ⟷ — ∝ zx.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   Msimpl.
   reflexivity.
@@ -225,7 +225,7 @@ Qed.
 Lemma nwire_removal_r: forall {n nIn} (zx : ZX nIn n), zx ⟷ (n ↑ —) ∝ zx.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   replace (n ↑ —) with (nWire n) by easy.
   rewrite nWire_semantics.
@@ -236,7 +236,7 @@ Qed.
 Lemma Z_0_is_wire : Z 1 1 0 ∝ —.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   unfold Z_semantics.
   autorewrite with Cexp_db.
@@ -316,7 +316,7 @@ Lemma WrapOver : forall n m α,
   Z (S n) m α ∝ (Wire ↕ Z n (S m) α) ⟷ (Cup ↕ nWire m).
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   Msimpl.
   simpl.
   rewrite nWire_semantics.
@@ -328,7 +328,7 @@ Lemma SpiderFusion : forall top mid bot input output α β,
     Z (top + input) (output + bot) β.
 Proof.
   intros.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   Msimpl.
   simpl.
   repeat rewrite nWire_semantics.

@@ -203,7 +203,7 @@ Qed.
 Lemma ZX_G_ZX_H_involutive : forall nIn nOut (zx : H_ZX nIn nOut), G_ZX_to_H_ZX (H_ZX_to_G_ZX zx) ∝H zx.
 Proof.
   intros.
-  prop_exist_non_zero 1%R.
+  prop_exists_nonzero 1%R.
   Msimpl.
   simpl.
   rewrite <- G_ZX_to_H_ZX_consistent.
@@ -214,7 +214,7 @@ Qed.
 Lemma ZX_H_ZX_G_involutive : forall nIn nOut (zx : G_ZX nIn nOut), H_ZX_to_G_ZX (G_ZX_to_H_ZX zx) ∝G zx.
 Proof.
   intros.
-  prop_exist_non_zero 1%R.
+  prop_exists_nonzero 1%R.
   Msimpl.
   simpl.
   rewrite <- H_ZX_to_G_ZX_consistent.

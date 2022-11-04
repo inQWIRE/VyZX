@@ -104,7 +104,7 @@ Qed.
 
 Lemma ZX_CNOT_prop : ZX_CNOT_l ∝ ZX_CNOT_r.
 Proof.
-   prop_exist_non_zero 1.
+   prop_exists_nonzero 1.
    rewrite Mscale_1_l.
    apply ZX_CNOT_equiv.
 Qed.

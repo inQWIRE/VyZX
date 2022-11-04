@@ -629,8 +629,8 @@ Program Lemma ZX_AS_Stack_assoc : forall {nIn0 nOut0 nIn1 nOut1 nIn2 nOut2} (zx0
                           zx0 ↕A (zx1 ↕A zx2) ∝A zx0 ↕A zx1 ↕A zx2.
 Proof.
   intros.
-  prop_exist_non_zero (RtoC 1).  
-  prop_exist_non_zero (RtoC 1). 
+  prop_exists_nonzero (RtoC 1).  
+  prop_exists_nonzero (RtoC 1). 
   simpl_eqs.
   Msimpl.
   rewrite kron_assoc; auto with wf_db.
@@ -640,7 +640,7 @@ Program Lemma ZX_AS_Stack_assoc' : forall {nIn0 nOut0 nIn1 nOut1 nIn2 nOut2} (zx
                         zx0 ↕A zx1 ↕A zx2 ∝A zx0 ↕A (zx1 ↕A zx2).
 Proof.
   intros.
-  prop_exist_non_zero (RtoC 1).  
+  prop_exists_nonzero (RtoC 1).  
   simpl_eqs.
   Msimpl.
   rewrite kron_assoc; auto with wf_db.
@@ -653,7 +653,7 @@ Proof.
   - simpl.
     unfold nArbWire.
     simpl.
-    prop_exist_non_zero (RtoC 1).
+    prop_exists_nonzero (RtoC 1).
     simpl.
     Msimpl; auto with wf_db.
     apply WF_ZX_Arb_Swap_Semantics.
@@ -671,13 +671,13 @@ Proof.
   intro dim.
   induction dim; intros.
   - simpl.
-    prop_exist_non_zero 1%R.
+    prop_exists_nonzero 1%R.
     simpl.
     Msimpl.
     easy.
   - simpl.
     destruct n.
-    + prop_exist_non_zero 1%R; simpl.
+    + prop_exists_nonzero 1%R; simpl.
       restore_dims.
       rewrite kron_mixed_product.
       rewrite nArbWire_semantics.
@@ -687,7 +687,7 @@ Proof.
       specialize (IHdim zx0 zx1 n).
       destruct IHdim as [c  IHdim].
       destruct IHdim as [IHdim cneq0].
-      prop_exist_non_zero c; [ clear cneq0 | assumption].
+      prop_exists_nonzero c; [ clear cneq0 | assumption].
       simpl.
       restore_dims.
       rewrite kron_mixed_product. 
@@ -743,7 +743,7 @@ Qed.
 Lemma ZX_A_Compose_assoc : forall {nIn nMid0 nMid1 nOut} (zx0 : ZX_Arb_Swaps nIn nMid0) (zx1 : ZX_Arb_Swaps nMid0 nMid1) (zx2 : ZX_Arb_Swaps nMid1 nOut), zx0 ⟷A zx1 ⟷A zx2 ∝A zx0 ⟷A (zx1 ⟷A zx2).
 Proof.
   intros.
-  prop_exist_non_zero 1%R.
+  prop_exists_nonzero 1%R.
   Msimpl.
   simpl.
   rewrite Mmult_assoc.
@@ -935,7 +935,7 @@ Local Open Scope R_scope.
 
 Lemma increase_Z {α} {nIn nOut} : Z_Spider nIn nOut α ∝ Z_Spider nIn nOut (α + (2 * PI)).
 Proof.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   rewrite Mscale_1_l.
   simpl.
   unfold_spider.
@@ -947,7 +947,7 @@ Qed.
 
 Lemma reduce_Z {α} {nIn nOut} : Z_Spider nIn nOut α ∝ Z_Spider nIn nOut (α - (2 * PI)).
 Proof.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   rewrite Mscale_1_l.
   simpl.
   unfold_spider.

@@ -32,7 +32,7 @@ Notation "'_NOTC_R'" :=
 Lemma _H_is_Box : _H_ ∝ □.
 Proof.
   prep_proportional.
-  prop_exist_non_zero (Cexp (PI/4)).
+  prop_exists_nonzero (Cexp (PI/4)).
   simpl.
   unfold X_semantics, Z_semantics.
   Msimpl.
@@ -44,7 +44,7 @@ Qed.
 Lemma _H_H_is_wire : □ ⟷ □ ∝ —.
 Proof.
   prep_proportional.
-  prop_exist_non_zero 1; Msimpl; simpl.
+  prop_exists_nonzero 1; Msimpl; simpl.
   apply MmultHH.
 Qed.
 
@@ -52,7 +52,7 @@ Lemma _CNOT_equiv :
   _CNOT_R ∝ _CNOT_.
 Proof.
   prep_proportional.
-  prop_exist_non_zero 1.
+  prop_exists_nonzero 1.
   simpl.
   Msimpl.
   restore_dims.
