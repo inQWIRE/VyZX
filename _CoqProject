@@ -3,4 +3,5 @@
 SemanticCore.v
 ZXCore.v
 Proportional.v
+SpiderInduction.v
 CoreRewrites.v

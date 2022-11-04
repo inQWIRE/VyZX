@@ -250,3 +250,13 @@ Proof.
   prop_exists_nonzero 1.
   simpl; lma.
 Qed.
+
+Lemma Z_spider_1_1_fusion : forall {nIn nOut} α β, 
+  (Z nIn 1 α) ⟷ (Z 1 nOut β) ∝
+  Z nIn nOut (α + β).
+Proof.
+  prop_exists_nonzero 1.
+  Msimpl.
+  apply Z_spider_1_1_fusion_eq.
+Qed.
+

@@ -294,4 +294,45 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma Z_spider_1_1_fusion_eq : forall {nIn nOut} α β, 
+  ZX_semantics ((Z_Spider nIn 1 α) ⟷ (Z_Spider 1 nOut β)) =
+  ZX_semantics (Z_Spider nIn nOut (α + β)).
+Proof.
+  assert (expnonzero : forall a, exists b, (2 ^ a + (2 ^ a + 0) - 1)%nat = S b).
+  { 
+    intros.
+    destruct (2^a)%nat eqn:E.
+      - contradict E.
+        apply Nat.pow_nonzero; easy.
+      - simpl.
+        rewrite <- plus_n_Sm.
+        exists (n + n)%nat.
+        lia.
+  }
+  intros.
+  prep_matrix_equality.
+  simpl.
+  unfold Mmult.
+  simpl.
+  rewrite Cplus_0_l.
+  destruct nIn, nOut.
+  - simpl.
+    destruct x,y; [simpl; autorewrite with Cexp_db | | | ]; lca.
+  - destruct x,y; simpl; destruct (expnonzero nOut); rewrite H; [ lca | lca | | ].
+    + destruct (x =? x0)%nat.
+      * simpl.
+        autorewrite with Cexp_db.
+        lca.
+      * simpl.
+        lca.
+    + destruct (x =? x0)%nat; lca.
+  - destruct x,y; simpl; destruct (expnonzero nIn); rewrite H; [lca | | lca | lca].
+    + destruct (y =? x)%nat; [autorewrite with Cexp_db | ]; lca.
+  - destruct x,y; simpl; destruct (expnonzero nIn), (expnonzero nOut); rewrite H,H0; [lca | lca | | ].
+    + destruct (x =? x1)%nat; lca.
+    + destruct (x =? x1)%nat, (y =? x0)%nat; [| lca | lca | lca].
+      autorewrite with Cexp_db.
+      lca.
+Qed.
+
 Local Close Scope ZX_scope.
