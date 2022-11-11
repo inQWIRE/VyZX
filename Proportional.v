@@ -245,6 +245,53 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma transpose_involutive : forall n m (zx : ZX n m),
+  zx ⊤ ⊤ ∝ zx.
+Proof.
+  intros.
+  prop_exists_nonzero 1.
+  simpl.
+  repeat rewrite ZX_semantics_transpose_comm.
+  rewrite transpose_involutive.
+  lma.
+Qed.
+
+Lemma adjoint_involutive : forall n m (zx : ZX n m),
+  zx † † ∝ zx.
+Proof.
+  intros.
+  prop_exists_nonzero 1.
+  simpl.
+  repeat rewrite ZX_semantics_adjoint_comm.
+  rewrite adjoint_involutive.
+  lma.
+Qed.
+
+Lemma transpose_diagrams : forall n m (zx0 zx1 : ZX n m),
+  zx0 ⊤ ∝ zx1 ⊤ -> zx0 ∝ zx1.
+Proof.
+  intros n m zx0 zx1 [x [Hzx Hx]].
+  prop_exists_nonzero x; try assumption.
+  apply transpose_matrices.
+  rewrite Mscale_trans.
+  repeat rewrite <- ZX_semantics_transpose_comm.
+  apply Hzx.
+Qed.
+
+Lemma adjoint_diagrams : forall n m (zx0 zx1 : ZX n m),
+  zx0 † ∝ zx1 † -> zx0 ∝ zx1.
+Proof.
+  intros n m zx0 zx1 [x [Hzx Hx]].
+  prop_exists_nonzero (x ^*)%C.
+  apply adjoint_matrices.
+  rewrite Mscale_adj.
+  repeat rewrite <- ZX_semantics_adjoint_comm.
+  rewrite Cconj_involutive.
+  apply Hzx.
+  apply Cconj_neq_0.
+  assumption.
+Qed.
+
 Lemma transpose_wire : Wire ⊤ ∝ Wire.
 Proof.
   prop_exists_nonzero 1.

@@ -1,5 +1,6 @@
 -R . VyZX
 
+QlibTemp.v
 SemanticCore.v
 ZXCore.v
 Proportional.v

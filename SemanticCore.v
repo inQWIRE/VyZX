@@ -4,6 +4,7 @@
 Require Export QuantumLib.Quantum.
 Require Import QuantumLib.Proportional.
 Require Export QuantumLib.VectorStates.
+From VyZX Require Export QlibTemp.
 
 
 (* Sparse Matrix Definition *)
