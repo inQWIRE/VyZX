@@ -3,11 +3,22 @@ Require Import VyZX.Proportional.
 
 (* Spider Induction *)
 
+#[export] Hint Rewrite 
+  Cmult_0_l
+  Cmult_0_r
+  Cplus_0_r
+  Cplus_0_l
+  Cmult_1_r
+  Cmult_1_l
+  : cleanup_C_db.
+
+Ltac cleanup_C := autorewrite with cleanup_C_db.
+
 (* The first part that is necessary to prove spider edge count induction is the 
    ability to split spiders off to the side. We only need to prove this one, 
    the others follow through transposes *)
 
-Lemma Grow_Z_Left_1 : forall {n} α,
+Lemma Grow_Z_Left_2_1 : forall {n} α,
   Z (S (S n)) 1 α ∝ 
   (Z 2 1 0 ↕ nWire n) ⟷ Z (S n) 1 α.
 Proof.
@@ -171,13 +182,13 @@ Proof.
     + rewrite big_sum_0; intros; lca.
 Qed.
 
-Lemma Grow_Z_Right_1 : forall {n} α,
+Lemma Grow_Z_Right_1_2 : forall {n} α,
   Z 1 (S (S n)) α ∝ 
   Z 1 (S n) α ⟷ (Z 1 2 0 ↕ nWire n).
 Proof.
   intros.
   replace (Z_Spider 1 (S (S n))%nat α) with ((Z_Spider (S (S n))%nat 1 α)⊤) by reflexivity.
-  rewrite Grow_Z_Left_1.
+  rewrite Grow_Z_Left_2_1.
   simpl.
   unfold nWire.
   rewrite nstack1_transpose.
@@ -185,3 +196,260 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma Grow_Z_Right_Bot_1_2_Base : forall α,
+  Z 1 3 α ∝ Z 1 2 α ⟷ (— ↕ Z 1 2 0).
+Proof. intros. prop_exists_nonzero 1. simpl; Msimpl. unfold Z_semantics.
+  gridify.
+  solve_matrix.
+  rewrite Cexp_0.
+  lca.
+Qed.
+
+Lemma WrapOver_Right_Top_Base : forall n α,
+  (— ↕ Z n 2 α) ⟷ (Cup ↕ —) ∝ Z (S n) 1 α.
+Proof.
+  intros.
+  prop_exists_nonzero 1.
+  simpl; Msimpl.
+  unfold Z_semantics, kron, Mmult.
+  prep_matrix_equality.
+  replace (2 ^ S n)%nat with (2 ^ n + 2 ^ n)%nat by (simpl; lia).
+  remember (2 ^ n)%nat as m.
+  assert (Hm : (m <> 0)%nat).
+  { rewrite Heqm. apply Nat.pow_nonzero. easy. }
+  assert (Hm_div : (((m + m - 1) / m) = 1)%nat).
+  { 
+    replace (m + m - 1)%nat with (1 * m + (m - 1))%nat by lia.
+    rewrite Nat.div_add_l by assumption.
+    rewrite Nat.div_small by lia.
+    lia.
+  }
+  assert (Hm_mod : ((m + m - 1) mod m = m - 1)%nat).
+  { 
+    replace (m + m - 1)%nat with (m + (m - 1))%nat by lia.
+    rewrite Nat.add_mod by auto.
+    rewrite Nat.mod_same by auto.
+    simpl.
+    repeat rewrite Nat.mod_small; lia.
+  }
+  bdestruct (x =? 1)%nat; bdestruct (y =? m + m - 1)%nat.
+  - rewrite H, H0.
+    rewrite Nat.mod_small by lia.
+    rewrite andb_true_l.
+    rewrite Hm_mod.
+    simpl.
+    unfold list2D_to_matrix, I.
+    simpl.
+    rewrite Hm_div.
+    rewrite Nat.eqb_refl.
+    lca.
+  - rewrite H.
+    simpl.
+    unfold list2D_to_matrix, I.
+    simpl.
+    bdestruct (y / m =? 1)%nat; bdestruct (y mod m =? m - 1)%nat.
+    + rewrite H1.
+      simpl.
+      contradict H0.
+      specialize (Nat.div_mod_eq y m); intros.
+      rewrite H0.
+      rewrite H1, H2.
+      lia.
+    + lca.
+    + destruct (y / m)%nat; try lca.
+      destruct n0; try lca.
+      contradict H1; lia.
+    + lca.
+  - destruct x.
+    + rewrite H0.
+      simpl.
+      unfold list2D_to_matrix, I.
+      simpl.
+      rewrite Hm_div, Hm_mod.
+      simpl.
+      destruct m; simpl.
+      * lia.
+      * rewrite Nat.sub_0_r.
+        rewrite <- plus_n_Sm.
+        lca.
+    + destruct x; [ contradict H; lia | ].
+      unfold list2D_to_matrix, I.
+      simpl.
+      rewrite divmod_eq.
+      simpl.
+      destruct (fst (Nat.divmod x 1 0 1)); lca.
+  - rewrite andb_false_r.
+    destruct x,y.
+    + simpl.
+      unfold list2D_to_matrix, I.
+      simpl.
+      rewrite Nat.div_0_l, Nat.mod_0_l; try lia.
+      simpl.
+      destruct n; lca.
+    + simpl.
+      unfold list2D_to_matrix, I.
+      simpl.
+      cleanup_C.
+      specialize (Nat.div_mod_eq (S y) m).
+      intros.
+      bdestruct (S y / m =? 0)%nat; bdestruct (S y mod m =? 0).
+      * rewrite H2, H3.
+        simpl.
+        contradict H1.
+        rewrite H2, H3.
+        lia.
+      * rewrite H2.
+        simpl.
+        destruct (S y mod m)%nat; [ lia | lca ].
+      * destruct (S y / m)%nat; [ lia | lca ].
+      * destruct (S y mod m)%nat; [ lia | ].
+        destruct (S y / m)%nat; [ lia | lca ].
+    + unfold I, list2D_to_matrix.
+      destruct x; [ lia | ].
+      simpl.
+      rewrite divmod_eq.
+      fold (x / 2)%nat.
+      simpl.
+      destruct (fst (Nat.divmod x 1 0 1)); simpl; lca.
+    + unfold I, list2D_to_matrix.
+      destruct x; [ lia | ].
+      simpl.
+      rewrite divmod_eq.
+      fold (x / 2)%nat.
+      simpl.
+      destruct (fst (Nat.divmod x 1 0 1)); simpl; lca.
+Qed.
+
+Lemma WrapOver_Right_Top_0 : forall n α,
+  (— ↕ Z n 1 α) ⟷ Cup ∝ Z (S n) 0 α.
+Proof.
+  intros.
+  prop_exists_nonzero 1.
+  simpl; Msimpl.
+  unfold Z_semantics, kron, Mmult.
+  prep_matrix_equality.
+  replace (2 ^ S n)%nat with (2 ^ n + 2 ^ n)%nat by (simpl; lia).
+  remember (2 ^ n)%nat as m.
+  assert (Hm : (m <> 0)%nat).
+  { rewrite Heqm. apply Nat.pow_nonzero. easy. }
+  assert (Hm_div : (((m + m - 1) / m) = 1)%nat).
+  { 
+    replace (m + m - 1)%nat with (1 * m + (m - 1))%nat by lia.
+    rewrite Nat.div_add_l by assumption.
+    rewrite Nat.div_small by lia.
+    lia.
+  }
+  assert (Hm_mod : ((m + m - 1) mod m = m - 1)%nat).
+  { 
+    replace (m + m - 1)%nat with (m + (m - 1))%nat by lia.
+    rewrite Nat.add_mod by auto.
+    rewrite Nat.mod_same by auto.
+    simpl.
+    repeat rewrite Nat.mod_small; lia.
+  }
+  bdestruct (x =? 0)%nat; bdestruct (y =? m + m - 1)%nat.
+  - rewrite H, H0.
+    simpl.
+    rewrite Hm_mod.
+    rewrite Hm_div.
+    rewrite Nat.eqb_refl.
+    simpl.
+    unfold list2D_to_matrix, I.
+    simpl.
+    cleanup_C.
+    destruct m; [ contradict Hm; lia | ].
+    simpl.
+    rewrite <- plus_n_Sm.
+    lca.
+  - rewrite H.
+    simpl.
+    unfold list2D_to_matrix, I.
+    simpl.
+    bdestruct (y / m =? 1)%nat; bdestruct (y mod m =? m - 1)%nat.
+    + rewrite H1.
+      simpl.
+      contradict H0.
+      specialize (Nat.div_mod_eq y m); intros.
+      rewrite H0.
+      rewrite H1, H2.
+      lia.
+    + rewrite H1.
+      cleanup_C.
+      destruct y; [ contradict H1 | ].
+      rewrite Nat.div_0_l by auto.
+      lia.
+      lca.
+    + destruct (y / m)%nat eqn:E; try lca.
+      cleanup_C.
+      destruct y.
+      * rewrite Nat.mod_0_l by auto.
+        destruct n; auto.
+      * destruct (S y mod m) eqn:Ey.
+        assert (contra : (S y <> 0)%nat) by lia.
+        contradict contra.
+        specialize (Nat.div_mod_eq (S y) m).
+        intros.
+        rewrite H3.
+        rewrite Ey, E.
+        lia.
+        lca.
+      * cleanup_C.
+        destruct n0; [ contradict H1; easy | ].
+        simpl.
+        destruct y.
+        -- contradict E.
+           rewrite Nat.div_0_l by auto.
+           lia.
+        -- lca.
+    + cleanup_C.
+      destruct y.
+      * rewrite Nat.div_0_l, Nat.mod_0_l; try lia.
+        destruct n; lca.
+      * specialize (Nat.div_mod_eq (S y) m); intros.
+        destruct (S y / m)%nat, (S y mod m)%nat; try lca.
+        lia.
+  - destruct x.
+    + rewrite H0.
+      simpl.
+      unfold list2D_to_matrix, I.
+      simpl.
+      rewrite Hm_div, Hm_mod.
+      simpl.
+      destruct m; simpl.
+      * lia.
+      * rewrite Nat.sub_0_r.
+        rewrite <- plus_n_Sm.
+        rewrite Nat.eqb_refl.
+        lca.
+    + simpl.
+      cleanup_C.
+      rewrite H0.
+      rewrite Hm_div.
+      rewrite Hm_mod.
+      rewrite Nat.eqb_refl.
+      destruct x; lca.
+  - rewrite andb_false_r.
+    destruct x,y.
+    + simpl.
+      unfold list2D_to_matrix, I.
+      simpl.
+      rewrite Nat.div_0_l, Nat.mod_0_l; try lia.
+    + simpl.
+      unfold list2D_to_matrix, I.
+      simpl.
+      cleanup_C.
+      specialize (Nat.div_mod_eq (S y) m).
+      intros.
+      bdestruct (S y / m =? 0)%nat; bdestruct (S y mod m =? 0); exfalso; lia.
+    + destruct x; lca.
+    + destruct x; lca.
+Qed.
+
+Lemma WrapOver_Left_Top_0 : forall n α,
+  Cap ⟷ (— ↕ Z 1 n α) ∝ Z 0 (S n) α.
+Proof.
+  intros.
+  apply transpose_diagrams.
+  simpl.
+  apply WrapOver_Right_Top_0.
+Qed.
