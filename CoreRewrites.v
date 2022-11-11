@@ -1,6 +1,7 @@
 From VyZX Require Export ZXCore.
 From VyZX Require Import SemanticCore.
 From VyZX Require Export Proportional.
+From VyZX Require Export CastRules.
 From VyZX Require Export SpiderInduction.
 
 Local Open Scope ZX_scope.
@@ -46,106 +47,6 @@ Proof.
   rewrite (@Cast_semantics ((n0 + n1) + n2) _ (n0 + (n1 + n2))%nat).
   simpl; restore_dims.
   rewrite kron_assoc; auto with wf_db.
-Qed.
-
-Lemma cast_id :
-  forall {n m} prfn prfm (zx : ZX n m),
-    Cast n m prfn prfm zx ∝ zx.
-Proof.
-  intros; subst.
-  prop_exists_nonzero 1.
-  rewrite Cast_semantics.
-  simpl; lma.
-Qed.
-
-Lemma cast_compose :
-  forall {n n' m m' o} prfn prfm (zx0 : ZX n m) (zx1 : ZX m' o),
-    Cast n' m' prfn prfm zx0 ⟷ zx1 ∝ Cast n' o prfn eq_refl (zx0 ⟷ Cast m o (eq_sym prfm) eq_refl zx1).
-Proof. Admitted.
-
-Lemma cast_stack_l : forall {nTop nTop' mTop mTop' nBot mBot} eqnTop eqmTop 
-                            (zxTop : ZX nTop mTop) (zxBot : ZX nBot mBot),
-  (Cast nTop' mTop' eqnTop eqmTop zxTop) ↕ zxBot ∝ 
-  Cast (nTop' + nBot) (mTop' + mBot)  
-       (f_equal2_plus _ _ _ _ (eqnTop) eq_refl)
-       (f_equal2_plus _ _ _ _ (eqmTop) eq_refl)
-       (zxTop ↕ zxBot).
-Proof.
-  intros.
-  subst.
-  repeat rewrite cast_id.
-  reflexivity.
-Qed.
-
-Lemma cast_stack_r : forall {nTop mTop nBot nBot' mBot mBot'} eqnBot eqmBot 
-                            (zxTop : ZX nTop mTop) (zxBot : ZX nBot mBot),
-  zxTop ↕ (Cast nBot' mBot' eqnBot eqmBot zxBot) ∝ 
-  Cast (nTop + nBot') (mTop + mBot')  
-       (f_equal2_plus _ _ _ _ eq_refl eqnBot)
-       (f_equal2_plus _ _ _ _ eq_refl eqmBot)
-       (zxTop ↕ zxBot).
-Proof.
-  intros.
-  subst.
-  repeat rewrite cast_id.
-  reflexivity.
-Qed.
-
-Lemma cast_simplify :
-  forall {n n' m m'} prfn0 prfm0 prfn1 prfm1  (zx0 zx1 : ZX n m),
-  zx0 ∝ zx1 ->
-  Cast n' m' prfn0 prfm0 zx0 ∝ Cast n' m' prfn1 prfm1 zx1.
-Proof. intros; subst. rewrite H. 
-  prop_exists_nonzero 1.
-  Msimpl.
-  repeat rewrite Cast_semantics.
-  reflexivity.
-Qed.
-
-Lemma cast_contract :
-  forall {n0 m0 n1 m1 n2 m2} prfn01 prfm01 prfn12 prfm12 (zx : ZX n0 m0),
-    Cast n2 m2 prfn12 prfm12 
-      (Cast n1 m1 prfn01 prfm01
-        zx) ∝
-    Cast n2 m2 (eq_trans prfn12 prfn01) (eq_trans prfm12 prfm01) 
-      zx.
-Proof.
-  intros; subst.
-  prop_exists_nonzero 1.
-  simpl; lma.
-Qed.
-
-Lemma cast_symm :
-  forall {n0 m0 n1 m1} prfn prfm prfn' prfm' (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
-    Cast n1 m1 prfn prfm zx0 ∝ zx1 <->
-    zx0 ∝ Cast n0 m0 prfn' prfm' zx1.
-Proof.
-  intros.
-  split; intros.
-  - subst.
-    rewrite cast_id.
-    rewrite cast_id in H.
-    easy.
-  - subst.
-    rewrite cast_id.
-    rewrite cast_id in H.
-    easy.
-Qed.
-
-
-Lemma cast_backwards :
-  forall {n0 m0 n1 m1} prfn prfm prfn' prfm' (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
-    Cast n1 m1 prfn prfm zx0 ∝ zx1 <->
-    Cast n0 m0 prfn' prfm' zx1 ∝ zx0.
-Proof.
-  intros.
-  split; symmetry; subst. 
-  rewrite cast_id.
-  rewrite cast_id in H.
-  auto.
-  rewrite cast_id.
-  rewrite cast_id in H.
-  easy.
 Qed.
 
 (* Distributivity *)
@@ -325,7 +226,7 @@ Proof.
   unfold nWire.
   simpl.
   cleanup_zx.
-  rewrite cast_id.
+  simpl_casts.
   easy.
 Qed.
 
@@ -350,7 +251,7 @@ Proof.
   - simpl.
     rewrite IHn.
     rewrite (ZX_Stack_assoc zx).
-    rewrite cast_id.
+    simpl_casts.
     reflexivity.
 Qed.
 
@@ -360,19 +261,15 @@ Lemma nstack_split : forall n m {nIn mOut} (zx : ZX nIn mOut),
 Proof.
   intros.
   dependent induction n.
-  - simpl. rewrite cast_id.
+  - simpl. simpl_casts.
     cleanup_zx. easy.
   - simpl.
     rewrite IHn.
     simpl.
-    rewrite cast_stack_r.
-    rewrite <- cast_symm.
-    rewrite cast_contract.
+    simpl_casts.
     rewrite ZX_Stack_assoc.
-    apply cast_simplify.
+    simpl_casts.
     reflexivity.
-    Unshelve.
-    all: lia.
 Qed.
 
 Lemma Grow_Z_Left : forall (nIn nOut : nat) α,
@@ -413,7 +310,7 @@ Proof.
   - intros.
     rewrite <- WrapOver_Right_Top_0.
     cleanup_zx.
-    rewrite cast_id.
+    simpl_casts.
     reflexivity.
   - intros.
     destruct m.
@@ -438,9 +335,9 @@ Proof.
       rewrite ZX_Compose_assoc.
       replace (nWire 2) with (— ↕ (— ↕ ⦰)) by auto.
       cleanup_zx.
-      rewrite cast_id.
+      simpl_casts.
       rewrite (ZX_Stack_assoc — — _).
-      rewrite cast_id.
+      simpl_casts.
       rewrite <- ZX_Compose_assoc.
       rewrite <- (stack_wire_distribute 
         ((Z) n (S m) α ⟷ ((Z) 1 2 0 ↕ (m ↑ —))) 
@@ -448,7 +345,7 @@ Proof.
       rewrite ZX_Compose_assoc.
       fold (nWire m).
       rewrite ZX_Stack_assoc_back.
-      rewrite cast_id.
+      simpl_casts.
       rewrite <- (ZX_Stack_Compose_distr (Z 1 2 0) (— ↕ Z 1 2 0) (nWire m) (nWire m)).
       rewrite <- Grow_Z_Right_Bot_1_2_Base.
       rewrite Grow_Z_Right.
@@ -457,7 +354,7 @@ Proof.
       rewrite <- Grow_Z_Right.
       unfold nWire.
       rewrite (ZX_Stack_assoc (Z 1 2 0) (1 ↑ —) (m ↑ —)).
-      rewrite cast_id.
+      simpl_casts.
       rewrite <- nstack1_split.
       fold (nWire (1 + m)).
       rewrite <- (Grow_Z_Right n (S m)).
@@ -484,7 +381,7 @@ Proof.
   induction n;
   intros.
   - cleanup_zx.
-    rewrite cast_id.
+    simpl_casts.
     prop_exists_nonzero 1.
     Msimpl; simpl.
     solve_matrix.
@@ -518,7 +415,7 @@ Proof.
     induction top.
     + simpl.
       cleanup_zx.
-      rewrite cast_id.
+      simpl_casts.
       induction bot.
       * simpl.
 Admitted.

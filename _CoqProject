@@ -5,4 +5,5 @@ SemanticCore.v
 ZXCore.v
 Proportional.v
 SpiderInduction.v
+CastRules.v
 CoreRewrites.v
