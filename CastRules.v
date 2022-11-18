@@ -111,6 +111,57 @@ intros; split; intros.
   exact H.
 Qed.
 
+
+Lemma cast_compose_distribute :
+  forall n n' m o o' prfn prfo (zx0 : ZX n m) (zx1 : ZX m o),
+  Cast n' o' prfn prfo (zx0 ⟷ zx1) ∝
+  Cast n' m prfn eq_refl zx0 ⟷ Cast m o' eq_refl prfo zx1.
+Proof.
+  intros.
+  subst.
+  repeat rewrite cast_id.
+  reflexivity.
+Qed.
+
+Lemma cast_compose_l :
+  forall {n n' m m' o} prfn prfm (zx0 : ZX n m) (zx1 : ZX m' o),
+    Cast n' m' prfn prfm zx0 ⟷ zx1 ∝ 
+      Cast n' o prfn eq_refl (zx0 ⟷ Cast m o (eq_sym prfm) eq_refl zx1).
+Proof.
+  intros.
+  subst.
+  repeat rewrite cast_id.
+  reflexivity.
+Qed.
+
+Lemma cast_compose_r :
+  forall {n m m' o o'} prfm prfo (zx0 : ZX n m') (zx1 : ZX m o),
+  zx0 ⟷ Cast m' o' prfm prfo zx1 ∝ 
+    Cast n o' eq_refl prfo (Cast n m eq_refl (eq_sym prfm) zx0 ⟷ zx1).
+Proof.
+  intros. subst. repeat rewrite cast_id. reflexivity.
+Qed.
+
+Lemma cast_compose_mid :
+  forall {n m o} m' prfm (zx0 : ZX n m) (zx1 : ZX m o),
+  zx0 ⟷ zx1 ∝ Cast n m' eq_refl prfm zx0 ⟷ Cast m' o prfm eq_refl zx1.
+Proof.
+  intros.
+  subst.
+  repeat rewrite cast_id.
+  reflexivity.
+Qed.
+
+Lemma cast_Z :
+  forall {n n' m m'} prfn prfm α,
+  Cast n' m' prfn prfm (Z n m α) ∝ Z n' m' α.
+Proof.
+  intros.
+  subst.
+  rewrite cast_id.
+  reflexivity.
+Qed.
+
 Lemma cast_simplify :
 forall {n n' m m'} prfn0 prfm0 prfn1 prfm1  (zx0 zx1 : ZX n m),
 zx0 ∝ zx1 ->
@@ -131,3 +182,15 @@ split; symmetry; subst;
 simpl_casts; [rewrite H | rewrite <- H]; 
 simpl_casts; easy.
 Qed.
+
+Lemma cast_diagrams :
+  forall {n m} n' m' prfn prfm (zx0 zx1 : ZX n m),
+  Cast n' m' prfn prfm zx0 ∝ Cast n' m' prfn prfm zx1 ->
+  zx0 ∝ zx1.
+Proof.
+  intros.
+  subst.
+  repeat rewrite cast_id in H.
+  easy.
+Qed.
+
