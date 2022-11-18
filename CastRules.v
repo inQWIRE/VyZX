@@ -44,6 +44,7 @@ reflexivity.
 Qed.
 
 
+
 #[export] Hint Rewrite @cast_stack_l @cast_stack_r : cast_simpl_db.
 
 Ltac simpl_casts := (autorewrite with cast_simpl_db). 
@@ -111,6 +112,29 @@ intros; split; intros.
   exact H.
 Qed.
 
+(* Reverse lemmas so you don't need complex proof structure within the stacks *)
+
+Lemma add_same_l : forall (n n' m : nat) (prfn : (n + m = n' + m)%nat), (n = n')%nat.
+Proof. intros. lia. Qed.
+
+Lemma cast_stack_top : forall {n0 n0' n1 m0 m0' m1} prfn prfm (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
+  Cast (n0' + n1) (m0' + m1) prfn prfm (zx0 ↕ zx1) ∝ ((Cast n0' m0' (add_same_l n0' n0 n1 prfn) (add_same_l m0' m0 m1 prfm)) zx0 ↕ zx1).
+Proof.
+  intros.
+  simpl_casts.
+  easy.
+Qed.
+
+Lemma add_same_r : forall (n m m' : nat) (prfn : (n + m = n + m')%nat), (m = m')%nat.
+Proof. intros. lia. Qed.
+
+Lemma cast_stack_bot : forall {n0 n1 n1' m0 m1 m1'} prfn prfm (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
+  Cast (n0 + n1') (m0 + m1') prfn prfm (zx0 ↕ zx1) ∝ (zx0 ↕ (Cast n1' m1' (add_same_r n0 n1' n1 prfn) (add_same_r m0 m1' m1 prfm)) zx1).
+Proof.
+  intros.
+  simpl_casts.
+  easy.
+Qed.
 
 Lemma cast_compose_distribute :
   forall n n' m o o' prfn prfo (zx0 : ZX n m) (zx1 : ZX m o),
@@ -160,6 +184,22 @@ Proof.
   subst.
   rewrite cast_id.
   reflexivity.
+Qed.
+
+Lemma cast_nStack1 : forall {n n'} prfn (zx : ZX 1 1),
+  Cast n' n' prfn prfn (n ↑ zx) ∝ n' ↑ zx.
+Proof.
+  intros.
+  destruct prfn.
+  rewrite cast_id.
+  easy.
+Qed.
+
+Lemma cast_nWire : forall {n n'} prfn,
+  Cast n' n' prfn prfn (nWire n) ∝ nWire n'.
+Proof.
+  intros.
+  apply cast_nStack1.
 Qed.
 
 Lemma cast_simplify :
