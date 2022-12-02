@@ -701,6 +701,25 @@ Proof.
     easy.
 Qed.
 
+Lemma cap_absorb_dim : forall n m,
+  (n + 0 + m = n + m)%nat.
+Proof. lia. Qed.
+
+Opaque Cast.
+
+Lemma Z_Cap_absord_base : forall α,
+  Z 1 2 α ⟷ ⊃ ∝ Z 1 0 α.
+Proof.
+  intros.
+  prop_exists_nonzero 1.
+  simpl.
+  Msimpl.
+  unfold Z_semantics.
+  simpl.
+  solve_matrix.
+Qed.
+
+
 Lemma Z_appendix_top_l : forall n m α,
   Z n m α ∝ (Z 0 1 0 ↕ nWire n) ⟷ Z (S n) m α.
 Proof.
@@ -743,6 +762,82 @@ Proof.
   fold (nWire m).
   rewrite <- (Z_appendix_top_l m n).
   easy.
+Qed.
+
+Lemma Z_Wrap_Under_R_base : forall α,
+  Z 1 2 α ∝  (— ↕ ⊂) ⟷ (Z 2 1 α ↕ —).
+Proof.
+  intros.
+  simpl.
+  prop_exists_nonzero 1.
+  simpl; Msimpl.
+  unfold Z_semantics; simpl.
+  solve_matrix.
+Qed.
+
+Lemma Z_Wrap_Under_L_base : forall α,
+  Z 2 1 α ∝ (Z 1 2 α ↕ —) ⟷ (— ↕ ⊃).
+Proof. transpose_of Z_Wrap_Under_R_base. Qed.
+
+Lemma Z_Cap_absorb : forall n m0 m1 α,
+  Z n (m0 + 2 + m1) α ⟷ (nWire m0 ↕ ⊃ ↕ nWire m1) ∝ 
+  (Z n (m0 + 0 + m1) α).
+Proof.
+  intros.
+  induction m0.
+  - simpl.
+    cleanup_zx.
+    rewrite Grow_Z_Right.
+    rewrite ZX_Compose_assoc.
+    rewrite <- (ZX_Stack_Compose_distr (Z 1 2 0) ⊃ (nWire m1) (nWire m1)).
+    rewrite Z_Cap_absord_base.
+    cleanup_zx.
+    rewrite <- Z_appendix_top_r.
+    easy.
+  - destruct m0.
+    + simpl.
+      rewrite Grow_Z_Right.
+      rewrite ZX_Compose_assoc.
+      rewrite nWire_S_l.
+      rewrite (ZX_Stack_assoc_back (Z 1 2 0) —).
+      simpl_casts.
+      rewrite <- (ZX_Stack_Compose_distr (Z 1 2 0 ↕ —) (nWire 1 ↕ ⊃) (nWire m1)).
+      rewrite <- wire_to_nWire.
+      rewrite <- Z_Wrap_Under_L_base.
+      cleanup_zx.
+      rewrite Grow_Z_Right.
+      rewrite ZX_Compose_assoc.
+      rewrite <- (ZX_Stack_Compose_distr (Z 1 2 0) (Z 2 1 0) (nWire m1) _).
+      cleanup_zx.
+      rewrite Z_Absolute_Fusion.
+      rewrite Rplus_0_l.
+      cleanup_zx.
+      easy.
+    + simpl.
+      rewrite Grow_Z_Right.
+      rewrite (ZX_Stack_assoc_back — —).
+      simpl_casts.
+      rewrite ZX_Compose_assoc.
+      rewrite (ZX_Stack_assoc (— ↕ —)).
+      simpl_casts.
+      rewrite (ZX_Stack_assoc (— ↕ —)).
+      simpl_casts.
+      rewrite <- (ZX_Stack_Compose_distr (Z 1 2 0) (— ↕ —) 
+                             (nWire (m0 + 2 + m1)) (nWire m0 ↕ ⊃ ↕ nWire m1)).
+      rewrite wire_to_nWire at 2.
+      rewrite <- nWire_S_l.
+      cleanup_zx.
+      rewrite <- nwire_stack_compose_topleft.
+      rewrite <- wire_to_nWire.
+      rewrite ZX_Stack_assoc_back.
+      simpl_casts.
+      rewrite ZX_Stack_assoc_back.
+      simpl_casts.
+      rewrite <- nWire_S_l.
+      rewrite <- ZX_Compose_assoc.
+      rewrite IHm0.
+      rewrite <- Grow_Z_Right.
+      easy.
 Qed.
 
 Lemma Grow_Z_Top_Left_by : forall n {m o α},
