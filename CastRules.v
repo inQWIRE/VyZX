@@ -44,6 +44,17 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma cast_stack_distribute : 
+  forall {n n' m m' o o' p p'} prfn prfm prfo prfp prfno prfmp 
+    (zx0 : ZX n m) (zx1 : ZX o p),
+  Cast (n' + o') (m' + p') prfno prfmp (zx0 ↕ zx1) ∝
+  Cast n' m' prfn prfm zx0 ↕ Cast o' p' prfo prfp zx1.
+Proof.
+  intros.
+  subst.
+  simpl_casts.
+  easy.
+Qed.
 
 
 #[export] Hint Rewrite @cast_stack_l @cast_stack_r : cast_simpl_db.

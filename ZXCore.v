@@ -42,7 +42,7 @@ Notation "A ⟷ B" := (Compose A B) (left associativity, at level 40) : ZX_scope
 Notation "A ↕ B" := (Stack A B) (left associativity, at level 40) : ZX_scope. (* \updownarrow *)
 Notation "'Z'" := Z_Spider (left associativity, at level 40) : ZX_scope.
 Notation "'X'" := X_Spider (left associativity, at level 40) : ZX_scope.
-Notation "$ A" := (Cast _ _ _ _ A) (at level 49) : ZX_scope.
+Notation "$ n , m $ A " := (Cast n m _ _ A) (at level 49) : ZX_scope.
 
 (** We provide two separate options for semantic functions, one based on sparse matrices
     and one based on dirac notation. *)
@@ -137,14 +137,15 @@ Proof.
     apply WF_ZX.
 Qed.
 
-Definition nWire := fun n => n ↑ Wire.
+(* Definition nWire := fun n => n ↑ Wire. *)
 Definition nBox := fun n => n ↑ Box.
+
+Notation "'nWire' n" := (n ↑ —) (left associativity, at level 38).
 
 Lemma nWire_semantics {n} : ZX_semantics (nWire n) = I (2^n).
 Proof.
   induction n; auto.
   simpl.
-  unfold nWire in IHn.
   rewrite IHn.
   rewrite id_kron.
   auto.

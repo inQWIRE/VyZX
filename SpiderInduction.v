@@ -190,7 +190,6 @@ Proof.
   replace (Z_Spider 1 (S (S n))%nat α) with ((Z_Spider (S (S n))%nat 1 α)⊤) by reflexivity.
   rewrite Grow_Z_Left_2_1.
   simpl.
-  unfold nWire.
   rewrite nstack1_transpose.
   rewrite transpose_wire.
   reflexivity.

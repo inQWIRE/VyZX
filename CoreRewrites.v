@@ -115,7 +115,6 @@ Proof.
   intros.
   prop_exists_nonzero 1.
   simpl.
-  replace (n ↑ —) with (nWire n) by easy.
   rewrite nWire_semantics.
   Msimpl.
   reflexivity.
@@ -255,14 +254,43 @@ Ltac cleanup_zx := autorewrite with cleanup_zx_db.
 Lemma wire_to_nWire : 
   — ∝ nWire 1.
 Proof.
-  unfold nWire.
   simpl.
   cleanup_zx.
   simpl_casts.
   easy.
 Qed.
 
-Lemma stack_wire_distribute : forall {n m o} (zx0 : ZX n m) (zx1 : ZX m o),
+Lemma nStack1_r_dim : forall n,
+  (S n = n + 1)%nat.
+Proof. lia. Qed.
+
+Lemma nStack1_l : forall n (zx : ZX 1 1),
+  (S n) ↑ zx ∝ zx ↕ (n ↑ zx).
+Proof. easy. Qed.
+
+Lemma nStack1_r : forall n (zx : ZX 1 1), 
+  (S n) ↑ zx ∝ 
+  Cast (S n) (S n) (nStack1_r_dim _) (nStack1_r_dim _) ((n ↑ zx) ↕ zx).
+Proof.
+  induction n.
+  - intros.
+    simpl.
+    simpl_casts.
+    cleanup_zx.
+    simpl_casts.
+    easy.
+  - intros.
+    rewrite nStack1_l.
+    rewrite IHn at 1.
+    rewrite cast_stack_r.
+    simpl.
+    simpl_casts.
+    rewrite ZX_Stack_assoc_back.
+    simpl_casts.
+    easy.
+Qed.
+
+Lemma stack_wire_distribute_l : forall {n m o} (zx0 : ZX n m) (zx1 : ZX m o),
   — ↕ (zx0 ⟷ zx1) ∝ (— ↕ zx0) ⟷ (— ↕ zx1).
 Proof.
   intros.
@@ -270,8 +298,74 @@ Proof.
   simpl; Msimpl; easy.
 Qed.
 
-(* Lemma nWire_collapse_r : forall {n0 n1 m1} (zx0 : ZX n0 0) (zx1 : ZX n1 m1), *)
-(*   (zx0 ↕ nWire n1) ⟷ zx1 ∝ zx0 ↕ zx1. *)
+Lemma stack_wire_distribute_r : forall {n m o} (zx0 : ZX n m) (zx1 : ZX m o),
+  (zx0 ⟷ zx1) ↕ —  ∝ (zx0 ↕ —) ⟷ (zx1 ↕ —).
+Proof.
+  intros.
+  prop_exists_nonzero 1.
+  simpl; Msimpl; easy.
+Qed.
+
+Lemma stack_nwire_distribute_l : forall {n m o p} (zx0 : ZX n m) (zx1 : ZX m o),
+  nWire p ↕ (zx0 ⟷ zx1) ∝ (nWire p ↕ zx0) ⟷ (nWire p ↕ zx1).
+Proof.
+  intros.
+  induction p.
+  - cleanup_zx.
+    easy.
+  - rewrite nStack1_l.
+    rewrite (ZX_Stack_assoc — (nWire p) zx0).
+    rewrite (ZX_Stack_assoc — (nWire p) zx1).
+    simpl_casts.
+    rewrite <- (stack_wire_distribute_l (nWire p ↕ zx0) (nWire p ↕ zx1)).
+    rewrite <- IHp.
+    rewrite ZX_Stack_assoc_back.
+    simpl_casts.
+    easy.
+Qed.
+
+Lemma stack_nwire_distribute_r : forall {n m o p} (zx0 : ZX n m) (zx1 : ZX m o),
+  (zx0 ⟷ zx1) ↕ nWire p ∝ (zx0 ↕ nWire p) ⟷ (zx1 ↕ nWire p).
+Proof.
+  intros.
+  induction p.
+  - cleanup_zx.
+    eapply (cast_diagrams n o).
+    repeat rewrite cast_contract.
+    rewrite cast_id.
+    rewrite cast_compose_distribute.
+    simpl_casts.
+    erewrite (cast_compose_mid m _ ($ n, m + 0 $ zx0)).
+    simpl_casts.
+    easy.
+    Unshelve.
+    all: lia.
+  - rewrite nStack1_r.
+    repeat rewrite cast_stack_r.
+    eapply (cast_diagrams (n + (p + 1)) (o + (p + 1))).
+    rewrite cast_contract.
+    rewrite cast_id.
+    rewrite cast_compose_distribute.
+    simpl_casts.
+    erewrite (cast_compose_mid (m + (p + 1)) _ ($ n + (p + 1), m + (S p) $ zx0 ↕ (nWire p ↕ —))).
+    simpl_casts.
+    rewrite 3 ZX_Stack_assoc_back.
+    eapply (cast_diagrams (n + p + 1) (o + p + 1)).
+    rewrite cast_contract.
+    rewrite cast_id.
+    rewrite cast_compose_distribute.
+    rewrite 2 cast_contract.
+    erewrite (cast_compose_mid (m + p + 1) _ ($ n + p + 1, m + (p + 1) $ zx0 ↕ nWire p ↕ —)).
+    simpl_casts.
+    rewrite <- stack_wire_distribute_r.
+    rewrite <- IHp.
+    easy.
+    Unshelve.
+    all: lia.
+Qed.
+
+(* Lemma nWire_collapse_r : forall {n0 n1 m1} (zx0 : ZX n0 0) (zx1 : ZX n1 m1),
+   (zx0 ↕ nWire n1) ⟷ zx1 ∝ zx0 ↕ zx1. *)
 
 Lemma nstack1_split : forall n m (zx : ZX 1 1),
   (n + m) ↑ zx ∝ 
@@ -371,7 +465,7 @@ Proof.
       rewrite (ZX_Stack_assoc — — _).
       simpl_casts.
       rewrite <- ZX_Compose_assoc.
-      rewrite <- (stack_wire_distribute 
+      rewrite <- (stack_wire_distribute_l 
         ((Z) n (S m) α ⟷ ((Z) 1 2 0 ↕ (m ↑ —))) 
         (— ↕ ((Z) 1 2 0 ↕ nWire m))).
       rewrite ZX_Compose_assoc.
@@ -384,11 +478,9 @@ Proof.
       rewrite ZX_Stack_Compose_distr.
       rewrite <- ZX_Compose_assoc.
       rewrite <- Grow_Z_Right.
-      unfold nWire.
       rewrite (ZX_Stack_assoc (Z 1 2 0) (1 ↑ —) (m ↑ —)).
       simpl_casts.
       rewrite <- nstack1_split.
-      fold (nWire (1 + m)).
       rewrite <- (Grow_Z_Right n (S m)).
       easy.
 Qed.
@@ -400,7 +492,7 @@ Ltac adjoint_of H := intros; apply adjoint_diagrams; simpl; apply H.
 Lemma WrapOver_R : forall n m α,
   Z n (S m) α ∝ (Cap ↕ nWire n) ⟷ (Wire ↕ Z (S n) m α).
 Proof. 
-  intros. apply transpose_diagrams. simpl. unfold nWire. 
+  intros. apply transpose_diagrams. simpl. 
   rewrite nstack1_transpose. rewrite transpose_wire.
   apply WrapOver_L.
 Qed.
@@ -422,14 +514,13 @@ Proof.
   intros.
   rewrite WrapOver_R.
   rewrite Grow_Z_Left.
-  unfold nWire.
   rewrite (nstack1_split 1 n).
   fold (nWire n). fold (nWire 1).
-  rewrite stack_wire_distribute.
+  rewrite stack_wire_distribute_l.
   rewrite <- ZX_Compose_assoc.
   rewrite (ZX_Stack_assoc_back ⊂ (nWire 1) (nWire n)).
   rewrite (ZX_Stack_assoc_back — (Z 2 1 0) (nWire n)).
-  repeat rewrite cast_id.
+  simpl_casts.
   rewrite <- (ZX_Stack_Compose_distr (⊂ ↕ nWire 1) (— ↕ Z 2 1 0) (nWire n) (nWire n)).
   rewrite <- WrapOver_R.
   cleanup_zx.
@@ -443,7 +534,6 @@ Proof.
   intros.
   apply transpose_diagrams.
   simpl.
-  unfold nWire.
   rewrite nstack1_transpose.
   rewrite transpose_wire.
   apply Grow_Z_Left_1_2.
@@ -462,7 +552,7 @@ Qed.
 
 Lemma nWire_S_l : forall n,
   nWire (S n) ∝ — ↕ nWire n.
-Proof. intros. unfold nWire. easy. Qed.
+Proof. intros. easy. Qed.
 
 Lemma Z_Absolute_Fusion : forall {n m o} α β,
   (Z n (S m) α ⟷ Z (S m) o β) ∝
@@ -499,7 +589,7 @@ Proof.
     fold (nWire n).
     rewrite nWire_S_l.
     rewrite (ZX_Stack_assoc_back (Z 0 1 0) (—) (nWire n)).
-    rewrite cast_id.
+    simpl_casts.
     rewrite <- (ZX_Stack_Compose_distr (Z 0 1 0 ↕ —) (Z 2 1 0) (nWire n)).
     rewrite Grow_Z_Left_1_2.
     rewrite <- ZX_Compose_assoc.
