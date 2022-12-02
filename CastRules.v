@@ -186,6 +186,20 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma cast_X :
+  forall {n n' m m'} prfn prfm α,
+  Cast n' m' prfn prfm (X n m α) ∝ X n' m' α.
+Proof.
+  intros.
+  subst.
+  simpl_casts.
+  reflexivity.
+Qed.
+
+
+#[export] Hint Rewrite @cast_Z @cast_X: cast_simpl_db.
+
+
 Lemma cast_nStack1 : forall {n n'} prfn (zx : ZX 1 1),
   Cast n' n' prfn prfn (n ↑ zx) ∝ n' ↑ zx.
 Proof.
@@ -201,6 +215,54 @@ Proof.
   intros.
   apply cast_nStack1.
 Qed.
+
+Lemma cast_nBox : forall {n n'} prfn,
+  Cast n' n' prfn prfn (nWire n) ∝ nWire n'.
+Proof.
+  intros.
+  apply cast_nStack1.
+Qed.
+
+#[export] Hint Rewrite @cast_nStack1 @cast_nWire @cast_nBox : cast_simpl_db.
+
+Lemma cast_transpose : forall {n m n' m'} prfn prfm (zx : ZX n m),
+  (Cast n' m' prfn prfm zx) ⊤ ∝ Cast m' n' prfm prfn (zx ⊤). 
+Proof.
+  intros.
+  destruct prfn, prfm.
+  simpl_casts.
+  easy.
+Qed.
+
+Lemma cast_conj : forall {n m n' m'} prfn prfm (zx : ZX n m),
+  (Cast n' m' prfn prfm zx) ^* ∝ Cast n' m' prfn prfm (zx ^*). 
+Proof.
+  intros.
+  destruct prfn, prfm.
+  simpl_casts.
+  easy.
+Qed.
+
+Lemma cast_adj : forall {n m n' m'} prfn prfm (zx : ZX n m),
+  (Cast n' m' prfn prfm zx) † ∝ Cast m' n' prfm prfn (zx †). 
+Proof.
+  intros.
+  unfold adjoint.
+  rewrite cast_conj.
+  rewrite cast_transpose.
+  easy.
+Qed.
+
+Lemma cast_colorswap : forall {n m n' m'} prfn prfm (zx : ZX n m),
+  ⊙ (Cast n' m' prfn prfm zx) ∝ Cast n' m' prfn prfm (⊙ zx). 
+Proof.
+  intros.
+  destruct prfn, prfm.
+  simpl_casts.
+  easy.
+Qed.
+
+#[export] Hint Rewrite @cast_transpose @cast_conj @cast_adj @cast_colorswap : cast_simpl_db.
 
 Lemma cast_simplify :
 forall {n n' m m'} prfn0 prfm0 prfn1 prfm1  (zx0 zx1 : ZX n m),
@@ -233,4 +295,3 @@ Proof.
   repeat rewrite cast_id in H.
   easy.
 Qed.
-
