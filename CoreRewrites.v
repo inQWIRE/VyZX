@@ -697,8 +697,7 @@ Proof.
     rewrite Rplus_0_l.
     rewrite Z_0_is_wire.
     cleanup_zx.
-    rewrite IHm.
-    easy.
+    apply IHm.
 Qed.
 
 Lemma cap_absorb_dim : forall n m,
@@ -719,6 +718,66 @@ Proof.
   solve_matrix.
 Qed.
 
+Lemma Z_rot_l : forall n m α,
+  Z (S n) m α ∝ Z 1 1 α ↕ nWire n ⟷ Z (S n) m 0.
+Proof.
+  assert (Z_rot_passthrough : forall α, 
+    (Z 1 1 α ↕ — ⟷ Z 2 1 0) ∝ Z 2 1 0 ⟷ Z 1 1 α).
+    { solve_prop 1. }
+  induction n; intros.
+  - cleanup_zx.
+    simpl_casts.
+    rewrite Z_spider_1_1_fusion.
+    rewrite Rplus_0_r.
+    easy.
+  - simpl.
+    rewrite (Grow_Z_Left n m 0).
+    rewrite <- ZX_Compose_assoc.
+    rewrite (ZX_Stack_assoc_back (Z 1 1 α) —).
+    simpl_casts.
+    rewrite <- (ZX_Stack_Compose_distr (Z 1 1 α ↕ —) (Z 2 1 0) (nWire n)).
+    cleanup_zx.
+    rewrite Z_rot_passthrough.
+    rewrite stack_nwire_distribute_r.
+    rewrite ZX_Compose_assoc.
+    rewrite <- IHn.
+    rewrite <- (Grow_Z_Left n).
+    easy.
+Qed.
+
+Lemma Z_appendix_rot_l : forall n m α,
+  Z n m α ∝ (Z 0 1 α ↕ nWire n) ⟷ Z (S n) m 0.
+Proof.
+  assert (Z_appendix_base : forall α,
+    (Z 0 1 α ↕ — ⟷ Z 2 1 0) ∝ Z 1 1 α).
+    { solve_prop 1. }
+  induction n; intros.
+  - cleanup_zx.
+    simpl_casts.
+    rewrite Z_spider_1_1_fusion.
+    rewrite Rplus_0_r.
+    easy.
+  - rewrite Grow_Z_Left.
+    simpl.
+    rewrite (ZX_Stack_assoc_back (Z 0 1 α) —).
+    simpl_casts.
+    rewrite <- ZX_Compose_assoc.
+    rewrite <- (@stack_nwire_distribute_r _ _ _ n (Z 0 1 α ↕ —) (Z 2 1 0)).
+    rewrite Z_appendix_base.
+    rewrite <- Z_rot_l.
+    easy.
+Qed.
+
+Lemma Z_appendix_rot_r : forall n m α,
+  Z n m α ∝ Z n (S m) 0 ⟷ (Z 1 0 α ↕ nWire m).
+Proof. 
+  intros.
+  apply transpose_diagrams.
+  simpl.
+  rewrite nstack1_transpose.
+  rewrite transpose_wire.
+  apply Z_appendix_rot_l.
+Qed.
 
 Lemma Z_appendix_top_l : forall n m α,
   Z n m α ∝ (Z 0 1 0 ↕ nWire n) ⟷ Z (S n) m α.
@@ -1011,9 +1070,7 @@ Proof.
       rewrite wire_to_nWire.
 Admitted.
 
-Lemma dominant_spider_fusion : forall midbot input midtop output α β,
-  Z input (midtop + (S midbot)) α ⟷ (nWire midtop ↕ Z (S midbot) output β) ∝
-  Z input (midtop + output) (α + β).
+
 Lemma Z_add_r : forall {n} m o {α},
   Z n (m + o) α ∝ Z n 2 α ⟷ (Z 1 m 0 ↕ Z 1 o 0).
 Proof.
@@ -1051,7 +1108,33 @@ Lemma Z_add_l : forall n m {o α},
   Z (n + m) o α ∝ (Z n 1 0 ↕ Z m 1 0) ⟷ Z 2 o α.
 Proof. intros. transpose_of (@Z_add_r o n m). Qed.
 
-Admitted.
+Lemma dominant_spider_fusion_r : forall n m0 m1 o α β,
+  Z n ((S m0) + m1) α ⟷ (Z (S m0) o β ↕ nWire m1) ∝ 
+  Z n (o + m1) (α + β).
+Proof.
+  intros.
+  rewrite Z_add_r.
+  repeat rewrite ZX_Compose_assoc.
+  rewrite <- (ZX_Stack_Compose_distr (Z 1 (S m0) 0)).
+  rewrite Z_Absolute_Fusion.
+  rewrite Rplus_0_l.
+  cleanup_zx.
+  rewrite (Z_appendix_rot_r 1 o β).
+  rewrite <- (nwire_removal_r (Z 1 m1 0)).
+  rewrite ZX_Stack_Compose_distr.
+  rewrite <- ZX_Compose_assoc.
+  rewrite <- Z_add_r.
+  rewrite (ZX_Stack_assoc (Z 1 0 β) (nWire o)).
+  simpl_casts.
+  rewrite <- nstack1_split.
+  simpl.
+  rewrite <- (Rplus_0_r α) at 1.
+  rewrite <- Z_spider_1_1_fusion.
+  rewrite ZX_Compose_assoc.
+  rewrite <- Z_appendix_rot_r.
+  rewrite Z_spider_1_1_fusion.
+  easy.
+Qed.
 
 Lemma SpiderFusion : forall top mid bot input output α β,
   (nWire top ↕ Z input (S mid + bot) α) ⟷  
