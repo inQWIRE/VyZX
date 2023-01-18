@@ -1,7 +1,9 @@
-Require Import externals.QuantumLib.Quantum.
-Require Import externals.QuantumLib.Proportional.
-Require Import externals.QuantumLib.VectorStates.
+Require Import QuantumLib.Quantum.
+Require Import QuantumLib.Proportional.
+Require Import QuantumLib.VectorStates.
+
 From VyZX Require Export SemanticCore.
+From VyZX Require Export QlibTemp.
 
 (** Base constructions for the ZX calculus, lets us build every diagram inductively.
     We have included some "unnecessary" objects because they are common and useful. *)
@@ -20,7 +22,14 @@ Inductive ZX : nat -> nat -> Type :=
   | X_Spider n m (α : R) : ZX n m
   | Z_Spider n m (α : R) : ZX n m
   | Stack {n_0 m_0 n_1 m_1} (zx0 : ZX n_0 m_0) (zx1 : ZX n_1 m_1) : ZX (n_0 + n_1) (m_0 + m_1)
-  | Compose {n_0 m n_1} (zx0 : ZX n_0 m) (zx1 : ZX m n_1) : ZX n_0 n_1.
+  | Compose {n m o} (zx0 : ZX n m) (zx1 : ZX m o) : ZX n o.
+
+Definition Cast (n m : nat) {n' m'} (eqIn : n = n') (eqOut : m = m') (zx : ZX n' m') : ZX n m.
+Proof.
+  destruct eqIn.
+  destruct eqOut.
+  exact zx.
+Defined.
 
 (* Notations for the ZX diagrams *)
 Notation "⦰" := Empty : ZX_scope. (* \revemptyset *)
@@ -33,12 +42,13 @@ Notation "A ⟷ B" := (Compose A B) (left associativity, at level 40) : ZX_scope
 Notation "A ↕ B" := (Stack A B) (left associativity, at level 40) : ZX_scope. (* \updownarrow *)
 Notation "'Z'" := Z_Spider (left associativity, at level 40) : ZX_scope.
 Notation "'X'" := X_Spider (left associativity, at level 40) : ZX_scope.
+Notation "$ n , m ::: A $" := (Cast n m _ _ A) (at level 49) : ZX_scope.
 
 (** We provide two separate options for semantic functions, one based on sparse matrices
     and one based on dirac notation. *)
 
 Fixpoint ZX_semantics {n m} (zx : ZX n m) : 
-  Matrix (2 ^ m) (2 ^n) := 
+  Matrix (2 ^ m) (2 ^ n) := 
   match zx with
   | ⦰ => I 1
   | X _ _ α => X_semantics n m α
@@ -49,11 +59,19 @@ Fixpoint ZX_semantics {n m} (zx : ZX n m) :
   | — => I 2
   | □ => hadamard
   | zx0 ↕ zx1 => (ZX_semantics zx0) ⊗ (ZX_semantics zx1) 
-  | zx0 ⟷ zx1 => (ZX_semantics zx1) × (ZX_semantics zx0)
+  | Compose zx0 zx1 => (ZX_semantics zx1) × (ZX_semantics zx0)
   end.
 
+Lemma Cast_semantics : forall {n m n' m'} {eqn eqm} (zx : ZX n m),
+  ZX_semantics (Cast n' m' eqn eqm zx) = ZX_semantics zx.
+Proof.
+  intros.
+  subst.
+  easy.
+Qed.
+
 Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) : 
-  Matrix (2 ^ m) (2 ^n) := 
+  Matrix (2 ^ m) (2 ^ n) := 
   match zx with
   | ⦰ => I 1
   | X _ _ α => X_dirac_semantics n m α
@@ -74,12 +92,12 @@ Proof.
   induction zx; try lma; simpl.
   rewrite X_semantics_equiv; reflexivity.
   rewrite Z_semantics_equiv; reflexivity.
-  all: rewrite IHzx1, IHzx2; reflexivity.
+  1,2: subst; rewrite IHzx1, IHzx2; reflexivity.
 Qed.
 
 Theorem WF_ZX : forall nIn nOut (zx : ZX nIn nOut), WF_Matrix (ZX_semantics zx).
 Proof.
-intros.
+  intros.
   induction zx; try (simpl; auto 10 with wf_db).
   1,2: try (simpl; auto 10 with wf_db);
     apply WF_list2D_to_matrix;
@@ -119,14 +137,15 @@ Proof.
     apply WF_ZX.
 Qed.
 
-Definition nWire := fun n => n ↑ Wire.
+(* Definition nWire := fun n => n ↑ Wire. *)
 Definition nBox := fun n => n ↑ Box.
+
+Notation "'nWire' n" := (n ↑ —) (left associativity, at level 38).
 
 Lemma nWire_semantics {n} : ZX_semantics (nWire n) = I (2^n).
 Proof.
   induction n; auto.
   simpl.
-  unfold nWire in IHn.
   rewrite IHn.
   rewrite id_kron.
   auto.
@@ -144,8 +163,6 @@ Qed.
 
 #[export] Hint Rewrite @nWire_semantics @nBox_semantics : zx_sem_db.
 
-Global Opaque nWire nBox.
-
 (** Global operations on ZX diagrams *)
 
 (* Transpose of a diagram *)
@@ -156,7 +173,7 @@ Fixpoint transpose {nIn nOut} (zx : ZX nIn nOut) : ZX nOut nIn :=
   | ⦰ => ⦰
   | Z mIn mOut α => Z mOut mIn α
   | X mIn mOut α => X mOut mIn α
-  | zx1 ⟷ zx2 => (zx2 ⊤) ⟷ (zx1 ⊤)
+  | zx0 ⟷ zx1 => (zx1 ⊤) ⟷ (zx0 ⊤)
   | zx1 ↕ zx2 => (zx1 ⊤) ↕ (zx2 ⊤)
   | ⊂ => ⊃
   | ⊃ => ⊂
@@ -168,7 +185,7 @@ Lemma transpose_involutive_eq : forall {nIn nOut} (zx : ZX nIn nOut),
   zx = (zx ⊤)⊤.
 Proof.
   intros; induction zx; try auto.
-  all: simpl; rewrite <- IHzx1, <- IHzx2; auto.
+  1,2: simpl; rewrite <- IHzx1, <- IHzx2; try rewrite eq_sym_involutive; auto.
 Qed.
 
 (* Negating the angles of a diagram, complex conjugate *)
@@ -178,7 +195,7 @@ Fixpoint conjugate {n m} (zx : ZX n m) : ZX n m :=
   match zx with
   | Z n m α => Z n m (-α)
   | X n m α => X n m (-α)
-  | zx1 ⟷ zx2 => zx1^* ⟷ zx2^*
+  | zx0 ⟷ zx1 => (zx0^*) ⟷ (zx1^*)
   | zx1 ↕ zx2 => zx1^* ↕ zx2^*
   | other => other
   end
@@ -205,9 +222,8 @@ Proof.
   - simpl; rewrite X_semantics_transpose; reflexivity.
   - simpl; rewrite Z_semantics_transpose; reflexivity.
   - simpl; rewrite IHzx1, IHzx2; rewrite <- kron_transpose; reflexivity.
-  - simpl; rewrite IHzx1, IHzx2; rewrite <- Mmult_transpose; reflexivity.
+  - simpl; rewrite IHzx1, IHzx2; restore_dims; rewrite Mmult_transpose; reflexivity.
 Qed.
-
 
 Lemma ZX_semantics_adjoint_comm {nIn nOut} : forall (zx : ZX nIn nOut),
   ZX_semantics (zx †) = (ZX_semantics zx) †%M.
@@ -223,7 +239,7 @@ Proof.
   - simpl; rewrite X_semantics_adj; reflexivity.
   - simpl; rewrite Z_semantics_adj; reflexivity.
   - simpl; fold (zx1†); fold (zx2†); rewrite IHzx1, IHzx2; rewrite <- kron_adjoint; reflexivity.
-  - simpl; fold (zx1†); fold(zx2†); rewrite IHzx1, IHzx2; rewrite Mmult_adjoint; reflexivity.
+  - simpl; fold (zx1†); fold(zx2†); rewrite IHzx1, IHzx2; restore_dims; rewrite Mmult_adjoint; reflexivity.
 Qed.
 
 Opaque adjoint.
@@ -231,10 +247,10 @@ Opaque adjoint.
 Reserved Notation "⊙ zx" (at level 10). (* \odot *) 
 Fixpoint ColorSwap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
   match zx with
-  | X n m α  => Z n m α
-  | Z n m α  => X n m α
-  | zx1 ↕ zx2   => (⊙ zx1) ↕ (⊙ zx2)
-  | zx1 ⟷ zx2 => (⊙ zx1) ⟷ (⊙ zx2)
+  | X n m α   => Z n m α
+  | Z n m α   => X n m α
+  | zx1 ↕ zx2 => (⊙ zx1) ↕ (⊙ zx2)
+  | zx0 ⟷ zx1 => (⊙zx0) ⟷ (⊙zx1)
   | otherwise => otherwise
   end
   where "⊙ zx" := (ColorSwap zx) : ZX_scope.
@@ -269,6 +285,8 @@ Proof.
   - simpl.
     rewrite IHzx1, IHzx2.
     rewrite Mmult_assoc.
+    restore_dims.
+    subst.
     rewrite <- 2 Mmult_assoc with (m ⨂ hadamard) _ _.
     rewrite kron_n_mult.
     rewrite MmultHH.
@@ -276,6 +294,47 @@ Proof.
     Msimpl.
     repeat rewrite Mmult_assoc.
     reflexivity.
+Qed.
+
+Lemma Z_spider_1_1_fusion_eq : forall {nIn nOut} α β, 
+  ZX_semantics ((Z_Spider nIn 1 α) ⟷ (Z_Spider 1 nOut β)) =
+  ZX_semantics (Z_Spider nIn nOut (α + β)).
+Proof.
+  assert (expnonzero : forall a, exists b, (2 ^ a + (2 ^ a + 0) - 1)%nat = S b).
+  { 
+    intros.
+    destruct (2^a)%nat eqn:E.
+      - contradict E.
+        apply Nat.pow_nonzero; easy.
+      - simpl.
+        rewrite <- plus_n_Sm.
+        exists (n + n)%nat.
+        lia.
+  }
+  intros.
+  prep_matrix_equality.
+  simpl.
+  unfold Mmult.
+  simpl.
+  rewrite Cplus_0_l.
+  destruct nIn, nOut.
+  - simpl.
+    destruct x,y; [simpl; autorewrite with Cexp_db | | | ]; lca.
+  - destruct x,y; simpl; destruct (expnonzero nOut); rewrite H; [ lca | lca | | ].
+    + destruct (x =? x0)%nat.
+      * simpl.
+        autorewrite with Cexp_db.
+        lca.
+      * simpl.
+        lca.
+    + destruct (x =? x0)%nat; lca.
+  - destruct x,y; simpl; destruct (expnonzero nIn); rewrite H; [lca | | lca | lca].
+    + destruct (y =? x)%nat; [autorewrite with Cexp_db | ]; lca.
+  - destruct x,y; simpl; destruct (expnonzero nIn), (expnonzero nOut); rewrite H,H0; [lca | lca | | ].
+    + destruct (x =? x1)%nat; lca.
+    + destruct (x =? x1)%nat, (y =? x0)%nat; [| lca | lca | lca].
+      autorewrite with Cexp_db.
+      lca.
 Qed.
 
 Local Close Scope ZX_scope.

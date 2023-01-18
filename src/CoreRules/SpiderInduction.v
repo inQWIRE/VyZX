@@ -1,5 +1,5 @@
-Require Import VyZX.ZXCore.
-Require Import VyZX.Proportional.
+Require Import ZXCore.
+Require Import Proportional.
 
 (* Spider Induction *)
 

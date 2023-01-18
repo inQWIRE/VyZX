@@ -1,6 +1,7 @@
-From VyZX Require Export ZXCore.
-From VyZX Require Export Proportional.
-
+From VyZX Require Export CoreData.ZXCore.
+From VyZX Require Import CoreData.SemanticCore.
+From VyZX Require Export CoreData.Proportional.
+From VyZX Require Export CoreRules.SpiderInduction.
 
 Lemma cast_id :
 forall {n m} prfn prfm (zx : ZX n m),
@@ -258,9 +259,8 @@ Lemma cast_adj : forall {n m n' m'} prfn prfm (zx : ZX n m),
   (Cast n' m' prfn prfm zx) † ∝ Cast m' n' prfm prfn (zx †). 
 Proof.
   intros.
-  unfold adjoint.
-  rewrite cast_conj.
-  rewrite cast_transpose.
+  subst.
+  simpl.
   easy.
 Qed.
 

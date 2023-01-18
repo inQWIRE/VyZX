@@ -1,4 +1,4 @@
-Require Import ZXCore.
+From VyZX Require Import CoreData.ZXCore.
 Require Import Setoid.
 
 (* A generalized form of proportionality which can be used to build notions for other IRs easily *)
@@ -19,14 +19,15 @@ Notation "zx0 ∝ zx1" := (proportional zx0 zx1) (at level 60) : ZX_scope. (* \p
 
 Ltac prop_exists_nonzero c := exists c; split; try apply nonzero_div_nonzero; try nonzero.
 Ltac prep_proportional := unfold proportional; intros; split; [split; lia | ].
+Ltac solve_prop c := 
+	prop_exists_nonzero c; simpl; Msimpl; 
+	unfold X_semantics; unfold Z_semantics; simpl; solve_matrix; 
+	autorewrite with Cexp_db; lca.
+
 
 Lemma proportional_general_refl : forall T n m eval (t : T), 
   @proportional_general T n m T n m eval eval t t.
-Proof.
-  prop_exists_nonzero 1.
-  intros.
-  lma.
-Qed.
+Proof. prop_exists_nonzero 1; intros; lma. Qed.
 
 Lemma proportional_general_symm : 
   forall T_0 n_0 m_0 T_1 n_1 m_1 eval_0 eval_1 (t0 : T_0) (t1: T_1), 
@@ -227,6 +228,24 @@ Add Parametric Morphism (n m : nat) : (@adjoint n m)
   with signature (@proportional n m) ==> proportional as adj_mor.
 Proof. apply adjoint_compat. Qed.
 
+Lemma colorswap_compat :
+  forall nIn nOut,
+    forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
+    (⊙ zx0) ∝ (⊙ zx1).
+Proof.
+  intros.
+  destruct H; destruct H; exists x; split; try assumption.
+  rewrite 2 ZX_semantics_Colorswap_comm.
+  rewrite H.
+  rewrite Mscale_mult_dist_r.
+  rewrite Mscale_mult_dist_l.
+  reflexivity.
+Qed.
+
+Add Parametric Morphism (nIn nOut : nat) : (@ColorSwap nIn nOut)
+  with signature (@proportional nIn nOut) ==> (@proportional nIn nOut) as colorswap_mor.
+Proof. apply colorswap_compat. Qed.
+
 Theorem ZX_eq_prop : forall {n m} (zx0 : ZX n m) (zx1 : ZX n m),
   ZX_semantics zx0 = ZX_semantics zx1 -> zx0 ∝ zx1.
 Proof.
@@ -270,6 +289,23 @@ Proof.
   lma.
 Qed.
 
+Lemma colorswap_involutive : forall n m (zx : ZX n m),
+  (⊙ ⊙ zx) ∝ zx.
+Proof.
+  intros.
+  induction zx; try (simpl; easy).
+  all: simpl; rewrite IHzx1, IHzx2; easy.
+Qed.
+
+Lemma colorswap_diagrams : forall n m (zx0 zx1 : ZX n m),
+  ⊙ zx0 ∝ ⊙zx1 -> zx0 ∝ zx1.
+Proof.
+  intros.
+  rewrite <- colorswap_involutive.
+  rewrite H.
+  apply colorswap_involutive.
+Qed.
+
 Lemma transpose_diagrams : forall n m (zx0 zx1 : ZX n m),
   zx0 ⊤ ∝ zx1 ⊤ -> zx0 ∝ zx1.
 Proof.
@@ -309,4 +345,3 @@ Proof.
   Msimpl.
   apply Z_spider_1_1_fusion_eq.
 Qed.
-
