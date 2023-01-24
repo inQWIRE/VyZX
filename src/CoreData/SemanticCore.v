@@ -1,5 +1,7 @@
-(** Contains the definitions for Z and X spider semantics, their equivalence, and well
-    formedness *)
+(* 
+Contains the definitions for Z and X spider semantics, their equivalence, 
+and well formedness 
+*)
 
 Require Export QuantumLib.Quantum.
 Require Import QuantumLib.Proportional.
@@ -46,7 +48,8 @@ Definition X_semantics (n m : nat) (α : R) : Matrix (2 ^ m) (2 ^ n) :=
 
 (* Transpose and Adjoint lemmas *)
 
-Lemma Z_semantics_transpose (n m : nat) (α : R) : (Z_semantics n m α) ⊤ = Z_semantics m n α.
+Lemma Z_semantics_transpose (n m : nat) (α : R) : 
+  (Z_semantics n m α) ⊤ = Z_semantics m n α.
 Proof.
   unfold Z_semantics.
   unfold transpose.
@@ -56,7 +59,8 @@ Proof.
   all: rewrite andb_comm; reflexivity.
 Qed.
 
-Lemma Z_semantics_adj (n m : nat) (α : R) : (Z_semantics n m α) † = Z_semantics m n (- α).
+Lemma Z_semantics_adj (n m : nat) (α : R) : 
+  (Z_semantics n m α) † = Z_semantics m n (- α).
 Proof.
   unfold adjoint.
   unfold Z_semantics.
@@ -73,7 +77,8 @@ Proof.
        reflexivity.
 Qed.
 
-Lemma X_semantics_transpose (n m : nat) (α : R) : (X_semantics n m α) ⊤ = X_semantics m n α.
+Lemma X_semantics_transpose (n m : nat) (α : R) : 
+  (X_semantics n m α) ⊤ = X_semantics m n α.
 Proof.
   unfold X_semantics.
   rewrite 2 Mmult_transpose.
@@ -84,7 +89,8 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma X_semantics_adj (n m : nat) (α : R) : (X_semantics n m α)† = X_semantics m n (- α).
+Lemma X_semantics_adj (n m : nat) (α : R) : 
+  (X_semantics n m α)† = X_semantics m n (- α).
 Proof.
   unfold X_semantics.
   distribute_adjoint.
@@ -100,31 +106,37 @@ Qed.
 
 (* The core of dirac notation *)
 
-Definition bra_ket_MN (bra: Matrix 1 2) (ket : Vector 2) {n m} : Matrix (2 ^ m) (2 ^ n) := 
+Definition bra_ket_MN (bra: Matrix 1 2) (ket : Vector 2) {n m} : 
+                                          Matrix (2 ^ m) (2 ^ n) := 
   (m ⨂ ket) × (n ⨂ bra).
 Transparent bra_ket_MN. 
 
 Arguments bra_ket_MN bra ket n m /.
 
-Lemma WF_bra_ket_MN : forall n m bra ket, WF_Matrix bra -> WF_Matrix ket -> WF_Matrix (@bra_ket_MN bra ket n m).
+Lemma WF_bra_ket_MN : forall n m bra ket, 
+  WF_Matrix bra -> WF_Matrix ket -> WF_Matrix (@bra_ket_MN bra ket n m).
 Proof.
   intros.
   unfold bra_ket_MN.
   apply WF_mult; restore_dims; apply WF_kron_n; assumption.
 Qed.
 
-Definition Dirac_spider_semantics (bra0 bra1 : Matrix 1 2) (ket0 ket1 : Vector 2) (α : R) (n m : nat) : Matrix (2 ^ m) (2 ^ n) :=
-  (bra_ket_MN bra0 ket0) .+ (Cexp α) .* (bra_ket_MN bra1 ket1). 
+Definition Dirac_spider_semantics 
+  (bra0 bra1 : Matrix 1 2) (ket0 ket1 : Vector 2) 
+  (α : R) (n m : nat) : Matrix (2 ^ m) (2 ^ n) :=
+    (bra_ket_MN bra0 ket0) .+ (Cexp α) .* (bra_ket_MN bra1 ket1). 
 
 Arguments Dirac_spider_semantics bra0 bra1 ket0 ket1 α n m /.
 
 Lemma WF_Dirac_Spider_semantics : forall n m bra0 bra1 ket0 ket1 α, 
-                                WF_Matrix bra0 -> WF_Matrix bra1 -> WF_Matrix ket0 -> WF_Matrix ket1 -> 
-                                WF_Matrix (@Dirac_spider_semantics bra0 bra1 ket0 ket1 α n m).
+  WF_Matrix bra0 -> WF_Matrix bra1 -> WF_Matrix ket0 -> WF_Matrix ket1 -> 
+  WF_Matrix (@Dirac_spider_semantics bra0 bra1 ket0 ket1 α n m).
 Proof.
   intros.
   unfold Dirac_spider_semantics.
-  apply WF_plus; restore_dims; try apply WF_scale; apply WF_bra_ket_MN; assumption.
+  apply WF_plus; restore_dims; try apply WF_scale; 
+                                   apply WF_bra_ket_MN; 
+                                   assumption.
 Qed.
 
 #[export] Hint Resolve WF_Dirac_Spider_semantics WF_bra_ket_MN : wf_db.
@@ -142,7 +154,12 @@ Notation "⟨ - ∣" := braminus.
 (* End TODO *)
 
 (* TODO: Move into quantum lib *)
-#[export] Hint Rewrite Mscale_kron_dist_l Mscale_kron_dist_r Mscale_mult_dist_l Mscale_mult_dist_r Mscale_assoc : scalar_move_db.
+#[export] Hint Rewrite 
+  Mscale_kron_dist_l 
+  Mscale_kron_dist_r 
+  Mscale_mult_dist_l 
+  Mscale_mult_dist_r 
+  Mscale_assoc : scalar_move_db.
 
 Definition Z_dirac_semantics (n m : nat) (α : R) := 
   Dirac_spider_semantics ⟨0∣ ⟨1∣ ∣0⟩ ∣1⟩ α n m.
@@ -153,12 +170,14 @@ Definition X_dirac_semantics (n m : nat) (α : R) :=
 Arguments Z_dirac_semantics n m α /.
 Arguments X_dirac_semantics n m α /.
 
-Ltac unfold_dirac_spider := simpl; unfold Dirac_spider_semantics, bra_ket_MN; try (simpl; Msimpl).
+Ltac unfold_dirac_spider := 
+  simpl; unfold Dirac_spider_semantics, bra_ket_MN; try (simpl; Msimpl).
 
 (** Working towards equivalence of the two forms of semantics *)
 
 Lemma ZX_Dirac_spider_X_H_Z : forall n m α, 
-  X_dirac_semantics n m α = m ⨂ hadamard × (Z_dirac_semantics n m α) × (n ⨂ hadamard).
+  X_dirac_semantics n m α = 
+  m ⨂ hadamard × (Z_dirac_semantics n m α) × (n ⨂ hadamard).
 Proof.
   intros.
   simpl.
@@ -195,7 +214,9 @@ Definition braket_0_intermediate (n m : nat) : Matrix (2^m) (2^n) :=
 Definition braket_1_intermediate (n m : nat) : Matrix (2^m) (2^n) :=
   fun x y => if (x =? 2^m - 1) && (y =? 2^n - 1) then C1 else C0.
 
-Lemma Z_semantics_split_plus : forall (n m : nat) (α : R), Z_semantics n m α = (braket_0_intermediate n m) .+ Cexp α .* (braket_1_intermediate n m).
+Lemma Z_semantics_split_plus : forall (n m : nat) (α : R), 
+  Z_semantics n m α = 
+  (braket_0_intermediate n m) .+ Cexp α .* (braket_1_intermediate n m).
 Proof.
   assert (contra : forall a, (2^S a - 1 <> 0)%nat).
   { intros; simpl. 
@@ -210,7 +231,8 @@ Proof.
   prep_matrix_equality.
   destruct x, y; simpl.
   - destruct (2^n-1)%nat eqn:En, (2^m-1)%nat eqn:Em.
-    + destruct n, m; [lca | destruct (contra m Em) | | ]; destruct (contra n En).
+    + destruct n, m; [lca | destruct (contra m Em) | | ]; 
+                                  destruct (contra n En).
     + destruct n, m; [discriminate | | | ]; lca.
     + destruct n, m; [discriminate | | | ]; lca.
     + destruct n, m; [discriminate | discriminate | | ]; lca.
@@ -219,8 +241,10 @@ Proof.
     + destruct n, m; [discriminate | | | ]; lca.
     + destruct n, m; [discriminate | discriminate | |]; destruct (y =? n0); lca.
     + destruct n, m; [discriminate | | | lca]; destruct (y =? n0); lca.
-  - destruct (2^n-1)%nat eqn:En, (2^m-1)%nat eqn:Em; [lca | | lca | ]; destruct (_ =? _); lca.
-  - destruct (2^n-1)%nat eqn:En, (2^m-1)%nat eqn:Em; [lca | | lca | ]; repeat destruct (_ =? _); lca.
+  - destruct (2^n-1)%nat eqn:En, (2^m-1)%nat eqn:Em; [lca | | lca | ]; 
+                                               destruct (_ =? _); lca.
+  - destruct (2^n-1)%nat eqn:En, (2^m-1)%nat eqn:Em; [lca | | lca | ]; 
+                                        repeat destruct (_ =? _); lca.
 Qed.
 
 
@@ -250,7 +274,8 @@ Proof.
     rewrite kron_n_assoc; [| auto with wf_db].
     unfold kron.
     destruct (S j mod 2 ^S n) eqn:En.
-    + destruct (Nat.mod_divides (S j) (2 ^ S n)); [apply Nat.pow_nonzero; auto |]. 
+    + destruct (Nat.mod_divides (S j) (2 ^ S n)); 
+                 [apply Nat.pow_nonzero; auto |]. 
       destruct (H En).
       rewrite H1.
       replace (2 ^ S n * x / 2 ^ S n)%nat with x.
@@ -329,7 +354,8 @@ Proof.
       destruct H; [assumption |].
       rewrite H.
       rewrite mult_comm.
-      rewrite Nat.divide_div_mul_exact; [ | apply Nat.pow_nonzero; auto | apply Nat.divide_refl ].
+      rewrite Nat.divide_div_mul_exact; 
+        [ | apply Nat.pow_nonzero; auto | apply Nat.divide_refl ].
       rewrite Nat.div_same; [ | apply Nat.pow_nonzero; auto].
       rewrite Nat.mul_1_r.
       destruct x; [rewrite mult_0_r in H; discriminate H |].
@@ -339,13 +365,15 @@ Proof.
       lca.
 Qed.
 
-Lemma braket_sem_0_intermediate : forall (n m : nat), (n ⨂ ket 0) × (m ⨂ bra 0) = braket_0_intermediate m n.
+Lemma braket_sem_0_intermediate : forall (n m : nat), 
+  (n ⨂ ket 0) × (m ⨂ bra 0) = braket_0_intermediate m n.
 Proof.
   intros.
   destruct n,m; prep_matrix_equality.
   - destruct x,y; lca.
   - unfold Mmult; simpl.
-    destruct x,y; replace (m ⨂ bra 0 ⊗ bra 0) with ((S m) ⨂ bra 0) by reflexivity.
+    destruct x,y; 
+    replace (m ⨂ bra 0 ⊗ bra 0) with ((S m) ⨂ bra 0) by reflexivity.
     + rewrite big_bra_0_0_0.
       lca.
     + rewrite big_bra_S_r.
@@ -355,7 +383,8 @@ Proof.
     + rewrite big_bra_S_r.
       lca.
   - unfold Mmult; rewrite Nat.pow_1_l; simpl.
-    destruct x,y; replace (n ⨂ ket 0 ⊗ ket 0) with ((S n) ⨂ ket 0) by reflexivity.
+    destruct x,y; 
+    replace (n ⨂ ket 0 ⊗ ket 0) with ((S n) ⨂ ket 0) by reflexivity.
     + rewrite big_ket_0_0_0.
       lca.
     + rewrite big_ket_0_0_0.
@@ -386,7 +415,8 @@ Proof.
     unfold kron.
     simpl.
     rewrite <- Nat.add_sub_assoc.
-    + replace (0 / 1 ^ n)%nat with 0%nat by (rewrite Nat.pow_1_l; rewrite Nat.div_1_r; reflexivity).
+    + replace (0 / 1 ^ n)%nat with 0%nat 
+        by (rewrite Nat.pow_1_l; rewrite Nat.div_1_r; reflexivity).
       replace (0 mod 1^n) with 0%nat by (rewrite Nat.pow_1_l; reflexivity).
       replace ((2 ^ n + (2 ^ n + 0 - 1)) / 2 ^ n)%nat with 1%nat.
       * replace ((2 ^ n + (2 ^ n + 0 - 1)) mod 2 ^ n)%nat with (2^n-1)%nat.
@@ -405,7 +435,8 @@ Proof.
                      rewrite Nat.sub_0_r.
                      constructor.
       * rewrite plus_0_r.
-        replace ((2 ^ n + (2 ^ n - 1)) / 2 ^ n)%nat with (((1 * 2 ^ n) + (2 ^ n - 1)) / 2 ^ n)%nat.
+        replace ((2 ^ n + (2 ^ n - 1)) / 2 ^ n)%nat 
+          with (((1 * 2 ^ n) + (2 ^ n - 1)) / 2 ^ n)%nat.
         -- rewrite Nat.div_add_l; [| apply Nat.pow_nonzero; auto].
            rewrite Nat.div_small; [reflexivity|].
            destruct (2^n)%nat eqn:E.
@@ -430,7 +461,8 @@ Proof.
     unfold kron.
     simpl.
     rewrite <- Nat.add_sub_assoc.
-    + replace (0 / 1 ^ n)%nat with 0%nat by (rewrite Nat.pow_1_l; rewrite Nat.div_1_r; reflexivity).
+    + replace (0 / 1 ^ n)%nat with 0%nat 
+        by (rewrite Nat.pow_1_l; rewrite Nat.div_1_r; reflexivity).
       replace (0 mod 1^n) with 0%nat by (rewrite Nat.pow_1_l; reflexivity).
       replace ((2 ^ n + (2 ^ n + 0 - 1)) / 2 ^ n)%nat with 1%nat.
       * replace ((2 ^ n + (2 ^ n + 0 - 1)) mod 2 ^ n)%nat with (2^n-1)%nat.
@@ -449,7 +481,8 @@ Proof.
                      rewrite Nat.sub_0_r.
                      constructor.
       * rewrite plus_0_r.
-        replace ((2 ^ n + (2 ^ n - 1)) / 2 ^ n)%nat with (((1 * 2 ^ n) + (2 ^ n - 1)) / 2 ^ n)%nat.
+        replace ((2 ^ n + (2 ^ n - 1)) / 2 ^ n)%nat 
+           with (((1 * 2 ^ n) + (2 ^ n - 1)) / 2 ^ n)%nat.
         -- rewrite Nat.div_add_l; [| apply Nat.pow_nonzero; auto].
            rewrite Nat.div_small; [reflexivity|].
            destruct (2^n)%nat eqn:E.
@@ -532,10 +565,12 @@ Proof.
                      +++ contradict E2n.
                          apply Nat.pow_nonzero; easy.
                      +++ rewrite <- plus_n_Sm.
-                         replace (S (S n1 + n1) - 1)%nat with (S (n1 + n1))%nat by reflexivity.
+                         replace (S (S n1 + n1) - 1)%nat 
+                            with (S (n1 + n1))%nat by reflexivity.
                          rewrite (double_mult n1).
                          rewrite <- (plus_0_l (2*n1)).
-                         replace (S (0 + 2 * n1))%nat with (1 + 2 * n1)%nat by reflexivity.
+                         replace (S (0 + 2 * n1))%nat 
+                            with (1 + 2 * n1)%nat by reflexivity.
                          rewrite Nat.add_mod; [| easy].
                          rewrite mult_comm.
                          rewrite Nat.mod_mul; [| easy].
@@ -633,7 +668,8 @@ Definition big_ket_sem (n : nat) : Matrix (2 ^ n) 1 :=
   fun x y => 
   if (x =? 2^n-1) && (y =? 0) then C1 else C0.
 
-Lemma big_ket_sem_big_bra_sem_transpose : forall n, big_ket_sem n = (big_bra_sem n) ⊤.
+Lemma big_ket_sem_big_bra_sem_transpose : forall n, 
+  big_ket_sem n = (big_bra_sem n) ⊤.
 Proof.
   intros.
   unfold big_ket_sem, big_bra_sem.
@@ -656,7 +692,8 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma braket_sem_1_intermediate : forall n m : nat, n ⨂ ket 1 × m ⨂ bra 1 = braket_1_intermediate m n.
+Lemma braket_sem_1_intermediate : forall n m : nat, 
+  n ⨂ ket 1 × m ⨂ bra 1 = braket_1_intermediate m n.
 Proof.
   intros.
   rewrite big_bra_to_sem.
@@ -668,7 +705,8 @@ Proof.
   destruct (x =? 2^n-1), (y =? 2^m-1); lca.
 Qed.
 
-Lemma Z_semantics_equiv : forall n m α, Z_semantics n m α = Z_dirac_semantics n m α.
+Lemma Z_semantics_equiv : forall n m α, 
+  Z_semantics n m α = Z_dirac_semantics n m α.
 Proof.
   intros.
   simpl.
@@ -681,7 +719,8 @@ Proof.
   rewrite braket_sem_0_intermediate; auto.
 Qed.
 
-Lemma X_semantics_equiv : forall n m α, X_semantics n m α = X_dirac_semantics n m α.
+Lemma X_semantics_equiv : forall n m α, 
+  X_semantics n m α = X_dirac_semantics n m α.
 Proof.
   intros.
   rewrite ZX_Dirac_spider_X_H_Z.
@@ -693,11 +732,16 @@ Proof.
 Qed.
 
 Lemma WF_Z_semantics : forall n m α, WF_Matrix (Z_semantics n m α).
-Proof. intros; rewrite Z_semantics_equiv; apply WF_Dirac_Spider_semantics; auto with wf_db. Qed.
+Proof. 
+  intros; rewrite Z_semantics_equiv; 
+  apply WF_Dirac_Spider_semantics; auto with wf_db. 
+Qed.
 
 Lemma WF_X_semantics : forall n m α, WF_Matrix (X_semantics n m α).
-Proof. intros; rewrite X_semantics_equiv; apply WF_Dirac_Spider_semantics; 
-       unfold braplus, braminus; auto with wf_db. Qed.
+Proof. 
+  intros; rewrite X_semantics_equiv; 
+  apply WF_Dirac_Spider_semantics; unfold braplus, braminus; auto with wf_db. 
+Qed.
 
 #[export] Hint Resolve WF_Z_semantics WF_X_semantics : wf_db.
 

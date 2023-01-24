@@ -87,7 +87,8 @@ induction p.
 	rewrite cast_id.
 	rewrite cast_compose_distribute.
 	simpl_casts.
-	erewrite (cast_compose_mid (m + (p + 1)) _ ($ n + (p + 1), m + (S p) ::: zx0 ↕ (nWire p ↕ —)$)).
+	erewrite (cast_compose_mid (m + (p + 1)) _ 
+                ($ n + (p + 1), m + (S p) ::: zx0 ↕ (nWire p ↕ —)$)).
 	simpl_casts.
 	rewrite 3 ZX_Stack_assoc_back.
 	eapply (cast_diagrams (n + p + 1) (o + p + 1)).
@@ -95,7 +96,8 @@ induction p.
 	rewrite cast_id.
 	rewrite cast_compose_distribute.
 	rewrite 2 cast_contract.
-	erewrite (cast_compose_mid (m + p + 1) _ ($ n + p + 1, m + (p + 1) ::: zx0 ↕ nWire p ↕ — $)).
+	erewrite (cast_compose_mid (m + p + 1) _ 
+                ($ n + p + 1, m + (p + 1) ::: zx0 ↕ nWire p ↕ — $)).
 	simpl_casts.
 	rewrite <- stack_wire_distribute_r.
 	rewrite <- IHp.

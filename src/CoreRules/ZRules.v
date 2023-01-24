@@ -151,7 +151,8 @@ Proof.
 			fold (nWire m).
 			rewrite ZX_Stack_assoc_back.
 			simpl_casts.
-			rewrite <- (ZX_Stack_Compose_distr (Z 1 2 0) (— ↕ Z 1 2 0) (nWire m) (nWire m)).
+			rewrite <- (ZX_Stack_Compose_distr (Z 1 2 0) (— ↕ Z 1 2 0) 
+																					(nWire m) (nWire m)).
 			rewrite <- Grow_Z_Right_Bot_1_2_Base.
 			rewrite Grow_Z_Right.
 			rewrite ZX_Stack_Compose_distr.

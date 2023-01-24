@@ -5,8 +5,10 @@ Require Import QuantumLib.VectorStates.
 From VyZX Require Export SemanticCore.
 From VyZX Require Export QlibTemp.
 
-(** Base constructions for the ZX calculus, lets us build every diagram inductively.
-    We have included some "unnecessary" objects because they are common and useful. *)
+(* 
+Base constructions for the ZX calculus, lets us build every diagram inductively.
+We have included some "unnecessary" objects because they are common and useful. 
+*)
 
 Declare Scope ZX_scope.
 Delimit Scope ZX_scope with ZX.
@@ -21,10 +23,12 @@ Inductive ZX : nat -> nat -> Type :=
   | Box  : ZX 1 1
   | X_Spider n m (α : R) : ZX n m
   | Z_Spider n m (α : R) : ZX n m
-  | Stack {n_0 m_0 n_1 m_1} (zx0 : ZX n_0 m_0) (zx1 : ZX n_1 m_1) : ZX (n_0 + n_1) (m_0 + m_1)
+  | Stack {n_0 m_0 n_1 m_1} (zx0 : ZX n_0 m_0) (zx1 : ZX n_1 m_1) : 
+          ZX (n_0 + n_1) (m_0 + m_1)
   | Compose {n m o} (zx0 : ZX n m) (zx1 : ZX m o) : ZX n o.
 
-Definition Cast (n m : nat) {n' m'} (eqIn : n = n') (eqOut : m = m') (zx : ZX n' m') : ZX n m.
+Definition Cast (n m : nat) {n' m'} 
+              (eqIn : n = n') (eqOut : m = m') (zx : ZX n' m') : ZX n m.
 Proof.
   destruct eqIn.
   destruct eqOut.
@@ -38,14 +42,18 @@ Notation "⊃" := Cup : ZX_scope. (* \supset *)
 Notation "⨉" := Swap : ZX_scope. (* \bigtimes *)
 Notation "—" := Wire : ZX_scope. (* \emdash *)
 Notation "□" := Box : ZX_scope. (* \square *)
-Notation "A ⟷ B" := (Compose A B) (left associativity, at level 40) : ZX_scope. (* \longleftrightarrow *)
-Notation "A ↕ B" := (Stack A B) (left associativity, at level 40) : ZX_scope. (* \updownarrow *)
+Notation "A ⟷ B" := (Compose A B) 
+  (left associativity, at level 40) : ZX_scope. (* \longleftrightarrow *)
+Notation "A ↕ B" := (Stack A B) 
+  (left associativity, at level 40) : ZX_scope. (* \updownarrow *)
 Notation "'Z'" := Z_Spider (left associativity, at level 40) : ZX_scope.
 Notation "'X'" := X_Spider (left associativity, at level 40) : ZX_scope.
 Notation "$ n , m ::: A $" := (Cast n m _ _ A) (at level 49) : ZX_scope.
 
-(** We provide two separate options for semantic functions, one based on sparse matrices
-    and one based on dirac notation. *)
+(* 
+We provide two separate options for semantic functions, one based on sparse 
+matrices and one based on dirac notation. 
+*)
 
 Fixpoint ZX_semantics {n m} (zx : ZX n m) : 
   Matrix (2 ^ m) (2 ^ n) := 
@@ -102,14 +110,15 @@ Proof.
   1,2: try (simpl; auto 10 with wf_db);
     apply WF_list2D_to_matrix;
     try easy; (* case list of length 4 *)
-    try intros; simpl in H; repeat destruct H; try discriminate; try (subst; easy). (* Case of 4 lists length 1 *)
+    try intros; simpl in H; repeat destruct H; 
+          try discriminate; try (subst; easy). (* Case of 4 lists length 1 *)
 Qed.
 
 #[export] Hint Resolve WF_ZX : wf_db.
 
 (* Parametrized diagrams *)
 
-Reserved Notation "n ⇑ zx" (at level 40). (* \Uparrow - maybe change to ⇕ (\Updownarrow) *)
+Reserved Notation "n ⇑ zx" (at level 40). 
 Fixpoint nStack {nIn nOut} n (zx : ZX nIn nOut) : ZX (n * nIn) (n * nOut) :=
   match n with
   | 0 => ⦰
@@ -125,7 +134,8 @@ Fixpoint nStack1 n (zx : ZX 1 1) : ZX n n :=
   end
   where "n ↑ zx" := (nStack1 n zx).
 
-Lemma nStack1_n_kron : forall n (zx : ZX 1 1), ZX_semantics (n ↑ zx) = n ⨂ ZX_semantics zx.
+Lemma nStack1_n_kron : forall n (zx : ZX 1 1), 
+  ZX_semantics (n ↑ zx) = n ⨂ ZX_semantics zx.
 Proof.
   intros.
   induction n.
@@ -208,7 +218,8 @@ Notation "zx †" := (adjoint zx) (at level 0) : ZX_scope.
 Lemma ZX_semantics_transpose_comm {nIn nOut} : forall (zx : ZX nIn nOut),
   ZX_semantics (zx ⊤) = ((ZX_semantics zx) ⊤)%M.
 Proof.
-  assert (Mmult_trans_dep : forall n m o p (A : Matrix n m) (B : Matrix o p), m = o -> ((A × B) ⊤ = B ⊤ × A ⊤)%M).
+  assert (Mmult_trans_dep : forall n m o p (A : Matrix n m) (B : Matrix o p), 
+            m = o -> ((A × B) ⊤ = B ⊤ × A ⊤)%M).
     {
       intros; rewrite Mmult_transpose; rewrite H in *; reflexivity.      
     }
@@ -222,7 +233,8 @@ Proof.
   - simpl; rewrite X_semantics_transpose; reflexivity.
   - simpl; rewrite Z_semantics_transpose; reflexivity.
   - simpl; rewrite IHzx1, IHzx2; rewrite <- kron_transpose; reflexivity.
-  - simpl; rewrite IHzx1, IHzx2; restore_dims; rewrite Mmult_transpose; reflexivity.
+  - simpl; rewrite IHzx1, IHzx2; restore_dims; rewrite Mmult_transpose; 
+    reflexivity.
 Qed.
 
 Lemma ZX_semantics_adjoint_comm {nIn nOut} : forall (zx : ZX nIn nOut),
@@ -238,8 +250,10 @@ Proof.
   - simpl; lma.
   - simpl; rewrite X_semantics_adj; reflexivity.
   - simpl; rewrite Z_semantics_adj; reflexivity.
-  - simpl; fold (zx1†); fold (zx2†); rewrite IHzx1, IHzx2; rewrite <- kron_adjoint; reflexivity.
-  - simpl; fold (zx1†); fold(zx2†); rewrite IHzx1, IHzx2; restore_dims; rewrite Mmult_adjoint; reflexivity.
+  - simpl; fold (zx1†); fold (zx2†); rewrite IHzx1, IHzx2; 
+                     rewrite <- kron_adjoint; reflexivity.
+  - simpl; fold (zx1†); fold(zx2†); rewrite IHzx1, IHzx2; 
+        restore_dims; rewrite Mmult_adjoint; reflexivity.
 Qed.
 
 Opaque adjoint.
@@ -320,7 +334,8 @@ Proof.
   destruct nIn, nOut.
   - simpl.
     destruct x,y; [simpl; autorewrite with Cexp_db | | | ]; lca.
-  - destruct x,y; simpl; destruct (expnonzero nOut); rewrite H; [ lca | lca | | ].
+  - destruct x,y; simpl; destruct (expnonzero nOut); 
+                       rewrite H; [ lca | lca | | ].
     + destruct (x =? x0)%nat.
       * simpl.
         autorewrite with Cexp_db.
@@ -328,9 +343,11 @@ Proof.
       * simpl.
         lca.
     + destruct (x =? x0)%nat; lca.
-  - destruct x,y; simpl; destruct (expnonzero nIn); rewrite H; [lca | | lca | lca].
+  - destruct x,y; simpl; destruct (expnonzero nIn); 
+                    rewrite H; [lca | | lca | lca].
     + destruct (y =? x)%nat; [autorewrite with Cexp_db | ]; lca.
-  - destruct x,y; simpl; destruct (expnonzero nIn), (expnonzero nOut); rewrite H,H0; [lca | lca | | ].
+  - destruct x,y; simpl; destruct (expnonzero nIn), (expnonzero nOut); 
+                                       rewrite H,H0; [lca | lca | | ].
     + destruct (x =? x1)%nat; lca.
     + destruct (x =? x1)%nat, (y =? x0)%nat; [| lca | lca | lca].
       autorewrite with Cexp_db.

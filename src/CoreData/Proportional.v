@@ -1,23 +1,31 @@
 From VyZX Require Import CoreData.ZXCore.
 Require Import Setoid.
 
-(* A generalized form of proportionality which can be used to build notions for other IRs easily *)
+(* 
+A generalized form of proportionality which can be used to build notions for 
+other IRs easily 
+*)
 
 Open Scope ZX_scope.
 
 Definition proportional_general {T_0 m_0 n_0 T_1 m_1 n_1} 
-(eval_0 : T_0 -> (Matrix m_0 n_0)) (eval_1 : T_1 -> (Matrix m_1 n_1)) (t_0 : T_0) (t_1 : T_1) := 
-  exists (c : C), eval_0 t_0 = c .* eval_1 t_1 /\ c <> 0.
-Notation " t1 '≡' t2 'by' eval" := (proportional_general eval eval t1 t2) (at level 10). (* \equiv *)
+  (eval_0 : T_0 -> (Matrix m_0 n_0)) 
+  (eval_1 : T_1 -> (Matrix m_1 n_1)) 
+  (t_0 : T_0) (t_1 : T_1) := 
+    exists (c : C), eval_0 t_0 = c .* eval_1 t_1 /\ c <> 0.
+Notation " t1 '≡' t2 'by' eval" := 
+  (proportional_general eval eval t1 t2) (at level 10). (* \equiv *)
 
 (* ZX Proportionality *)
 
 Definition proportional {n m} 
-(zx_0 : ZX n m) (zx_1 : ZX n m) :=
-  zx_0 ≡ zx_1 by ZX_semantics.
-Notation "zx0 ∝ zx1" := (proportional zx0 zx1) (at level 60) : ZX_scope. (* \propto *)
+  (zx_0 : ZX n m) (zx_1 : ZX n m) :=
+    zx_0 ≡ zx_1 by ZX_semantics.
+Notation "zx0 ∝ zx1" := 
+  (proportional zx0 zx1) (at level 60) : ZX_scope. (* \propto *)
 
-Ltac prop_exists_nonzero c := exists c; split; try apply nonzero_div_nonzero; try nonzero.
+Ltac prop_exists_nonzero c := 
+  exists c; split; try apply nonzero_div_nonzero; try nonzero.
 Ltac prep_proportional := unfold proportional; intros; split; [split; lia | ].
 Ltac solve_prop c := 
 	prop_exists_nonzero c; simpl; Msimpl; 
@@ -84,7 +92,8 @@ Lemma proportional_trans : forall {n m}
   zx0 ∝ zx1 -> zx1 ∝ zx2 -> zx0 ∝ zx2.
 Proof. 
   intros.
-  apply (proportional_general_trans _ _ _ _ _ _ n m ZX_semantics zx1); assumption.
+  apply (proportional_general_trans _ _ _ _ _ _ n m ZX_semantics zx1); 
+  assumption.
 Qed.
 
 Add Parametric Relation (n m : nat) : (ZX n m) (proportional)
@@ -243,7 +252,8 @@ Proof.
 Qed.
 
 Add Parametric Morphism (nIn nOut : nat) : (@ColorSwap nIn nOut)
-  with signature (@proportional nIn nOut) ==> (@proportional nIn nOut) as colorswap_mor.
+  with signature (@proportional nIn nOut) ==> (@proportional nIn nOut) 
+    as colorswap_mor.
 Proof. apply colorswap_compat. Qed.
 
 Theorem ZX_eq_prop : forall {n m} (zx0 : ZX n m) (zx1 : ZX n m),

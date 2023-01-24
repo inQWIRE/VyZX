@@ -42,7 +42,8 @@ Proof.
     - contradict H3; lia.
     - destruct n; auto.
       contradict H1; lia. }
-  assert ( div_3_comp : forall i, ((S (S (S (i + i + (i + i)))) / S i) = 3)%nat).
+  assert ( div_3_comp : forall i, 
+                        ((S (S (S (i + i + (i + i)))) / S i) = 3)%nat).
   { intros.
     replace (S (S (S (i + i + (i + i)))))%nat with (4 * (S i) - 1)%nat by lia.
     assert (S i <> 0)%nat by easy.
@@ -64,9 +65,11 @@ Proof.
     rewrite plus_0_r.
     rewrite Nat.mod_mod by lia.
     apply Nat.mod_small; lia. }
-  assert ( mod_4_comp : forall i, ((S (S (S (i + i + (i + i))))) mod (S i) = i)%nat ).
+  assert ( mod_4_comp : forall i, 
+                        ((S (S (S (i + i + (i + i))))) mod (S i) = i)%nat ).
   { intros. 
-    replace (S (S (S (i + i + (i + i))))) with ((S i) + ((S i) + ((S i) + i)))%nat by lia.
+    replace (S (S (S (i + i + (i + i))))) 
+      with ((S i) + ((S i) + ((S i) + i)))%nat by lia.
     repeat (rewrite Nat.add_mod by lia;
             rewrite Nat.mod_same by lia;
             rewrite plus_0_l).
@@ -187,7 +190,8 @@ Lemma Grow_Z_Right_1_2 : forall {n} α,
   Z 1 (S n) α ⟷ (Z 1 2 0 ↕ nWire n).
 Proof.
   intros.
-  replace (Z_Spider 1 (S (S n))%nat α) with ((Z_Spider (S (S n))%nat 1 α)⊤) by reflexivity.
+  replace (Z_Spider 1 (S (S n))%nat α) 
+    with ((Z_Spider (S (S n))%nat 1 α)⊤) by reflexivity.
   rewrite Grow_Z_Left_2_1.
   simpl.
   rewrite nstack1_transpose.

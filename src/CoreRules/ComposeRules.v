@@ -6,8 +6,8 @@ From VyZX Require Export SpiderInduction.
 
 Local Open Scope ZX_scope.
 Lemma ZX_Compose_assoc : forall {n m0 m1 o}
-(zx1 : ZX n m0) (zx2 : ZX m0 m1) (zx3 : ZX m1 o),
-zx1 ⟷ zx2 ⟷ zx3 ∝ zx1 ⟷ (zx2 ⟷ zx3).
+  (zx1 : ZX n m0) (zx2 : ZX m0 m1) (zx3 : ZX m1 o),
+  zx1 ⟷ zx2 ⟷ zx3 ∝ zx1 ⟷ (zx2 ⟷ zx3).
 Proof.
   intros.
   prop_exists_nonzero 1.
@@ -38,7 +38,7 @@ Qed.
 
 
 Lemma ZX_Compose_Empty_r : forall {nIn} (zx : ZX nIn 0),
-zx ⟷ ⦰ ∝ zx.
+  zx ⟷ ⦰ ∝ zx.
 Proof. 
   intros.
   prop_exists_nonzero 1.
@@ -48,7 +48,7 @@ Proof.
 Qed.
 
 Lemma ZX_Compose_Empty_l : forall {nOut} (zx : ZX 0 nOut),
-⦰ ⟷ zx ∝ zx.
+  ⦰ ⟷ zx ∝ zx.
 Proof. 
   intros.
   prop_exists_nonzero 1.
