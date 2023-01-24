@@ -12,12 +12,12 @@ forall {n0 n1 n2 m0 m1 m2}
 	(zx0 ↕ zx1) ↕ zx2 ∝ Cast ((n0 + n1) + n2) ((m0 + m1) + m2) (eq_sym(Nat.add_assoc _ _ _)) (eq_sym(Nat.add_assoc _ _ _)) 
 											(zx0 ↕ (zx1 ↕ zx2)).
 Proof.                                                      
-intros.
-prop_exists_nonzero 1.  
-simpl.
-Msimpl.
-rewrite (@Cast_semantics (n0 + (n1 + n2)) _ ((n0 + n1) + n2)%nat).
-rewrite kron_assoc; auto with wf_db.
+	intros.
+	prop_exists_nonzero 1.  
+	simpl.
+	Msimpl.
+	rewrite (@Cast_semantics (n0 + (n1 + n2)) _ ((n0 + n1) + n2)%nat).
+	rewrite kron_assoc; auto with wf_db.
 Qed.
 
 Lemma ZX_Stack_assoc_back : 
@@ -26,13 +26,13 @@ forall {n0 n1 n2 m0 m1 m2}
 	zx0 ↕ (zx1 ↕ zx2) ∝ Cast (n0 + (n1 + n2)) (m0 + (m1 + m2)) (Nat.add_assoc _ _ _) (Nat.add_assoc _ _ _) 
 											((zx0 ↕ zx1) ↕ zx2).
 Proof.                                                      
-intros.
-prop_exists_nonzero 1.  
-simpl.
-Msimpl.
-rewrite (@Cast_semantics ((n0 + n1) + n2) _ (n0 + (n1 + n2))%nat).
-simpl; restore_dims.
-rewrite kron_assoc; auto with wf_db.
+	intros.
+	prop_exists_nonzero 1.  
+	simpl.
+	Msimpl.
+	rewrite (@Cast_semantics ((n0 + n1) + n2) _ (n0 + (n1 + n2))%nat).
+	simpl; restore_dims.
+	rewrite kron_assoc; auto with wf_db.
 Qed.
 
 Lemma ZX_Stack_Empty_l : forall {nIn nOut} (zx : ZX nIn nOut),
@@ -90,34 +90,34 @@ Qed.
 Lemma stack_wire_distribute_l : forall {n m o} (zx0 : ZX n m) (zx1 : ZX m o),
 — ↕ (zx0 ⟷ zx1) ∝ (— ↕ zx0) ⟷ (— ↕ zx1).
 Proof.
-intros.
-prop_exists_nonzero 1.
-simpl; Msimpl; easy.
+	intros.
+	prop_exists_nonzero 1.
+	simpl; Msimpl; easy.
 Qed.
 
 Lemma stack_wire_distribute_r : forall {n m o} (zx0 : ZX n m) (zx1 : ZX m o),
 (zx0 ⟷ zx1) ↕ —  ∝ (zx0 ↕ —) ⟷ (zx1 ↕ —).
 Proof.
-intros.
-prop_exists_nonzero 1.
-simpl; Msimpl; easy.
+	intros.
+	prop_exists_nonzero 1.
+	simpl; Msimpl; easy.
 Qed.
 
 Lemma stack_nwire_distribute_l : forall {n m o p} (zx0 : ZX n m) (zx1 : ZX m o),
 nWire p ↕ (zx0 ⟷ zx1) ∝ (nWire p ↕ zx0) ⟷ (nWire p ↕ zx1).
 Proof.
-intros.
-induction p.
-- repeat rewrite ZX_Stack_Empty_l. easy.
-- rewrite nStack1_l.
-	rewrite (ZX_Stack_assoc — (nWire p) zx0).
-	rewrite (ZX_Stack_assoc — (nWire p) zx1).
-	simpl_casts.
-	rewrite <- (stack_wire_distribute_l (nWire p ↕ zx0) (nWire p ↕ zx1)).
-	rewrite <- IHp.
-	rewrite ZX_Stack_assoc_back.
-	simpl_casts.
-	easy.
+	intros.
+	induction p.
+	- repeat rewrite ZX_Stack_Empty_l. easy.
+	- rewrite nStack1_l.
+		rewrite (ZX_Stack_assoc — (nWire p) zx0).
+		rewrite (ZX_Stack_assoc — (nWire p) zx1).
+		simpl_casts.
+		rewrite <- (stack_wire_distribute_l (nWire p ↕ zx0) (nWire p ↕ zx1)).
+		rewrite <- IHp.
+		rewrite ZX_Stack_assoc_back.
+		simpl_casts.
+		easy.
 Qed.
 
 (* Lemma nWire_collapse_r : forall {n0 n1 m1} (zx0 : ZX n0 0) (zx1 : ZX n1 m1),
@@ -127,29 +127,29 @@ Lemma nstack1_split : forall n m (zx : ZX 1 1),
 (n + m) ↑ zx ∝ 
 (n ↑ zx) ↕ (m ↑ zx).
 Proof.
-intros.
-induction n.
-- simpl. rewrite ZX_Stack_Empty_l. easy.
-- simpl.
-	rewrite IHn.
-	rewrite (ZX_Stack_assoc zx).
-	simpl_casts.
-	reflexivity.
+	intros.
+	induction n.
+	- simpl. rewrite ZX_Stack_Empty_l. easy.
+	- simpl.
+		rewrite IHn.
+		rewrite (ZX_Stack_assoc zx).
+		simpl_casts.
+		reflexivity.
 Qed.
 
 Lemma nstack_split : forall n m {nIn mOut} (zx : ZX nIn mOut),
 (n + m) ⇑ zx ∝ 
 Cast _ _ (Nat.mul_add_distr_r _ _ _) (Nat.mul_add_distr_r _ _ _) ((n ⇑ zx) ↕ (m ⇑ zx)).
 Proof.
-intros.
-dependent induction n.
-- simpl. simpl_casts.
-	rewrite ZX_Stack_Empty_l. easy.
-- simpl.
-	rewrite IHn.
-	simpl.
-	simpl_casts.
-	rewrite ZX_Stack_assoc.
-	simpl_casts.
-	reflexivity.
+	intros.
+	dependent induction n.
+	- simpl. simpl_casts.
+		rewrite ZX_Stack_Empty_l. easy.
+	- simpl.
+		rewrite IHn.
+		simpl.
+		simpl_casts.
+		rewrite ZX_Stack_assoc.
+		simpl_casts.
+		reflexivity.
 Qed.

@@ -1,6 +1,4 @@
-Require Import externals.QuantumLib.Quantum.
-Require Import externals.SQIR.SQIR.SQIR.
-Require Import externals.SQIR.SQIR.UnitarySem.
+Require Import SQIR.UnitarySem.
 Require Import Arith.
 Require Import Reals.
 Require Import Complex.

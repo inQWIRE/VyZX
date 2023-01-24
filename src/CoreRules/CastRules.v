@@ -1,7 +1,7 @@
-From VyZX Require Export CoreData.ZXCore.
-From VyZX Require Import CoreData.SemanticCore.
-From VyZX Require Export CoreData.Proportional.
-From VyZX Require Export CoreRules.SpiderInduction.
+From VyZX Require Export ZXCore.
+From VyZX Require Import SemanticCore.
+From VyZX Require Export Proportional.
+From VyZX Require Export SpiderInduction.
 
 Lemma cast_id :
 forall {n m} prfn prfm (zx : ZX n m),
@@ -82,16 +82,16 @@ forall {n0 m0 n1 m1} prfn prfm prfn' prfm' (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
   Cast n1 m1 prfn prfm zx0 ∝ zx1 <->
   zx0 ∝ Cast n0 m0 prfn' prfm' zx1.
 Proof.
-intros.
-split; intros.
-- subst.
-  simpl_casts.
-  rewrite cast_id in H.
-  easy.
-- subst.
-  simpl_casts.
-  rewrite cast_id in H.
-  easy.
+  intros.
+  split; intros.
+  - subst.
+    simpl_casts.
+    rewrite cast_id in H.
+    easy.
+  - subst.
+    simpl_casts.
+    rewrite cast_id in H.
+    easy.
 Qed.
 
 
@@ -99,13 +99,13 @@ Lemma cast_contract_l : forall {n m n0 m0 n1 m1} prfn0 prfm0 prfn1 prfm1 (zx0 : 
 Cast n m prfn0 prfm0 zx0 ∝ Cast n m prfn1 prfm1 zx1 <->
 Cast n1 m1 (eq_trans (eq_sym prfn1) prfn0) (eq_trans (eq_sym prfm1) prfm0) zx0 ∝ zx1.
 Proof.
-intros; split; intros.
-- rewrite <- cast_symm in H.
-  rewrite cast_contract in H.
-  exact H.
-- rewrite <- cast_symm.
-  simpl_casts.
-  exact H.
+  intros; split; intros.
+  - rewrite <- cast_symm in H.
+    rewrite cast_contract in H.
+    exact H.
+  - rewrite <- cast_symm.
+    simpl_casts.
+    exact H.
 Qed.
 
 #[export] Hint Rewrite @cast_contract_l : cast_simpl_db.
@@ -115,13 +115,13 @@ Lemma cast_contract_r : forall {n m n0 m0 n1 m1} prfn0 prfm0 prfn1 prfm1 (zx0 : 
 Cast n m prfn0 prfm0 zx0 ∝ Cast n m prfn1 prfm1 zx1 <->
 zx0 ∝ Cast n0 m0 (eq_trans (eq_sym prfn0) prfn1) (eq_trans (eq_sym prfm0) prfm1) zx1.
 Proof.
-intros; split; intros.
-- rewrite cast_symm in H.
-  rewrite cast_contract in H.
-  exact H.
-- simpl_casts.
-  rewrite cast_symm.
-  exact H.
+  intros; split; intros.
+  - rewrite cast_symm in H.
+    rewrite cast_contract in H.
+    exact H.
+  - simpl_casts.
+    rewrite cast_symm.
+    exact H.
 Qed.
 
 (* Reverse lemmas so you don't need complex proof structure within the stacks *)

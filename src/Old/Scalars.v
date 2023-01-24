@@ -1,7 +1,4 @@
-Require Import externals.QuantumLib.Quantum.
-Require Import externals.QuantumLib.VectorStates.
-Require Import externals.QuantumLib.Matrix.
-Require Export ZX.
+Require Import CoreData.
 
 Local Open Scope ZX_scope.
 

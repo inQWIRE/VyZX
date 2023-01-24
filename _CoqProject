@@ -1,9 +1,14 @@
 -I ./src/CoreData
 -I ./src/CoreRules
+-I ./externals/SQIR
 
 -R . VyZX
 
-QlibTemp.v
+
+externals/SQIR/SQIR/SQIR.v
+externals/SQIR/SQIR/UnitarySem.v
+
+src/CoreData/QlibTemp.v
 
 
 src/CoreData/SemanticCore.v
