@@ -1,5 +1,6 @@
 -I ./src/CoreData
 -I ./src/CoreRules
+-I ./src/Ingest
 -I ./externals/SQIR
 
 -R . VyZX
@@ -27,3 +28,5 @@ src/CoreRules/WireRules.v
 src/CoreRules/CoreAutomation.v
 src/CoreRules/ZRules.v
 src/CoreRules/CoreRules.v
+
+src/Ingest/SQIRIngest.v
