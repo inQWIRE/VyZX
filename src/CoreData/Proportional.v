@@ -19,10 +19,8 @@ Notation " t1 '≡' t2 'by' eval" :=
 (* ZX Proportionality *)
 
 Definition proportional {n m} 
-  (zx_0 : ZX n m) (zx_1 : ZX n m) :=
-    zx_0 ≡ zx_1 by ZX_semantics.
-Notation "zx0 ∝ zx1" := 
-  (proportional zx0 zx1) (at level 60) : ZX_scope. (* \propto *)
+  (zx_0 : ZX n m) (zx_1 : ZX n m) := zx_0 ≡ zx_1 by ZX_semantics.
+Notation "zx0 ∝ zx1" := (proportional zx0 zx1) (at level 70) : ZX_scope. (* \propto *)
 
 Ltac prop_exists_nonzero c := 
   exists c; split; try apply nonzero_div_nonzero; try nonzero.
