@@ -60,6 +60,16 @@ Proof.
   solve_matrix.
 Qed.
 
+Lemma nWire_stack : forall n m, nWire n ↕ nWire m ∝ nWire (n + m).
+Proof. 
+  prop_exists_nonzero 1. 
+  simpl. 
+  rewrite 3 nWire_semantics, id_kron.
+  Msimpl.
+  rewrite Nat.pow_add_r.
+  easy.
+Qed.
+
 Lemma X_0_is_wire : X 1 1 0 ∝ —.
 Proof. 
     Admitted.
@@ -114,3 +124,16 @@ Proof.
   simpl_casts.
   easy.
 Qed.
+
+Lemma wire_transpose : —⊤ ∝ —.
+Proof. easy. Qed.
+
+Lemma nWire_transpose : forall n, (nWire n)⊤ = nWire n.
+Proof.
+  intros.
+  induction n.
+  - easy.
+  - simpl.
+    rewrite IHn.
+    easy.
+Qed. 

@@ -1,7 +1,14 @@
 Require Import SQIR.UnitarySem.
+Require Import SQIR.Equivalences.
 Require Import CoreData.
 Require Import CoreRules.
+Require Import Gates.
+Require Import GateRules.
+Require Import ZXPad.
 Require Import QuantumLib.Quantum.
+
+Search (uc_eval (CNOT _ _)).
+Search "swap".
 
 Open Scope ZX_scope.
 
@@ -168,8 +175,54 @@ Proof.
   auto with wf_db.
 Qed.
 
+Lemma ZX_A_swap_grow : forall n, A_Swap_ZX (S (S (S n))) ∝ (⨉ ↕ nWire (S n)) ⟷ (— ↕ A_Swap_ZX (S (S n))) ⟷ (⨉ ↕ nWire (S n)). 
+Proof.
+  intros.
+  unfold A_Swap_ZX.
+  simpl_casts.
+  simpl.
+  repeat rewrite ZX_Compose_assoc.
+  apply ZX_Compose_simplify; [ easy | ].
+  simpl.
+  remember (— ↕ ZX_top_to_bottom_helper n) as TBN1.
+  remember (⨉ ↕ nWire n) as swap_nW.
+  Search (— ↕ _).
+  repeat rewrite stack_wire_distribute_l.
+  repeat rewrite ZX_Compose_assoc.
+  apply ZX_Compose_simplify; [ easy | ].
+  apply ZX_Compose_simplify; [ easy | ].
+  unfold ZX_bottom_to_top.
+  simpl.
+  rewrite nWire_transpose.
+  remember (ZX_top_to_bottom_helper n) as TBN.
+  rewrite cast_symm.
+  prop_exists_nonzero 1.
+  simpl.
+  simpl_cast_semantics.
+  simpl.
+  simpl_cast_semantics.
+  rewrite nWire_semantics.
+  rewrite kron_id_dist_r; try auto with wf_db; [| shelve].
+  Msimpl.
+  replace ((2 * 2 ^ S (n + 1)))%nat with (2 * 2 ^ S n * 2)%nat by shelve.
+  replace (2 * 2 * (2 * 2 ^ n))%nat with (2 * 2 * 2 ^ n * 2)%nat by (simpl; lia).
+  apply Mmult_simplify.
+  rewrite kron_assoc; auto with wf_db.
+  2: shelve.
+  rewrite 2 id_kron.
+  rewrite (Nat.mul_comm 2 (2 ^ n)).
+  easy.
+Unshelve.
+  1,2: lia.
+  1,3: subst; auto with wf_db.
+  - replace (2 ^ n + (2 ^ n + 0))%nat with (2 ^ ( S n))%nat by (simpl; lia).
+    apply WF_kron; try lia; auto with wf_db.
+  - simpl. restore_dims. rewrite <- kron_assoc; auto with wf_db.
+  - rewrite Nat.add_1_r; simpl.
+    ring.
+Qed.
 
-Lemma A_swap_ind : forall n, A_Swap_semantics (S (S (S n))) = swap ⊗ (I (2 ^ (S n))) × ( I 2 ⊗ A_Swap_semantics (S (S n))) × (swap ⊗ (I (2 ^ (S n)))).
+Lemma A_swap_ind : forall n, A_Swap_semantics (S (S (S n))) = swap ⊗ (I (2 ^ (S n))) × (I 2 ⊗ A_Swap_semantics (S (S n))) × (swap ⊗ (I (2 ^ (S n)))).
 Proof.
   intros.
   unfold A_Swap_semantics.
@@ -332,5 +385,166 @@ Unshelve.
   1: rewrite Nat.sub_diag.
   all: simpl; lia.
 Qed.
+
+Lemma cnot_dim_conv : forall n m dim, (n <? m = true) -> (m <? dim = true) -> dim = (n + (m - n) + (dim - m))%nat.
+Proof.
+  intros.
+  rewrite <- (le_plus_minus n m).
+  rewrite <- (le_plus_minus).
+  easy.
+  all: bdestruct (n <? m); try (exfalso; lia);
+  bdestruct (m <? dim); try (exfalso; lia). 
+  all: apply Nat.lt_le_incl; easy.
+Qed.
+
+Lemma cast_dim_conv : forall n, (1 <? n%nat = true) -> (n = 2 + (n - 2))%nat.
+Proof.
+  intros.
+  assert (n >= 2)%nat.
+  { 
+    apply leb_complete in H; lia.
+  }
+  lia.
+Qed.
+
+Lemma add_2_r : forall n, (S (S n)) = (n + 2)%nat.
+Proof. intros. lia. Qed.
+
+Definition base_cnot n0 (cnot : ZX 2 2) : ZX (S (S n0)) (S (S n0)).
+Proof.
+  apply (@Compose _ (S (S n0)) _).
+  apply (@Compose _ (S (S n0)) _).
+  * apply pad_bot_1.
+    apply A_Swap_ZX.
+  * apply (Cast _ _ (add_2_r n0) (add_2_r n0)). 
+    apply (pad_top n0).
+    apply cnot.
+  * apply pad_bot_1.
+    apply A_Swap_ZX.
+Defined.
+
+Definition unpadded_cnot (cnot : ZX 2 2) (n m : nat) : ZX (m - n) (m - n) :=
+  match (m - n)%nat with
+  | S (S n0) => base_cnot n0 cnot
+  | 1%nat => —
+  | 0%nat => ⦰
+  end.
+
+Lemma swap_pad : forall n, uc_eval (@SWAP (S (S n)) 0 n) = uc_eval (@SWAP (S n) 0 n) ⊗ I 2.
+Proof.
+  intros.
+  rewrite 2 denote_swap_alt.
+  unfold pad_swap.
+  unfold pad_ctrl.
+  bdestruct (0 <? n).
+  - bdestruct (n <? 0); try (exfalso; lia).
+    repeat rewrite unfold_pad.
+    simpl.
+    replace (n - 0 - 1 + 1)%nat with n by lia.
+    bdestruct (n <=? S n); try (exfalso; lia).
+    destruct n; try (exfalso; lia).
+    replace (S n - 0 - 1)%nat with (n) by lia.
+    replace (S n - n)%nat with 1%nat by lia.
+    simpl.
+    rewrite Nat.leb_refl.
+    rewrite Nat.sub_diag.
+    simpl.
+    Msimpl.
+    restore_dims.
+    easy.
+  - destruct n; try (exfalso; lia).
+    bdestruct (0 <? 0); try (exfalso; lia).
+    lma.
+Qed.
+
+Lemma unpadded_cnot_t_sem_equiv : forall n, uc_eval (@CNOT (S (S (S n))) 0 (S ( S n))) = ZX_semantics (unpadded_cnot _CNOT_ 0 (S (S (S n)))).
+Proof.
+  intros.
+  rewrite <- (SWAP_extends_CNOT _ (S n) _); try lia.
+  Opaque A_Swap_ZX.
+  simpl.
+  unfold pad_bot_1, pad_bot, pad_top.
+  apply Mmult_simplify; [ | apply Mmult_simplify ].
+  - rewrite swap_pad.
+    simpl.
+    restore_dims.
+    simpl_cast_semantics.
+    simpl.
+    rewrite A_Swap_Correct.
+    rewrite A_swap_sem_base.
+    Msimpl.
+    restore_dims.
+    easy.
+  - rewrite denote_cnot.
+    rewrite unfold_ueval_cnot.
+    bdestruct (S n <? S (S n)); try (lia; exfalso).
+    rewrite unfold_pad.
+    bdestruct (S n + (1 + (S (S n) - S n - 1) + 1) <=? S (S (S n)))%nat; [ | shelve ].
+    replace ((S (S (S n)) - (S n + (1 + (S (S n) - S n - 1) + 1))))%nat with 0%nat by lia.
+    Msimpl.
+    simpl_cast_semantics.
+    simpl.
+    destruct n.
+    restore_dims.
+    replace (I 2 ⊗ X_semantics 2 1 0 × (Z_semantics 1 2 0 ⊗ I 2)) with (ZX_semantics (((Z) 1 2 0 ↕ — ⟷ (— ↕ (X) 2 1 0)))) by easy.
+    rewrite ZX_CNOT_l_is_cnot.
+    simpl.
+    Msimpl.
+    gridify.
+    admit.
+    admit.
+    Unshelve.
+    exfalso.
+    simpl.
+    fold Nat.add in H0.
+    replace (n + (1 + (S (S n) - S n - 1) + 1) )%nat with (S (S n)) in H0 by lia.
+    lia.
+  - rewrite swap_pad.
+    simpl.
+    restore_dims.
+    simpl_cast_semantics. 
+    simpl.
+    rewrite A_Swap_Correct.
+    rewrite A_swap_sem_base.
+    Msimpl.
+    restore_dims.
+    easy.
+Qed.
+
+Lemma lt_when_not_eq_gt : forall {m n}, (n <? m) = false -> (n =? m = false) -> (m <? n) = true.
+Proof.
+  intros.
+  apply Nat.ltb_lt.
+  apply Nat.ltb_ge in H.
+  apply Nat.eqb_neq in H0.
+  bdestruct (m <? n); lia.
+Qed.
+
+Definition translate_CNOT {dim} (n m : nat) : ZX dim dim.
+  destruct (n =? m) eqn:Heq.
+  - exact (nWire dim).
+  - destruct (n <? m) eqn:Hnm.
+    + destruct (m <? dim) eqn:Hm.
+      * apply (Cast _ _ (cnot_dim_conv n m dim Hnm Hm) (cnot_dim_conv n m dim Hnm Hm)).
+        apply pad_bot.
+        apply pad_top.
+        apply unpadded_cnot.
+        exact _CNOT_.
+      * apply (nWire dim).
+    + destruct (n <? dim) eqn:Hn.
+      * apply (Cast _ _ (cnot_dim_conv m n dim (@lt_when_not_eq_gt m n Hnm Heq) Hn) (cnot_dim_conv m n dim (@lt_when_not_eq_gt m n Hnm Heq) Hn)).
+      apply pad_bot.
+      apply pad_top.
+      apply unpadded_cnot.
+      exact _CNOT_inv_.
+      * apply (nWire dim).
+Defined.
+
+
+
+
+
+        
+
 
 Close Scope matrix_scope.

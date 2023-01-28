@@ -34,6 +34,24 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma ZX_Compose_simplify : forall {n m o}
+  (zx1 zx3 : ZX n m) (zx2 zx4 : ZX m o),
+  zx1 ∝ zx3 -> zx2 ∝ zx4 -> zx1 ⟷ zx2 ∝ zx3 ⟷ zx4.
+Proof.
+  intros.
+  rewrite H, H0.
+  easy.
+Qed.
+
+
+Lemma ZX_COmpose_transpose : forall {n m o} (zx1 : ZX n m) (zx2 : ZX m o), (zx1 ⟷ zx2) ⊤ ∝ (zx2⊤ ⟷ zx1⊤).
+Proof.
+	intros.
+	prop_exists_nonzero 1.
+	simpl.
+	lma.
+Qed.
+
 (* Empty diagram removal *)
 
 

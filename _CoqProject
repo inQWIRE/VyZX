@@ -8,6 +8,8 @@
 
 externals/SQIR/SQIR/SQIR.v
 externals/SQIR/SQIR/UnitarySem.v
+externals/SQIR/SQIR/UnitaryOps.v
+externals/SQIR/SQIR/Equivalences.v
 
 src/CoreData/QlibTemp.v
 
@@ -29,4 +31,7 @@ src/CoreRules/CoreAutomation.v
 src/CoreRules/ZRules.v
 src/CoreRules/CoreRules.v
 
+src/Ingest/ZXPad.v
+src/Ingest/Gates.v
+src/Ingest/GateRules.v
 src/Ingest/SQIRIngest.v

@@ -61,6 +61,33 @@ Proof.
 	reflexivity.
 Qed.
 
+Lemma ZX_Stack_simplify : forall {n1 m1 n2 m2}
+  (zx1 zx3 : ZX n1 m1) (zx2 zx4 : ZX n2 m2),
+  zx1 ∝ zx3 -> zx2 ∝ zx4 -> zx1 ↕ zx2 ∝ zx3 ↕ zx4.
+Proof.
+  intros.
+  rewrite H, H0.
+  easy.
+Qed.
+
+Lemma ZX_Stack_transpose : forall {n1 m1 n2 m2} (zx1 : ZX n1 m1) (zx2 : ZX n2 m2), (zx1 ↕ zx2) ⊤ ∝ (zx1⊤ ↕ zx2⊤).
+Proof.
+	intros.
+	prop_exists_nonzero 1.
+	simpl.
+	lma.
+Qed.
+
+Lemma nStack1_transpose : forall n (zx : ZX 1 1), (n ↑ zx)⊤ ∝ (n ↑ zx⊤).
+Proof.
+	intros.
+	induction n.
+	- easy.
+	- simpl.
+		rewrite IHn.
+		easy.
+Qed.
+
 Lemma nStack1_r_dim : forall n,
 	(S n = n + 1)%nat.
 Proof. lia. Qed.

@@ -18,6 +18,9 @@ Notation "'_H_'" :=
 Notation "'_CNOT_'" :=
   ((Z 1 2 0 ↕ —) ⟷ (— ↕ X 2 1 0)).
 
+Notation "'_CNOT_inv_'" :=
+  ((X 1 2 0 ↕ —) ⟷ (— ↕ Z 2 1 0)).
+
 Notation "'_CNOT_R'" :=
   ((— ↕ X 1 2 0) ⟷ (Z 2 1 0 ↕ —)).
 
@@ -31,7 +34,6 @@ Notation "'_NOTC_R'" :=
 
 Lemma _H_is_Box : _H_ ∝ □.
 Proof.
-  prep_proportional.
   prop_exists_nonzero (Cexp (PI/4)).
   simpl.
   unfold X_semantics, Z_semantics.
@@ -43,20 +45,8 @@ Qed.
 
 Lemma _H_H_is_wire : □ ⟷ □ ∝ —.
 Proof.
-  prep_proportional.
   prop_exists_nonzero 1; Msimpl; simpl.
   apply MmultHH.
 Qed.
-
-Lemma _CNOT_equiv :
-  _CNOT_R ∝ _CNOT_.
-Proof.
-  prep_proportional.
-  prop_exists_nonzero 1.
-  simpl.
-  Msimpl.
-  restore_dims.
-  
-  rewrite (kron_mixed_product (Z_semantics 2 1 0) (I 2) (I 2) (X_semantics 1 2 0)).
   
 
