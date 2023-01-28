@@ -457,13 +457,15 @@ Proof.
     lma.
 Qed.
 
-Lemma unpadded_cnot_t_sem_equiv : forall n, uc_eval (@CNOT (S (S (S n))) 0 (S ( S n))) = ZX_semantics (unpadded_cnot _CNOT_ 0 (S (S (S n)))).
+Lemma unpadded_cnot_t_sem_equiv : forall n, exists c, uc_eval (@CNOT (S (S (S n))) 0 (S (S n))) = c .* ZX_semantics (unpadded_cnot _CNOT_ 0 (S (S (S n)))) /\ c <> 0.
 Proof.
-  intros.
+  intros; eexists; split; [ | shelve ].
   rewrite <- (SWAP_extends_CNOT _ (S n) _); try lia.
   Opaque A_Swap_ZX.
   simpl.
   unfold pad_bot_1, pad_bot, pad_top.
+  rewrite <- Mscale_mult_dist_r.
+  rewrite <- Mscale_mult_dist_l.
   apply Mmult_simplify; [ | apply Mmult_simplify ].
   - rewrite swap_pad.
     simpl.
@@ -484,17 +486,32 @@ Proof.
     Msimpl.
     simpl_cast_semantics.
     simpl.
-    destruct n.
     restore_dims.
     replace (I 2 ⊗ X_semantics 2 1 0 × (Z_semantics 1 2 0 ⊗ I 2)) with (ZX_semantics (((Z) 1 2 0 ↕ — ⟷ (— ↕ (X) 2 1 0)))) by easy.
     rewrite ZX_CNOT_l_is_cnot.
-    simpl.
-    Msimpl.
-    gridify.
-    admit.
-    admit.
+    rewrite <- cnot_decomposition.
+    rewrite 2 kron_assoc; try auto with wf_db.
+    autorewrite with scalar_move_db.
+    rewrite <- (Mscale_1_l _ _ (_ ⊗ _)).
+    destruct n.
+    + simpl.
+      repeat rewrite kron_1_l; try auto with wf_db.
+      repeat rewrite kron_1_r; try auto with wf_db.
+      apply Mscale_simplify; [ easy | ].
+      rewrite Cinv_r; [ easy | ].
+      apply Csqrt2_neq_0.
+    + replace (S n - n - 1)%nat with 0%nat by lia.
+      apply Mscale_simplify; [ | rewrite Cinv_r; [ easy | ]; apply Csqrt2_neq_0 ].
+      rewrite nWire_semantics.
+      repeat rewrite id_kron.
+      replace (2 ^ S n + (2 ^ S n + 0))%nat with (2 * 2 ^ S n)%nat by lia.
+      apply kron_simplify; try easy.
+      Msimpl.
+      simpl.
+      easy.
     Unshelve.
-    exfalso.
+  * apply Csqrt2_neq_0.
+  * exfalso.
     simpl.
     fold Nat.add in H0.
     replace (n + (1 + (S (S n) - S n - 1) + 1) )%nat with (S (S n)) in H0 by lia.
@@ -520,27 +537,37 @@ Proof.
   bdestruct (m <? n); lia.
 Qed.
 
-Definition translate_CNOT {dim} (n m : nat) : ZX dim dim.
-  destruct (n =? m) eqn:Heq.
-  - exact (nWire dim).
-  - destruct (n <? m) eqn:Hnm.
-    + destruct (m <? dim) eqn:Hm.
-      * apply (Cast _ _ (cnot_dim_conv n m dim Hnm Hm) (cnot_dim_conv n m dim Hnm Hm)).
-        apply pad_bot.
-        apply pad_top.
-        apply unpadded_cnot.
-        exact _CNOT_.
-      * apply (nWire dim).
-    + destruct (n <? dim) eqn:Hn.
-      * apply (Cast _ _ (cnot_dim_conv m n dim (@lt_when_not_eq_gt m n Hnm Heq) Hn) (cnot_dim_conv m n dim (@lt_when_not_eq_gt m n Hnm Heq) Hn)).
-      apply pad_bot.
-      apply pad_top.
-      apply unpadded_cnot.
-      exact _CNOT_inv_.
-      * apply (nWire dim).
-Defined.
+Definition translate_CNOT {dim} (n m : nat) : ZX (n + (m - n) + (dim - m)) (n + (m - n) + (dim - m)) :=
+  if n =? m then 
+    (nWire _)
+  else 
+    (if n <? m then
+      pad_bot _ (pad_top _ (unpadded_cnot _CNOT_ _ _))
+    else 
+      pad_bot _ (pad_top _ (unpadded_cnot _CNOT_inv_ _ _))
+    ).
+Print translate_CNOT.
 
-
+Lemma CNOT_equiv : forall dim n m, (n < dim)%nat -> (m < dim)%nat -> n <> m -> uc_eval (@CNOT dim n m) = ZX_semantics (@translate_CNOT dim n m).
+Proof.
+  intros.
+  rewrite denote_cnot.
+  unfold ueval_cnot.
+  unfold pad_ctrl.
+  repeat rewrite unfold_pad.
+  unfold translate_CNOT.
+  bdestruct (n =? m);
+    bdestruct (n <? m); 
+    bdestruct (m <? n); 
+    try (exfalso; lia).
+  - replace (n + (1 + (m - n - 1) + 1))%nat with (S m) by lia.
+    bdestruct (S m <=? dim); try (exfalso; lia).
+    rewrite pad_bot_top_semantics.
+    repeat rewrite kron_assoc; try auto with wf_db; [|shelve].
+    replace (2 ^ (m - n) * 2 ^ (dim - m))%nat with (2 ^ (1 + (m - n - 1) + 1) * 2 ^ (dim - S m))%nat by shelve.
+    apply kron_simplify; try easy.
+    repeat rewrite <- kron_assoc; try auto with wf_db.
+Abort.
 
 
 
