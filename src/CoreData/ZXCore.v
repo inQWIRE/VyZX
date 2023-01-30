@@ -2,8 +2,8 @@ Require Import QuantumLib.Quantum.
 Require Import QuantumLib.Proportional.
 Require Import QuantumLib.VectorStates.
 
-From VyZX Require Export SemanticCore.
-From VyZX Require Export QlibTemp.
+Require Export SemanticCore.
+Require Export QlibTemp.
 
 (* 
 Base constructions for the ZX calculus, lets us build every diagram inductively.

@@ -6,7 +6,7 @@ and well formedness
 Require Export QuantumLib.Quantum.
 Require Import QuantumLib.Proportional.
 Require Export QuantumLib.VectorStates.
-From VyZX Require Export QlibTemp.
+Require Export QlibTemp.
 
 
 (* Sparse Matrix Definition *)

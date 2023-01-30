@@ -1,8 +1,6 @@
-From VyZX Require Export ZXCore.
-From VyZX Require Import SemanticCore.
-From VyZX Require Export Proportional.
-From VyZX Require Export CastRules.
-From VyZX Require Export SpiderInduction.
+Require Export CoreData.CoreData.
+Require Import CastRules.
+Require Import SpiderInduction.
 
 Local Open Scope ZX_scope.
 Lemma ZX_Compose_assoc : forall {n m0 m1 o}

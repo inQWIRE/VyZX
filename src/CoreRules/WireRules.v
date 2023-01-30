@@ -1,8 +1,6 @@
-From VyZX Require Import CoreData.ZXCore.
-From VyZX Require Import CoreData.SemanticCore.
-From VyZX Require Import CoreData.Proportional.
-
-From VyZX Require Import CoreRules.StackRules.
+Require Import CoreData.CoreData.
+Require Import StackRules.
+Require Import CastRules.
 
 Local Open Scope ZX_scope.
 

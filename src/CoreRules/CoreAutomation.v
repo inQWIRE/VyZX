@@ -1,7 +1,7 @@
-From VyZX Require Import ComposeRules.
-From VyZX Require Import StackRules.
-From VyZX Require Import WireRules.
-From VyZX Require Import StackComposeRules.
+Require Import ComposeRules.
+Require Import StackRules.
+Require Import WireRules.
+Require Import StackComposeRules.
 
 #[export] Hint Rewrite 
   (fun n => @ZX_Compose_Empty_l n)

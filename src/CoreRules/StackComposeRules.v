@@ -1,10 +1,8 @@
-From VyZX Require Import ZXCore.
-From VyZX Require Import SemanticCore.
-From VyZX Require Import Proportional.
-From VyZX Require Import CastRules.
-From VyZX Require Import SpiderInduction.
-From VyZX Require Export StackRules.
-From VyZX Require Export ComposeRules.
+Require Import CoreData.CoreData.
+Require Import CastRules.
+Require Import SpiderInduction.
+Require Export StackRules.
+Require Export ComposeRules.
 
 Local Open Scope ZX_scope.
 Lemma nwire_stack_compose_topleft : forall {topIn botIn topOut botOut} 

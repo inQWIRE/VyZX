@@ -1,2 +1,2 @@
-From VyZX Require Export ZXCore.
-From VyZX Require Export Proportional.
+Require Export ZXCore.
+Require Export Proportional.
