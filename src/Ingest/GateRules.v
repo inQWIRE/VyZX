@@ -62,6 +62,15 @@ Proof.
   all: autorewrite with Cexp_db.
   all: lca.
 Qed.
+
+Lemma ZX_CNOT_inv_is_swapped_cnot : ZX_semantics _CNOT_inv_ = (/ √ 2)%C .* (swap × cnot × swap)%M.
+Proof.
+  simpl.
+  unfold Z_semantics, X_semantics.
+  solve_matrix.
+  all: autorewrite with Cexp_db.
+  all: lca.
+Qed.
 (* 
 Lemma ZX_CNOT_equiv : ZX_semantics ZX_CNOT_l = ZX_semantics ZX_CNOT_r.
 Proof.

@@ -29,3 +29,8 @@ Lemma pad_top_bot_semantics : forall {n m} (zx : ZX n m) padT padB, ZX_semantics
 Proof.
   intros. simpl. rewrite 2 nWire_semantics. rewrite kron_assoc; auto with wf_db.
 Qed.
+
+Lemma pad_bot_top_semantics : forall {n m} (zx : ZX n m) padT padB, ZX_semantics (pad_bot padB (pad_top padT zx)) = I (2 ^ padT) ⊗ (ZX_semantics zx) ⊗ I (2 ^ padB).
+Proof.
+  intros. simpl. rewrite 2 nWire_semantics. easy.
+Qed.

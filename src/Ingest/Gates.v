@@ -18,8 +18,7 @@ Notation "'_H_'" :=
 Notation "'_CNOT_'" :=
   ((Z 1 2 0 ↕ —) ⟷ (— ↕ X 2 1 0)).
 
-Notation "'_CNOT_inv_'" :=
-  ((X 1 2 0 ↕ —) ⟷ (— ↕ Z 2 1 0)).
+Notation "'_CNOT_inv_'" := ((2 ↑ □) ⟷ _CNOT_ ⟷ (2 ↑ □)).
 
 Notation "'_CNOT_R'" :=
   ((— ↕ X 1 2 0) ⟷ (Z 2 1 0 ↕ —)).
