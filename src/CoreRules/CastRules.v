@@ -1,7 +1,5 @@
-From VyZX Require Export ZXCore.
-From VyZX Require Import SemanticCore.
-From VyZX Require Export Proportional.
-From VyZX Require Export SpiderInduction.
+Require Import CoreData.CoreData.
+Require Import SpiderInduction.
 
 Lemma cast_id :
 forall {n m} prfn prfm (zx : ZX n m),

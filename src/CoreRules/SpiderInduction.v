@@ -1,5 +1,4 @@
-Require Import ZXCore.
-Require Import Proportional.
+Require Import CoreData.CoreData.
 
 (* Spider Induction *)
 

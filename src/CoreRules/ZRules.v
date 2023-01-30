@@ -1,8 +1,9 @@
-From VyZX Require Import CoreData.
-From VyZX Require Import CoreAutomation.
-From VyZX Require Import CastRules.
-From VyZX Require Import StackComposeRules.
-From VyZX Require Import WireRules.
+Require Import CoreData.CoreData.
+Require Import CoreAutomation.
+Require Import CastRules.
+Require Import StackComposeRules.
+Require Import WireRules.
+Require Import SpiderInduction.
 
 Lemma Grow_Z_Left : forall (nIn nOut : nat) α,
 	Z (S (S nIn)) nOut α ∝  

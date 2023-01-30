@@ -157,9 +157,4 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/coq,emacs,macos,windows
 
-# Coq Makefile
-CoqMakefile
-CoqMakefile.conf
-
-Makefile
-Makefile.conf
+_build

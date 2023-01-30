@@ -1,4 +1,4 @@
-From VyZX Require Import CoreData.ZXCore.
+Require Import ZXCore.
 Require Import Setoid.
 
 (* 

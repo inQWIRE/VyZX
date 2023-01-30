@@ -1,6 +1,6 @@
-From VyZX Require Export StackComposeRules.
-From VyZX Require Export WireRules.
-From VyZX Require Export ZRules.
-From VyZX Require Export CastRules.
-From VyZX Require Export CoreAutomation.
-From VyZX Require Export CoreAutomation.
+Require Export StackComposeRules.
+Require Export WireRules.
+Require Export ZRules.
+Require Export CastRules.
+Require Export CoreAutomation.
+Require Export CoreAutomation.
