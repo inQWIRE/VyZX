@@ -762,7 +762,7 @@ Definition translate_CNOT_m_n {dim} (n m : nat) : ZX (m + (S n - m) + (dim - (n 
 Definition translate_CNOT {dim} (n m : nat) : ZX dim dim.
 Proof.
   destruct (n <? m) eqn:Hnltm.
-  - destruct (m <? dim) eqn:Hmltdim. 
+  - destruct (m <? dim) eqn:Hmltdim.
     + apply (Cast _ _ (eq_sym (CNOT_n_m_dim Hnltm Hmltdim)) (eq_sym (CNOT_n_m_dim Hnltm Hmltdim))).
       apply translate_CNOT_n_m.
     + apply (nWire dim).
@@ -872,19 +872,58 @@ Unshelve.
     easy.
 Qed.
 
-From Coq Require Import EqdepFacts.
+Definition Gate_ingest {dim} (zx : ZX 1 1) n : ZX (n + 1 + (dim - (n + 1))) (n + 1 + (dim - (n + 1))).
+Proof. 
+  apply pad_bot.
+  apply pad_top.
+  exact zx.
+Defined.
 
-Lemma CNOT_equiv : forall dim n m, (n < dim)%nat -> (m < dim)%nat -> (n <> m)%nat -> / √ 2 .* uc_eval (@CNOT dim n m) = ZX_semantics (@translate_CNOT dim n m).
+Lemma Gate_ingest_dim : forall n dim, (n < dim)%nat -> ((n + 1 + (dim - (n + 1))) = dim)%nat.
+Proof.
+  intros. lia.
+Qed.
+
+Definition H_ingest_correct : forall {dim} n, (n < dim)%nat -> @uc_eval dim (H n) = ZX_semantics (@Gate_ingest dim □ n).
 Proof.
   intros.
-  unfold translate_CNOT.
-  apply Nat.ltb_lt in H, H0.
-  generalize (eq_refl (Nat.ltb n m)).
-  generalize (eq_refl (m <? n)).
-  generalize (eq_refl (m <? dim)).
-  generalize (eq_refl ((n <? dim))).
-Abort.
-        
+  rewrite denote_H.
+  simpl.
+  unfold pad_u.
+  rewrite unfold_pad.
+  bdestruct (n + 1 <=? dim); try (exfalso; lia).
+  rewrite 2 nWire_semantics.
+  easy.
+Qed.
 
+Definition X_ingest_correct : forall {dim} n, (n < dim)%nat -> @uc_eval dim (SQIR.X n) = ZX_semantics (@Gate_ingest dim (_X_) n).
+Proof.
+  intros.
+  rewrite denote_X.
+  simpl.
+  unfold pad_u.
+  rewrite unfold_pad.
+  bdestruct (n + 1 <=? dim); try (exfalso; lia).
+  rewrite 2 nWire_semantics.
+  restore_dims.
+  apply kron_simplify; [ apply kron_simplify | easy]; [ easy | ].
+  rewrite <- ZX_X_is_X.
+  easy.
+Qed.
+
+Definition Rz_ingest_correct : forall {dim} n α, (n < dim)%nat -> @uc_eval dim (SQIR.Rz α n) = ZX_semantics (@Gate_ingest dim (_Rz_ α) n).
+Proof.
+  intros.
+  rewrite denote_Rz.
+  simpl.
+  unfold pad_u.
+  rewrite unfold_pad.
+  bdestruct (n + 1 <=? dim); try (exfalso; lia).
+  rewrite 2 nWire_semantics.
+  restore_dims.
+  apply kron_simplify; [ apply kron_simplify | easy]; [ easy | ].
+  rewrite <- ZX_Rz_is_Rz.
+  easy.
+Qed.
 
 Close Scope matrix_scope.

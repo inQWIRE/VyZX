@@ -5,11 +5,9 @@ Local Open Scope ZX_scope.
 
 (** Gate Definitions in the ZX Calculus *)
 
-Notation "'_S_'" := (Z 1 1 (PI / 2)) (at level 40).
-Notation "'_T_'" := (Z 1 1 (PI / 4)) (at level 40).
 Notation "'_Z_'" := (Z 1 1 PI) (at level 40).
 Notation "'_X_'" := (X 1 1 PI) (at level 40).
-Notation "'_Y_'" := (_Z_ ⟷ _X_) (at level 40).
+Definition _Rz_ α : ZX 1 1 := Z 1 1 α.
 
 Notation "'_H_'" := 
     ((Z 1 1 (PI/2)) ⟷ (X 1 1 (PI/2)) ⟷ (Z 1 1 (PI/2)))
@@ -29,23 +27,6 @@ Notation "'_NOTC_'" :=
 Notation "'_NOTC_R'" :=
   ((X 1 2 0 ↕ —) ⟷ (— ↕ Z 2 1 0 )).
 
-(** Gate rewriting rules *)
 
-Lemma _H_is_Box : _H_ ∝ □.
-Proof.
-  prop_exists_nonzero (Cexp (PI/4)).
-  simpl.
-  unfold X_semantics, Z_semantics.
-  Msimpl.
-  solve_matrix;
-  field_simplify_eq [Cexp_PI2 Cexp_PI4 Ci2 Csqrt2_sqrt2_inv Csqrt2_inv]; 
-  try apply c_proj_eq; try simpl; try R_field_simplify; try reflexivity; (try split; try apply RtoC_neq; try apply sqrt2_neq_0; try auto).
-Qed.
-
-Lemma _H_H_is_wire : □ ⟷ □ ∝ —.
-Proof.
-  prop_exists_nonzero 1; Msimpl; simpl.
-  apply MmultHH.
-Qed.
   
 
