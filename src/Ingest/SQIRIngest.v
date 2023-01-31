@@ -164,9 +164,7 @@ Proof.
 Qed.
 
 Lemma swap_transpose : (swap)⊤ = swap.
-Proof. 
-  solve_matrix.  
-Qed.
+Proof. unfold transpose; solve_matrix. Qed.
 
 Lemma WF_test : forall n, WF_Matrix (swap ⊗ (I (2 ^ (S n))) × ((I 2) ⊗ A_Swap_semantics (S (S n))) × (swap ⊗ (I (2 ^ (S n))))).
 Proof.
@@ -536,6 +534,23 @@ Qed.
 Lemma unpadded_cnot_t_sem_equiv : forall n, / √ 2 .* uc_eval (@CNOT (S (S n)) 0 (S n)) = ZX_semantics (unpadded_cnot_t 0 (S (S n))).
 Proof.
   intros.
+  assert (HSwapSSn : forall n, uc_eval (@SWAP (S (S (S n))) 0 (S n)) = ZX_semantics (pad_bot_1 (A_Swap_ZX (S (S n))))).
+  {
+    intros.
+    Opaque A_Swap_ZX.
+    simpl.
+    unfold pad_bot_1, pad_bot.
+    rewrite swap_pad.
+    simpl.
+    restore_dims.
+    simpl_cast_semantics.
+    simpl.
+    rewrite A_Swap_Correct.
+    rewrite A_swap_sem_base.
+    Msimpl.
+    easy.
+    Transparent A_Swap_ZX.
+  }
   destruct n.
   - unfold unpadded_cnot.
     pose proof ZX_CNOT_l_is_cnot.
@@ -552,20 +567,11 @@ Proof.
   - rewrite <- (SWAP_extends_CNOT _ (S n) _); try lia.
     Opaque A_Swap_ZX.
     simpl.
-    unfold pad_bot_1, pad_bot, pad_top.
+    unfold pad_bot, pad_top.
     rewrite <- Mscale_mult_dist_r.
     rewrite <- Mscale_mult_dist_l.
     apply Mmult_simplify; [ | apply Mmult_simplify ].
-    + rewrite swap_pad.
-      simpl.
-      restore_dims.
-      simpl_cast_semantics.
-      simpl.
-      rewrite A_Swap_Correct.
-      rewrite A_swap_sem_base.
-      Msimpl.
-      restore_dims.
-      easy.
+    + apply HSwapSSn.
     + rewrite denote_cnot.
       rewrite unfold_ueval_cnot.
       bdestruct (S n <? S (S n)); try (lia; exfalso).
@@ -594,17 +600,7 @@ Proof.
         Msimpl.
         simpl.
         easy.
-    Unshelve.
-  + rewrite swap_pad.
-    simpl.
-    restore_dims.
-    simpl_cast_semantics. 
-    simpl.
-    rewrite A_Swap_Correct.
-    rewrite A_swap_sem_base.
-    Msimpl.
-    restore_dims.
-    easy.
+    + apply HSwapSSn.
 Qed.
 
 Lemma unpadded_cnot_b_sem_equiv : forall n, / √ 2 .* uc_eval (@CNOT (S (S n)) (S n) 0) = ZX_semantics (unpadded_cnot_b 0 (S (S n))).
@@ -614,6 +610,17 @@ Proof.
   {
     rewrite kron_mixed_product.
     Msimpl.
+    easy.
+  }
+  assert (HSwapSSn : forall n, uc_eval (@SWAP (S (S (S n))) (S (S n)) 1) = I 2 ⊗ ZX_semantics (A_Swap_ZX (S (S n)))).
+  {
+    intros.
+    rewrite swap_pad'.
+    simpl.
+    rewrite A_Swap_Correct.
+    rewrite A_swap_sem_base.
+    Msimpl.
+    rewrite SWAP_inv; try lia.
     easy.
   }
   destruct n.
@@ -653,17 +660,8 @@ Proof.
     rewrite <- Mscale_mult_dist_r.
     rewrite <- Mscale_mult_dist_l.
     apply Mmult_simplify; [ | apply Mmult_simplify ].
-    + rewrite swap_pad'.
-      simpl.
-      restore_dims.
-      simpl_cast_semantics.
-      simpl.
-      rewrite A_Swap_Correct.
-      rewrite A_swap_sem_base.
-      Msimpl.
-      restore_dims.
-      rewrite SWAP_inv; try lia.
-      easy.
+    + Msimpl.
+      apply HSwapSSn.
     + rewrite <- H_swaps_CNOT.
       simpl_cast_semantics.
       simpl.
@@ -708,17 +706,8 @@ Proof.
       rewrite <- ZX_CNOT_l_is_cnot.
       simpl.
       easy.
-    + rewrite swap_pad'.
-      simpl.
-      restore_dims.
-      simpl_cast_semantics.
-      simpl.
-      rewrite A_Swap_Correct.
-      rewrite A_swap_sem_base.
-      Msimpl.
-      restore_dims.
-      rewrite SWAP_inv; try lia.
-      easy.
+    + Msimpl.
+      apply HSwapSSn.
 Qed.
 
 Lemma lt_when_not_eq_gt : forall {m n}, (n <? m) = false -> (n =? m = false) -> (m <? n) = true.
@@ -901,46 +890,39 @@ Proof.
   intros. lia.
 Qed.
 
-Definition H_ingest_correct : forall {dim} n, (n < dim)%nat -> @uc_eval dim (H n) = ZX_semantics (@Gate_ingest dim □ n).
+Lemma Gate_ingest_correct : forall n dim (zx : ZX 1 1) (A : Matrix 2 2), (n < dim)%nat -> ZX_semantics zx = A -> pad_u dim n A = ZX_semantics (@Gate_ingest dim zx n).
+Proof.
+  intros.
+  unfold pad_u.
+  rewrite unfold_pad.
+  bdestruct (n + 1 <=? dim); try (exfalso; lia).
+  simpl.
+  rewrite 2 nWire_semantics.
+  rewrite H0.
+  easy.
+Qed.
+
+Lemma H_ingest_correct : forall {dim} n, (n < dim)%nat -> @uc_eval dim (H n) = ZX_semantics (@Gate_ingest dim □ n).
 Proof.
   intros.
   rewrite denote_H.
-  simpl.
-  unfold pad_u.
-  rewrite unfold_pad.
-  bdestruct (n + 1 <=? dim); try (exfalso; lia).
-  rewrite 2 nWire_semantics.
-  easy.
+  apply Gate_ingest_correct; easy.
 Qed.
 
-Definition X_ingest_correct : forall {dim} n, (n < dim)%nat -> @uc_eval dim (SQIR.X n) = ZX_semantics (@Gate_ingest dim (_X_) n).
+Lemma X_ingest_correct : forall {dim} n, (n < dim)%nat -> @uc_eval dim (SQIR.X n) = ZX_semantics (@Gate_ingest dim (_X_) n).
 Proof.
   intros.
   rewrite denote_X.
-  simpl.
-  unfold pad_u.
-  rewrite unfold_pad.
-  bdestruct (n + 1 <=? dim); try (exfalso; lia).
-  rewrite 2 nWire_semantics.
-  restore_dims.
-  apply kron_simplify; [ apply kron_simplify | easy]; [ easy | ].
-  rewrite <- ZX_X_is_X.
-  easy.
+  apply Gate_ingest_correct; [ easy | ].
+  apply ZX_X_is_X.
 Qed.
 
-Definition Rz_ingest_correct : forall {dim} n α, (n < dim)%nat -> @uc_eval dim (SQIR.Rz α n) = ZX_semantics (@Gate_ingest dim (_Rz_ α) n).
+Lemma Rz_ingest_correct : forall {dim} n α, (n < dim)%nat -> @uc_eval dim (SQIR.Rz α n) = ZX_semantics (@Gate_ingest dim (_Rz_ α) n).
 Proof.
   intros.
   rewrite denote_Rz.
-  simpl.
-  unfold pad_u.
-  rewrite unfold_pad.
-  bdestruct (n + 1 <=? dim); try (exfalso; lia).
-  rewrite 2 nWire_semantics.
-  restore_dims.
-  apply kron_simplify; [ apply kron_simplify | easy]; [ easy | ].
-  rewrite <- ZX_Rz_is_Rz.
-  easy.
+  apply Gate_ingest_correct; [ easy | ].
+  apply ZX_Rz_is_Rz.
 Qed.
 
 Close Scope matrix_scope.
