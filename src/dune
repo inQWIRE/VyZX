@@ -1,0 +1,4 @@
+(include_subdirs qualified)
+(coq.theory
+  (name VyZX)
+  (package coq-vyzx))

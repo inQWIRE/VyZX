@@ -1,4 +1,0 @@
-(coq.theory
-  (name CoreRules)
-  (package coq-vyzx)
-  (theories CoreData))

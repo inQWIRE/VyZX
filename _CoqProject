@@ -1,0 +1,6 @@
+-I _build/default/src/CoreData
+-I _build/default/src/CoreRules
+-I _build/default/src/Ingest
+-I _build/default/externals/SQIR
+
+-R _build/default/src VyZX
