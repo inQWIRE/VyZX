@@ -7,6 +7,9 @@ Definition pad_top {n m} pad (zx : ZX n m) : ZX (pad + n) (pad + m) := (nWire pa
 
 Definition pad_bot_1 {n m} (zx : ZX n m) : ZX (S n) (S m) := Cast _ _ (eq_sym (Nat.add_1_r n)) (eq_sym (Nat.add_1_r m)) (pad_bot 1 zx).
 
+Notation padbt zx := (pad_bot _ (pad_top _ zx)).
+Notation padtb zx := (pad_top _ (pad_bot _ zx)).
+
 Lemma pad_top_contract : forall {n m} (zx : ZX n m) pad1 pad2, pad_top pad1 (pad_top pad2 zx) ∝ Cast (pad1 + (pad2 + n)) (pad1 + (pad2 + m)) (Nat.add_assoc _ _ _) (Nat.add_assoc _ _ _) (pad_top (pad1 + pad2) zx).
 Proof.
   intros.

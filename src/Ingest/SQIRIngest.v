@@ -732,7 +732,7 @@ Qed.
 
 Definition translate_CNOT_n_m {dim} (n m : nat) : ZX (n + (S m - n) + (dim - (m + 1))) (n + (S m - n) + (dim - (m + 1))) :=
   (if n <? m then
-    pad_bot _ (pad_top n (unpadded_cnot_t _ _))
+    padbt (unpadded_cnot_t _ _)
   else 
     (nWire _)
   ).
@@ -754,20 +754,20 @@ Defined.
 
 Definition translate_CNOT_m_n {dim} (n m : nat) : ZX (m + (S n - m) + (dim - (n + 1))) (m + (S n - m) + (dim - (n + 1))) :=
     (if m <? n then
-      pad_bot _ (pad_top m (unpadded_cnot_b _ _))
+      padbt (unpadded_cnot_b _ _)
     else 
       (nWire _)
     ).
   
 Definition translate_CNOT {dim} (n m : nat) : ZX dim dim.
 Proof.
-  destruct (n <? m) eqn:Hnltm.
-  - destruct (m <? dim) eqn:Hmltdim.
+  destruct (Sumbool.sumbool_of_bool (n <? m)) as [ Hnltm | _ ].
+  - destruct (Sumbool.sumbool_of_bool (m <? dim)) as [ Hmltdim | _ ].
     + apply (Cast _ _ (eq_sym (CNOT_n_m_dim Hnltm Hmltdim)) (eq_sym (CNOT_n_m_dim Hnltm Hmltdim))).
       apply translate_CNOT_n_m.
     + apply (nWire dim).
-  - destruct (m <? n) eqn:Hmltn.
-    + destruct (n <? dim) eqn:Hnltdim.
+  - destruct (Sumbool.sumbool_of_bool (m <? n)) as [ Hmltn | _ ].
+    + destruct (Sumbool.sumbool_of_bool (n <? dim)) as [ Hnltdim | _ ].
       * apply (Cast _ _ (eq_sym (CNOT_m_n_dim Hmltn Hnltdim)) (eq_sym (CNOT_m_n_dim Hmltn Hnltdim))).
         apply translate_CNOT_m_n.
       * apply (nWire dim).
@@ -872,12 +872,29 @@ Unshelve.
     easy.
 Qed.
 
-Definition Gate_ingest {dim} (zx : ZX 1 1) n : ZX (n + 1 + (dim - (n + 1))) (n + 1 + (dim - (n + 1))).
-Proof. 
-  apply pad_bot.
-  apply pad_top.
-  exact zx.
-Defined.
+Lemma CNOT_equiv : forall dim n m, (n < dim)%nat -> (m < dim)%nat -> (m <> n)%nat -> / √ 2 .* uc_eval (@CNOT dim n m) = ZX_semantics (@translate_CNOT dim n m).
+Proof.
+  intros.
+  unfold translate_CNOT.
+  destruct (dec (n <? m)).
+  - destruct (dec (m <? dim)).
+    + simpl_cast_semantics.
+      rewrite CNOT_n_m_equiv; try easy.
+      apply Nat.ltb_lt; easy.
+    + apply Nat.ltb_nlt in e0.
+      contradiction.
+  - destruct (dec (m <? n)).
+    + destruct (dec (n <? dim)).
+      * simpl_cast_semantics.
+        rewrite CNOT_m_n_equiv; try easy.
+        apply Nat.ltb_lt; easy.
+      * apply Nat.ltb_nlt in e1.
+        contradiction.
+    + exfalso.
+      apply Nat.ltb_nlt in e, e0; lia.
+Qed.
+
+Definition Gate_ingest {dim} (zx : ZX 1 1) n : ZX (n + 1 + (dim - (n + 1))) (n + 1 + (dim - (n + 1))) := padbt zx.
 
 Lemma Gate_ingest_dim : forall n dim, (n < dim)%nat -> ((n + 1 + (dim - (n + 1))) = dim)%nat.
 Proof.
