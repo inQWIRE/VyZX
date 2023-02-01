@@ -7,8 +7,6 @@ Require Import GateRules.
 Require Import ZXPad.
 Require Import QuantumLib.Quantum.
 
-Search (uc_eval (CNOT _ _)).
-Search "swap".
 
 Open Scope ZX_scope.
 
@@ -890,7 +888,7 @@ Unshelve.
     easy.
 Qed.
 
-Lemma CNOT_equiv : forall dim n m, (n < dim)%nat -> (m < dim)%nat -> (m <> n)%nat -> / √ 2 .* uc_eval (@CNOT dim n m) = ZX_semantics (@CNOT_ingest dim n m).
+Lemma CNOT_ingest_correct : forall dim n m, (n < dim)%nat -> (m < dim)%nat -> (m <> n)%nat -> / √ 2 .* uc_eval (@CNOT dim n m) = ZX_semantics (@CNOT_ingest dim n m).
 Proof.
   intros.
   unfold CNOT_ingest.
@@ -943,18 +941,18 @@ Proof.
   easy.
 Qed.
 
-Definition H_ingest dim n := Gate_ingest dim □ n.
-Definition X_ingest dim n := Gate_ingest dim (_X_) n.
-Definition Rz_ingest dim n α := Gate_ingest dim (_Rz_ α) n.
+Definition H_ingest {dim} n := Gate_ingest dim □ n.
+Definition X_ingest {dim} n := Gate_ingest dim (_X_) n.
+Definition Rz_ingest {dim} n α := Gate_ingest dim (_Rz_ α) n.
 
-Lemma H_ingest_correct : forall {dim} n, (n < dim)%nat -> @uc_eval dim (H n) = ZX_semantics (H_ingest dim n).
+Lemma H_ingest_correct : forall {dim} n, (n < dim)%nat -> @uc_eval dim (H n) = ZX_semantics (@H_ingest dim n).
 Proof.
   intros.
   rewrite denote_H.
   apply Gate_ingest_correct; easy.
 Qed.
 
-Lemma X_ingest_correct : forall {dim} n, (n < dim)%nat -> @uc_eval dim (SQIR.X n) = ZX_semantics (X_ingest dim n).
+Lemma X_ingest_correct : forall {dim} n, (n < dim)%nat -> @uc_eval dim (SQIR.X n) = ZX_semantics (@X_ingest dim n).
 Proof.
   intros.
   rewrite denote_X.
@@ -962,12 +960,87 @@ Proof.
   apply ZX_X_is_X.
 Qed.
 
-Lemma Rz_ingest_correct : forall {dim} n α, (n < dim)%nat -> @uc_eval dim (SQIR.Rz α n) = ZX_semantics (Rz_ingest dim n α).
+Lemma Rz_ingest_correct : forall {dim} n α, (n < dim)%nat -> @uc_eval dim (SQIR.Rz α n) = ZX_semantics (@Rz_ingest dim n α).
 Proof.
   intros.
   rewrite denote_Rz.
   apply Gate_ingest_correct; [ easy | ].
   apply ZX_Rz_is_Rz.
 Qed.
+
+Lemma SKIP_is_nWire : forall dim, uc_eval (@SKIP (S dim)) = ZX_semantics (nWire (S dim)).
+Proof.
+  intros.
+  rewrite denote_SKIP; try lia.
+  rewrite nWire_semantics; easy.
+Qed. 
+
+Require Import VOQC.RzQGateSet.
+
+Fixpoint ingest {dim} (u : ucom (RzQGateSet.U) dim) : ZX dim dim :=
+  match u with
+  | uapp1 URzQ_H n => H_ingest n
+  | uapp1 URzQ_X n => X_ingest n
+  | uapp1 (URzQ_Rz α) n => Rz_ingest n (Q2R α)
+  | uapp2 _ n m => CNOT_ingest n m
+  | useq u1 u2 => ingest u1 ⟷ ingest u2
+  | _ => (nWire dim)
+  end.
+
+Fixpoint RzQToBaseUCom {dim} (u : ucom (RzQGateSet.U) dim) : base_ucom dim :=
+  match u with
+  | uapp1 URzQ_H n => SQIR.H n
+  | uapp1 URzQ_X n => SQIR.X n
+  | uapp1 (URzQ_Rz α) n => SQIR.Rz (Q2R α) n
+  | uapp2 _ n m => SQIR.CNOT n m
+  | useq u1 u2 => RzQToBaseUCom u1; RzQToBaseUCom u2
+  | _ => SKIP
+  end.
+
+Theorem ingest_correct : forall {dim} (u : ucom (RzQGateSet.U) dim), uc_well_typed u -> exists (c : C), c .* uc_eval (RzQToBaseUCom u) = ZX_semantics (ingest u) /\ (c <> C0).
+Proof.
+  intros.
+  induction u.
+  - inversion H.
+    simpl.
+    specialize (IHu1 H2).
+    specialize (IHu2 H3).
+    destruct IHu1, IHu2.
+    destruct H4, H5.
+    exists (x * x0)%C; split; [ |  apply Cmult_neq_0; assumption ].
+    rewrite <- H4.
+    rewrite <- H5.
+    rewrite Mscale_mult_dist_r.
+    rewrite Mscale_mult_dist_l.
+    rewrite Mscale_assoc.
+    easy.
+  - simpl.
+    exists C1; split; [ | nonzero ].
+    Msimpl.
+    inversion H.
+    subst.
+    clear H.
+    destruct u.
+    + apply H_ingest_correct.
+      assumption.
+    + apply X_ingest_correct.
+      assumption.
+    + apply Rz_ingest_correct.
+      assumption.
+    + destruct dim; [ exfalso; lia | ].
+      apply SKIP_is_nWire.
+  - inversion H.
+    subst.
+    simpl.
+    exists (/ √2)%C; split; [ | apply nonzero_div_nonzero; apply Csqrt2_neq_0 ].
+    rewrite CNOT_ingest_correct; congruence.
+  - simpl.
+    exists C1; split; [ | nonzero ].
+    Msimpl.    
+    destruct dim; [ exfalso; inversion H; lia | ].
+    apply SKIP_is_nWire.
+Qed.
+
+  
 
 Close Scope matrix_scope.
