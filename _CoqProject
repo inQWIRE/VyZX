@@ -1,15 +1,8 @@
 -I ./src/CoreData
 -I ./src/CoreRules
 -I ./src/Ingest
--I ./externals/SQIR
 
 -R . VyZX
-
-
-externals/SQIR/SQIR/SQIR.v
-externals/SQIR/SQIR/UnitarySem.v
-externals/SQIR/SQIR/UnitaryOps.v
-externals/SQIR/SQIR/Equivalences.v
 
 src/CoreData/QlibTemp.v
 
