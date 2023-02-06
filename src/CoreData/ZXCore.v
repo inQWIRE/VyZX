@@ -48,7 +48,7 @@ Notation "A ↕ B" := (Stack A B)
   (left associativity, at level 40) : ZX_scope. (* \updownarrow *)
 Notation "'Z'" := Z_Spider (left associativity, at level 40) : ZX_scope.
 Notation "'X'" := X_Spider (left associativity, at level 40) : ZX_scope.
-Notation "$ n , m ::: A $" := (Cast n m _ _ A) (at level 49) : ZX_scope.
+Notation "$ n , m ::: A $" := (Cast n m _ _ A) (at level 20) : ZX_scope.
 
 (* 
 We provide two separate options for semantic functions, one based on sparse 
@@ -130,7 +130,7 @@ Qed.
 
 (* Parametrized diagrams *)
 
-Reserved Notation "n ⇑ zx" (at level 40). 
+Reserved Notation "n ⇑ zx" (at level 35). 
 Fixpoint nStack {nIn nOut} n (zx : ZX nIn nOut) : ZX (n * nIn) (n * nOut) :=
   match n with
   | 0 => ⦰
@@ -138,7 +138,7 @@ Fixpoint nStack {nIn nOut} n (zx : ZX nIn nOut) : ZX (n * nIn) (n * nOut) :=
   end
   where "n ⇑ zx" := (nStack n zx).
 
-Reserved Notation "n ↑ zx" (at level 41).
+Reserved Notation "n ↑ zx" (at level 35).
 Fixpoint nStack1 n (zx : ZX 1 1) : ZX n n :=
   match n with
   | 0 => ⦰
@@ -162,7 +162,7 @@ Qed.
 (* Definition nWire := fun n => n ↑ Wire. *)
 Definition nBox := fun n => n ↑ Box.
 
-Notation "'nWire' n" := (n ↑ —) (left associativity, at level 38).
+Notation "'nWire' n" := (n ↑ —) (at level 35).
 
 Lemma nWire_semantics {n} : ZX_semantics (nWire n) = I (2^n).
 Proof.
@@ -212,19 +212,19 @@ Qed.
 
 (* Negating the angles of a diagram, complex conjugate *)
 
-Reserved Notation "zx ^*" (at level 10).
+Reserved Notation "zx ⊼" (at level 0). (* \barwedge *)
 Fixpoint conjugate {n m} (zx : ZX n m) : ZX n m :=
   match zx with
   | Z n m α => Z n m (-α)
   | X n m α => X n m (-α)
-  | zx0 ⟷ zx1 => (zx0^*) ⟷ (zx1^*)
-  | zx1 ↕ zx2 => zx1^* ↕ zx2^*
+  | zx0 ⟷ zx1 => (zx0⊼) ⟷ (zx1⊼)
+  | zx1 ↕ zx2 => zx1⊼ ↕ zx2⊼
   | other => other
   end
-  where "zx ^*" := (conjugate zx) : ZX_scope.
+  where "zx ⊼" := (conjugate zx) : ZX_scope.
 
 Definition adjoint {n m} (zx : ZX n m) : ZX m n :=
-  (zx^*)⊤.
+  (zx⊼)⊤.
 Notation "zx †" := (adjoint zx) (at level 0) : ZX_scope.
 
 Lemma ZX_semantics_transpose_comm {nIn nOut} : forall (zx : ZX nIn nOut),
@@ -270,7 +270,7 @@ Qed.
 
 Opaque adjoint.
 
-Reserved Notation "⊙ zx" (at level 10). (* \odot *) 
+Reserved Notation "⊙ zx" (at level 0). (* \odot *) 
 Fixpoint ColorSwap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
   match zx with
   | X n m α   => Z n m α
