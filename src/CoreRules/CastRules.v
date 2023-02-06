@@ -257,7 +257,7 @@ Proof.
 Qed.
 
 Lemma cast_conj : forall {n m n' m'} prfn prfm (zx : ZX n m),
-  (Cast n' m' prfn prfm zx) ^* ∝ Cast n' m' prfn prfm (zx ^*). 
+  (Cast n' m' prfn prfm zx) ⊼ ∝ Cast n' m' prfn prfm (zx ⊼). 
 Proof.
   intros.
   destruct prfn, prfm.

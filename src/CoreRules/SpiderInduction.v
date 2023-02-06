@@ -455,3 +455,5 @@ Proof.
   simpl.
   apply WrapOver_Right_Top_0.
 Qed.
+
+Ltac spider_induction n := induction n; [ | destruct n ].
