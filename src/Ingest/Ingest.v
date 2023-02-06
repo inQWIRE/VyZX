@@ -980,7 +980,7 @@ Fixpoint ingest {dim} (u : ucom (RzQGateSet.U) dim) : ZX dim dim :=
   match u with
   | uapp1 URzQ_H n => H_ingest n
   | uapp1 URzQ_X n => X_ingest n
-  | uapp1 (URzQ_Rz α) n => Rz_ingest n (Q2R α)
+  | uapp1 (URzQ_Rz α) n => Rz_ingest n (Q2R α * PI)%R
   | uapp2 _ n m => CNOT_ingest n m
   | useq u1 u2 => ingest u1 ⟷ ingest u2
   | _ => (nWire dim)
@@ -990,11 +990,45 @@ Fixpoint RzQToBaseUCom {dim} (u : ucom (RzQGateSet.U) dim) : base_ucom dim :=
   match u with
   | uapp1 URzQ_H n => SQIR.H n
   | uapp1 URzQ_X n => SQIR.X n
-  | uapp1 (URzQ_Rz α) n => SQIR.Rz (Q2R α) n
+  | uapp1 (URzQ_Rz α) n => SQIR.Rz (Q2R α * PI)%R n
   | uapp2 _ n m => SQIR.CNOT n m
   | useq u1 u2 => RzQToBaseUCom u1; RzQToBaseUCom u2
   | _ => SKIP
   end.
+
+Definition ingest_list {n dim} (u : RzQGateSet.U n) (qs : list nat) (pf : List.length qs = n) : ZX dim dim :=
+  match u with
+  | URzQ_H     => H_ingest (List.nth O qs O) 
+  | URzQ_X     => X_ingest (List.nth O qs O)
+  | URzQ_Rz a  => Rz_ingest (List.nth O qs O) (Q2R a * PI)%R 
+  | URzQ_CNOT  => CNOT_ingest (List.nth O qs O) (List.nth (S O) qs O)
+  end.
+
+Theorem ingest_list_to_base_correct : forall {n dim} (u : RzQGateSet.U n) (qs : list nat) (pf : List.length qs = n),
+  (bounded_list qs dim /\ List.NoDup qs) -> (* Proved equiv to well-typedness *)
+   exists c, c .* @uc_eval dim (@to_base n dim u qs pf) = ZX_semantics (@ingest_list _ dim u qs pf) /\ c <> C0.
+Proof.
+  intros.
+  induction u.
+  1-3: exists C1; split; [Msimpl | nonzero]; do 2 (destruct qs; try easy); simpl.
+  1: apply H_ingest_correct.
+  2: apply X_ingest_correct.
+  3: apply Rz_ingest_correct.
+  all: destruct H; unfold bounded_list in H.
+  1-3: apply H; left; easy. 
+  - exists (/ √ 2 )%C; split; [ | apply nonzero_div_nonzero; apply Csqrt2_neq_0 ].
+    do 3 (destruct qs; try easy).
+    simpl.
+    apply CNOT_ingest_correct.
+    + apply H; left; easy.
+    + apply H; right; left; easy.
+    + inversion H0.
+      unfold not in H3.
+      unfold In in H3.
+      apply Classical_Prop.not_or_and in H3.
+      destruct H3.
+      easy.
+Qed.
 
 Theorem ingest_correct : forall {dim} (u : ucom (RzQGateSet.U) dim), uc_well_typed u -> exists (c : C), c .* uc_eval (RzQToBaseUCom u) = ZX_semantics (ingest u) /\ (c <> C0).
 Proof.
