@@ -151,8 +151,22 @@ Proof.
     easy.
 Qed.
 
+Local Open Scope ucom_scope.
+Lemma swap_spec' : swap = ((ket 0 × bra 0)  ⊗ (ket 0 × bra 0) .+ (ket 0 × bra 1)  ⊗ (ket 1 × bra 0)
+.+ (ket 1 × bra 0)  ⊗ (ket 0 × bra 1) .+ (ket 1 × bra 1)  ⊗ (ket 1 × bra 1)).
+Proof.
+  solve_matrix.
+Qed.
+
 Lemma swap_transpose : (swap)⊤ = swap.
-Proof. unfold transpose; solve_matrix. Qed.
+Proof. 
+  rewrite swap_spec'.
+  repeat rewrite Mplus_transpose.
+  repeat rewrite kron_transpose.
+  repeat rewrite Mmult_transpose.
+  repeat rewrite bra0_transpose_ket0, bra1_transpose_ket1, ket0_transpose_bra0, ket1_transpose_bra1.
+  lma.
+Qed.
 
 Lemma WF_test : forall n, WF_Matrix (swap ⊗ (I (2 ^ (S n))) × ((I 2) ⊗ A_Swap_semantics (S (S n))) × (swap ⊗ (I (2 ^ (S n))))).
 Proof.
@@ -259,13 +273,6 @@ Proof.
     + apply WF_transpose; apply WF_kron; try (simpl; lia); subst; auto with wf_db.
 Qed.
 
-Local Open Scope ucom_scope.
-Lemma swap_spec' : swap = ((ket 0 × bra 0)  ⊗ (ket 0 × bra 0) .+ (ket 0 × bra 1)  ⊗ (ket 1 × bra 0)
-.+ (ket 1 × bra 0)  ⊗ (ket 0 × bra 1) .+ (ket 1 × bra 1)  ⊗ (ket 1 × bra 1)).
-Proof.
-  solve_matrix.
-Qed.
-
 Fixpoint Swap_ind dim n : base_ucom dim :=
   match n with
   | 0%nat => @SWAP dim 0 1
@@ -318,8 +325,10 @@ Proof.
     unfold Top_wire_to_bottom.
     rewrite unfold_pad.
     simpl.
-    gridify.
-    solve_matrix.
+    rewrite id_transpose_eq.
+    rewrite id_kron.
+    Msimpl.
+    apply swap_spec'.
   - rewrite A_swap_ind.
     rewrite <- Swap_ind_eq; try lia.
     rewrite IHn.
