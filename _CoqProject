@@ -27,4 +27,5 @@ src/CoreRules/CoreRules.v
 src/Ingest/ZXPad.v
 src/Ingest/Gates.v
 src/Ingest/GateRules.v
+src/Ingest/Ingest.v
 src/Ingest/SQIRIngest.v
