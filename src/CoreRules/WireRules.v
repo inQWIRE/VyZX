@@ -138,3 +138,27 @@ Proof.
     rewrite IHn.
     easy.
 Qed. 
+
+Lemma nWire_colorswap : forall n, ⊙ (nWire n) = nWire n.
+Proof.
+  intros.
+  induction n.
+  - easy.
+  - simpl.
+    rewrite IHn.
+    easy.
+Qed.
+
+
+Lemma wire_transpose : —⊤ ∝ —.
+Proof. easy. Qed.
+
+Lemma nWire_transpose : forall n, (nWire n)⊤ = nWire n.
+Proof.
+  intros.
+  induction n.
+  - easy.
+  - simpl.
+    rewrite IHn.
+    easy.
+Qed. 
