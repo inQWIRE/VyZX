@@ -78,6 +78,18 @@ Proof.
   easy.
 Qed.
 
+Definition ZX_Cast_semantics_dim {n m n' m' : nat} (zx : ZX n m) : Matrix (2 ^ n') (2 ^ m') := ZX_semantics zx.
+
+Lemma Cast_semantics_dim : forall {n m n' m'} {eqn eqm} (zx : ZX n m),
+  ZX_semantics (Cast n' m' eqn eqm zx) = ZX_Cast_semantics_dim zx.
+Proof.
+  intros.
+  unfold ZX_Cast_semantics_dim.
+  apply Cast_semantics.
+Qed.
+
+Ltac simpl_cast_semantics := try repeat rewrite Cast_semantics; try repeat (rewrite Cast_semantics_dim; unfold ZX_Cast_semantics_dim).
+
 Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) : 
   Matrix (2 ^ m) (2 ^ n) := 
   match zx with

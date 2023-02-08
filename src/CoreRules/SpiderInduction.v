@@ -200,7 +200,8 @@ Qed.
 
 Lemma Grow_Z_Right_Bot_1_2_Base : forall α,
   Z 1 3 α ∝ Z 1 2 α ⟷ (— ↕ Z 1 2 0).
-Proof. intros. prop_exists_nonzero 1. simpl; Msimpl. unfold Z_semantics.
+Proof. 
+  intros. prop_exists_nonzero 1. simpl; Msimpl. unfold Z_semantics.
   gridify.
   solve_matrix.
   rewrite Cexp_0.
