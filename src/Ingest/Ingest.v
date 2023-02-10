@@ -273,48 +273,14 @@ Proof.
     + apply WF_transpose; apply WF_kron; try (simpl; lia); subst; auto with wf_db.
 Qed.
 
-Fixpoint Swap_ind dim n : base_ucom dim :=
-  match n with
-  | 0%nat => @SWAP dim 0 1
-  | (S n0) => (@SWAP dim (S (S n0)) (S n0)) ; (Swap_ind dim n0); (@SWAP dim (S (S n0)) (S n0))
-  end.
-
-Lemma Swap_ind_eq : forall n dim, (S n < dim)%nat -> (1 < dim)%nat -> uc_eval (Swap_ind dim n) = uc_eval (@SWAP dim 0 (S n)).
-Proof.
-  intros.
-  induction n; [ easy | ].
-  simpl.
-  rewrite IHn; try lia.
-  rewrite 3 denote_swap.
-  unfold ueval_swap.
-  bdestruct (S (S n) <? S n); try (exfalso; lia).
-  bdestruct (S n <? (S (S n))); try (exfalso; lia).
-  simpl.
-  repeat rewrite unfold_pad.
-  destruct n.
-  - simpl.
-    destruct dim; try lia. 
-    destruct dim; try lia. 
-    destruct dim; try lia.
-    simpl.
-    Msimpl.
-    rewrite Nat.add_0_r.
-    rewrite Nat.sub_0_r.
-    replace (2 ^ dim + 2 ^ dim)%nat with (2 * 2 ^dim)%nat by lia.
-    rewrite <- id_kron.
-    rewrite <- kron_assoc; try auto with wf_db.
-    rewrite <- Mmult_assoc.
-    remember (I 2 ⊗ _) as A.
-    remember (_ ⊗ I 2) as B.
-    restore_dims.
-    rewrite <- 2 kron_id_dist_r.
-    apply kron_simplify; try easy.
-Admitted.
-
-
 Lemma A_swap_sem_base : forall n, A_Swap_semantics (S (S n)) = uc_eval (@SWAP (S (S n)) 0 (S n)).
 Proof.
   intros.
+  assert (forall q q', q = qubit0 \/ q = qubit1 -> q' = qubit0 \/ q' = qubit1 -> swap × (I 2 ⊗ (q × q'†)) × swap = (q × q'†) ⊗ I 2).
+  {
+    intros.
+    destruct H; destruct H0; subst; solve_matrix.
+  }
   induction n.
   - simpl.
     rewrite denote_swap.
@@ -330,24 +296,44 @@ Proof.
     Msimpl.
     apply swap_spec'.
   - rewrite A_swap_ind.
-    rewrite <- Swap_ind_eq; try lia.
     rewrite IHn.
     simpl.
-    rewrite Swap_ind_eq; try lia.
-    rewrite (denote_swap _ (S _) (S _)).
+    rewrite 2 denote_swap.
     unfold ueval_swap.
-    bdestruct (S (S n) <? S n)%nat; try (exfalso; lia).
-    bdestruct (S n <? S (S n))%nat; try (exfalso; lia).
-    rewrite unfold_pad.
-    replace ((S (S n) - S n - 1))%nat with 0%nat by lia.
-    repeat rewrite Nat.add_0_r.
-    repeat rewrite Nat.add_1_r.
-    replace (S n + 2)%nat with (S (S (S n)))%nat by lia.
+    simpl.
+    rewrite Nat.sub_0_r.
+    rewrite 2 unfold_pad.
+    simpl.
+    rewrite Nat.add_1_r.
     rewrite Nat.leb_refl.
+    Msimpl.
     rewrite Nat.sub_diag.
     simpl.
     Msimpl.
-Admitted.
+    restore_dims.
+    repeat rewrite kron_plus_distr_l.
+    repeat rewrite <- kron_assoc; try auto with wf_db.
+    restore_dims.
+    repeat rewrite (kron_assoc (I 2 ⊗ _) (I (2 ^ n)) _); try auto with wf_db.
+    replace (2 ^ n + (2 ^ n + 0))%nat with (2 ^ n * 2)%nat by lia.
+    restore_dims.
+    repeat rewrite Mmult_plus_distr_l.
+    repeat rewrite Mmult_plus_distr_r.
+    repeat rewrite kron_mixed_product.
+    do 3 pose proof H.
+    specialize (H qubit0 qubit0).
+    specialize (H0 qubit0 qubit1).
+    specialize (H1 qubit1 qubit0).
+    specialize (H2 qubit1 qubit1).
+    rewrite H, H0, H1, H2 by auto.
+    Msimpl.
+    repeat rewrite kron_assoc by auto with wf_db.
+    repeat rewrite <- (kron_assoc (I 2) _ _) by auto with wf_db.
+    rewrite id_kron.
+    replace (2 * 2 ^ n)%nat with (2 ^ n * 2)%nat by lia.
+    restore_dims.
+    easy. 
+Qed.
 
 Lemma uc_eval_swap_grow : forall n x y, (x < (S (S n)))%nat -> (y < x)%nat ->
 uc_eval (@SWAP (S (S n)) x y) = I (2 ^ y) ⊗ uc_eval (@SWAP (S x - y) 0 (x - y)) ⊗ I (2 ^ (S (S n) - (S x))).
