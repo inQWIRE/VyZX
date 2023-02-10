@@ -21,7 +21,7 @@ Proof.
 Qed.
 
 
-Lemma kron_id_dist_r : forall {n m o p} (A : Matrix n m) (B : Matrix m o),
+Lemma kron_id_dist_r : forall {n m o} p (A : Matrix n m) (B : Matrix m o),
 WF_Matrix A -> WF_Matrix B -> (A × B) ⊗ (I p) = (A ⊗ (I p)) × (B ⊗ (I p)).
 Proof.
   intros.
@@ -32,7 +32,7 @@ Proof.
   auto with wf_db.
 Qed.
 
-Lemma kron_id_dist_l : forall {n m o p} (A : Matrix n m) (B : Matrix m o),
+Lemma kron_id_dist_l : forall {n m o} p (A : Matrix n m) (B : Matrix m o),
 WF_Matrix A -> WF_Matrix B -> (I p) ⊗ (A × B) = ((I p) ⊗ A) × ((I p) ⊗ B).
 Proof.
   intros.

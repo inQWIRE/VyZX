@@ -58,50 +58,63 @@ Proof.
   solve_matrix.
 Qed.
 
-Lemma X_0_is_wire : X 1 1 0 ∝ —.
+Lemma nWire_stack : forall n m, nWire n ↕ nWire m ∝ nWire (n + m).
 Proof. 
-    Admitted.
+  prop_exists_nonzero 1. 
+  simpl. 
+  rewrite 3 nWire_semantics, id_kron.
+  Msimpl.
+  rewrite Nat.pow_add_r.
+  easy.
+Qed.
+
+Lemma X_0_is_wire : X 1 1 0 ∝ —.
+Proof.
+  apply colorswap_diagrams.
+  simpl.
+  apply Z_0_is_wire.
+Qed.
 
 Lemma stack_nwire_distribute_r : forall {n m o p} (zx0 : ZX n m) (zx1 : ZX m o),
 (zx0 ⟷ zx1) ↕ nWire p ∝ (zx0 ↕ nWire p) ⟷ (zx1 ↕ nWire p).
 Proof.
-intros.
-induction p.
-- repeat rewrite ZX_Stack_Empty_r.
-	eapply (cast_diagrams n o).
-	repeat rewrite cast_contract.
-	rewrite cast_id.
-	rewrite cast_compose_distribute.
-	simpl_casts.
-	erewrite (cast_compose_mid m _ ($ n, m + 0 ::: zx0 $)).
-	simpl_casts.
-	easy.
-	Unshelve.
-	all: lia.
-- rewrite nStack1_r.
-	repeat rewrite cast_stack_r.
-	eapply (cast_diagrams (n + (p + 1)) (o + (p + 1))).
-	rewrite cast_contract.
-	rewrite cast_id.
-	rewrite cast_compose_distribute.
-	simpl_casts.
-	erewrite (cast_compose_mid (m + (p + 1)) _ 
-                ($ n + (p + 1), m + (S p) ::: zx0 ↕ (nWire p ↕ —)$)).
-	simpl_casts.
-	rewrite 3 ZX_Stack_assoc_back.
-	eapply (cast_diagrams (n + p + 1) (o + p + 1)).
-	rewrite cast_contract.
-	rewrite cast_id.
-	rewrite cast_compose_distribute.
-	rewrite 2 cast_contract.
-	erewrite (cast_compose_mid (m + p + 1) _ 
-                ($ n + p + 1, m + (p + 1) ::: zx0 ↕ nWire p ↕ — $)).
-	simpl_casts.
-	rewrite <- stack_wire_distribute_r.
-	rewrite <- IHp.
-	easy.
-	Unshelve.
-	all: lia.
+  intros.
+  induction p.
+  - repeat rewrite ZX_Stack_Empty_r.
+    eapply (cast_diagrams n o).
+    repeat rewrite cast_contract.
+    rewrite cast_id.
+    rewrite cast_compose_distribute.
+    simpl_casts.
+    erewrite (cast_compose_mid m _ ($ n, m + 0 ::: zx0 $)).
+    simpl_casts.
+    easy.
+    Unshelve.
+    all: lia.
+  - rewrite nStack1_r.
+    repeat rewrite cast_stack_r.
+    eapply (cast_diagrams (n + (p + 1)) (o + (p + 1))).
+    rewrite cast_contract.
+    rewrite cast_id.
+    rewrite cast_compose_distribute.
+    simpl_casts.
+    erewrite (cast_compose_mid (m + (p + 1)) _ 
+                  ($ n + (p + 1), m + (S p) ::: zx0 ↕ (nWire p ↕ —)$)).
+    simpl_casts.
+    rewrite 3 ZX_Stack_assoc_back.
+    eapply (cast_diagrams (n + p + 1) (o + p + 1)).
+    rewrite cast_contract.
+    rewrite cast_id.
+    rewrite cast_compose_distribute.
+    rewrite 2 cast_contract.
+    erewrite (cast_compose_mid (m + p + 1) _ 
+                  ($ n + p + 1, m + (p + 1) ::: zx0 ↕ nWire p ↕ — $)).
+    simpl_casts.
+    rewrite <- stack_wire_distribute_r.
+    rewrite <- IHp.
+    easy.
+    Unshelve.
+    all: lia.
 Qed.
 
 Lemma wire_to_nWire : 
@@ -135,4 +148,3 @@ Proof.
     rewrite IHn.
     easy.
 Qed.
-
