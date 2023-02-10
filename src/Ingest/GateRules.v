@@ -60,5 +60,5 @@ Proof.
   simpl.
   unfold Z_semantics, phase_shift.
   simpl.
-  solve_matrix.
+  lma.
 Qed.
