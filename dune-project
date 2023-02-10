@@ -20,4 +20,5 @@
  (depends
    (coq-quantumlib (>= 1.1.0))
    (coq-sqir (>= 1.1.0))
+   (coq-voqc (>= 1.1.0))
    (coq (>= 8.12))))
