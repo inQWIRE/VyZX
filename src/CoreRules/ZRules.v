@@ -271,23 +271,6 @@ Proof.
 	easy.
 Qed.
 
-Lemma dominated_spider_fusion_top_right : forall n m0 m1 o α β,
-	(Z n (S m0) α ↕ nWire m1 ⟷ Z (S m0 + m1) o β) ∝
-	Z (n + m1) o (α + β).
-Proof.
-	intros.
-	replace β%R with (0 + β + 0)%R at 1 by lra.
-	rewrite Z_add_l.
-	rewrite <- ZX_Compose_assoc.
-	rewrite <- ZX_Stack_Compose_distr.
-	rewrite Z_Absolute_Fusion.
-	cleanup_zx.
-	rewrite <- Z_add_l.
-	replace (α + 0 + β + 0)%R with (α + β)%R by lra.
-	easy.
-Qed.
-
-
 Lemma SpiderFusion_TopLeft_BotRight : forall top mid bot input output α β,
 	Z input (top + S mid) α ↕ nWire bot ⟷
 	Cast (top + (S mid) + bot) (top + output) (eq_sym (Nat.add_assoc _ _ _)) eq_refl 
