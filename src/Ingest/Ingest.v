@@ -3,7 +3,6 @@ Require Import SQIR.Equivalences.
 Require Import CoreData.
 Require Import CoreRules.
 Require Import Gates.
-Require Import GateRules.
 Require Import ZXPad.
 Require Import QuantumLib.Quantum.
 

@@ -1,6 +1,6 @@
 Require Import QuantumLib.Quantum.
 Require Export ZXCore.
-Require Export Gates.
+Require Export GateDefinitions.
 Require Export CoreRules.
 
 Local Open Scope ZX_scope.
