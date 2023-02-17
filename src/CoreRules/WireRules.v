@@ -148,3 +148,10 @@ Proof.
     rewrite IHn.
     easy.
 Qed.
+
+Lemma wire_loop : — ∝ (⊂ ↕ —) ⟷ (— ↕ ⨉) ⟷ (⊃ ↕ —).
+Proof.
+  prop_exists_nonzero 1.
+  Msimpl; simpl.
+  solve_matrix.
+Qed.

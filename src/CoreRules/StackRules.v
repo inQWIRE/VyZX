@@ -59,6 +59,20 @@ Proof.
 	reflexivity.
 Qed.
 
+Lemma ZX_Stack_Empty_r_rev : forall {n m : nat} (zx : ZX n m),
+	zx ∝ 
+		Cast _ _ (eq_sym (Nat.add_0_r _)) (eq_sym (Nat.add_0_r _)) (zx ↕ ⦰).
+Proof.
+	intros.
+	prop_exists_nonzero 1.
+	simpl.
+	Msimpl.
+	simpl_cast_semantics.
+	simpl.
+	Msimpl.
+	reflexivity.
+Qed.
+
 Lemma ZX_Stack_simplify : forall {n1 m1 n2 m2}
   (zx1 zx3 : ZX n1 m1) (zx2 zx4 : ZX n2 m2),
   zx1 ∝ zx3 -> zx2 ∝ zx4 -> zx1 ↕ zx2 ∝ zx3 ↕ zx4.

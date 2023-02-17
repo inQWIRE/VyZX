@@ -42,7 +42,7 @@ Proof.
 Qed.
 
 
-Lemma ZX_COmpose_transpose : forall {n m o} (zx1 : ZX n m) (zx2 : ZX m o), (zx1 ⟷ zx2) ⊤ ∝ (zx2⊤ ⟷ zx1⊤).
+Lemma ZX_Compose_transpose : forall {n m o} (zx1 : ZX n m) (zx2 : ZX m o), (zx1 ⟷ zx2) ⊤ ∝ (zx2⊤ ⟷ zx1⊤).
 Proof.
 	intros.
 	prop_exists_nonzero 1.
