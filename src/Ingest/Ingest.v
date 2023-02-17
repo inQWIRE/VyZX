@@ -955,6 +955,8 @@ Fixpoint ingest {dim} (u : ucom (RzQGateSet.U) dim) : ZX dim dim :=
   | _ => (nWire dim)
   end.
 
+Local Open Scope ucom_scope.
+
 Fixpoint RzQToBaseUCom {dim} (u : ucom (RzQGateSet.U) dim) : base_ucom dim :=
   match u with
   | uapp1 URzQ_H n => SQIR.H n
