@@ -9,8 +9,8 @@ Theorem BiAlgebra_rule_Z_X :
 Proof.
   prop_exists_nonzero 1.
   simpl.
-  rewrite X_semantics_equiv, Z_semantics_equiv. 
-  unfold_dirac_spider; [ | shelve | shelve ]. 
+  rewrite X_semantics_equiv, Z_semantics_equiv.
+  unfold_dirac_spider.
   autorewrite with Cexp_db.
   Msimpl.
   repeat rewrite kron_plus_distr_l.
@@ -61,9 +61,6 @@ Proof.
   clear H.
   repeat rewrite <- Mmult_plus_distr_r. 
   repeat rewrite <- Mmult_plus_distr_l.
-  rewrite ket_plus_spec, ket_minus_spec.
-  autorewrite with scalar_move_db.
-  replace (/ √ 2 * / √ 2 * (/ √ 2 * / √ 2 * (/ √ 2 * / √ 2))) with (/ √ 2 * / √ 2 * / √ 2 * (/ √ 2 * (/ √ 2 * / √ 2))) by lca.
 Admitted.
 
 Theorem BiAlgebra_rule_X_Z : 
@@ -147,31 +144,44 @@ Transparent nStack1.
   simpl_casts.
   simpl.
   cleanup_zx; simpl_casts.
-  assert (Hl: (Z) 0 1 0 ↕ (Z) (0 + 0) (1 + 0) 0 ↕ — ⟷ (— ↕ ⊃) ∝ Z 1 0 0 ⟷ Z 0 1 0).
+  rewrite (ZX_Stack_assoc (Z 0 1 0) ((Z) (0 + 0) (1 + 0) 0) —).
+  simpl_casts.
+  rewrite <- (ZX_Stack_Compose_distr ((Z) 0 1 0) — ((Z) (0 + 0) (1 + 0) 0 ↕ —) ⊃).
+  assert (Hl: (Z) (0 + 0) (1 + 0) 0 ↕ — ⟷ ⊃ ∝ Z 1 0 0). (* Todo : pull out lemma *)
   {
-    prop_exists_nonzero 1.
-    Msimpl.
-    simpl.
-    solve_matrix.
-    (* TODO: Needs more lemmas to do diagramatically *)
+    rewrite Cup_Z.
+    rewrite <- Z_0_is_wire.
+    rewrite <- Z_add_l.
+    rewrite 2 Rplus_0_r.
+    easy.
   }
   rewrite Hl.
-  rewrite (ZX_Compose_assoc _ (Z 0 1 0)).
+  cleanup_zx.
+  rewrite (ZX_Stack_Empty_r_rev (Z 1 2 0)).
+  simpl_casts.
+  rewrite <- (ZX_Stack_Compose_distr (Z 0 1 0) (Z 1 2 0) (Z 1 0 0) ⦰).
+  cleanup_zx.
   rewrite Z_spider_1_1_fusion.
   rewrite Rplus_0_r.
   rewrite <- Cap_Z.
+  rewrite (disconnected_stack_compose_r).
+  simpl_casts.
+  assert (X_add_r: forall {n} m o {α β γ}, X n (m + o) (α + β + γ) ∝ X n 2 β ⟷ (X 1 m α ↕ X 1 o γ)). { (* TODO : X rules *)
+    intros.
+    colorswap_of (@Z_add_r n).
+  }
   assert (Hr : ⊂ ⟷ ((X) 1 0 0 ↕ —) ∝ X 0 1 0).
   {
-    prop_exists_nonzero 1.
-    Msimpl.
-    simpl.
-    unfold X_semantics.
-    solve_matrix.
+    rewrite Cap_X.
+    rewrite <- X_0_is_wire.
+    rewrite <- X_add_r.
+    rewrite 2 Rplus_0_r.
+    easy.
   }
   rewrite ZX_Compose_assoc.
   rewrite Hr.
   easy.
-Qed.
+Admitted.
 
 
 Theorem Hopf_rule_X_Z : 

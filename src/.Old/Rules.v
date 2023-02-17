@@ -8,7 +8,7 @@ Require Export VyZX.Proportional.
 Local Open Scope ZX_scope.
 
 (* TODO: Move into quantum lib *)
-Hint Rewrite Mscale_kron_dist_l Mscale_kron_dist_r Mscale_mult_dist_l Mscale_mult_dist_r Mscale_assoc : scalar_move_db.
+Hint Rewrite Mscale_kron_dist_l Mscale_kron_dist_r Mscale_mult_dist_l Mscale_mult_dist_r Mscale_plus_distr_l Mscale_plus_distr_r Mscale_assoc : scalar_move_db.
 
 Lemma ZX_Compose_assoc : forall {nIn nMid1 nMid2 nOut}
                               (zx1 : ZX nIn nMid1) (zx2 : ZX nMid1 nMid2) (zx3 : ZX nMid2 nOut),

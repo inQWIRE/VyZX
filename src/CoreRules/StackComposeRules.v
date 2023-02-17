@@ -83,3 +83,29 @@ Proof.
   Msimpl.
   easy.
 Qed.
+
+Lemma disconnected_stack_compose_l : forall {n m} (zxIn : ZX n 0) (zxOut : ZX 0 m), zxIn ↕ zxOut ∝ Cast _ _ (@Nat.add_0_r _) (eq_refl) (zxIn ⟷ zxOut).
+Proof.
+  intros.
+  rewrite <- (ZX_Compose_Empty_l zxOut) at 1.
+  rewrite <- (ZX_Compose_Empty_r zxIn) at 1.
+  rewrite ZX_Stack_Compose_distr.
+  rewrite ZX_Stack_Empty_l.
+  rewrite ZX_Stack_Empty_r.
+  rewrite cast_compose_l.
+  simpl_casts.
+  easy.
+Qed.
+
+Lemma disconnected_stack_compose_r : forall {n m} (zxIn : ZX n 0) (zxOut : ZX 0 m), zxOut ↕ zxIn ∝ Cast _ _ (eq_refl) (@Nat.add_0_r _) (zxIn ⟷ zxOut).
+Proof.
+  intros.
+  rewrite <- (ZX_Compose_Empty_l zxOut) at 1.
+  rewrite <- (ZX_Compose_Empty_r zxIn) at 1.
+  rewrite ZX_Stack_Compose_distr.
+  rewrite ZX_Stack_Empty_l.
+  rewrite ZX_Stack_Empty_r.
+  rewrite cast_compose_r.
+  simpl_casts.
+  easy.
+Qed.
