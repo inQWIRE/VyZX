@@ -47,6 +47,12 @@ Qed.
 Lemma swap_transpose : swap ⊤%M = swap.
 Proof. lma. Qed.
 
+Lemma swap_spec' : swap = ((ket 0 × bra 0)  ⊗ (ket 0 × bra 0) .+ (ket 0 × bra 1)  ⊗ (ket 1 × bra 0)
+  .+ (ket 1 × bra 0)  ⊗ (ket 0 × bra 1) .+ (ket 1 × bra 1)  ⊗ (ket 1 × bra 1)).
+Proof.
+  solve_matrix.
+Qed.
+
 Lemma xbasis_plus_spec : ∣+⟩ = / √ 2 .* (∣0⟩ .+ ∣1⟩).
 Proof. solve_matrix. Qed.
 

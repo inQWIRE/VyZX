@@ -1,4 +1,3 @@
-
 Require Import CoreData.CoreData.
 Require Import CoreRules.ZRules.
 Require Import CoreRules.WireRules.
