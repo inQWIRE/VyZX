@@ -143,27 +143,6 @@ Qed.
 
 (* Dirac semantics for a given spider *)
 
-(* TODO: Add this to QLib *)
-
-Definition braminus :=  / √ 2 .* (⟨0∣ .+ (-1 .* ⟨1∣)).
-Definition braplus  :=  / √ 2 .* (⟨0∣ .+ ⟨1∣).
-
-Notation "⟨ + ∣" := braplus.
-Notation "⟨ - ∣" := braminus.
-
-(* End TODO *)
-
-(* TODO: Move into quantum lib *)
-#[export] Hint Rewrite 
-  Mscale_kron_dist_l 
-  Mscale_kron_dist_r 
-  Mscale_mult_dist_l 
-  Mscale_mult_dist_r 
-  Mscale_assoc : scalar_move_db.
-
-#[export] Hint Rewrite <- Mscale_plus_distr_l : scalar_move_db.
-#[export] Hint Rewrite <- Mscale_plus_distr_r : scalar_move_db.
-
 Definition Z_dirac_semantics (n m : nat) (α : R) := 
   Dirac_spider_semantics ⟨0∣ ⟨1∣ ∣0⟩ ∣1⟩ α n m.
 
@@ -743,7 +722,7 @@ Qed.
 Lemma WF_X_semantics : forall n m α, WF_Matrix (X_semantics n m α).
 Proof. 
   intros; rewrite X_semantics_equiv; 
-  apply WF_Dirac_Spider_semantics; unfold braplus, braminus; auto with wf_db. 
+  apply WF_Dirac_Spider_semantics; auto with wf_db. 
 Qed.
 
 #[export] Hint Resolve WF_Z_semantics WF_X_semantics : wf_db.
