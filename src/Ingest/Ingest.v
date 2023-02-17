@@ -150,22 +150,6 @@ Proof.
     easy.
 Qed.
 
-Local Open Scope ucom_scope.
-Lemma swap_spec' : swap = ((ket 0 × bra 0)  ⊗ (ket 0 × bra 0) .+ (ket 0 × bra 1)  ⊗ (ket 1 × bra 0)
-.+ (ket 1 × bra 0)  ⊗ (ket 0 × bra 1) .+ (ket 1 × bra 1)  ⊗ (ket 1 × bra 1)).
-Proof.
-  solve_matrix.
-Qed.
-
-Lemma swap_transpose : (swap)⊤ = swap.
-Proof. 
-  rewrite swap_spec'.
-  repeat rewrite Mplus_transpose.
-  repeat rewrite kron_transpose.
-  repeat rewrite Mmult_transpose.
-  repeat rewrite bra0_transpose_ket0, bra1_transpose_ket1, ket0_transpose_bra0, ket1_transpose_bra1.
-  lma.
-Qed.
 
 Lemma WF_test : forall n, WF_Matrix (swap ⊗ (I (2 ^ (S n))) × ((I 2) ⊗ A_Swap_semantics (S (S n))) × (swap ⊗ (I (2 ^ (S n))))).
 Proof.

@@ -161,6 +161,9 @@ Notation "⟨ - ∣" := braminus.
   Mscale_mult_dist_r 
   Mscale_assoc : scalar_move_db.
 
+#[export] Hint Rewrite <- Mscale_plus_distr_l : scalar_move_db.
+#[export] Hint Rewrite <- Mscale_plus_distr_r : scalar_move_db.
+
 Definition Z_dirac_semantics (n m : nat) (α : R) := 
   Dirac_spider_semantics ⟨0∣ ⟨1∣ ∣0⟩ ∣1⟩ α n m.
 

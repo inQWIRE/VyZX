@@ -1,4 +1,5 @@
 From QuantumLib Require Import Matrix.
+From QuantumLib Require Import Quantum.
 
 Lemma transpose_matrices : forall {n m} (A B : Matrix n m),
   A ⊤ = B ⊤ -> A = B.
@@ -43,3 +44,21 @@ Proof.
   auto with wf_db.
 Qed.
 
+
+Lemma swap_spec' : swap = ((ket 0 × bra 0)  ⊗ (ket 0 × bra 0) .+ (ket 0 × bra 1)  ⊗ (ket 1 × bra 0)
+  .+ (ket 1 × bra 0)  ⊗ (ket 0 × bra 1) .+ (ket 1 × bra 1)  ⊗ (ket 1 × bra 1)).
+Proof.
+  solve_matrix.
+Qed.
+  
+Lemma swap_transpose : (swap)⊤ = swap.
+Proof.
+  lma.
+Qed.
+
+Lemma ket_plus_spec : xbasis_plus = / √2 .* (ket 0 .+ ket 1).
+Proof. solve_matrix. Qed.
+  
+Lemma ket_minus_spec : xbasis_minus = / √2 .* (ket 0 .+ (-1 .* ket 1)).
+Proof. solve_matrix. Qed.
+      
