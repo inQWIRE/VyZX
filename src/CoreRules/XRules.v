@@ -64,9 +64,26 @@ Lemma dominated_X_spider_fusion_top_left : forall m n0 n1 i α β,
 	X i (m + n1) (α + β).
 Proof. intros. colorswap_of dominated_Z_spider_fusion_top_left. Qed.
 
+Lemma dominated_X_spider_fusion_bot_right : forall n m0 m1 o α β,
+	((nWire m1 ↕ (X n (S m0) α)) ⟷ X (m1 + (S m0)) o β) ∝
+	X (m1 + n) o (α + β).
+Proof. intros. colorswap_of dominated_Z_spider_fusion_bot_right. Qed.
+
+Lemma dominated_X_spider_fusion_bot_left : forall m n0 n1 i α β,
+	X i (n1 + S n0) β ⟷ (nWire n1 ↕ X (S n0) m α) ∝
+	X i (n1 + m) (α + β).
+Proof. intros. colorswap_of dominated_Z_spider_fusion_bot_left. Qed.
+
 Lemma X_SpiderFusion_TopLeft_BotRight : forall top mid bot input output α β,
 	X input (top + S mid) α ↕ nWire bot ⟷
 	Cast (top + (S mid) + bot) (top + output) (eq_sym (Nat.add_assoc _ _ _)) eq_refl 
 		(nWire top ↕ X (S mid + bot) output β) ∝
 	X (input + bot) (top + output) (α + β).
 Proof. intros. colorswap_of Z_SpiderFusion_TopLeft_BotRight. Qed.
+
+Lemma Z_SpiderFusion_BotLeft_TopRight : forall top mid bot input output α β,
+	((nWire top ↕ X input (S mid + bot) α) ⟷
+	Cast (top + ((S mid) + bot)) _ ((Nat.add_assoc _ _ _)) eq_refl 
+		(X (top + (S mid)) output β ↕ nWire bot)) ∝
+	X (top + input) (output + bot) (β + α).
+Proof. intros. colorswap_of Z_SpiderFusion_BotLeft_TopRight. Qed.

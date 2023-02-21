@@ -260,16 +260,32 @@ Proof.
 	easy.
 Qed.
 
+
+Lemma dominated_Z_spider_fusion_bot_right : forall n m0 m1 o α β,
+	((nWire m1 ↕ (Z n (S m0) α)) ⟷ Z (m1 + (S m0)) o β) ∝
+	Z (m1 + n) o (α + β).
+Proof.
+	intros.
+	replace β%R with (0 + β + 0)%R at 1 by lra.
+	rewrite Z_add_l.
+	rewrite <- ZX_Compose_assoc.
+	rewrite <- ZX_Stack_Compose_distr.
+	rewrite Z_Absolute_Fusion.
+	cleanup_zx.
+	rewrite <- Z_add_l.
+	replace (0 + β + (α + 0))%R with (α + β)%R by lra.
+	easy.
+Qed.
+
 Lemma dominated_Z_spider_fusion_top_left : forall m n0 n1 i α β,
 	Z i (S n0 + n1) β ⟷ (Z (S n0) m α ↕ nWire n1) ∝
 	Z i (m + n1) (α + β).
-Proof.
-	intros.
-	apply transpose_diagrams; simpl.
-	rewrite nWire_transpose.
-	rewrite (dominated_Z_spider_fusion_top_right m n0 n1 i).
-	easy.
-Qed.
+Proof. intros. transpose_of dominated_Z_spider_fusion_top_right. Qed.
+
+Lemma dominated_Z_spider_fusion_bot_left : forall m n0 n1 i α β,
+	Z i (n1 + S n0) β ⟷ (nWire n1 ↕ Z (S n0) m α) ∝
+	Z i (n1 + m) (α + β).
+Proof. intros. transpose_of dominated_Z_spider_fusion_bot_right. Qed.
 
 Lemma Z_SpiderFusion_TopLeft_BotRight : forall top mid bot input output α β,
 	Z input (top + S mid) α ↕ nWire bot ⟷
@@ -321,3 +337,22 @@ Proof.
 	easy.
 Qed.
 
+Lemma Z_SpiderFusion_BotLeft_TopRight : forall top mid bot input output α β,
+	((nWire top ↕ Z input (S mid + bot) α) ⟷
+	Cast (top + ((S mid) + bot)) _ ((Nat.add_assoc _ _ _)) eq_refl 
+		(Z (top + (S mid)) output β ↕ nWire bot)) ∝
+	Z (top + input) (output + bot) (β + α).
+Proof.
+	intros.
+	apply transpose_diagrams.
+	simpl.
+	rewrite <- (Z_SpiderFusion_TopLeft_BotRight top mid bot).
+	autorewrite with transpose_db.
+Opaque Cast.
+	simpl.
+Transparent Cast.
+	rewrite cast_compose_l.
+	simpl_casts.
+	autorewrite with transpose_db.
+	easy.
+Qed.
