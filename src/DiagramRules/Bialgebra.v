@@ -83,11 +83,6 @@ Proof.
   rewrite Cup_X.
   replace (0%R) with (0 + 0)%R by lra.
   rewrite <- (@Z_spider_1_1_fusion 0 2).
-  assert (X_spider_1_1_fusion : forall {nIn nOut} a b, (X nIn 1 a ⟷ X 1 nOut b) ∝ X nIn nOut (a + b)).
-  {
-    intros.
-    colorswap_of (@Z_spider_1_1_fusion nIn nOut).
-  } (* TODO: Make X rules *)
   rewrite <- X_spider_1_1_fusion.
   replace (0 + 0)%R with 0 by lra.
   repeat rewrite stack_wire_distribute_r.
@@ -136,7 +131,8 @@ Opaque nStack1.
 Transparent nStack1.
   fold Bi_Alg_Z_X.
   rewrite <- BiAlgebra_rule_Z_X.
-  assert (X_Wrap_Under_L_base : forall α, X 2 1 α ∝ (X 1 2 α ↕ —) ⟷ (— ↕ ⊃)) by admit. (* TODO : resurect and make X rules *)
+  assert (X_Wrap_Under_L_base : forall α, X 2 1 α ∝ (X 1 2 α ↕ —) ⟷ (— ↕ ⊃)) by admit.
+  (* TODO : resurect and make X rules *)
   rewrite X_Wrap_Under_L_base.
   repeat rewrite <- ZX_Compose_assoc.
   rewrite <- stack_wire_distribute_r.
@@ -166,10 +162,6 @@ Transparent nStack1.
   rewrite <- Cap_Z.
   rewrite (disconnected_stack_compose_r).
   simpl_casts.
-  assert (X_add_r: forall {n} m o {α β γ}, X n (m + o) (α + β + γ) ∝ X n 2 β ⟷ (X 1 m α ↕ X 1 o γ)). { (* TODO : X rules *)
-    intros.
-    colorswap_of (@Z_add_r n).
-  }
   assert (Hr : ⊂ ⟷ ((X) 1 0 0 ↕ —) ∝ X 0 1 0).
   {
     rewrite Cap_X.
@@ -183,19 +175,8 @@ Transparent nStack1.
   easy.
 Admitted.
 
-
 Theorem Hopf_rule_X_Z : 
   (X_Spider 1 2 0) ⟷ (Z_Spider 2 1 0) ∝ (X_Spider 1 0 0) ⟷ (Z_Spider 0 1 0).
 Proof.
   colorswap_of Hopf_rule_Z_X.
 Qed.
-
-
-
-
-Definition l  : Matrix (2 ^ 4) (2 ^ 2) := (fun x y =>
-match x, y with
-| 0%nat, 0%nat => 1
-| _, _ => 0
-end).
-

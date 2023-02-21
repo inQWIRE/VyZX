@@ -110,6 +110,26 @@ Proof.
 		easy.
 Qed.
 
+Lemma nStack_transpose : forall n (zx : ZX 1 1), (n ⇑ zx)⊤ ∝ (n ⇑ zx⊤).
+Proof.
+	intros.
+	induction n.
+	- easy.
+	- simpl.
+		rewrite IHn.
+		easy.
+Qed.
+
+Lemma nStack_colorswap : forall n {n' m'} (zx : ZX n' m'), ⊙(n ⇑ zx) ∝ (n ⇑ (⊙ zx)).
+Proof.
+	intros.
+	induction n.
+	- easy.
+	- simpl.
+		rewrite IHn.
+		easy.
+Qed.
+
 Lemma nStack1_l : forall n (zx : ZX 1 1),
 	(S n) ↑ zx ∝ zx ↕ (n ↑ zx).
 Proof. easy. Qed.

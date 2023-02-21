@@ -353,3 +353,13 @@ Proof.
   Msimpl.
   apply Z_spider_1_1_fusion_eq.
 Qed.
+
+Lemma X_spider_1_1_fusion : forall {nIn nOut} α β, 
+  (X nIn 1 α) ⟷ (X 1 nOut β) ∝
+  X nIn nOut (α + β).
+Proof.
+  intros.
+  apply colorswap_diagrams.
+  simpl.
+  apply Z_spider_1_1_fusion.
+Qed.

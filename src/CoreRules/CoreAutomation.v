@@ -1,4 +1,5 @@
 Require Import ComposeRules.
+Require Import CastRules.
 Require Import StackRules.
 Require Import WireRules.
 Require Import StackComposeRules.
@@ -19,6 +20,24 @@ Require Import StackComposeRules.
   : cleanup_zx_db.
 Ltac cleanup_zx := autorewrite with cleanup_zx_db.
 
-Ltac transpose_of H := intros; apply transpose_diagrams; simpl; apply H.
-Ltac adjoint_of H := intros; apply adjoint_diagrams; simpl; apply H.
-Ltac colorswap_of H := intros; apply colorswap_diagrams; simpl; apply H.
+#[export] Hint Rewrite
+  (fun n m o p => @cast_colorswap n m o p)
+  (fun n => @nWire_colorswap n)
+  (fun n => @nStack1_colorswap n)
+  (fun n => @nStack_colorswap n)
+  : colorswap_db.
+
+#[export] Hint Rewrite
+  (fun n m o p => @cast_transpose n m o p)
+  (fun n => @nWire_transpose n)
+  (fun n => @nStack1_transpose n)
+  (fun n => @nStack_transpose n)
+  : transpose_db.
+
+#[export] Hint Rewrite
+  (fun n m o p => @cast_adj n m o p)
+  : adjoint_db.
+
+Ltac transpose_of H := intros; apply transpose_diagrams; repeat (simpl; autorewrite with transpose_db); apply H.
+Ltac adjoint_of H := intros; apply adjoint_diagrams; repeat (simpl; autorewrite with adjoint_db); apply H.
+Ltac colorswap_of H := intros; apply colorswap_diagrams; repeat (simpl; autorewrite with colorswap_db); apply H.

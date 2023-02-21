@@ -208,7 +208,7 @@ Proof.
   lca.
 Qed.
 
-Lemma WrapOver_Right_Top_Base : forall n α,
+Lemma Z_WrapOver_Top_Rightight_Top_Base : forall n α,
   (— ↕ Z n 2 α) ⟷ (Cup ↕ —) ∝ Z (S n) 1 α.
 Proof.
   intros.
@@ -323,7 +323,7 @@ Proof.
       destruct (fst (Nat.divmod x 1 0 1)); simpl; lca.
 Qed.
 
-Lemma WrapOver_Right_Top_0 : forall n α,
+Lemma Z_WrapOver_Top_Rightight_Top_0 : forall n α,
   (— ↕ Z n 1 α) ⟷ Cup ∝ Z (S n) 0 α.
 Proof.
   intros.
@@ -448,13 +448,13 @@ Proof.
     + destruct x; lca.
 Qed.
 
-Lemma WrapOver_Left_Top_0 : forall n α,
+Lemma Z_WrapOver_Top_Lefteft_Top_0 : forall n α,
   Cap ⟷ (— ↕ Z 1 n α) ∝ Z 0 (S n) α.
 Proof.
   intros.
   apply transpose_diagrams.
   simpl.
-  apply WrapOver_Right_Top_0.
+  apply Z_WrapOver_Top_Rightight_Top_0.
 Qed.
 
 Ltac spider_induction n := induction n; [ | destruct n ].
