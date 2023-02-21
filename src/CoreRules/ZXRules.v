@@ -84,17 +84,6 @@ Proof.
 		all: lia.
 Qed.
 
-Lemma colorswap_nstack : forall {n m dim} (zx : ZX n m),
-	⊙ (dim ⇑ zx) ∝ dim ⇑ ⊙ zx.
-Proof.
-	intros.
-	induction dim.
-	- easy.
-	- simpl.  
-	rewrite IHdim.
-	easy.
-Qed.
-
 Theorem Z_state_copy : forall (r n : nat),
 	(Z 0 1 ((INR r) * PI) ⟷ X 1 n 0) ∝
 	Cast 0%nat n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (Z 0 1 ((INR r) * PI))).
@@ -104,6 +93,8 @@ Proof.
 	rewrite cast_compose_distribute.
 	simpl_casts.
 	apply colorswap_diagrams.
+	autorewrite with colorswap_db.
+	simpl.
 	destruct n.
 	- simpl.
 		simpl_casts.
@@ -111,9 +102,7 @@ Proof.
 		simpl.
 		simpl_casts.
 		easy.
-	- rewrite colorswap_nstack.
-		simpl.
-		eapply (cast_diagrams (0) (S n)).
+	- eapply (cast_diagrams (0) (S n)).
 		rewrite cast_compose_distribute.
 		simpl_casts.
 		apply X_state_copy.

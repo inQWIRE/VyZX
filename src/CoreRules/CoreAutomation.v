@@ -24,7 +24,7 @@ Ltac cleanup_zx := autorewrite with cleanup_zx_db.
   (fun n m o p => @cast_colorswap n m o p)
   (fun n => @nWire_colorswap n)
   (fun n => @nStack1_colorswap n)
-  (fun n => @nStack_colorswap n)
+  (fun n m o => @nStack_colorswap n m o)
   : colorswap_db.
 
 #[export] Hint Rewrite
