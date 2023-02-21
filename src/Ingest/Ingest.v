@@ -150,16 +150,10 @@ Proof.
     easy.
 Qed.
 
-
-Lemma WF_test : forall n, WF_Matrix (swap ⊗ (I (2 ^ (S n))) × ((I 2) ⊗ A_Swap_semantics (S (S n))) × (swap ⊗ (I (2 ^ (S n))))).
+Lemma swap_spec' : swap = ((ket 0 × bra 0)  ⊗ (ket 0 × bra 0) .+ (ket 0 × bra 1)  ⊗ (ket 1 × bra 0)
+  .+ (ket 1 × bra 0)  ⊗ (ket 0 × bra 1) .+ (ket 1 × bra 1)  ⊗ (ket 1 × bra 1)).
 Proof.
-  intros.
-  apply WF_mult.
-  apply WF_mult.
-  apply WF_kron; auto with wf_db.
-  apply WF_kron; auto with wf_db.
-  1-2: simpl; lia.
-  auto with wf_db.
+  solve_matrix.
 Qed.
 
 Lemma ZX_A_swap_grow : forall n, A_Swap_ZX (S (S (S n))) ∝ (⨉ ↕ nWire (S n)) ⟷ (— ↕ A_Swap_ZX (S (S n))) ⟷ (⨉ ↕ nWire (S n)). 
