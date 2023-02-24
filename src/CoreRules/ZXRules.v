@@ -6,25 +6,6 @@ Require Import CoreRules.StackComposeRules.
 Require Import CoreRules.CoreAutomation.
 Require Export CoreRules.ZRules.
 
-Lemma INR_PI_EXP : forall (r : nat),
-	Cexp (INR r * PI) = 1 \/ Cexp (INR r * PI) = -1.
-Proof.
-	intros.
-	dependent induction r.
-	- simpl.
-		rewrite Rmult_0_l.
-		left.
-		apply Cexp_0.
-	-	rewrite S_O_plus_INR.
-		rewrite Rmult_plus_distr_r.
-		rewrite Rmult_1_l.
-		rewrite Rplus_comm.
-		rewrite Cexp_plus_PI.
-		destruct IHr.
-		+ rewrite H; right; lca.
-		+ rewrite H; left; lca.
-Qed.
-
 Theorem X_state_copy : forall (r n : nat),
 	(X 0 1 ((INR r) * PI) ⟷ Z 1 n 0) ∝
 	Cast 0%nat n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (X 0 1 ((INR r) * PI))).

@@ -7,14 +7,19 @@ curr_dir = os.path.dirname(os.path.realpath(__file__))
 
 Z_rules_file_name = "ZRules.v"
 X_rules_file_name = "XRules.v"
+ZX_rules_file_name = "ZXRules.v"
 
-print(f"Checking lemmas in {Z_rules_file_name} and {X_rules_file_name} for inconsistencies...")
+print(f"Checking lemmas in {Z_rules_file_name}, {X_rules_file_name}, and {ZX_rules_file_name} for inconsistencies...")
 
 Z_rules_file = f"{curr_dir}/../src/CoreRules/{Z_rules_file_name}"
 X_rules_file = f"{curr_dir}/../src/CoreRules/{X_rules_file_name}"
+ZX_rules_file = f"{curr_dir}/../src/CoreRules/{ZX_rules_file_name}"
 
 Z_rules_thms : set[str] = set()
 X_rules_thms : set[str] = set()
+ZX_rules_thms : set[str] = set()
+
+duals : dict[str, str] = { 'X': 'Z','Z': 'X', 'X_Z': 'Z_X', 'Z_X' : 'X_Z' }
 
 def get_theorem(line : str) -> str:
   thm_token = "Theorem|Lemma|Fact|Remark|Corollary|Proposition|Property"
@@ -23,6 +28,34 @@ def get_theorem(line : str) -> str:
   if not match:
     return ""
   return  match.groups()[1]  
+
+def check_qualification(thms : set[str], quals : list[str]) -> list[str]:
+  violations = list()
+  for thm in thms:
+    qual_found = False
+    for qual in quals:
+      if f"{qual}_" in thm:
+        qual_found = True
+        break
+    if not qual_found:
+      violations.append(thm)
+  return violations
+
+def check_all_in_other(thms : set[str], other : set[str], qual : str) -> list[str]:
+  violations = list()
+  for thm in thms:
+    if thm.replace(qual + "_", duals[qual] + "_") not in other:
+      violations.append(thm)
+  return violations
+
+def check_Z_X_has_duals(thms : set[str]) -> list[str]:
+  violations = list()
+  violations += check_all_in_other(thms, thms, 'Z_X')
+  violations += check_all_in_other(thms, thms, 'X_Z')
+  restr_thms = set(filter(lambda thm : 'Z_X' not in thm and 'X_Z' not in thm, thms))
+  violations += check_all_in_other(restr_thms, restr_thms, 'Z')
+  violations += check_all_in_other(restr_thms, restr_thms, 'X')
+  return violations
 
 with open(Z_rules_file) as Z_rules:
   for line in Z_rules:
@@ -36,44 +69,42 @@ with open(X_rules_file) as X_rules:
     if thm != "":
       X_rules_thms.add(thm)
 
-def check_qualification(thms : set[str], qual : str) -> list:
-  violations = list()
-  for thm in thms:
-    if f"{qual}_" not in thm:
-      violations.append(thm)
-  return violations
+with open(ZX_rules_file) as ZX_rules:
+  for line in ZX_rules:
+    thm = get_theorem(line)
+    if thm != "":
+      ZX_rules_thms.add(thm)
 
-def check_all_in_other(thms : set[str], other : set[str], qual : str, other_qual : str) -> list:
-  violations = list()
-  for thm in thms:
-    if thm.replace(qual, other_qual) not in other:
-      violations.append(thm)
-  return violations
+Z_qual_violation = check_qualification(Z_rules_thms, ['Z'])
+X_qual_violation = check_qualification(X_rules_thms, ['X'])
+Z_total_violation = check_all_in_other(Z_rules_thms, X_rules_thms, 'Z')
+X_total_violation = check_all_in_other(X_rules_thms, Z_rules_thms, 'X')
+ZX_qual_violations = check_qualification(ZX_rules_thms, duals.keys())
+ZX_duals_violations = check_Z_X_has_duals(ZX_rules_thms)
 
-Z_qual_violation = check_qualification(Z_rules_thms, 'Z')
-X_qual_violation = check_qualification(X_rules_thms, 'X')
-Z_total_violation = check_all_in_other(Z_rules_thms, X_rules_thms, 'Z_', 'X_')
-X_total_violation = check_all_in_other(X_rules_thms, Z_rules_thms, 'X_', 'Z_')
+for violation in Z_qual_violation:
+  print(f'The lemma "{violation}" in {Z_rules_file_name} violates the rule that each lemma in this file must be described as a Z lemma (i.e., contain "Z_") - suggestion: Rename to Z_{violation}')
 
-if Z_qual_violation:
-  for violaton in Z_qual_violation:
-    print(f'The lemma "{violaton}" in {Z_rules_file_name} violates the rule that each lemma in this file must be described as a Z lemma (i.e., contain "Z_")')
+for violation in X_qual_violation:
+  print(f'The lemma "{violation}" in {X_rules_file_name} violates the rule that each lemma in this file must be described as an X lemma (i.e., contain "X_") - suggestion: Rename to X_{violation}')
 
-if X_qual_violation:
-  for violaton in X_qual_violation:
-    print(f'The lemma "{violaton}" in {X_rules_file_name} violates the rule that each lemma in this file must be described as an X lemma (i.e., contain "X_")')
+for violation in Z_total_violation:
+  if violation not in Z_qual_violation: # Can't find anything if lemma is incorrectly named
+    print(f'The lemma "{violation}" violates the rule that each lemma in {Z_rules_file_name} must also be in {X_rules_file_name} under the same name up to the change of Z_ to X_')
 
-if Z_total_violation:
-  for violaton in Z_total_violation:
-    if violaton not in Z_qual_violation: # Can't find anything if lemma is incorrectly named
-      print(f'The lemma "{violaton}" violates the rule that each lemma in {Z_rules_file_name} must also be in {X_rules_file_name} under the same name up to the change of Z_ to X_')
+for violation in X_total_violation:
+  if violation not in X_qual_violation: # Can't find anything if lemma is incorrectly named
+    print(f'The lemma "{violation}" violates the rule that each lemma in {X_rules_file_name} must also be in {Z_rules_file_name} under the same name up to the change of X_ to Z_')
 
-if X_total_violation:
-  for violaton in X_total_violation:
-    if violaton not in X_qual_violation: # Can't find anything if lemma is incorrectly named
-      print(f'The lemma "{violaton}" violates the rule that each lemma in {X_rules_file_name} must also be in {Z_rules_file_name} under the same name up to the change of X_ to Z_')
+for violation in ZX_qual_violations:
+  print(f'The lemma "{violation}" in {ZX_rules_file_name} violates the rule that each lemma in this file must be described as an Z, X, Z_X or X_Z lemma - suggestion: Rename to [Z, X, Z_X or X_Z]_{violation}')
 
-if not (Z_qual_violation or X_qual_violation or Z_total_violation or X_total_violation):
+for violation in ZX_duals_violations:
+  if violation not in ZX_qual_violations:
+    print(f'The lemma "{violation}" violates the rule that each lemma in {ZX_rules_file_name} must also have its colorswapped version')
+
+all_violations = [Z_qual_violation, X_qual_violation, Z_total_violation, X_total_violation, ZX_qual_violations, ZX_duals_violations]
+if not any(all_violations):
   print("No violations found...")
   exit(0)
 

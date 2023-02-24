@@ -1,6 +1,25 @@
 From QuantumLib Require Import Matrix.
 From QuantumLib Require Import Quantum.
 
+Lemma INR_PI_EXP : forall (r : nat),
+	Cexp (INR r * PI) = 1 \/ Cexp (INR r * PI) = -1.
+Proof.
+	intros.
+	dependent induction r.
+	- simpl.
+		rewrite Rmult_0_l.
+		left.
+		apply Cexp_0.
+	-	rewrite S_O_plus_INR.
+		rewrite Rmult_plus_distr_r.
+		rewrite Rmult_1_l.
+		rewrite Rplus_comm.
+		rewrite Cexp_plus_PI.
+		destruct IHr.
+		+ rewrite H; right; lca.
+		+ rewrite H; left; lca.
+Qed.
+
 Lemma transpose_matrices : forall {n m} (A B : Matrix n m),
 	A ⊤ = B ⊤ -> A = B.
 Proof.
