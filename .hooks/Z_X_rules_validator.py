@@ -15,9 +15,6 @@ Z_rules_file = f"{curr_dir}/../src/CoreRules/{Z_rules_file_name}"
 X_rules_file = f"{curr_dir}/../src/CoreRules/{X_rules_file_name}"
 ZX_rules_file = f"{curr_dir}/../src/CoreRules/{ZX_rules_file_name}"
 
-Z_rules_thms : set[str] = set()
-X_rules_thms : set[str] = set()
-ZX_rules_thms : set[str] = set()
 
 duals : dict[str, str] = { 'X': 'Z','Z': 'X', 'X_Z': 'Z_X', 'Z_X' : 'X_Z' }
 
@@ -57,23 +54,18 @@ def check_Z_X_has_duals(thms : set[str]) -> list[str]:
   violations += check_all_in_other(restr_thms, restr_thms, 'X')
   return violations
 
-with open(Z_rules_file) as Z_rules:
-  for line in Z_rules:
-    thm = get_theorem(line)
-    if thm != "":
-      Z_rules_thms.add(thm)
+def read_thms(file_str) -> set[str]:
+  thms = set()
+  with open(file_str) as rules:
+    for line in rules:
+      thm = get_theorem(line)
+      if thm != "":
+        thms.add(thm)
+  return thms
 
-with open(X_rules_file) as X_rules:
-  for line in X_rules:
-    thm = get_theorem(line)
-    if thm != "":
-      X_rules_thms.add(thm)
-
-with open(ZX_rules_file) as ZX_rules:
-  for line in ZX_rules:
-    thm = get_theorem(line)
-    if thm != "":
-      ZX_rules_thms.add(thm)
+Z_rules_thms : set[str] = read_thms(Z_rules_file)
+X_rules_thms : set[str] = read_thms(X_rules_file)
+ZX_rules_thms : set[str] = read_thms(ZX_rules_file)
 
 Z_qual_violation = check_qualification(Z_rules_thms, ['Z'])
 X_qual_violation = check_qualification(X_rules_thms, ['X'])
