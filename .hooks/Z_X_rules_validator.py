@@ -66,12 +66,12 @@ if X_qual_violation:
 if Z_total_violation:
   for violaton in Z_total_violation:
     if violaton not in Z_qual_violation: # Can't find anything if lemma is incorrectly named
-      print(f'The lemma "{violaton}" violates the rule that each lemma in Z_Rules must also be in X_Rules under the same name up to the change of Z_ to X_')
+      print(f'The lemma "{violaton}" violates the rule that each lemma in {Z_rules_file_name} must also be in {X_rules_file_name} under the same name up to the change of Z_ to X_')
 
 if X_total_violation:
   for violaton in X_total_violation:
     if violaton not in X_qual_violation: # Can't find anything if lemma is incorrectly named
-      print(f'The lemma "{violaton}" violates the rule that each lemma in X_Rules must also be in Z_Rules under the same name up to the change of X_ to Z_')
+      print(f'The lemma "{violaton}" violates the rule that each lemma in {X_rules_file_name} must also be in {Z_rules_file_name} under the same name up to the change of X_ to Z_')
 
 if not (Z_qual_violation or X_qual_violation or Z_total_violation or X_total_violation):
   print("No violations found...")
