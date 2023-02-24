@@ -356,3 +356,71 @@ Transparent Cast.
 	autorewrite with transpose_db.
 	easy.
 Qed.
+
+Lemma Z_SelfCapAbsorbtion_base : forall {n} α, Z n 2%nat α ⟷ ⊃ ∝ Z n 0%nat α.
+Proof.
+	intros.
+	prop_exists_nonzero 1.
+	Msimpl.
+	simpl.
+	solve_matrix.
+	replace ((2 ^ n + (2 ^ n + 0) - 1)%nat) with (2 ^ (S n) - 1)%nat by (simpl; lia).
+	assert (exists n', 2 ^ S n = (S (S n')))%nat.
+	{
+		intros.
+		induction n.
+		- exists 0%nat.
+			easy.
+		-	destruct IHn.
+			rewrite Nat.pow_succ_r'.
+			rewrite H.
+			exists ((2 * x + 2))%nat.
+			lia.
+	}
+	destruct H.
+	rewrite H.
+	simpl.
+	lca.
+Qed.
+
+Lemma Z_SelfCapAbsorbtion_Top : forall {n m α}, (Z) n (S (S m)) α ⟷ (⊃ ↕ nWire m) ∝ Z n m α.
+Proof.
+	intros.
+	rewrite <- 2 (Rplus_0_r α) at 1.
+	rewrite (Z_add_r 2 m).
+	rewrite ZX_Compose_assoc.
+	rewrite <- (ZX_Stack_Compose_distr (Z 1 2 _) ⊃ (Z 1 m _) (nWire m)).
+	rewrite Z_SelfCapAbsorbtion_base.
+	cleanup_zx.
+	rewrite <- Z_add_r.
+	rewrite 2 Rplus_0_r.
+	easy.
+Qed.
+
+Lemma Z_SelfCupAbsorbtion_Top : forall {n m α}, ((⊂ ↕ nWire n) ⟷ Z (S (S n)) m α) ∝ (Z n m α).
+Proof. intros. transpose_of (@Z_SelfCapAbsorbtion_Top m n). Qed.
+
+Lemma Z_SelfCapAbsorbtion : forall {n m m' α}, Z n (m + (S (S m'))) α ⟷ (nWire m ↕ (⊃ ↕ nWire m')) ∝ (Z n (m + m') α).
+Proof.
+	intros.
+	rewrite <- 2 (Rplus_0_r α) at 1.
+	rewrite Z_add_r.
+	rewrite ZX_Compose_assoc.
+	rewrite <- (ZX_Stack_Compose_distr (Z 1 m _) (nWire m) (Z 1 (S (S m')) _) (⊃ ↕ nWire m')).
+	rewrite Z_SelfCapAbsorbtion_Top.
+	cleanup_zx.
+	rewrite <- Z_add_r.
+	rewrite 2 Rplus_0_r.
+	easy.
+Qed.
+
+Lemma Z_SelfCupAbsorbtion : forall {n n' m α}, ((nWire n ↕ (⊂ ↕ nWire n')) ⟷ Z (n + (S (S n'))) m α) ∝ (Z (n + n') m α).
+Proof. intros. transpose_of (@Z_SelfCapAbsorbtion m n n'). Qed.
+
+Lemma Z_SelfLoopRemoval_Top : forall {n m α}, Z n m α ∝ (⊂ ↕ nWire n) ⟷ (— ↕ Z (S n) (S m) α) ⟷ (⊃ ↕ nWire m).
+Proof.
+	intros.
+	rewrite <- Z_WrapOver_Top_Right.
+	rewrite Z_SelfCapAbsorbtion_Top.
+	easy.
+Qed.

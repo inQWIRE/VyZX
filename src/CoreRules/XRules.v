@@ -25,7 +25,7 @@ Lemma X_appendix_rot_l : forall n m α β,
 	X n m (α + β) ∝ (X 0 1 α ↕ nWire n) ⟷ X (S n) m β.
 Proof. intros. colorswap_of Z_appendix_rot_l. Qed.
 
-Lemma Z_appendix_rot_r : forall n m α β,
+Lemma X_appendix_rot_r : forall n m α β,
 	X n m (β + α) ∝ X n (S m) α ⟷ (X 1 0 β ↕ nWire m).
 Proof. intros. colorswap_of Z_appendix_rot_r. Qed.
 
@@ -81,9 +81,27 @@ Lemma X_SpiderFusion_TopLeft_BotRight : forall top mid bot input output α β,
 	X (input + bot) (top + output) (α + β).
 Proof. intros. colorswap_of Z_SpiderFusion_TopLeft_BotRight. Qed.
 
-Lemma Z_SpiderFusion_BotLeft_TopRight : forall top mid bot input output α β,
+Lemma X_SpiderFusion_BotLeft_TopRight : forall top mid bot input output α β,
 	((nWire top ↕ X input (S mid + bot) α) ⟷
 	Cast (top + ((S mid) + bot)) _ ((Nat.add_assoc _ _ _)) eq_refl 
 		(X (top + (S mid)) output β ↕ nWire bot)) ∝
 	X (top + input) (output + bot) (β + α).
 Proof. intros. colorswap_of Z_SpiderFusion_BotLeft_TopRight. Qed.
+
+Lemma X_SelfCapAbsorbtion_base : forall {n} α, X n 2%nat α ⟷ ⊃ ∝ X n 0%nat α.
+Proof. intros. colorswap_of (@Z_SelfCapAbsorbtion_base n). Qed.
+
+Lemma X_SelfCapAbsorbtion_Top : forall {n m α}, (X) n (S (S m)) α ⟷ (⊃ ↕ nWire m) ∝ X n m α.
+Proof. intros. colorswap_of (@Z_SelfCapAbsorbtion_Top n m). Qed.
+
+Lemma X_SelfCupAbsorbtion_Top : forall {n m α}, ((⊂ ↕ nWire n) ⟷ X (S (S n)) m α) ∝ (X n m α).
+Proof. intros. colorswap_of (@Z_SelfCupAbsorbtion_Top n m). Qed.
+
+Lemma X_SelfCapAbsorbtion : forall {n m m' α}, X n (m + (S (S m'))) α ⟷ (nWire m ↕ (⊃ ↕ nWire m')) ∝ (X n (m + m') α).
+Proof. intros. colorswap_of (@Z_SelfCapAbsorbtion n m m'). Qed.
+
+Lemma X_SelfCupAbsorbtion : forall {n n' m α}, ((nWire n ↕ (⊂ ↕ nWire n')) ⟷ X (n + (S (S n'))) m α) ∝ (X (n + n') m α).
+Proof. intros. colorswap_of (@Z_SelfCupAbsorbtion n n' m). Qed.
+
+Lemma X_SelfLoopRemoval_Top : forall {n m α}, X n m α ∝ (⊂ ↕ nWire n) ⟷ (— ↕ X (S n) (S m) α) ⟷ (⊃ ↕ nWire m).
+Proof. intros. colorswap_of (@Z_SelfLoopRemoval_Top n m). Qed.
