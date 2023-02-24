@@ -14,3 +14,12 @@ Then run
 coq_makefile -f _CoqProject -o Makefile
 make
 ```
+
+
+## Contributing
+
+To contribute please make sure you use our validator hooks.
+To configure the hooks run
+```sh
+make hooks
+```
