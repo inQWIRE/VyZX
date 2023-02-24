@@ -16,4 +16,7 @@ doc: all
 	mkdir -p docs
 	cd _build/default && coqdoc -g --utf8 --toc --no-lib-name -d ../../docs -R . QuantumLib $(FILES)
 
+hooks:
+	@git config core.hooksPath .hooks
+
 .PHONY: all clean install uninstall doc
