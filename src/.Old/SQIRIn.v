@@ -920,7 +920,6 @@ Proof.
     rewrite HCnot.
     exists (/ c1).
     autorewrite with scalar_move_db.
-    Check Mscale_1_l.
     rewrite <- (Mscale_1_l _ _ (ZX_Arb_Swaps_Semantics _)). 
     split; [ | apply nonzero_div_nonzero; assumption ].
     apply Mscale_simplify; [ lma | ].

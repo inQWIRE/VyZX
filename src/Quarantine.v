@@ -93,7 +93,6 @@ Proof.
   prep_matrix_equality.
   do 4 (try destruct x); do 4 (try destruct y).
   all: C_field_simplify; try lca.
-  Search (Σ _ _).
   assert ((S (S (S (S x))) / 2 <? 2) = false)%nat.
   {
     apply Nat.ltb_ge.

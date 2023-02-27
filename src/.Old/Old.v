@@ -8,7 +8,7 @@ Lemma Grow_Z_Left_1_2 : forall {n m} α,
 	(Z 1 2 0 ↕ nWire n) ⟷ (— ↕ Z (S n) m α).
 Proof.
 	intros.
-	rewrite WrapOver_R.
+	rewrite Z_WrapOver_Top_Right.
 	rewrite Grow_Z_Left.
 	rewrite (nstack1_split 1 n).
 	fold (nWire n). fold (nWire 1).
@@ -18,7 +18,7 @@ Proof.
 	rewrite (ZX_Stack_assoc_back — (Z 2 1 0) (nWire n)).
 	simpl_casts.
 	rewrite <- (ZX_Stack_Compose_distr (⊂ ↕ nWire 1) (— ↕ Z 2 1 0) (nWire n) (nWire n)).
-	rewrite <- WrapOver_R.
+	rewrite <- Z_WrapOver_Top_Right.
 	cleanup_zx.
 	easy.
 Qed.
@@ -50,12 +50,12 @@ Proof.
 		+ simpl.
 			cleanup_zx.
 			simpl_casts.
-			rewrite (WrapOver_L 1 m).
+			rewrite (Z_WrapOver_Top_Left 1 m).
 			rewrite <- ZX_Compose_assoc.
 			rewrite <- stack_wire_distribute_l.
 			rewrite Z_spider_1_1_fusion.
 			rewrite Rplus_0_l.
-			rewrite <- WrapOver_L.
+			rewrite <- Z_WrapOver_Top_Left.
 			easy.
 		+ rewrite (Grow_Z_Left (n + 1)).
 			rewrite <- ZX_Compose_assoc.
@@ -376,12 +376,12 @@ Proof.
 		+ simpl.
 			cleanup_zx.
 			simpl_casts.
-			rewrite (WrapOver_L 1 o).
+			rewrite (Z_WrapOver_Top_Left 1 o).
 			rewrite <- ZX_Compose_assoc.
 			rewrite <- stack_wire_distribute_l.
 			rewrite Z_spider_1_1_fusion.
 			rewrite Rplus_0_l.
-			rewrite <- WrapOver_L.
+			rewrite <- Z_WrapOver_Top_Left.
 			easy.
 		+ simpl. 
 			rewrite (Grow_Z_Left (n + 1) o).
@@ -560,7 +560,7 @@ Proof.
 	simpl.
 	cleanup_zx.
 	simpl_casts.
-	rewrite WrapOver_R.
+	rewrite Z_WrapOver_Top_Right.
 	rewrite stack_nwire_distribute_r.
 	rewrite (ZX_Stack_assoc — (Z (S input) 1 α) (nWire bot)).
 	simpl_casts.
@@ -578,7 +578,7 @@ Proof.
 	rewrite (ZX_Stack_assoc ⊂ (nWire input)).
 	simpl_casts.
 	rewrite <- nstack1_split.
-	rewrite <- (WrapOver_R (input + bot)).
+	rewrite <- (Z_WrapOver_Top_Right (input + bot)).
 	rewrite <- Grow_Z_Top_Right_by.
 	replace (α + (0 + β) + 0)%R with (α + β)%R by lra.
 	easy.
