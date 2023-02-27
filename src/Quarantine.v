@@ -174,10 +174,7 @@ Proof.
   rewrite 2 nBox_semantics.
   rewrite Mmult_assoc.
   rewrite <- Mmult_assoc.
-  Locate "⨂".
-  Search (kron_n _ _ × kron_n _ _).
   rewrite kron_n_mult.
-  Search (hadamard × hadamard).
   rewrite MmultHH.
   rewrite kron_n_I.
   rewrite Mmult_1_l by auto with wf_db.
@@ -197,5 +194,4 @@ Proof.
 Qed.
 
 Lemma X_Spider_angle_2PI : forall {nIn nOut} α k, X_Spider nIn nOut α ∝ (X_Spider nIn nOut (α + IZR (2 * k) * PI)).
-Proof. intros. colorswap_of (@Z_Spider_angle_2PI nIn nOut).
-Qed.
+Proof. intros. colorswap_of (@Z_Spider_angle_2PI nIn nOut). Qed.
