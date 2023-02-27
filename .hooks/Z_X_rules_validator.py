@@ -18,9 +18,15 @@ ZX_rules_file = f"{curr_dir}/../src/CoreRules/{ZX_rules_file_name}"
 
 duals : dict[str, str] = { 'X': 'Z','Z': 'X', 'X_Z': 'Z_X', 'Z_X' : 'X_Z' }
 
+thm_token = "Theorem|Lemma|Fact|Remark|Corollary|Proposition|Property"
+exists_thm_regex = f".*({thm_token})\\s*(([a-z]|[A-Z]|_)([a-z]|[A-Z]|_|-|\\d)+)"
+
+ignore_regex = "\\s*\\(\\*\\s*\\@nocheck\\s+Z\\_X\\s*\\*\\)"
+
+def is_ignore(line : str) -> bool:
+  return re.match(ignore_regex, line)
+  
 def get_theorem(line : str) -> str:
-  thm_token = "Theorem|Lemma|Fact|Remark|Corollary|Proposition|Property"
-  exists_thm_regex = f".*({thm_token})\\s*(([a-z]|[A-Z]|_)([a-z]|[A-Z]|_|-|\\d)+)"
   match = re.match(exists_thm_regex, line)
   if not match:
     return ""
@@ -57,8 +63,15 @@ def check_Z_X_has_duals(thms : set[str]) -> list[str]:
 def read_thms(file_str) -> set[str]:
   thms = set()
   with open(file_str) as rules:
+    skip_next = False
     for line in rules:
+      if is_ignore(line):
+        skip_next = True
+        continue
       thm = get_theorem(line)
+      if skip_next:
+        skip_next = False
+        continue
       if thm != "":
         thms.add(thm)
   return thms
