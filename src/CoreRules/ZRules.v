@@ -220,6 +220,17 @@ Lemma Z_add_l : forall n m {o α β γ},
 	Z (n + m) o (α + β + γ) ∝ (Z n 1 α ↕ Z m 1 γ) ⟷ Z 2 o β.
 Proof. intros. transpose_of (@Z_add_r o n m). Qed.
 
+Lemma Z_add_r_base_rot : forall {n} m o {α}, Z n (m + o) α ∝ Z n 2 α ⟷ (Z 1 m 0 ↕ Z 1 o 0).
+Proof. 
+	intros.
+	rewrite <- (@Z_add_r n m o 0 α 0).
+	rewrite Rplus_0_l, Rplus_0_r.
+	easy.
+Qed.
+
+Lemma Z_add_l_base_rot : forall {n} m o {α}, Z (n + m) o α ∝ (Z n 1 0 ↕ Z m 1 0) ⟷ Z 2 o α.
+Proof. intros. transpose_of (@Z_add_r_base_rot o n m). Qed.
+
 Lemma Z_1_2_1_fusion : forall α β,
 	(Z 1 2 α ⟷ Z 2 1 β) ∝ (Z 1 1 (α + β)).
 Proof. solve_prop 1. Qed.
@@ -386,14 +397,12 @@ Qed.
 Lemma Z_SelfCapAbsorbtion_Top : forall {n m α}, (Z) n (S (S m)) α ⟷ (⊃ ↕ nWire m) ∝ Z n m α.
 Proof.
 	intros.
-	rewrite <- 2 (Rplus_0_r α) at 1.
-	rewrite (Z_add_r 2 m).
+	rewrite (Z_add_r_base_rot 2 m).
 	rewrite ZX_Compose_assoc.
 	rewrite <- (ZX_Stack_Compose_distr (Z 1 2 _) ⊃ (Z 1 m _) (nWire m)).
 	rewrite Z_SelfCapAbsorbtion_base.
 	cleanup_zx.
-	rewrite <- Z_add_r.
-	rewrite 2 Rplus_0_r.
+	rewrite <- Z_add_r_base_rot.
 	easy.
 Qed.
 
@@ -403,14 +412,12 @@ Proof. intros. transpose_of (@Z_SelfCapAbsorbtion_Top m n). Qed.
 Lemma Z_SelfCapAbsorbtion : forall {n m m' α}, Z n (m + (S (S m'))) α ⟷ (nWire m ↕ (⊃ ↕ nWire m')) ∝ (Z n (m + m') α).
 Proof.
 	intros.
-	rewrite <- 2 (Rplus_0_r α) at 1.
-	rewrite Z_add_r.
+	rewrite Z_add_r_base_rot.
 	rewrite ZX_Compose_assoc.
 	rewrite <- (ZX_Stack_Compose_distr (Z 1 m _) (nWire m) (Z 1 (S (S m')) _) (⊃ ↕ nWire m')).
 	rewrite Z_SelfCapAbsorbtion_Top.
 	cleanup_zx.
-	rewrite <- Z_add_r.
-	rewrite 2 Rplus_0_r.
+	rewrite <- Z_add_r_base_rot.
 	easy.
 Qed.
 
@@ -424,3 +431,39 @@ Proof.
 	rewrite Z_SelfCapAbsorbtion_Top.
 	easy.
 Qed.
+
+Lemma Z_SelfSwapAbsorbtion_Right_Base : forall {n α}, Z n 2 α ⟷ ⨉ ∝ Z n 2 α.
+Proof. intros. solve_prop 1. Qed.
+
+Lemma Z_SelfSwapAbsorbtion_Right_Top : forall {n m α}, Z n (S (S m)) α ⟷ (⨉ ↕ nWire m) ∝ Z n (S (S m)) α.
+Proof.
+	intros.
+	rewrite (Z_add_r_base_rot 2 m) at 1.
+	rewrite ZX_Compose_assoc.
+	rewrite <- (ZX_Stack_Compose_distr (Z 1 2 0) (⨉) (Z 1 m 0) (nWire m)).
+	rewrite Z_SelfSwapAbsorbtion_Right_Base.
+	cleanup_zx.
+	rewrite <- Z_add_r_base_rot.
+	easy.
+Qed.
+
+Lemma Z_SelfSwapAbsorbtion_Right : forall {n m m' α}, Z n (m' + S (S m)) α ⟷ (nWire m' ↕ (⨉ ↕ nWire m)) ∝ Z n (m' + S (S m)) α.
+Proof.
+	intros.
+	rewrite Z_add_r_base_rot at 1.
+	rewrite ZX_Compose_assoc.
+	rewrite <- (ZX_Stack_Compose_distr (Z 1 m' 0) (nWire _) (Z 1 (S (S m)) 0) (⨉ ↕ nWire _)).
+	rewrite Z_SelfSwapAbsorbtion_Right_Top.
+	cleanup_zx.
+	rewrite <- Z_add_r_base_rot.
+	easy.
+Qed.
+
+Lemma Z_SelfSwapAbsorbtion_Left_Base : forall {m α}, (⨉ ⟷ Z 2 m α) ∝ Z 2 m α.
+Proof. intros. transpose_of (@Z_SelfSwapAbsorbtion_Right_Base m α). Qed.
+
+Lemma Z_SelfSwapAbsorbtion_Left_Top : forall {n m α}, ((⨉ ↕ nWire n) ⟷ Z (S (S n)) m α) ∝ Z (S (S n)) m α.
+Proof. intros. transpose_of (@Z_SelfSwapAbsorbtion_Right_Top m n α). Qed.
+
+Lemma Z_SelfSwapAbsorbtion_Left : forall {n n' m α}, ((nWire n' ↕ (⨉ ↕ nWire n)) ⟷ Z (n' + S (S n)) m α) ∝ Z (n' + S (S n)) m α.
+Proof. intros. transpose_of (@Z_SelfSwapAbsorbtion_Right m n n' α). Qed.

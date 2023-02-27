@@ -21,6 +21,12 @@ Lemma X_rot_r : forall n m α β,
 	X n (S m) (α + β) ∝  X n (S m) α ⟷ X 1 1 β ↕ nWire m.
 Proof. intros. colorswap_of Z_rot_r. Qed.
 
+Lemma X_add_r_base_rot : forall {n} m o {α}, X n (m + o) α ∝ X n 2 α ⟷ (X 1 m 0 ↕ X 1 o 0).
+Proof. intros. colorswap_of (@Z_add_r_base_rot n). Qed.
+
+Lemma X_add_l_base_rot : forall {n} m o {α}, X (n + m) o α ∝ (X n 1 0 ↕ X m 1 0) ⟷ X 2 o α.
+Proof. intros. colorswap_of (@Z_add_l_base_rot n). Qed.
+
 Lemma X_appendix_rot_l : forall n m α β,
 	X n m (α + β) ∝ (X 0 1 α ↕ nWire n) ⟷ X (S n) m β.
 Proof. intros. colorswap_of Z_appendix_rot_l. Qed.
@@ -105,3 +111,21 @@ Proof. intros. colorswap_of (@Z_SelfCupAbsorbtion n n' m). Qed.
 
 Lemma X_SelfLoopRemoval_Top : forall {n m α}, X n m α ∝ (⊂ ↕ nWire n) ⟷ (— ↕ X (S n) (S m) α) ⟷ (⊃ ↕ nWire m).
 Proof. intros. colorswap_of (@Z_SelfLoopRemoval_Top n m). Qed.
+
+Lemma X_SelfSwapAbsorbtion_Right_Base : forall {n α}, X n 2 α ⟷ ⨉ ∝ X n 2 α.
+Proof. intros. colorswap_of (@Z_SelfSwapAbsorbtion_Right_Base n α). Qed.
+
+Lemma X_SelfSwapAbsorbtion_Right_Top : forall {n m α}, X n (S (S m)) α ⟷ (⨉ ↕ nWire m) ∝ X n (S (S m)) α.
+Proof. intros. colorswap_of (@Z_SelfSwapAbsorbtion_Right_Top n m α). Qed.
+
+Lemma X_SelfSwapAbsorbtion_Right : forall {n m m' α}, X n (m' + S (S m)) α ⟷ (nWire m' ↕ (⨉ ↕ nWire m)) ∝ X n (m' + S (S m)) α.
+Proof. intros. colorswap_of (@Z_SelfSwapAbsorbtion_Right n m m' α). Qed.
+
+Lemma X_SelfSwapAbsorbtion_Left_Base : forall {m α}, (⨉ ⟷ X 2 m α) ∝ X 2 m α.
+Proof. intros. colorswap_of (@Z_SelfSwapAbsorbtion_Left_Base m α). Qed.
+
+Lemma X_SelfSwapAbsorbtion_Left_Top : forall {n m α}, ((⨉ ↕ nWire n) ⟷ X (S (S n)) m α) ∝ X (S (S n)) m α.
+Proof. intros. colorswap_of (@Z_SelfSwapAbsorbtion_Left_Top n m α). Qed.
+
+Lemma X_SelfSwapAbsorbtion_Left : forall {n n' m α}, ((nWire n' ↕ (⨉ ↕ nWire n)) ⟷ X (n' + S (S n)) m α) ∝ X (n' + S (S n)) m α.
+Proof. intros. colorswap_of (@Z_SelfSwapAbsorbtion_Left n n' m α). Qed.

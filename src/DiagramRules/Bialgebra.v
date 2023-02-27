@@ -19,48 +19,44 @@ Proof.
   repeat rewrite Mmult_plus_distr_l.
   repeat rewrite Mmult_plus_distr_r.
   repeat rewrite Mmult_plus_distr_l.
-  assert (forall n m, (ket n × ((bra n) ⊗ (bra n)) ⊗ (ket m × ((bra m) ⊗ (bra m))))
-  × (I 2 ⊗ swap ⊗ I 2) = (ket n × ((bra n) ⊗ (bra m)) ⊗ (ket m × ((bra n) ⊗ (bra m))))).
-  {
-  intros.
-  rewrite kron_assoc; try auto with wf_db.
-  rewrite <- kron_mixed_product.
-  rewrite Mmult_assoc.
-  restore_dims.
-  repeat rewrite kron_assoc; try auto with wf_db.
-  assert (forall n m o, (bra n ⊗ (bra m ⊗ bra o)) × (swap ⊗ I 2) = bra m ⊗ (bra n ⊗ bra o)).
+  assert (forall (ket0 : Matrix 2 1) (bra0 : Matrix 1 2) (ket1 : Matrix 2 1) (bra1 : Matrix 1 2), 
+  WF_Matrix ket0 -> WF_Matrix ket1 ->
+  ket0⊤ = bra0 -> ket1⊤ = bra1 ->
+  (ket0 × (bra0 ⊗ bra0)) ⊗ (ket1 × (bra1 ⊗ bra1)) × (I 2 ⊗ swap ⊗ I 2) 
+  = (ket0 × (bra0 ⊗ bra1) ⊗ (ket1 × (bra0 ⊗ bra1))))%M.
   {
     intros.
+    subst bra0 bra1.
+    rewrite kron_assoc; try auto with wf_db.
+    rewrite <- 2 kron_mixed_product.
+    rewrite Mmult_assoc.
+    apply Mmult_simplify; [ easy | ].
     restore_dims.
+    repeat rewrite kron_assoc by auto with wf_db.
+    rewrite (kron_mixed_product (ket0⊤) (ket0⊤ ⊗ (ket1⊤ ⊗ ket1⊤)) (I 2) _)%M.
+    Msimpl.
+    apply kron_simplify; [ easy | ].
     rewrite <- 2 kron_assoc by auto with wf_db.
-    rewrite (kron_mixed_product (bra _ ⊗ bra _) (bra _) (swap) _).
-    apply kron_simplify; [ | rewrite Mmult_1_r by auto with wf_db; easy ].
-    - apply transpose_matrices.
-      rewrite Mmult_transpose.
-      rewrite kron_transpose.
-      rewrite swap_transpose.
-      rewrite swap_spec; auto with wf_db.
-  }
-  restore_dims.
-  repeat rewrite kron_mixed_product.
-  Msimpl.
-  rewrite H.
-  restore_dims.
-  repeat rewrite <- kron_mixed_product.
-  apply Mmult_simplify; [ easy | ].
-  restore_dims.
-  repeat rewrite <- kron_assoc by auto with wf_db.
-  easy. 
+    rewrite (kron_mixed_product (ket0⊤ ⊗ ket1⊤) (ket1⊤) swap _)%M.
+    Msimpl.
+    apply kron_simplify; [ | easy].
+    apply transpose_matrices.
+    rewrite Mmult_transpose.
+    rewrite swap_transpose.
+    rewrite <- 2 kron_transpose.
+    rewrite 2 Matrix.transpose_involutive.
+    rewrite swap_spec by auto with wf_db.
+    easy.
   }
   repeat rewrite <- Mmult_assoc.
-  repeat rewrite (Mmult_assoc _ _ (_ ⊗ _ ⊗ _)).
   restore_dims.
-  unfold braminus, braplus.
   rewrite bra0_equiv, bra1_equiv, ket0_equiv, ket1_equiv.
-  repeat rewrite H.
-  clear H.
-  repeat rewrite <- Mmult_plus_distr_r. 
-  repeat rewrite <- Mmult_plus_distr_l.
+  repeat rewrite H; try auto with wf_db.
+  2-9: apply transpose_matrices; try rewrite braplus_transpose_ketplus; try rewrite braminus_transpose_ketminus; rewrite Matrix.transpose_involutive; easy.
+  restore_dims.
+  repeat rewrite (kron_mixed_product (xbasis_plus × (_ ⊗ _)) (xbasis_plus × (_ ⊗ _))  ((ket _ ⊗ ket _) × bra _) ((ket _ ⊗ ket _) × bra _)).
+  repeat rewrite (kron_mixed_product (xbasis_minus × (_ ⊗ _)) (xbasis_minus × (_ ⊗ _))  ((ket _ ⊗ ket _) × bra _) ((ket _ ⊗ ket _) × bra _)).
+  repeat rewrite Mmult_assoc.
 Admitted.
 
 Theorem BiAlgebra_rule_X_Z : 
