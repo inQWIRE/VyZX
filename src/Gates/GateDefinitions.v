@@ -27,6 +27,7 @@ Notation "'_NOTC_'" :=
 Notation "'_NOTC_R'" :=
   ((X 1 2 0 ↕ —) ⟷ (— ↕ Z 2 1 0 )).
 
-
+Notation "'_3_CNOT_SWAP_'" :=
+  (_CNOT_ ⟷ _NOTC_ ⟷ _CNOT_).
   
 

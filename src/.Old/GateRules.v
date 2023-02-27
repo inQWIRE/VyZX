@@ -32,14 +32,6 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma ZX_H_H_is_Wire : □ ⟷ □ ∝ —.
-Proof.
-  eexists.
-  split.
-  apply ZX_H_H_is_Wire_eq.
-  nonzero.
-Qed.
-
 Local Transparent ZX_Z.
 Local Transparent ZX_X.
 Lemma ZX_X_is_X : ZX_semantics ZX_X = σx.
