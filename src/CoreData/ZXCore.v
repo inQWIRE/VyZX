@@ -46,8 +46,8 @@ Notation "A ⟷ B" := (Compose A B)
   (left associativity, at level 40) : ZX_scope. (* \longleftrightarrow *)
 Notation "A ↕ B" := (Stack A B) 
   (left associativity, at level 40) : ZX_scope. (* \updownarrow *)
-Notation "'Z'" := Z_Spider (left associativity, at level 40) : ZX_scope.
-Notation "'X'" := X_Spider (left associativity, at level 40) : ZX_scope.
+Notation "'Z'" := Z_Spider (no associativity, at level 1) : ZX_scope.
+Notation "'X'" := X_Spider (no associativity, at level 1) : ZX_scope.
 Notation "$ n , m ::: A $" := (Cast n m _ _ A) (at level 20) : ZX_scope.
 
 (* 

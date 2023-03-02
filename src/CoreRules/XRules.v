@@ -18,7 +18,7 @@ Lemma X_rot_l : forall n m α β,
 Proof. intros. colorswap_of Z_rot_l. Qed.
 
 Lemma X_rot_r : forall n m α β,
-	X n (S m) (α + β) ∝  X n (S m) α ⟷ X 1 1 β ↕ nWire m.
+	X n (S m) (α + β) ∝ X n (S m) α ⟷ (X 1 1 β ↕ nWire m).
 Proof. intros. colorswap_of Z_rot_r. Qed.
 
 Lemma X_add_r_base_rot : forall {n} m o {α}, X n (m + o) α ∝ X n 2 α ⟷ (X 1 m 0 ↕ X 1 o 0).

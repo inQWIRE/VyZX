@@ -158,3 +158,5 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/coq,emacs,macos,windows
 
 _build
+
+settings.json

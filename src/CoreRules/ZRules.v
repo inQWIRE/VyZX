@@ -63,7 +63,7 @@ Proof.
 Qed.
 
 Lemma Z_rot_r : forall n m α β,
-	Z n (S m) (α + β) ∝  Z n (S m) α ⟷ Z 1 1 β ↕ nWire m.
+	Z n (S m) (α + β) ∝  Z n (S m) α ⟷ (Z 1 1 β ↕ nWire m).
 Proof.
 	intros.
 	rewrite Rplus_comm.
