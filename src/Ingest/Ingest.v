@@ -156,6 +156,8 @@ Proof.
   solve_matrix.
 Qed.
 
+
+
 Lemma ZX_A_swap_grow : forall n, A_Swap_ZX (S (S (S n))) ∝ (⨉ ↕ nWire (S n)) ⟷ (— ↕ A_Swap_ZX (S (S n))) ⟷ (⨉ ↕ nWire (S n)). 
 Proof.
   intros.

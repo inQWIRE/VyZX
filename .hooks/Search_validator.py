@@ -7,8 +7,8 @@ curr_dir = os.path.dirname(os.path.realpath(__file__))
 src_dir = f"{curr_dir}/../src"
 
 search_commands = "Search|Locate|About|Check|SearchPattern|SearchRewrite|Print"
-search_regex = f"\\s*({search_commands}).*"
-ignore_regex = "\\s*\\(\\*\\s*\\@nocheck\\s+Search\\s*\\*\\)"
+search_regex = re.compile(f"\\s*({search_commands}).*")
+ignore_regex = re.compile("\\s*\\(\\*\\s*\\@nocheck\\s+Search\\s*\\*\\)")
 
 class Violation:
   line_no : int = 0
@@ -61,7 +61,9 @@ if not all_violations:
   print("No violations found")
   exit(0)
 
-for violation in all_violations:
-  print(violation)
+num_violations = len(all_violations)
+
+for (n, violation) in enumerate(all_violations, 1):
+  print(f"({n}/{num_violations}) {violation}")
 
 exit(1)

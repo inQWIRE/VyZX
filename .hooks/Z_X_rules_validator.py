@@ -19,9 +19,9 @@ ZX_rules_file = f"{curr_dir}/../src/CoreRules/{ZX_rules_file_name}"
 duals : dict[str, str] = { 'X': 'Z','Z': 'X', 'X_Z': 'Z_X', 'Z_X' : 'X_Z' }
 
 thm_token = "Theorem|Lemma|Fact|Remark|Corollary|Proposition|Property"
-exists_thm_regex = f".*({thm_token})\\s*(([a-z]|[A-Z]|_)([a-z]|[A-Z]|_|-|\\d)+)"
+exists_thm_regex = re.compile(f".*({thm_token})\\s*(([a-z]|[A-Z]|_)([a-z]|[A-Z]|_|-|\\d)+)")
 
-ignore_regex = "\\s*\\(\\*\\s*\\@nocheck\\s+Z\\_X\\s*\\*\\)"
+ignore_regex = re.compile("\\s*\\(\\*\\s*\\@nocheck\\s+Z\\_X\\s*\\*\\)")
 
 def is_ignore(line : str) -> bool:
   return re.match(ignore_regex, line)
