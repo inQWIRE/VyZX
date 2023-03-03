@@ -27,7 +27,7 @@ class Warning:
     return prefix + postfix
 
   def __str__(self) -> str:
-    return f"{b_color_yellow}@nocheck {self.type} found: {b_color_reset}({self._fmt_file()}:{self.line_no})"
+    return f"{b_color_yellow}Warning: @nocheck {self.type} found: {b_color_reset}({self._fmt_file()}:{self.line_no})"
     pass
 
 def validate_file(file) -> list[Warning]:
