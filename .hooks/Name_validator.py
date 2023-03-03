@@ -95,7 +95,7 @@ class Violation:
       if change_to == None:
         change_to = self.fix_snake_case()
       
-      content = content.replace(self.name, change_to)
+      content = re.sub(f'\\b@?{self.name}\\b', change_to, content)
 
       with open(file, "w") as f:
         f.write(content)
