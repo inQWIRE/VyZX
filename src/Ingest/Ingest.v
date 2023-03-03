@@ -916,7 +916,6 @@ Proof.
   apply gate_ingest_correct; easy.
 Qed.
 
-(* @nocheck name *)
 Lemma X_ingest_correct : forall {dim} n, (n < dim)%nat -> @uc_eval dim (SQIR.X n) = ZX_semantics (@X_ingest dim n).
 Proof.
   intros.

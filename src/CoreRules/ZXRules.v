@@ -20,7 +20,7 @@ Proof.
 		unfold X_semantics; unfold Z_semantics.
 		simpl. solve_matrix.
 		all: autorewrite with Cexp_db.
-		all: destruct (INR_PI_EXP r); rewrite H.
+		all: destruct (INR_pi_exp r); rewrite H.
 		all: try lca; C_field_simplify; try lca.
 		all: nonzero.
 	} 
@@ -31,7 +31,7 @@ Proof.
 		unfold X_semantics; unfold Z_semantics.
 		simpl.
 		solve_matrix.
-		destruct (INR_PI_EXP r); rewrite H.
+		destruct (INR_pi_exp r); rewrite H.
 		all: autorewrite with Cexp_db.
 		all: C_field_simplify; try lca; try nonzero.
 	-	simpl. 

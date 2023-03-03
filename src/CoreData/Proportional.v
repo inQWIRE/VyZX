@@ -254,8 +254,7 @@ Add Parametric Morphism (nIn nOut : nat) : (@color_swap nIn nOut)
     as colorswap_mor.
 Proof. apply colorswap_compat. Qed.
 
-(* @nocheck name *)
-Theorem ZX_eq_prop : forall {n m} (zx0 : ZX n m) (zx1 : ZX n m),
+Theorem sem_eq_prop : forall {n m} (zx0 : ZX n m) (zx1 : ZX n m),
   ZX_semantics zx0 = ZX_semantics zx1 -> zx0 ∝ zx1.
 Proof.
   intros.
