@@ -3,6 +3,9 @@
 import re
 import os
 
+b_color_yellow = '\033[93m'
+b_color_reset = '\033[0m'
+
 curr_dir = os.path.dirname(os.path.realpath(__file__))
 src_dir = f"{curr_dir}/../src"
 
@@ -27,7 +30,7 @@ class Violation:
     return prefix + postfix
 
   def __str__(self) -> str:
-    return f"Violation found: \"{self.keyword}\" command should not be committed. ({self._fmt_file()}:{self.line_no} - {self.line})"
+    return f"{b_color_yellow}Violation found: \"{self.keyword}\" command should not be committed. {b_color_reset}({self._fmt_file()}:{self.line_no} - {self.line})"
     pass
 
 def validate_file(file) -> list[Violation]:

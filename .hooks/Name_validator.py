@@ -10,6 +10,11 @@ usage = "./Name_validator.py [--interactive]"
 
 interactive = False
 
+b_color_green = '\033[92m'
+b_color_yellow = '\033[93m'
+b_color_reset = '\033[0m'
+
+
 if len(args) > 1:
   print(usage)
   exit(2)
@@ -51,9 +56,9 @@ class Violation:
 
   def __str__(self) -> str:
     if (not self.line_no) or (not self.def_type): # File global violation
-      return f"Violation found: {self.name} is a disallowed file name. Should be PascalCase (where only the beginning can have multiple uppercase letters in  row) ({self._fmt_file()})"
+      return f"{b_color_yellow}Violation found: {self.name} is a disallowed file name. Should be PascalCase (where only the beginning can have multiple uppercase letters in  row) {b_color_reset}({self._fmt_file()})"
     acceptable_upper_case_str = ", ".join(map(lambda x: '\"' + x + '\"', acceptable_upper_case))
-    return f"Violation found: {self.def_type} \"{self.name}\" should be snake_case and lower case following standard library's convention (except for qualifiers: {acceptable_upper_case_str}. Suggestion: {self.fix_snake_case()} ({self._fmt_file()}:{self.line_no})"
+    return f"{b_color_yellow}Violation found: {self.def_type} \"{self.name}\" should be snake_case and lower case following standard library's convention (except for qualifiers: {acceptable_upper_case_str}. Suggestion: {self.fix_snake_case()} {b_color_reset}({self._fmt_file()}:{self.line_no})"
   
   def fix_snake_case(self) -> str:
     snake_split = self.name.replace("-","_").split("_")
@@ -173,25 +178,25 @@ def replaceAll(violation : Violation):
 
 for (n, violation) in enumerate(all_violations, 1):
   print(f"({n}/{n_violations}) - {violation}")
-  if interactive:
-    while True:
-      option = input("What do you want to do? Auto Fix(F)/Manually Fix(M)/Skip(S)/Ignore(I) permanently? ").lower()
-      if option == "f":
-        violation.replace_in_all(all_files)
-        break
-      if option == "m":
-        change_to = input('Input desired new name: ')
-        violation.replace_in_all(all_files, change_to)
-        break
-      elif option == "i":
-        violation.ignore()
-        break
-      elif option == "s":
-        break
-      else:
-        print("Invalid option...")
-
+  if not interactive: # If not interactive, just print the violations
+    continue
+  while True: # Do until a valid input comes along
+    option = input("What do you want to do? Auto Fix(F)/Manually Fix(M)/Skip(S)/Ignore(I) permanently? ").lower()
+    if option == "f":
+      violation.replace_in_all(all_files)
+      break
+    if option == "m":
+      change_to = input('Input desired new name: ')
+      violation.replace_in_all(all_files, change_to)
+      break
+    elif option == "i":
+      violation.ignore()
+      break
+    elif option == "s":
+      break
+    else:
+      print("Invalid option...")
 
 if not interactive:
-  print(f"Fix issues by running {os.path.realpath(__file__)} --interactive")
+  print(f"{b_color_green}Fix issues by running {os.path.realpath(__file__)} --interactive{b_color_reset}")
 exit(1)

@@ -3,6 +3,9 @@
 import re
 import os
 
+b_color_yellow = '\033[93m'
+b_color_reset = '\033[0m'
+
 curr_dir = os.path.dirname(os.path.realpath(__file__))
 
 Z_rules_file_name = "ZRules.v"
@@ -87,6 +90,7 @@ X_total_violation = check_all_in_other(X_rules_thms, Z_rules_thms, 'X')
 ZX_qual_violations = check_qualification(ZX_rules_thms, duals.keys())
 ZX_duals_violations = check_Z_X_has_duals(ZX_rules_thms)
 
+print(b_color_yellow, end='')
 for violation in Z_qual_violation:
   print(f'The lemma "{violation}" in {Z_rules_file_name} violates the rule that each lemma in this file must be described as a Z lemma (i.e., contain "Z_") - suggestion: Rename to Z_{violation}')
 
@@ -107,6 +111,7 @@ for violation in ZX_qual_violations:
 for violation in ZX_duals_violations:
   if violation not in ZX_qual_violations:
     print(f'The lemma "{violation}" violates the rule that each lemma in {ZX_rules_file_name} must also have its colorswapped version')
+print(b_color_reset, end='')
 
 all_violations = [Z_qual_violation, X_qual_violation, Z_total_violation, X_total_violation, ZX_qual_violations, ZX_duals_violations]
 if not any(all_violations):
