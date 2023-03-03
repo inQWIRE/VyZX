@@ -3,7 +3,7 @@ Require Import castRules.
 Require Import SpiderInduction.
 
 Local Open Scope ZX_scope.
-Lemma ZX_Compose_assoc : forall {n m0 m1 o}
+Lemma compose_assoc : forall {n m0 m1 o}
   (zx1 : ZX n m0) (zx2 : ZX m0 m1) (zx3 : ZX m1 o),
   zx1 ⟷ zx2 ⟷ zx3 ∝ zx1 ⟷ (zx2 ⟷ zx3).
 Proof.
@@ -17,7 +17,7 @@ Qed.
 
 (* Distributivity *)
 
-Lemma ZX_Stack_Compose_distr : 
+Lemma stack_compose_distr : 
 forall {n1 m1 o2 n3 m2 o4}
   (zx1 : ZX n1 m1) (zx2 : ZX m1 o2) (zx3 : ZX n3 m2) (zx4 : ZX m2 o4),
   (zx1 ⟷ zx2) ↕ (zx3 ⟷ zx4) ∝ (zx1 ↕ zx3) ⟷ (zx2 ↕ zx4).
@@ -32,7 +32,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma ZX_Compose_simplify : forall {n m o}
+Lemma compose_simplify : forall {n m o}
   (zx1 zx3 : ZX n m) (zx2 zx4 : ZX m o),
   zx1 ∝ zx3 -> zx2 ∝ zx4 -> zx1 ⟷ zx2 ∝ zx3 ⟷ zx4.
 Proof.
@@ -42,7 +42,7 @@ Proof.
 Qed.
 
 
-Lemma ZX_Compose_transpose : forall {n m o} (zx1 : ZX n m) (zx2 : ZX m o), (zx1 ⟷ zx2) ⊤ ∝ (zx2⊤ ⟷ zx1⊤).
+Lemma compose_transpose : forall {n m o} (zx1 : ZX n m) (zx2 : ZX m o), (zx1 ⟷ zx2) ⊤ ∝ (zx2⊤ ⟷ zx1⊤).
 Proof.
 	intros.
 	prop_exists_nonzero 1.
@@ -53,7 +53,7 @@ Qed.
 (* Empty diagram removal *)
 
 
-Lemma ZX_Compose_Empty_r : forall {nIn} (zx : ZX nIn 0),
+Lemma compose_empty_r : forall {nIn} (zx : ZX nIn 0),
   zx ⟷ ⦰ ∝ zx.
 Proof. 
   intros.
@@ -63,7 +63,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma ZX_Compose_Empty_l : forall {nOut} (zx : ZX 0 nOut),
+Lemma compose_empty_l : forall {nOut} (zx : ZX 0 nOut),
   ⦰ ⟷ zx ∝ zx.
 Proof. 
   intros.
@@ -78,7 +78,7 @@ Proof.
   intros.
   prop_exists_nonzero 1.
   simpl.
-  rewrite nWire_semantics.
+  rewrite n_wire_semantics.
   Msimpl.
   reflexivity.
 Qed.
@@ -106,8 +106,8 @@ Proof.
   intros.
   prop_exists_nonzero 1.
   simpl.
-  replace (n ↑ —) with (nWire n) by easy.
-  rewrite nWire_semantics.
+  replace (n ↑ —) with (n_wire n) by easy.
+  rewrite n_wire_semantics.
   Msimpl.
   reflexivity.
 Qed.

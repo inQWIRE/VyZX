@@ -4,7 +4,7 @@ Require Import SpiderInduction.
 
 Local Open Scope ZX_scope.
 
-Lemma ZX_Stack_assoc : 
+Lemma stack_assoc : 
 forall {n0 n1 n2 m0 m1 m2}
 	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2),
 	(zx0 ↕ zx1) ↕ zx2 ∝ 
@@ -20,7 +20,7 @@ Proof.
 	rewrite kron_assoc; auto with wf_db.
 Qed.
 
-Lemma ZX_Stack_assoc_back : 
+Lemma stack_assoc_back : 
 forall {n0 n1 n2 m0 m1 m2}
 	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2),
 	zx0 ↕ (zx1 ↕ zx2) ∝ 
@@ -37,7 +37,7 @@ Proof.
 	rewrite kron_assoc; auto with wf_db.
 Qed.
 
-Lemma ZX_Stack_Empty_l : forall {nIn nOut} (zx : ZX nIn nOut),
+Lemma stack_empty_l : forall {nIn nOut} (zx : ZX nIn nOut),
 	⦰ ↕ zx ∝ zx.
 Proof.
 	intros.
@@ -47,7 +47,7 @@ Proof.
 	lma.
 Qed.
 
-Lemma ZX_Stack_Empty_r : forall {n m : nat} (zx : ZX n m),
+Lemma stack_empty_r : forall {n m : nat} (zx : ZX n m),
 	zx ↕ ⦰ ∝ 
 		cast (n + 0) (m + 0) (Nat.add_0_r _) (Nat.add_0_r _) zx.
 Proof.
@@ -59,7 +59,7 @@ Proof.
 	reflexivity.
 Qed.
 
-Lemma ZX_Stack_Empty_r_rev : forall {n m : nat} (zx : ZX n m),
+Lemma stack_empty_r_rev : forall {n m : nat} (zx : ZX n m),
 	zx ∝ 
 		cast _ _ (eq_sym (Nat.add_0_r _)) (eq_sym (Nat.add_0_r _)) (zx ↕ ⦰).
 Proof.
@@ -73,7 +73,7 @@ Proof.
 	reflexivity.
 Qed.
 
-Lemma ZX_Stack_simplify : forall {n1 m1 n2 m2}
+Lemma stack_simplify : forall {n1 m1 n2 m2}
   (zx1 zx3 : ZX n1 m1) (zx2 zx4 : ZX n2 m2),
   zx1 ∝ zx3 -> zx2 ∝ zx4 -> zx1 ↕ zx2 ∝ zx3 ↕ zx4.
 Proof.
@@ -82,7 +82,7 @@ Proof.
   easy.
 Qed.
 
-Lemma ZX_Stack_transpose : forall {n1 m1 n2 m2} (zx1 : ZX n1 m1) (zx2 : ZX n2 m2), (zx1 ↕ zx2) ⊤ ∝ (zx1⊤ ↕ zx2⊤).
+Lemma stack_transpose : forall {n1 m1 n2 m2} (zx1 : ZX n1 m1) (zx2 : ZX n2 m2), (zx1 ↕ zx2) ⊤ ∝ (zx1⊤ ↕ zx2⊤).
 Proof.
 	intros.
 	prop_exists_nonzero 1.
@@ -90,7 +90,7 @@ Proof.
 	lma.
 Qed.
 
-Lemma nStack1_transpose : forall n (zx : ZX 1 1), (n ↑ zx)⊤ ∝ (n ↑ zx⊤).
+Lemma n_stack1_transpose : forall n (zx : ZX 1 1), (n ↑ zx)⊤ ∝ (n ↑ zx⊤).
 Proof.
 	intros.
 	induction n.
@@ -100,7 +100,7 @@ Proof.
 		easy.
 Qed.
 
-Lemma nStack1_colorswap : forall n (zx : ZX 1 1), ⊙(n ↑ zx) ∝ (n ↑ (⊙ zx)).
+Lemma n_stack1_colorswap : forall n (zx : ZX 1 1), ⊙(n ↑ zx) ∝ (n ↑ (⊙ zx)).
 Proof.
 	intros.
 	induction n.
@@ -110,7 +110,7 @@ Proof.
 		easy.
 Qed.
 
-Lemma nStack_transpose : forall n (zx : ZX 1 1), (n ⇑ zx)⊤ ∝ (n ⇑ zx⊤).
+Lemma n_stack_transpose : forall n (zx : ZX 1 1), (n ⇑ zx)⊤ ∝ (n ⇑ zx⊤).
 Proof.
 	intros.
 	induction n.
@@ -120,7 +120,7 @@ Proof.
 		easy.
 Qed.
 
-Lemma nStack_colorswap : forall n {n' m'} (zx : ZX n' m'), ⊙(n ⇑ zx) ∝ (n ⇑ (⊙ zx)).
+Lemma n_stack_colorswap : forall n {n' m'} (zx : ZX n' m'), ⊙(n ⇑ zx) ∝ (n ⇑ (⊙ zx)).
 Proof.
 	intros.
 	induction n.
@@ -130,11 +130,11 @@ Proof.
 		easy.
 Qed.
 
-Lemma nStack1_l : forall n (zx : ZX 1 1),
+Lemma n_stack1_l : forall n (zx : ZX 1 1),
 	(S n) ↑ zx ∝ zx ↕ (n ↑ zx).
 Proof. easy. Qed.
 
-Lemma nStack1_r : forall n (zx : ZX 1 1), 
+Lemma n_stack1_r : forall n (zx : ZX 1 1), 
 	(S n) ↑ zx ∝ 
 	cast (S n) (S n) (eq_sym (Nat.add_1_r _)) (eq_sym (Nat.add_1_r _)) ((n ↑ zx) ↕ zx).
 Proof.
@@ -142,16 +142,16 @@ induction n.
 - intros.
 	simpl.
 	simpl_casts.
-	rewrite ZX_Stack_Empty_l, ZX_Stack_Empty_r.
+	rewrite stack_empty_l, stack_empty_r.
 	simpl_casts.
 	easy.
 - intros.
-	rewrite nStack1_l.
+	rewrite n_stack1_l.
 	rewrite IHn at 1.
 	rewrite cast_stack_r.
 	simpl.
 	simpl_casts.
-	rewrite ZX_Stack_assoc_back.
+	rewrite stack_assoc_back.
 	simpl_casts.
 	easy.
 Qed.
@@ -173,24 +173,24 @@ Proof.
 Qed.
 
 Lemma stack_nwire_distribute_l : forall {n m o p} (zx0 : ZX n m) (zx1 : ZX m o),
-	nWire p ↕ (zx0 ⟷ zx1) ∝ (nWire p ↕ zx0) ⟷ (nWire p ↕ zx1).
+	n_wire p ↕ (zx0 ⟷ zx1) ∝ (n_wire p ↕ zx0) ⟷ (n_wire p ↕ zx1).
 Proof.
 	intros.
 	induction p.
-	- repeat rewrite ZX_Stack_Empty_l. easy.
-	- rewrite nStack1_l.
-		rewrite (ZX_Stack_assoc — (nWire p) zx0).
-		rewrite (ZX_Stack_assoc — (nWire p) zx1).
+	- repeat rewrite stack_empty_l. easy.
+	- rewrite n_stack1_l.
+		rewrite (stack_assoc — (n_wire p) zx0).
+		rewrite (stack_assoc — (n_wire p) zx1).
 		simpl_casts.
-		rewrite <- (stack_wire_distribute_l (nWire p ↕ zx0) (nWire p ↕ zx1)).
+		rewrite <- (stack_wire_distribute_l (n_wire p ↕ zx0) (n_wire p ↕ zx1)).
 		rewrite <- IHp.
-		rewrite ZX_Stack_assoc_back.
+		rewrite stack_assoc_back.
 		simpl_casts.
 		easy.
 Qed.
 
-(* Lemma nWire_collapse_r : forall {n0 n1 m1} (zx0 : ZX n0 0) (zx1 : ZX n1 m1),
- (zx0 ↕ nWire n1) ⟷ zx1 ∝ zx0 ↕ zx1. *)
+(* Lemma n_wire_collapse_r : forall {n0 n1 m1} (zx0 : ZX n0 0) (zx1 : ZX n1 m1),
+ (zx0 ↕ n_wire n1) ⟷ zx1 ∝ zx0 ↕ zx1. *)
 
 Lemma nstack1_split : forall n m (zx : ZX 1 1),
 	(n + m) ↑ zx ∝ 
@@ -198,10 +198,10 @@ Lemma nstack1_split : forall n m (zx : ZX 1 1),
 Proof.
 	intros.
 	induction n.
-	- simpl. rewrite ZX_Stack_Empty_l. easy.
+	- simpl. rewrite stack_empty_l. easy.
 	- simpl.
 		rewrite IHn.
-		rewrite (ZX_Stack_assoc zx).
+		rewrite (stack_assoc zx).
 		simpl_casts.
 		reflexivity.
 Qed.
@@ -214,12 +214,12 @@ Proof.
 	intros.
 	dependent induction n.
 	- simpl. simpl_casts.
-		rewrite ZX_Stack_Empty_l. easy.
+		rewrite stack_empty_l. easy.
 	- simpl.
 		rewrite IHn.
 		simpl.
 		simpl_casts.
-		rewrite ZX_Stack_assoc.
+		rewrite stack_assoc.
 		simpl_casts.
 		reflexivity.
 Qed.

@@ -55,6 +55,7 @@ We provide two separate options for semantic functions, one based on sparse
 matrices and one based on dirac notation. 
 *)
 
+(* @nocheck name *)
 Fixpoint ZX_semantics {n m} (zx : ZX n m) : 
   Matrix (2 ^ m) (2 ^ n) := 
   match zx with
@@ -78,17 +79,18 @@ Proof.
   easy.
 Qed.
 
-Definition ZX_cast_semantics_dim {n m n' m' : nat} (zx : ZX n m) : Matrix (2 ^ n') (2 ^ m') := ZX_semantics zx.
+Definition cast_semantics_dim {n m n' m' : nat} (zx : ZX n m) : Matrix (2 ^ n') (2 ^ m') := ZX_semantics zx.
 
 Lemma cast_semantics_dim : forall {n m n' m'} {eqn eqm} (zx : ZX n m),
-  ZX_semantics (cast n' m' eqn eqm zx) = ZX_cast_semantics_dim zx.
+  ZX_semantics (cast n' m' eqn eqm zx) = cast_semantics_dim zx.
 Proof.
   intros.
-  unfold ZX_cast_semantics_dim.
+  unfold cast_semantics_dim.
   apply cast_semantics.
 Qed.
 
-Ltac simpl_cast_semantics := try repeat rewrite cast_semantics; try repeat (rewrite cast_semantics_dim; unfold ZX_cast_semantics_dim).
+Ltac simpl_cast_semantics := try repeat rewrite cast_semantics; try repeat (rewrite cast_semantics_dim; unfold cast_semantics_dim).
+(* @nocheck name *)
 
 Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) : 
   Matrix (2 ^ m) (2 ^ n) := 
@@ -103,6 +105,7 @@ Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) :
   | □ => hadamard
   | zx0 ↕ zx1 => (ZX_dirac_sem zx0) ⊗ (ZX_dirac_sem zx1)
   | zx0 ⟷ zx1 => (ZX_dirac_sem zx1) × (ZX_dirac_sem zx0)
+(* @nocheck name *)
   end.
 
 Lemma ZX_semantic_equiv : forall n m (zx : ZX n m),
@@ -112,6 +115,7 @@ Proof.
   induction zx; try lma; simpl.
   rewrite X_semantics_equiv; reflexivity.
   rewrite Z_semantics_equiv; reflexivity.
+(* @nocheck name *)
   1,2: subst; rewrite IHzx1, IHzx2; reflexivity.
 Qed.
 
@@ -131,27 +135,27 @@ Qed.
 (* Parametrized diagrams *)
 
 Reserved Notation "n ⇑ zx" (at level 35). 
-Fixpoint nStack {nIn nOut} n (zx : ZX nIn nOut) : ZX (n * nIn) (n * nOut) :=
+Fixpoint n_stack {nIn nOut} n (zx : ZX nIn nOut) : ZX (n * nIn) (n * nOut) :=
   match n with
   | 0 => ⦰
   | S n' => zx ↕ (n' ⇑ zx)
   end
-  where "n ⇑ zx" := (nStack n zx).
+  where "n ⇑ zx" := (n_stack n zx).
 
 Reserved Notation "n ↑ zx" (at level 35).
-Fixpoint nStack1 n (zx : ZX 1 1) : ZX n n :=
+Fixpoint n_stack1 n (zx : ZX 1 1) : ZX n n :=
   match n with
   | 0 => ⦰
   | S n' => zx ↕ (n' ↑ zx)
   end
-  where "n ↑ zx" := (nStack1 n zx).
+  where "n ↑ zx" := (n_stack1 n zx).
 
-Lemma nStack1_n_kron : forall n (zx : ZX 1 1), 
+Lemma n_stack1_n_kron : forall n (zx : ZX 1 1), 
   ZX_semantics (n ↑ zx) = n ⨂ ZX_semantics zx.
 Proof.
   intros.
   induction n.
-  - unfold nStack. reflexivity.
+  - unfold n_stack. reflexivity.
   - simpl.
     rewrite IHn.
     restore_dims.
@@ -159,12 +163,12 @@ Proof.
     apply WF_ZX.
 Qed.
 
-(* Definition nWire := fun n => n ↑ Wire. *)
-Definition nBox := fun n => n ↑ Box.
+(* Definition n_wire := fun n => n ↑ Wire. *)
+Definition n_box := fun n => n ↑ Box.
 
-Notation "'nWire' n" := (n ↑ —) (at level 35).
+Notation "'n_wire' n" := (n ↑ —) (at level 35).
 
-Lemma nWire_semantics {n} : ZX_semantics (nWire n) = I (2^n).
+Lemma n_wire_semantics {n} : ZX_semantics (n_wire n) = I (2^n).
 Proof.
   induction n; auto.
   simpl.
@@ -173,17 +177,17 @@ Proof.
   auto.
 Qed.
 
-Lemma nBox_semantics {n} : ZX_semantics (nBox n) = n ⨂ hadamard.
+Lemma n_box_semantics {n} : ZX_semantics (n_box n) = n ⨂ hadamard.
 Proof.
   induction n; auto.
   simpl.
-  unfold nBox in IHn.
+  unfold n_box in IHn.
   rewrite IHn.
   rewrite <- kron_n_assoc by auto with wf_db.
   auto.
 Qed.
 
-#[export] Hint Rewrite @nWire_semantics @nBox_semantics : zx_sem_db.
+#[export] Hint Rewrite @n_wire_semantics @n_box_semantics : zx_sem_db.
 
 (** Global operations on ZX diagrams *)
 
@@ -227,7 +231,7 @@ Definition adjoint {n m} (zx : ZX n m) : ZX m n :=
   (zx⊼)⊤.
 Notation "zx †" := (adjoint zx) (at level 0) : ZX_scope.
 
-Lemma ZX_semantics_transpose_comm {nIn nOut} : forall (zx : ZX nIn nOut),
+Lemma semantics_transpose_comm {nIn nOut} : forall (zx : ZX nIn nOut),
   ZX_semantics (zx ⊤) = ((ZX_semantics zx) ⊤)%M.
 Proof.
   assert (Mmult_trans_dep : forall n m o p (A : Matrix n m) (B : Matrix o p), 
@@ -249,7 +253,7 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma ZX_semantics_adjoint_comm {nIn nOut} : forall (zx : ZX nIn nOut),
+Lemma semantics_adjoint_comm {nIn nOut} : forall (zx : ZX nIn nOut),
   ZX_semantics (zx †) = (ZX_semantics zx) †%M.
 Proof.
   intros.
@@ -281,7 +285,7 @@ Fixpoint color_swap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut :=
   end
   where "⊙ zx" := (color_swap zx) : ZX_scope.
 
-Lemma ZX_semantics_Colorswap_comm {nIn nOut} : forall (zx : ZX nIn nOut),
+Lemma semantics_colorswap_comm {nIn nOut} : forall (zx : ZX nIn nOut),
   ZX_semantics (⊙ zx) = nOut ⨂ hadamard × (ZX_semantics zx) × nIn ⨂ hadamard.
 Proof.
   induction zx.

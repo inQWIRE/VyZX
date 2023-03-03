@@ -19,7 +19,7 @@ Ltac cleanup_C := autorewrite with cleanup_C_db.
 
 Lemma grow_Z_left_2_1 : forall {n} α,
   Z (S (S n)) 1 α ∝ 
-  (Z 2 1 0 ↕ nWire n) ⟷ Z (S n) 1 α.
+  (Z 2 1 0 ↕ n_wire n) ⟷ Z (S n) 1 α.
 Proof.
   assert ( pow2Pos : forall n, exists m, (2^n = S m)%nat ).
   { induction n;
@@ -79,7 +79,7 @@ Proof.
   prop_exists_nonzero 1.
   Msimpl.
   simpl.
-  rewrite nWire_semantics.
+  rewrite n_wire_semantics.
   unfold Mmult.
   prep_matrix_equality.
   destruct (pow2Pos n) as [m Hm].
@@ -186,7 +186,7 @@ Qed.
 
 Lemma grow_Z_right_1_2 : forall {n} α,
   Z 1 (S (S n)) α ∝ 
-  Z 1 (S n) α ⟷ (Z 1 2 0 ↕ nWire n).
+  Z 1 (S n) α ⟷ (Z 1 2 0 ↕ n_wire n).
 Proof.
   intros.
   replace (Z_Spider 1 (S (S n))%nat α) 
@@ -208,7 +208,7 @@ Proof.
   lca.
 Qed.
 
-Lemma Z_WrapOver_Top_Rightight_Top_Base : forall n α,
+Lemma Z_wrap_over_top_rightight_top_base : forall n α,
   (— ↕ Z n 2 α) ⟷ (Cup ↕ —) ∝ Z (S n) 1 α.
 Proof.
   intros.
@@ -323,7 +323,7 @@ Proof.
       destruct (fst (Nat.divmod x 1 0 1)); simpl; lca.
 Qed.
 
-Lemma Z_WrapOver_Top_Rightight_Top_0 : forall n α,
+Lemma Z_wrap_over_top_rightight_top_0 : forall n α,
   (— ↕ Z n 1 α) ⟷ Cup ∝ Z (S n) 0 α.
 Proof.
   intros.
@@ -448,13 +448,13 @@ Proof.
     + destruct x; lca.
 Qed.
 
-Lemma Z_WrapOver_Top_Lefteft_Top_0 : forall n α,
+Lemma Z_wrap_over_top_lefteft_top_0 : forall n α,
   Cap ⟷ (— ↕ Z 1 n α) ∝ Z 0 (S n) α.
 Proof.
   intros.
   apply transpose_diagrams.
   simpl.
-  apply Z_WrapOver_Top_Rightight_Top_0.
+  apply Z_wrap_over_top_rightight_top_0.
 Qed.
 
 Ltac spider_induction n := induction n; [ | destruct n ].

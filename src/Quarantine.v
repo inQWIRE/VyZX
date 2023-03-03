@@ -2,7 +2,7 @@ Require Import CoreData.CoreData.
 Require Import CoreRules.CoreRules.
 Require Import Gates.Gates.
 
-Lemma ZX_SWAP_self_inverse : ⨉ ⟷ ⨉ ∝ nWire 2.
+Lemma swap_self_inverse : ⨉ ⟷ ⨉ ∝ n_wire 2.
 Proof.
   intros.
   prop_exists_nonzero 1.
@@ -15,11 +15,11 @@ Proof.
 Qed.
 
 (* Needs to be diagrammatic *)
-Lemma ZX_3_CNOT_SWAP_is_swap : _3_CNOT_SWAP_ ∝ ⨉.
+Lemma 3_cnot_swap_is_swap : _3_CNOT_SWAP_ ∝ ⨉.
 Proof.
 Abort.
 
-Lemma nStack_1_nStack : forall {n} (zx : ZX 1 1), (n ↑ zx) ∝ (cast _ _ (eq_sym (Nat.mul_1_r _)) (eq_sym (Nat.mul_1_r _)) (n ⇑ zx)).
+Lemma n_stack_1_n_stack : forall {n} (zx : ZX 1 1), (n ↑ zx) ∝ (cast _ _ (eq_sym (Nat.mul_1_r _)) (eq_sym (Nat.mul_1_r _)) (n ⇑ zx)).
 Proof.
   intros.
   unfold eq_rect.
@@ -31,7 +31,7 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma nStack_nStack_1 : forall {n} (zx : ZX 1 1), (n ⇑ zx) ∝ (cast _ _ (Nat.mul_1_r _) (Nat.mul_1_r _) (n ↑ zx)).
+Lemma n_stack_n_stack_1 : forall {n} (zx : ZX 1 1), (n ⇑ zx) ∝ (cast _ _ (Nat.mul_1_r _) (Nat.mul_1_r _) (n ↑ zx)).
 Proof.
   intros.
   symmetry.
@@ -45,22 +45,22 @@ Proof.
     reflexivity.
 Qed. 
 
-Lemma nStack1_compose : forall (zx0 zx1 : ZX 1 1) {n}, 
+Lemma n_stack1_compose : forall (zx0 zx1 : ZX 1 1) {n}, 
   n ↑ (zx0 ⟷ zx1) ∝ (n ↑ zx0) ⟷ (n ↑ zx1).
 Proof.
   intros.
   induction n.
-  - unfold nStack1.
+  - unfold n_stack1.
     symmetry.
     cleanup_zx.
     reflexivity.
   - simpl.
-    rewrite <- (ZX_Stack_Compose_distr zx0 zx1).
+    rewrite <- (stack_compose_distr zx0 zx1).
     rewrite IHn.
     reflexivity.
 Qed. 
 
-Lemma ZX_H_H_is_Wire : □ ⟷ □ ∝ —.
+Lemma H_H_is_wire : □ ⟷ □ ∝ —.
 Proof.
   prop_exists_nonzero 1.
   simpl.
@@ -68,12 +68,12 @@ Proof.
   lma.
 Qed.
 
-Lemma nH_composition : forall {n}, 
+Lemma n_H_composition : forall {n}, 
   (n ↑ □) ⟷ (n ↑ □) ∝ n ↑ —.
 Proof.
   intros.
-  rewrite <- nStack1_compose.
-  rewrite ZX_H_H_is_Wire.
+  rewrite <- n_stack1_compose.
+  rewrite H_H_is_wire.
   reflexivity.
 Qed.
 
@@ -87,7 +87,7 @@ Proof.
   intros.
   prop_exists_nonzero 1.
   simpl.
-  rewrite ZX_semantics_transpose_comm.
+  rewrite semantics_transpose_comm.
   Msimpl; simpl.
   unfold kron, Mmult, I, list2D_to_matrix, Matrix.transpose.
   prep_matrix_equality.
@@ -162,15 +162,15 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma nBox_passthrough :forall {nIn nOut} (zx : ZX nIn nOut),
-  (nBox nIn) ⟷ zx ∝ (⊙ zx ⟷ (nBox nOut)).
+Lemma n_box_passthrough :forall {nIn nOut} (zx : ZX nIn nOut),
+  (n_box nIn) ⟷ zx ∝ (⊙ zx ⟷ (n_box nOut)).
 Proof.
   intros.
   prop_exists_nonzero 1.
   Msimpl.
   simpl.
-  rewrite ZX_semantics_Colorswap_comm.
-  rewrite 2 nBox_semantics.
+  rewrite semantics_colorswap_comm.
+  rewrite 2 n_box_semantics.
   rewrite Mmult_assoc.
   rewrite <- Mmult_assoc.
   rewrite kron_n_mult.
@@ -180,7 +180,7 @@ Proof.
   easy.
 Qed.
 
-Lemma Z_Spider_angle_2PI : forall {nIn nOut} α k, Z_Spider nIn nOut α ∝ (Z_Spider nIn nOut (α + IZR (2 * k) * PI)).
+Lemma Z_spider_angle_2pi : forall {nIn nOut} α k, Z_Spider nIn nOut α ∝ (Z_Spider nIn nOut (α + IZR (2 * k) * PI)).
 Proof.
   intros.
   prop_exists_nonzero 1.
@@ -192,5 +192,5 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma X_Spider_angle_2PI : forall {nIn nOut} α k, X_Spider nIn nOut α ∝ (X_Spider nIn nOut (α + IZR (2 * k) * PI)).
-Proof. intros. colorswap_of (@Z_Spider_angle_2PI nIn nOut). Qed.
+Lemma X_spider_angle_2pi : forall {nIn nOut} α k, X_Spider nIn nOut α ∝ (X_Spider nIn nOut (α + IZR (2 * k) * PI)).
+Proof. intros. colorswap_of (@Z_spider_angle_2pi nIn nOut). Qed.

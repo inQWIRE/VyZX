@@ -222,7 +222,7 @@ Qed.
 #[export] Hint Rewrite @cast_Z @cast_X: cast_simpl_db.
 
 
-Lemma cast_nStack1 : forall {n n'} prfn (zx : ZX 1 1),
+Lemma cast_n_stack1 : forall {n n'} prfn (zx : ZX 1 1),
   cast n' n' prfn prfn (n ↑ zx) ∝ n' ↑ zx.
 Proof.
   intros.
@@ -231,21 +231,21 @@ Proof.
   easy.
 Qed.
 
-Lemma cast_nWire : forall {n n'} prfn,
-  cast n' n' prfn prfn (nWire n) ∝ nWire n'.
+Lemma cast_n_wire : forall {n n'} prfn,
+  cast n' n' prfn prfn (n_wire n) ∝ n_wire n'.
 Proof.
   intros.
-  apply cast_nStack1.
+  apply cast_n_stack1.
 Qed.
 
-Lemma cast_nBox : forall {n n'} prfn,
-  cast n' n' prfn prfn (nWire n) ∝ nWire n'.
+Lemma cast_n_box : forall {n n'} prfn,
+  cast n' n' prfn prfn (n_wire n) ∝ n_wire n'.
 Proof.
   intros.
-  apply cast_nStack1.
+  apply cast_n_stack1.
 Qed.
 
-#[export] Hint Rewrite @cast_nStack1 @cast_nWire @cast_nBox : cast_simpl_db.
+#[export] Hint Rewrite @cast_n_stack1 @cast_n_wire @cast_n_box : cast_simpl_db.
 
 Lemma cast_transpose : forall {n m n' m'} prfn prfm (zx : ZX n m),
   (cast n' m' prfn prfm zx) ⊤ ∝ cast m' n' prfm prfn (zx ⊤). 

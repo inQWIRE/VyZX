@@ -37,7 +37,7 @@ Proof.
 	-	simpl. 
 		rewrite Z_0_is_wire.
 		simpl_casts.
-		rewrite ZX_Stack_Empty_r.
+		rewrite stack_empty_r.
 		simpl_casts.
 		cleanup_zx.
 		easy.
@@ -54,13 +54,13 @@ Proof.
 		simpl in IHn.
 		rewrite cast_id in IHn.
 		rewrite grow_Z_top_right.
-		rewrite <- ZX_Compose_assoc.
+		rewrite <- compose_assoc.
 		rewrite IHn.
-		rewrite <- (ZX_Stack_Compose_distr
-			(X 0 1 (INR r * PI)) (Z 1 2 0) (n ⇑ X 0 1 (INR r * PI)) (nWire (n * 1))).
+		rewrite <- (stack_compose_distr
+			(X 0 1 (INR r * PI)) (Z 1 2 0) (n ⇑ X 0 1 (INR r * PI)) (n_wire (n * 1))).
 		rewrite X_state_copy_ind.
 		cleanup_zx.
-		rewrite (ZX_Stack_assoc (X 0 1 (INR r * PI)) (X 0 1 (INR r * PI))).
+		rewrite (stack_assoc (X 0 1 (INR r * PI)) (X 0 1 (INR r * PI))).
 		simpl_casts.
 		easy.
 		Unshelve.
@@ -93,7 +93,7 @@ Proof.
 		all: lia.
 Qed.
 
-Theorem X_PI_copy : forall n,
+Theorem X_pi_copy : forall n,
 	((X 0 1 PI) ⟷ Z 1 n 0) ∝ 
 	(cast 0 n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (X 0 1 PI))).
 Proof.
@@ -116,7 +116,7 @@ Proof.
 	easy.
 Qed.
 
-Theorem Z_PI_copy : forall n,
+Theorem Z_pi_copy : forall n,
 	((Z 0 1 PI) ⟷ X 1 n 0) ∝ 
 	(cast 0 n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (Z 0 1 PI))).
 Proof.

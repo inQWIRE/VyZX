@@ -58,11 +58,11 @@ Proof.
   solve_matrix.
 Qed.
 
-Lemma nWire_stack : forall n m, nWire n ↕ nWire m ∝ nWire (n + m).
+Lemma n_wire_stack : forall n m, n_wire n ↕ n_wire m ∝ n_wire (n + m).
 Proof. 
   prop_exists_nonzero 1. 
   simpl. 
-  rewrite 3 nWire_semantics, id_kron.
+  rewrite 3 n_wire_semantics, id_kron.
   Msimpl.
   rewrite Nat.pow_add_r.
   easy.
@@ -76,11 +76,11 @@ Proof.
 Qed.
 
 Lemma stack_nwire_distribute_r : forall {n m o p} (zx0 : ZX n m) (zx1 : ZX m o),
-(zx0 ⟷ zx1) ↕ nWire p ∝ (zx0 ↕ nWire p) ⟷ (zx1 ↕ nWire p).
+(zx0 ⟷ zx1) ↕ n_wire p ∝ (zx0 ↕ n_wire p) ⟷ (zx1 ↕ n_wire p).
 Proof.
   intros.
   induction p.
-  - repeat rewrite ZX_Stack_Empty_r.
+  - repeat rewrite stack_empty_r.
     eapply (cast_diagrams n o).
     repeat rewrite cast_contract.
     rewrite cast_id.
@@ -91,7 +91,7 @@ Proof.
     easy.
     Unshelve.
     all: lia.
-  - rewrite nStack1_r.
+  - rewrite n_stack1_r.
     repeat rewrite cast_stack_r.
     eapply (cast_diagrams (n + (p + 1)) (o + (p + 1))).
     rewrite cast_contract.
@@ -99,16 +99,16 @@ Proof.
     rewrite cast_compose_distribute.
     simpl_casts.
     erewrite (cast_compose_mid (m + (p + 1)) _ 
-                  ($ n + (p + 1), m + (S p) ::: zx0 ↕ (nWire p ↕ —)$)).
+                  ($ n + (p + 1), m + (S p) ::: zx0 ↕ (n_wire p ↕ —)$)).
     simpl_casts.
-    rewrite 3 ZX_Stack_assoc_back.
+    rewrite 3 stack_assoc_back.
     eapply (cast_diagrams (n + p + 1) (o + p + 1)).
     rewrite cast_contract.
     rewrite cast_id.
     rewrite cast_compose_distribute.
     rewrite 2 cast_contract.
     erewrite (cast_compose_mid (m + p + 1) _ 
-                  ($ n + p + 1, m + (p + 1) ::: zx0 ↕ nWire p ↕ — $)).
+                  ($ n + p + 1, m + (p + 1) ::: zx0 ↕ n_wire p ↕ — $)).
     simpl_casts.
     rewrite <- stack_wire_distribute_r.
     rewrite <- IHp.
@@ -117,11 +117,11 @@ Proof.
     all: lia.
 Qed.
 
-Lemma wire_to_nWire : 
-  — ∝ nWire 1.
+Lemma wire_to_n_wire : 
+  — ∝ n_wire 1.
 Proof.
   simpl.
-  rewrite ZX_Stack_Empty_r.
+  rewrite stack_empty_r.
   simpl_casts.
   easy.
 Qed.
@@ -129,7 +129,7 @@ Qed.
 Lemma wire_transpose : —⊤ ∝ —.
 Proof. easy. Qed.
 
-Lemma nWire_transpose : forall n, (nWire n)⊤ = nWire n.
+Lemma n_wire_transpose : forall n, (n_wire n)⊤ = n_wire n.
 Proof.
   intros.
   induction n.
@@ -139,7 +139,7 @@ Proof.
     easy.
 Qed. 
 
-Lemma nWire_colorswap : forall n, ⊙ (nWire n) = nWire n.
+Lemma n_wire_colorswap : forall n, ⊙ (n_wire n) = n_wire n.
 Proof.
   intros.
   induction n.

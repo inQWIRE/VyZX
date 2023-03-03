@@ -1,9 +1,9 @@
 Require Import CoreData.
 Require Import CoreRules.
 
-Definition pad_bot {n m} pad (zx : ZX n m) : ZX (n + pad) (m + pad) := zx ↕ (nWire pad).
+Definition pad_bot {n m} pad (zx : ZX n m) : ZX (n + pad) (m + pad) := zx ↕ (n_wire pad).
 
-Definition pad_top {n m} pad (zx : ZX n m) : ZX (pad + n) (pad + m) := (nWire pad) ↕ zx.
+Definition pad_top {n m} pad (zx : ZX n m) : ZX (pad + n) (pad + m) := (n_wire pad) ↕ zx.
 
 Definition pad_bot_1 {n m} (zx : ZX n m) : ZX (S n) (S m) := cast _ _ (eq_sym (Nat.add_1_r n)) (eq_sym (Nat.add_1_r m)) (pad_bot 1 zx).
 
@@ -14,9 +14,9 @@ Lemma pad_top_contract : forall {n m} (zx : ZX n m) pad1 pad2, pad_top pad1 (pad
 Proof.
   intros.
   unfold pad_top.
-  rewrite ZX_Stack_assoc_back.
+  rewrite stack_assoc_back.
   simpl_casts.
-  rewrite nWire_stack.
+  rewrite n_wire_stack.
   easy.
 Qed.
 
@@ -32,9 +32,9 @@ Lemma pad_bot_contract : forall {n m} (zx : ZX n m) pad1 pad2, pad_bot pad2 (pad
 Proof.
   intros.
   unfold pad_bot.
-  rewrite ZX_Stack_assoc.
+  rewrite stack_assoc.
   simpl_casts.
-  rewrite nWire_stack.
+  rewrite n_wire_stack.
   easy.
 Qed.
 
@@ -42,7 +42,7 @@ Lemma pad_top_bot_comm : forall {n m} (zx : ZX n m) padT padB, (pad_top padT (pa
 Proof.
   intros.
   unfold pad_top, pad_bot.
-  rewrite ZX_Stack_assoc_back.
+  rewrite stack_assoc_back.
   simpl_casts.
   easy.
 Qed.
@@ -52,17 +52,17 @@ Lemma pad_bot_top_comm : forall {n m} (zx : ZX n m) padT padB, (pad_bot padB (pa
 Proof.
   intros.
   unfold pad_top, pad_bot.
-  rewrite ZX_Stack_assoc.
+  rewrite stack_assoc.
   simpl_casts.
   easy.
 Qed.
 
 Lemma pad_top_bot_semantics : forall {n m} (zx : ZX n m) padT padB, ZX_semantics (pad_top padT (pad_bot padB zx)) = I (2 ^ padT) ⊗ (ZX_semantics zx) ⊗ I (2 ^ padB).
 Proof.
-  intros. simpl. rewrite 2 nWire_semantics. rewrite kron_assoc; auto with wf_db.
+  intros. simpl. rewrite 2 n_wire_semantics. rewrite kron_assoc; auto with wf_db.
 Qed.
 
 Lemma pad_bot_top_semantics : forall {n m} (zx : ZX n m) padT padB, ZX_semantics (pad_bot padB (pad_top padT zx)) = I (2 ^ padT) ⊗ (ZX_semantics zx) ⊗ I (2 ^ padB).
 Proof.
-  intros. simpl. rewrite 2 nWire_semantics. easy.
+  intros. simpl. rewrite 2 n_wire_semantics. easy.
 Qed.

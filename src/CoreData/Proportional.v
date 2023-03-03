@@ -120,7 +120,7 @@ Add Parametric Morphism (n0 m0 n1 m1 : nat) : Stack
     proportional as stack_mor.
 Proof. apply stack_compat; assumption. Qed.
 
-Lemma nStack_compat :
+Lemma n_stack_compat :
   forall nIn nOut n,
     forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
     n ⇑ zx0 ∝ n ⇑ zx1.
@@ -134,13 +134,13 @@ Proof.
     reflexivity.
 Qed.
 
-Add Parametric Morphism (n m d : nat) : (nStack d)
+Add Parametric Morphism (n m d : nat) : (n_stack d)
   with signature 
       (@proportional n m) ==> 
       proportional as nstack_mor.
-Proof. apply nStack_compat. Qed.
+Proof. apply n_stack_compat. Qed.
 
-Lemma nStack1_compat :
+Lemma n_stack1_compat :
   forall n,
     forall zx0 zx1 : ZX 1 1, zx0 ∝ zx1 ->
     n ↑ zx0 ∝ n ↑ zx1.
@@ -154,11 +154,11 @@ Proof.
     reflexivity.
 Qed. 
 
-Add Parametric Morphism (n : nat) : (nStack1 n)
+Add Parametric Morphism (n : nat) : (n_stack1 n)
   with signature 
       (@proportional 1 1) ==> 
       (@proportional n n) as nstack1_mor.
-Proof. apply nStack1_compat. Qed. 
+Proof. apply n_stack1_compat. Qed. 
 
 Lemma compose_compat :
   forall n m o,
@@ -206,7 +206,7 @@ Lemma transpose_compat :
 Proof.
   intros n m zx0 zx1 [x [Hzx0 Hx]].
   prop_exists_nonzero x; auto.
-  rewrite 2 ZX_semantics_transpose_comm.
+  rewrite 2 semantics_transpose_comm.
   rewrite Hzx0.
   rewrite Mscale_trans.
   auto.
@@ -225,7 +225,7 @@ Lemma adjoint_compat :
 Proof.
   intros n m zx0 zx1 [x [Hzx0 Hx]].
   prop_exists_nonzero (x ^*)%C; try apply Cconj_neq_0; auto.
-  rewrite 2 ZX_semantics_adjoint_comm.
+  rewrite 2 semantics_adjoint_comm.
   rewrite Hzx0.
   rewrite Mscale_adj.
   easy.
@@ -242,7 +242,7 @@ Lemma colorswap_compat :
 Proof.
   intros.
   destruct H; destruct H; exists x; split; try assumption.
-  rewrite 2 ZX_semantics_Colorswap_comm.
+  rewrite 2 semantics_colorswap_comm.
   rewrite H.
   rewrite Mscale_mult_dist_r.
   rewrite Mscale_mult_dist_l.
@@ -254,6 +254,7 @@ Add Parametric Morphism (nIn nOut : nat) : (@color_swap nIn nOut)
     as colorswap_mor.
 Proof. apply colorswap_compat. Qed.
 
+(* @nocheck name *)
 Theorem ZX_eq_prop : forall {n m} (zx0 : ZX n m) (zx1 : ZX n m),
   ZX_semantics zx0 = ZX_semantics zx1 -> zx0 ∝ zx1.
 Proof.
@@ -281,7 +282,7 @@ Proof.
   intros.
   prop_exists_nonzero 1.
   simpl.
-  repeat rewrite ZX_semantics_transpose_comm.
+  repeat rewrite semantics_transpose_comm.
   rewrite transpose_involutive.
   lma.
 Qed.
@@ -292,7 +293,7 @@ Proof.
   intros.
   prop_exists_nonzero 1.
   simpl.
-  repeat rewrite ZX_semantics_adjoint_comm.
+  repeat rewrite semantics_adjoint_comm.
   rewrite adjoint_involutive.
   lma.
 Qed.
@@ -321,7 +322,7 @@ Proof.
   prop_exists_nonzero x; try assumption.
   apply transpose_matrices.
   rewrite Mscale_trans.
-  repeat rewrite <- ZX_semantics_transpose_comm.
+  repeat rewrite <- semantics_transpose_comm.
   apply Hzx.
 Qed.
 
@@ -332,7 +333,7 @@ Proof.
   prop_exists_nonzero (x ^*)%C.
   apply adjoint_matrices.
   rewrite Mscale_adj.
-  repeat rewrite <- ZX_semantics_adjoint_comm.
+  repeat rewrite <- semantics_adjoint_comm.
   rewrite Cconj_involutive.
   apply Hzx.
   apply Cconj_neq_0.

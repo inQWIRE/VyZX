@@ -11,26 +11,26 @@ Open Scope ZX_scope.
 
 (* Conversion  to base ZX diagrams *)
 
-Fixpoint ZX_top_to_bottom_helper (n : nat) : ZX (S n) (S n) :=
+Fixpoint top_to_bottom_helper (n : nat) : ZX (S n) (S n) :=
   match n with 
   | 0   => Wire
-  | S k => Compose (Stack Swap (nWire k)) (Stack Wire (ZX_top_to_bottom_helper k))
+  | S k => Compose (Stack Swap (n_wire k)) (Stack Wire (top_to_bottom_helper k))
   end.
 
-Definition ZX_top_to_bottom (n : nat) : ZX n n :=
+Definition top_to_bottom (n : nat) : ZX n n :=
   match n with
   | 0 => Empty
-  | S k => ZX_top_to_bottom_helper k
+  | S k => top_to_bottom_helper k
   end.
 
-Definition ZX_bottom_to_top (n : nat) : ZX n n :=
-  (ZX_top_to_bottom n)⊤.
+Definition bottom_to_top (n : nat) : ZX n n :=
+  (top_to_bottom n)⊤.
 
 Definition a_swap (n : nat) : ZX n n :=
   match n with
   | 0   => Empty
-  | S k => ZX_top_to_bottom (S k)
-    ⟷ cast  (S k) (S k) (eq_sym (Nat.add_1_r k)) (eq_sym (Nat.add_1_r k)) (ZX_bottom_to_top k ↕ —)
+  | S k => top_to_bottom (S k)
+    ⟷ cast  (S k) (S k) (eq_sym (Nat.add_1_r k)) (eq_sym (Nat.add_1_r k)) (bottom_to_top k ↕ —)
   end.
 
 (* Arbitrary Swap Semantics *)
@@ -76,7 +76,7 @@ Qed.
 
 (* Well foundedness of semantics *)
 
-Lemma WF_Top_to_bottom (n : nat) : WF_Matrix (top_wire_to_bottom n).
+Lemma WF_top_to_bottom (n : nat) : WF_Matrix (top_wire_to_bottom n).
 Proof.
   destruct n; try auto with wf_db.
   induction n.
@@ -84,12 +84,12 @@ Proof.
   - simpl. try auto with wf_db.
 Qed.
 
-Global Hint Resolve WF_Top_to_bottom : wf_db.
+Global Hint Resolve WF_top_to_bottom : wf_db.
 
-Lemma WF_Bottom_to_top (n : nat) : WF_Matrix (bottom_wire_to_top n).
+Lemma WF_bottom_to_top (n : nat) : WF_Matrix (bottom_wire_to_top n).
 Proof. unfold bottom_wire_to_top. auto with wf_db. Qed.
 
-Global Hint Resolve WF_Bottom_to_top : wf_db.
+Global Hint Resolve WF_bottom_to_top : wf_db.
 
 Lemma WF_a_swap_semantics (n : nat) :
  WF_Matrix (a_swap_semantics n).
@@ -103,7 +103,7 @@ Global Hint Resolve WF_a_swap_semantics : wf_db.
 
 (* Proving correctness of conversion *)
 
-Lemma top_to_bottom_correct : forall n, ZX_semantics (ZX_top_to_bottom n) = top_wire_to_bottom n.
+Lemma top_to_bottom_correct : forall n, ZX_semantics (top_to_bottom n) = top_wire_to_bottom n.
 Proof.
   intros.
   destruct n; [ reflexivity | ].
@@ -113,19 +113,19 @@ Proof.
   - simpl.
     simpl in IHn.
     rewrite <- IHn.
-    rewrite nWire_semantics.
+    rewrite n_wire_semantics.
     rewrite kron_n_I.
     rewrite 2 id_kron.
     replace (2 * 2 ^ n)%nat with (2 ^ n * 2)%nat by lia.
     easy.
 Qed.
 
-Lemma bottom_to_top_correct : forall n, ZX_semantics (ZX_bottom_to_top n) = bottom_wire_to_top n.
+Lemma bottom_to_top_correct : forall n, ZX_semantics (bottom_to_top n) = bottom_wire_to_top n.
 Proof.
   intros.
-  unfold ZX_bottom_to_top.
+  unfold bottom_to_top.
   unfold bottom_wire_to_top.
-  rewrite ZX_semantics_transpose_comm.
+  rewrite semantics_transpose_comm.
   rewrite top_to_bottom_correct.
   easy.
 Qed.
@@ -146,7 +146,7 @@ Proof.
   - rewrite <- bottom_to_top_correct.
     rewrite <- top_to_bottom_correct.
     simpl.
-    rewrite (@cast_semantics _ _ (S (S n)) (S (S n)) _ _ (ZX_bottom_to_top (S n) ↕ —)).
+    rewrite (@cast_semantics _ _ (S (S n)) (S (S n)) _ _ (bottom_to_top (S n) ↕ —)).
     easy.
 Qed.
 
@@ -158,32 +158,32 @@ Qed.
 
 
 
-Lemma ZX_A_swap_grow : forall n, a_swap (S (S (S n))) ∝ (⨉ ↕ nWire (S n)) ⟷ (— ↕ a_swap (S (S n))) ⟷ (⨉ ↕ nWire (S n)). 
+Lemma a_swap_grow : forall n, a_swap (S (S (S n))) ∝ (⨉ ↕ n_wire (S n)) ⟷ (— ↕ a_swap (S (S n))) ⟷ (⨉ ↕ n_wire (S n)). 
 Proof.
   intros.
   unfold a_swap.
   simpl_casts.
   simpl.
-  repeat rewrite ZX_Compose_assoc.
-  apply ZX_Compose_simplify; [ easy | ].
+  repeat rewrite compose_assoc.
+  apply compose_simplify; [ easy | ].
   simpl.
-  remember (— ↕ ZX_top_to_bottom_helper n) as TBN1.
-  remember (⨉ ↕ nWire n) as swap_nW.
+  remember (— ↕ top_to_bottom_helper n) as TBN1.
+  remember (⨉ ↕ n_wire n) as swap_nW.
   repeat rewrite stack_wire_distribute_l.
-  repeat rewrite ZX_Compose_assoc.
-  apply ZX_Compose_simplify; [ easy | ].
-  apply ZX_Compose_simplify; [ easy | ].
-  unfold ZX_bottom_to_top.
+  repeat rewrite compose_assoc.
+  apply compose_simplify; [ easy | ].
+  apply compose_simplify; [ easy | ].
+  unfold bottom_to_top.
   simpl.
-  rewrite nWire_transpose.
-  remember (ZX_top_to_bottom_helper n) as TBN.
+  rewrite n_wire_transpose.
+  remember (top_to_bottom_helper n) as TBN.
   rewrite cast_symm.
   prop_exists_nonzero 1.
   simpl.
   simpl_cast_semantics.
   simpl.
   simpl_cast_semantics.
-  rewrite nWire_semantics.
+  rewrite n_wire_semantics.
   rewrite kron_id_dist_r; try auto with wf_db; [| shelve].
   Msimpl.
   replace ((2 * 2 ^ S (n + 1)))%nat with (2 * 2 ^ S n * 2)%nat by shelve.
@@ -544,7 +544,7 @@ Proof.
   }
   destruct n.
   - unfold unpadded_cnot.
-    pose proof ZX_CNOT_l_is_cnot.
+    pose proof cnot_l_is_cnot.
     simpl; simpl in H.
     rewrite H.
     rewrite denote_cnot.
@@ -574,7 +574,7 @@ Proof.
       simpl.
       restore_dims.
       replace (I 2 ⊗ X_semantics 2 1 0 × (Z_semantics 1 2 0 ⊗ I 2)) with (ZX_semantics (((Z) 1 2 0 ↕ — ⟷ (— ↕ (X) 2 1 0)))) by easy.
-      rewrite ZX_CNOT_l_is_cnot.
+      rewrite cnot_l_is_cnot.
       rewrite <- cnot_decomposition.
       rewrite 2 kron_assoc; try auto with wf_db.
       autorewrite with scalar_move_db.
@@ -584,7 +584,7 @@ Proof.
         repeat rewrite kron_1_r; try auto with wf_db.
       * replace (S n - n - 1)%nat with 0%nat by lia.
         apply Mscale_simplify; [ | easy ].
-        rewrite nWire_semantics.
+        rewrite n_wire_semantics.
         repeat rewrite id_kron.
         replace (2 ^ S n + (2 ^ S n + 0))%nat with (2 * 2 ^ S n)%nat by lia.
         apply kron_simplify; try easy.
@@ -641,7 +641,7 @@ Proof.
     apply Mmult_simplify; [ | easy ].
     rewrite cnot_decomposition.
     restore_dims.
-    rewrite <- ZX_CNOT_l_is_cnot.
+    rewrite <- cnot_l_is_cnot.
     simpl.
     easy.
   - rewrite <- (SWAP_extends_CNOT _ 1 _); try lia.
@@ -664,7 +664,7 @@ Proof.
       repeat rewrite unfold_pad.
       simpl.
       Msimpl.
-      rewrite nWire_semantics.
+      rewrite n_wire_semantics.
       rewrite id_kron.
       replace (2 ^ n + (2 ^ n + 0))%nat with (2 * 2 ^ n)%nat by lia.
       remember (2 ^ n)%nat as n2.
@@ -694,7 +694,7 @@ Proof.
       rewrite <- (kron_id_dist_r (2 * n2)%nat); try auto with wf_db.
       apply kron_simplify; [ | easy ].
       rewrite cnot_decomposition.
-      rewrite <- ZX_CNOT_l_is_cnot.
+      rewrite <- cnot_l_is_cnot.
       simpl.
       easy.
     + Msimpl.
@@ -714,7 +714,7 @@ Definition cnot_n_m_ingest {dim} (n m : nat) : ZX (n + (S m - n) + (dim - (m + 1
   (if n <? m then
     padbt (unpadded_cnot_t _ _)
   else 
-    (nWire _)
+    (n_wire _)
   ).
 
 Lemma cnot_n_m_dim : forall {dim n m}, (n <? m = true)%nat -> (m <? dim = true)%nat -> (n + (S m - n) + (dim - (m + 1)))%nat = dim.
@@ -736,7 +736,7 @@ Definition cnot_m_n_ingest {dim} (n m : nat) : ZX (m + (S n - m) + (dim - (n + 1
     (if m <? n then
       padbt (unpadded_cnot_b _ _)
     else 
-      (nWire _)
+      (n_wire _)
     ).
   
 Definition cnot_ingest {dim} (n m : nat) : ZX dim dim.
@@ -745,13 +745,13 @@ Proof.
   - destruct (Sumbool.sumbool_of_bool (m <? dim)) as [ Hmltdim | _ ].
     + apply (cast _ _ (eq_sym (cnot_n_m_dim Hnltm Hmltdim)) (eq_sym (cnot_n_m_dim Hnltm Hmltdim))).
       apply cnot_n_m_ingest.
-    + apply (nWire dim).
+    + apply (n_wire dim).
   - destruct (Sumbool.sumbool_of_bool (m <? n)) as [ Hmltn | _ ].
     + destruct (Sumbool.sumbool_of_bool (n <? dim)) as [ Hnltdim | _ ].
       * apply (cast _ _ (eq_sym (cnot_m_n_dim Hmltn Hnltdim)) (eq_sym (cnot_m_n_dim Hmltn Hnltdim))).
         apply cnot_m_n_ingest.
-      * apply (nWire dim).
-    + apply (nWire dim).
+      * apply (n_wire dim).
+    + apply (n_wire dim).
 Defined.
 
 Lemma cnot_n_m_equiv : forall dim n m, (n < dim)%nat -> (m < dim)%nat -> (n < m)%nat -> / √ 2 .* uc_eval (@CNOT dim n m) = ZX_semantics (@cnot_n_m_ingest dim n m).
@@ -887,7 +887,7 @@ Proof.
   - apply (cast _ _ (eq_sym (gate_ingest_dim _ _ H)) (eq_sym (gate_ingest_dim _ _ H))).
     apply gate_ingest'.
     exact zx.
-  - apply (nWire dim).
+  - apply (n_wire dim).
 Defined.
 
 Lemma gate_ingest_correct : forall n dim (zx : ZX 1 1) (A : Matrix 2 2), (n < dim)%nat -> ZX_semantics zx = A -> pad_u dim n A = ZX_semantics (@gate_ingest dim zx n).
@@ -900,7 +900,7 @@ Proof.
   rewrite unfold_pad.
   bdestruct (n + 1 <=? dim); try (exfalso; lia).
   simpl.
-  rewrite 2 nWire_semantics.
+  rewrite 2 n_wire_semantics.
   rewrite H0.
   easy.
 Qed.
@@ -921,7 +921,7 @@ Proof.
   intros.
   rewrite denote_X.
   apply gate_ingest_correct; [ easy | ].
-  apply ZX_X_is_X.
+  apply X_is_X.
 Qed.
 
 Lemma Rz_ingest_correct : forall {dim} n α, (n < dim)%nat -> @uc_eval dim (SQIR.Rz α n) = ZX_semantics (@Rz_ingest dim n α).
@@ -929,15 +929,15 @@ Proof.
   intros.
   rewrite denote_Rz.
   apply gate_ingest_correct; [ easy | ].
-  apply ZX_Rz_is_Rz.
+  apply _Rz_is_Rz.
 Qed.
 
 (* @nocheck name *)
-Lemma SKIP_is_nWire : forall dim, uc_eval (@SKIP (S dim)) = ZX_semantics (nWire (S dim)).
+Lemma SKIP_is_n_wire : forall dim, uc_eval (@SKIP (S dim)) = ZX_semantics (n_wire (S dim)).
 Proof.
   intros.
   rewrite denote_SKIP; try lia.
-  rewrite nWire_semantics; easy.
+  rewrite n_wire_semantics; easy.
 Qed. 
 
 Require Import VOQC.RzQGateSet.
@@ -949,11 +949,12 @@ Fixpoint ingest {dim} (u : ucom (RzQGateSet.U) dim) : ZX dim dim :=
   | uapp1 (URzQ_Rz α) n => Rz_ingest n (Q2R α * PI)%R
   | uapp2 _ n m => cnot_ingest n m
   | useq u1 u2 => ingest u1 ⟷ ingest u2
-  | _ => (nWire dim)
+  | _ => (n_wire dim)
   end.
 
 Local Open Scope ucom_scope.
 
+(* @nocheck name *)
 Fixpoint RzQToBaseUCom {dim} (u : ucom (RzQGateSet.U) dim) : base_ucom dim :=
   match u with
   | uapp1 URzQ_H n => SQIR.H n
@@ -1029,7 +1030,7 @@ Proof.
     + apply Rz_ingest_correct.
       assumption.
     + destruct dim; [ exfalso; lia | ].
-      apply SKIP_is_nWire.
+      apply SKIP_is_n_wire.
   - inversion H.
     subst.
     simpl.
@@ -1039,7 +1040,7 @@ Proof.
     exists C1; split; [ | nonzero ].
     Msimpl.    
     destruct dim; [ exfalso; inversion H; lia | ].
-    apply SKIP_is_nWire.
+    apply SKIP_is_n_wire.
 Qed.
 
   

@@ -106,40 +106,40 @@ Qed.
 
 (* The core of dirac notation *)
 
-Definition bra_ket_MN (bra: Matrix 1 2) (ket : Vector 2) {n m} : 
+Definition bra_ket_mn (bra: Matrix 1 2) (ket : Vector 2) {n m} : 
                                           Matrix (2 ^ m) (2 ^ n) := 
   (m ⨂ ket) × (n ⨂ bra).
-Transparent bra_ket_MN. 
+Transparent bra_ket_mn. 
 
-Arguments bra_ket_MN bra ket n m /.
+Arguments bra_ket_mn bra ket n m /.
 
-Lemma WF_bra_ket_MN : forall n m bra ket, 
-  WF_Matrix bra -> WF_Matrix ket -> WF_Matrix (@bra_ket_MN bra ket n m).
+Lemma WF_bra_ket_mn : forall n m bra ket, 
+  WF_Matrix bra -> WF_Matrix ket -> WF_Matrix (@bra_ket_mn bra ket n m).
 Proof.
   intros.
-  unfold bra_ket_MN.
+  unfold bra_ket_mn.
   apply WF_mult; restore_dims; apply WF_kron_n; assumption.
 Qed.
 
 Definition dirac_spider_semantics 
   (bra0 bra1 : Matrix 1 2) (ket0 ket1 : Vector 2) 
   (α : R) (n m : nat) : Matrix (2 ^ m) (2 ^ n) :=
-    (bra_ket_MN bra0 ket0) .+ (Cexp α) .* (bra_ket_MN bra1 ket1). 
+    (bra_ket_mn bra0 ket0) .+ (Cexp α) .* (bra_ket_mn bra1 ket1). 
 
 Arguments dirac_spider_semantics bra0 bra1 ket0 ket1 α n m /.
 
-Lemma WF_Dirac_Spider_semantics : forall n m bra0 bra1 ket0 ket1 α, 
+Lemma WF_dirac_spider_semantics : forall n m bra0 bra1 ket0 ket1 α, 
   WF_Matrix bra0 -> WF_Matrix bra1 -> WF_Matrix ket0 -> WF_Matrix ket1 -> 
   WF_Matrix (@dirac_spider_semantics bra0 bra1 ket0 ket1 α n m).
 Proof.
   intros.
   unfold dirac_spider_semantics.
   apply WF_plus; restore_dims; try apply WF_scale; 
-                                   apply WF_bra_ket_MN; 
+                                   apply WF_bra_ket_mn; 
                                    assumption.
 Qed.
 
-#[export] Hint Resolve WF_Dirac_Spider_semantics WF_bra_ket_MN : wf_db.
+#[export] Hint Resolve WF_dirac_spider_semantics WF_bra_ket_mn : wf_db.
 
 (* Dirac semantics for a given spider *)
 
@@ -153,11 +153,11 @@ Arguments Z_dirac_semantics n m α /.
 Arguments X_dirac_semantics n m α /.
 
 Ltac unfold_dirac_spider := 
-  simpl; unfold dirac_spider_semantics, bra_ket_MN; try (simpl; Msimpl).
+  simpl; unfold dirac_spider_semantics, bra_ket_mn; try (simpl; Msimpl).
 
 (** Working towards equivalence of the two forms of semantics *)
 
-Lemma ZX_Dirac_spider_X_H_Z : forall n m α, 
+Lemma dirac_spider_X_H_Z : forall n m α, 
   X_dirac_semantics n m α = 
   m ⨂ hadamard × (Z_dirac_semantics n m α) × (n ⨂ hadamard).
 Proof.
@@ -705,7 +705,7 @@ Lemma X_semantics_equiv : forall n m α,
   X_semantics n m α = X_dirac_semantics n m α.
 Proof.
   intros.
-  rewrite ZX_Dirac_spider_X_H_Z.
+  rewrite dirac_spider_X_H_Z.
   unfold X_semantics.
   Msimpl.
   restore_dims.
@@ -716,13 +716,13 @@ Qed.
 Lemma WF_Z_semantics : forall n m α, WF_Matrix (Z_semantics n m α).
 Proof. 
   intros; rewrite Z_semantics_equiv; 
-  apply WF_Dirac_Spider_semantics; auto with wf_db. 
+  apply WF_dirac_spider_semantics; auto with wf_db. 
 Qed.
 
 Lemma WF_X_semantics : forall n m α, WF_Matrix (X_semantics n m α).
 Proof. 
   intros; rewrite X_semantics_equiv; 
-  apply WF_Dirac_Spider_semantics; auto with wf_db. 
+  apply WF_dirac_spider_semantics; auto with wf_db. 
 Qed.
 
 #[export] Hint Resolve WF_Z_semantics WF_X_semantics : wf_db.

@@ -5,7 +5,7 @@ Require Export CoreRules.
 
 Local Open Scope ZX_scope.
 
-Lemma ZX_Z_is_Z : ZX_semantics (_Z_) = σz.
+Lemma Z_is_Z : ZX_semantics (_Z_) = σz.
 Proof.
   simpl.
   unfold Z_semantics.
@@ -14,7 +14,7 @@ Proof.
   solve_matrix.
 Qed.
 
-Lemma ZX_X_is_X : ZX_semantics (_X_) = σx.
+Lemma X_is_X : ZX_semantics (_X_) = σx.
 Proof.
   simpl.
   unfold X_semantics; solve_matrix.
@@ -24,7 +24,7 @@ Proof.
 Qed.
 
 
-Lemma _H_is_Box : _H_ ∝ □.
+Lemma _H_is_box : _H_ ∝ □.
 Proof.
   prop_exists_nonzero (Cexp (PI/4)).
   simpl.
@@ -36,7 +36,7 @@ Proof.
 Qed.
 
 
-Lemma ZX_CNOT_l_is_cnot : ZX_semantics _CNOT_ = (/ √ 2)%C .* cnot.
+Lemma cnot_l_is_cnot : ZX_semantics _CNOT_ = (/ √ 2)%C .* cnot.
 Proof.
   simpl.
   unfold Z_semantics, X_semantics.
@@ -45,7 +45,7 @@ Proof.
   all: lca.
 Qed.
 
-Lemma ZX_CNOT_inv_is_swapped_cnot : ZX_semantics _CNOT_inv_ = (/ √ 2)%C .* (swap × cnot × swap)%M.
+Lemma cnot_inv_is_swapped_cnot : ZX_semantics _CNOT_inv_ = (/ √ 2)%C .* (swap × cnot × swap)%M.
 Proof.
   simpl.
   unfold Z_semantics, X_semantics.
@@ -54,7 +54,7 @@ Proof.
   all: lca.
 Qed.
 
-Lemma ZX_Rz_is_Rz : forall α, ZX_semantics (_Rz_ α) = phase_shift α.
+Lemma _Rz_is_Rz : forall α, ZX_semantics (_Rz_ α) = phase_shift α.
 Proof.
   intros.
   simpl.

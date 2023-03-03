@@ -5,10 +5,10 @@ Require Import WireRules.
 Require Import StackComposeRules.
 
 #[export] Hint Rewrite 
-  (fun n => @ZX_Compose_Empty_l n)
-  (fun n => @ZX_Compose_Empty_r n)
-  (fun n => @ZX_Stack_Empty_l n)
-  (fun n => @ZX_Stack_Empty_r n) 
+  (fun n => @compose_empty_l n)
+  (fun n => @compose_empty_r n)
+  (fun n => @stack_empty_l n)
+  (fun n => @stack_empty_r n) 
   (fun n => @nwire_removal_l n) 
   (fun n => @nwire_removal_r n)
   @wire_removal_l
@@ -22,16 +22,16 @@ Ltac cleanup_zx := autorewrite with cleanup_zx_db.
 
 #[export] Hint Rewrite
   (fun n m o p => @cast_colorswap n m o p)
-  (fun n => @nWire_colorswap n)
-  (fun n => @nStack1_colorswap n)
-  (fun n m o => @nStack_colorswap n m o)
+  (fun n => @n_wire_colorswap n)
+  (fun n => @n_stack1_colorswap n)
+  (fun n m o => @n_stack_colorswap n m o)
   : colorswap_db.
 
 #[export] Hint Rewrite
   (fun n m o p => @cast_transpose n m o p)
-  (fun n => @nWire_transpose n)
-  (fun n => @nStack1_transpose n)
-  (fun n => @nStack_transpose n)
+  (fun n => @n_wire_transpose n)
+  (fun n => @n_stack1_transpose n)
+  (fun n => @n_stack_transpose n)
   : transpose_db.
 
 #[export] Hint Rewrite
