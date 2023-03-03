@@ -924,6 +924,7 @@ Proof.
   apply X_is_X.
 Qed.
 
+(* @nocheck name *)
 Lemma Rz_ingest_correct : forall {dim} n α, (n < dim)%nat -> @uc_eval dim (SQIR.Rz α n) = ZX_semantics (@Rz_ingest dim n α).
 Proof.
   intros.
@@ -955,6 +956,7 @@ Fixpoint ingest {dim} (u : ucom (RzQGateSet.U) dim) : ZX dim dim :=
 Local Open Scope ucom_scope.
 
 (* @nocheck name *)
+(* Sticking with SQIR conventions *)
 Fixpoint RzQToBaseUCom {dim} (u : ucom (RzQGateSet.U) dim) : base_ucom dim :=
   match u with
   | uapp1 URzQ_H n => SQIR.H n
