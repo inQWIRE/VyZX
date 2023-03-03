@@ -35,8 +35,12 @@ def_token = "Definition|Fixpoint|Inductive|Example"
 exists_thm_regex = re.compile(f".*({thm_token}|{def_token})\\s*(([a-z]|[A-Z]|_)([a-z]|[A-Z]|_|-|\\d)+)")
 def_name_ignore_regex = re.compile("\\s*\\(\\*\\s*\\@nocheck\\s+name\\s*\\*\\)")
 
+acceptable_upper_case = ["Z","X","WF","H","Rz","Rx","S"]
+acceptable_upper_case_regex = "|".join(acceptable_upper_case)
 
-acceptable_upper_case = ["Z","X","WF","H","Rz","Rx"]
+snake_case_regex = re.compile(f"ZX|(_?((({acceptable_upper_case_regex})|(([a-z]|[0-9])*))_)*(({acceptable_upper_case_regex})|(([a-z]|[0-9])*)))")
+
+
 camel_case_to_snake_case_regex = re.compile(r'(?<!^)(?=[A-Z])')
 class Violation:
   line_no : (int | None) 
@@ -58,23 +62,29 @@ class Violation:
     if (not self.line_no) or (not self.def_type): # File global violation
       return f"{b_color_yellow}Violation found: {self.name} is a disallowed file name. Should be PascalCase (where only the beginning can have multiple uppercase letters in  row) {b_color_reset}({self._fmt_file()})"
     acceptable_upper_case_str = ", ".join(map(lambda x: '\"' + x + '\"', acceptable_upper_case))
-    return f"{b_color_yellow}Violation found: {self.def_type} \"{self.name}\" should be snake_case and lower case following standard library's convention (except for qualifiers: {acceptable_upper_case_str}. Suggestion: {self.fix_snake_case()} {b_color_reset}({self._fmt_file()}:{self.line_no})"
+    suggestion = self.fix_snake_case()
+    suggestion_info =  f" Suggestion: {suggestion} " if suggestion != None else ""
+    return f"{b_color_yellow}Violation found: {self.def_type} \"{self.name}\" should be snake_case and lower case following standard library's convention (except for qualifiers: {acceptable_upper_case_str}.{suggestion_info}{b_color_reset}({self._fmt_file()}:{self.line_no})"
   
-  def fix_snake_case(self) -> str:
+  def fix_snake_case(self) -> (str | None):
     snake_split = self.name.replace("-","_").split("_")
     results = list()
     for component in snake_split:
       if component not in acceptable_upper_case:
         component_is_upper = component == component.upper()
-        if component_is_upper:
+        if component_is_upper and (component not in acceptable_upper_case):
           component = component.lower()
         else:
           component = camel_case_to_snake_case_regex \
                       .sub('_', component) \
                       .lower()
+      
       results.append(component)
     snake_cased_name = "_".join(results)
-    assert (self.name != snake_cased_name)
+    if snake_cased_name.startswith("zx_") or snake_cased_name.startswith("ZX_"):
+       snake_cased_name = snake_cased_name[3:]
+    if (self.name == snake_cased_name) or not snake_case_regex.fullmatch(snake_cased_name): # Guard against bad suggestions
+      return None
     return snake_cased_name
 
   def replace_in_all(self, files : list[str], change_to : (str | None) = None):
@@ -99,10 +109,6 @@ class Violation:
     with open(self.file, "w") as f:
       lines = "".join(lines)
       f.write(lines)
-    
-acceptable_upper_case_regex = "|".join(acceptable_upper_case)
-
-snake_case_regex = re.compile(f"_?(({acceptable_upper_case_regex}|[a-z]([a-z][0-9])*)_)*({acceptable_upper_case_regex}|[a-z]([a-z][0-9])*)")
 
 def validate_file(file) -> list[Violation]:
   violations : list[Violation] = list()
@@ -119,7 +125,7 @@ def validate_file(file) -> list[Violation]:
           continue
         def_type = match.groups()[0]
         name = match.groups()[1]
-        name_matches_rules = re.match(snake_case_regex, name)
+        name_matches_rules = re.fullmatch(snake_case_regex, name)
         if not name_matches_rules:
           violations.append(Violation(line_no, file, name, def_type))
   return violations
@@ -169,20 +175,15 @@ if not name_violations and not file_name_violations:
 all_violations = file_name_violations + name_violations
 n_violations = len(all_violations)
 
-
-
-def replaceAll(violation : Violation):
-  pass
-
-
-
 for (n, violation) in enumerate(all_violations, 1):
   print(f"({n}/{n_violations}) - {violation}")
   if not interactive: # If not interactive, just print the violations
     continue
+  has_suggestion = violation.fix_snake_case() != None
+  auto_fix_info = " Auto Fix(F)/" if has_suggestion else ""
   while True: # Do until a valid input comes along
-    option = input("What do you want to do? Auto Fix(F)/Manually Fix(M)/Skip(S)/Ignore(I) permanently? ").lower()
-    if option == "f":
+    option = input(f"What do you want to do? {auto_fix_info}Manually Fix(M)/Skip(S)/Ignore(I) permanently? ").lower()
+    if option == "f" and has_suggestion:
       violation.replace_in_all(all_files)
       break
     if option == "m":
@@ -199,4 +200,5 @@ for (n, violation) in enumerate(all_violations, 1):
 
 if not interactive:
   print(f"{b_color_green}Fix issues by running {os.path.realpath(__file__)} --interactive{b_color_reset}")
+
 exit(1)
