@@ -44,17 +44,9 @@ all_warnings : list[Warning] = list()
 
 args = sys.argv[1:]
 
-if args:
-  print(f"Checking {args} for any files containing @nochecks ...")
-  for arg in args:
-    all_warnings += validate_file(arg)
-else:
-  print("Checking src/ directory for any files containing @nochecks ...")
-  for dir, _, files in os.walk(src_dir):
-      for file in files:
-        if not file.endswith(".v"): # Make sure we only look at Coq files
-          continue
-        all_warnings += validate_file(f"{dir}/{file}")
+print(f"Checking {args} for any files containing @nochecks ...")
+for arg in args:
+  all_warnings += validate_file(arg)
 
 
 if not all_warnings:
