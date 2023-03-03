@@ -1,25 +1,39 @@
 # VyZX
+
 Verifying the ZX Calculus
 
 [Check out the paper on arxiv](https://arxiv.org/abs/2205.05781)
 
 ## Building VyZX
 
-Tested with Coq 8.15.2.
+Tested with Coq 8.13-8.16.
 
-First install [QuantumLib](https://github.com/inQWIRE/QuantumLib) through opam.
+First, install [QuantumLib](https://github.com/inQWIRE/QuantumLib) through opam.
 
-Then run
+```bash
+opam repo add coq-released https://coq.inria.fr/opam/released
+opam update
+opam install coq-quantumlib
 ```
-coq_makefile -f _CoqProject -o Makefile
+
+Then install [SQIR and VOQC](https://github.com/inQWIRE/SQIR)
+
+```bash
+opam pin -y coq-sqir https://github.com/inQWIRE/SQIR.git
+opam pin -y coq-voqc https://github.com/inQWIRE/SQIR.git
+```
+
+Finally, build VyZX:
+
+```bash
 make
 ```
-
 
 ## Contributing
 
 To contribute please make sure you use our validator hooks.
-To configure the hooks run
+To configure the hooks run (you should only need to do this once):
+
 ```sh
 make hooks
 ```
