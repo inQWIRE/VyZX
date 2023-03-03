@@ -1,14 +1,16 @@
 Require Import CoreData.CoreData.
 Require Import CoreRules.ZRules.
 Require Import CoreRules.WireRules.
-Require Import CoreRules.CastRules.
+Require Import CoreRules.castRules.
 Require Import CoreRules.StackComposeRules.
 Require Import CoreRules.CoreAutomation.
 Require Export CoreRules.ZRules.
 
+
+
 Theorem X_state_copy : forall (r n : nat),
 	(X 0 1 ((INR r) * PI) ⟷ Z 1 n 0) ∝
-	Cast 0%nat n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (X 0 1 ((INR r) * PI))).
+	cast 0%nat n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (X 0 1 ((INR r) * PI))).
 Proof.
 	intros.
 	assert (X_state_copy_ind : (X 0 1 (INR r * PI) ⟷ Z 1 2 0) ∝
@@ -51,7 +53,7 @@ Proof.
 		rewrite cast_contract in IHn.
 		simpl in IHn.
 		rewrite cast_id in IHn.
-		rewrite Grow_Z_Top_Right.
+		rewrite grow_Z_top_right.
 		rewrite <- ZX_Compose_assoc.
 		rewrite IHn.
 		rewrite <- (ZX_Stack_Compose_distr
@@ -67,7 +69,7 @@ Qed.
 
 Theorem Z_state_copy : forall (r n : nat),
 	(Z 0 1 ((INR r) * PI) ⟷ X 1 n 0) ∝
-	Cast 0%nat n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (Z 0 1 ((INR r) * PI))).
+	cast 0%nat n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (Z 0 1 ((INR r) * PI))).
 Proof.
 	intros.
 	eapply (cast_diagrams (n * 0) (n * 1)).
@@ -93,7 +95,7 @@ Qed.
 
 Theorem X_PI_copy : forall n,
 	((X 0 1 PI) ⟷ Z 1 n 0) ∝ 
-	(Cast 0 n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (X 0 1 PI))).
+	(cast 0 n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (X 0 1 PI))).
 Proof.
 	intros.
 	replace (PI)%R with (1 * PI)%R by lra.
@@ -104,7 +106,7 @@ Qed.
 
 Theorem X_0_copy : forall n,
 	((X 0 1 0) ⟷ Z 1 n 0) ∝ 
-	(Cast 0 n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (X 0 1 0))).
+	(cast 0 n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (X 0 1 0))).
 Proof.
 	intros.
 	replace (0)%R with (0 * PI)%R at 1 by lra.
@@ -116,7 +118,7 @@ Qed.
 
 Theorem Z_PI_copy : forall n,
 	((Z 0 1 PI) ⟷ X 1 n 0) ∝ 
-	(Cast 0 n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (Z 0 1 PI))).
+	(cast 0 n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (Z 0 1 PI))).
 Proof.
 	intros.
 	replace (PI)%R with (1 * PI)%R by lra.
@@ -127,7 +129,7 @@ Qed.
 
 Theorem Z_0_copy : forall n,
 	((Z 0 1 0) ⟷ X 1 n 0) ∝ 
-	(Cast 0 n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (Z 0 1 0))).
+	(cast 0 n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (Z 0 1 0))).
 Proof.
 	intros.
 	replace (0)%R with (0 * PI)%R at 1 by lra.

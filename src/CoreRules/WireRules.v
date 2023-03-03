@@ -1,6 +1,6 @@
 Require Import CoreData.CoreData.
 Require Import StackRules.
-Require Import CastRules.
+Require Import castRules.
 
 Local Open Scope ZX_scope.
 

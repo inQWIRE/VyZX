@@ -1,5 +1,5 @@
 Require Import ComposeRules.
-Require Import CastRules.
+Require Import castRules.
 Require Import StackRules.
 Require Import WireRules.
 Require Import StackComposeRules.

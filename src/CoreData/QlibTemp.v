@@ -1,6 +1,7 @@
 From QuantumLib Require Import Matrix.
 From QuantumLib Require Import Quantum.
 
+(* @nocheck name *)
 Lemma INR_PI_EXP : forall (r : nat),
 	Cexp (INR r * PI) = 1 \/ Cexp (INR r * PI) = -1.
 Proof.

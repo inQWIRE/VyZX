@@ -121,19 +121,19 @@ Proof.
   apply WF_mult; restore_dims; apply WF_kron_n; assumption.
 Qed.
 
-Definition Dirac_spider_semantics 
+Definition dirac_spider_semantics 
   (bra0 bra1 : Matrix 1 2) (ket0 ket1 : Vector 2) 
   (α : R) (n m : nat) : Matrix (2 ^ m) (2 ^ n) :=
     (bra_ket_MN bra0 ket0) .+ (Cexp α) .* (bra_ket_MN bra1 ket1). 
 
-Arguments Dirac_spider_semantics bra0 bra1 ket0 ket1 α n m /.
+Arguments dirac_spider_semantics bra0 bra1 ket0 ket1 α n m /.
 
 Lemma WF_Dirac_Spider_semantics : forall n m bra0 bra1 ket0 ket1 α, 
   WF_Matrix bra0 -> WF_Matrix bra1 -> WF_Matrix ket0 -> WF_Matrix ket1 -> 
-  WF_Matrix (@Dirac_spider_semantics bra0 bra1 ket0 ket1 α n m).
+  WF_Matrix (@dirac_spider_semantics bra0 bra1 ket0 ket1 α n m).
 Proof.
   intros.
-  unfold Dirac_spider_semantics.
+  unfold dirac_spider_semantics.
   apply WF_plus; restore_dims; try apply WF_scale; 
                                    apply WF_bra_ket_MN; 
                                    assumption.
@@ -144,16 +144,16 @@ Qed.
 (* Dirac semantics for a given spider *)
 
 Definition Z_dirac_semantics (n m : nat) (α : R) := 
-  Dirac_spider_semantics ⟨0∣ ⟨1∣ ∣0⟩ ∣1⟩ α n m.
+  dirac_spider_semantics ⟨0∣ ⟨1∣ ∣0⟩ ∣1⟩ α n m.
 
 Definition X_dirac_semantics (n m : nat) (α : R) :=
-  Dirac_spider_semantics ⟨+∣ ⟨-∣ ∣+⟩ ∣-⟩ α n m.
+  dirac_spider_semantics ⟨+∣ ⟨-∣ ∣+⟩ ∣-⟩ α n m.
 
 Arguments Z_dirac_semantics n m α /.
 Arguments X_dirac_semantics n m α /.
 
 Ltac unfold_dirac_spider := 
-  simpl; unfold Dirac_spider_semantics, bra_ket_MN; try (simpl; Msimpl).
+  simpl; unfold dirac_spider_semantics, bra_ket_MN; try (simpl; Msimpl).
 
 (** Working towards equivalence of the two forms of semantics *)
 

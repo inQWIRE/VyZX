@@ -3,15 +3,15 @@ Require Import WireRules.
 Require Import CoreAutomation.
 Require Import ZRules.
 
-Lemma Grow_X_Top_Left : forall (nIn nOut : nat) α,
+Lemma grow_X_top_left : forall (nIn nOut : nat) α,
 	X (S (S nIn)) nOut α ∝  
 	(X 2 1 0) ↕ (nWire nIn) ⟷ (X (S nIn) nOut α).
-Proof. intros. colorswap_of Grow_Z_Top_Left. Qed.
+Proof. intros. colorswap_of grow_Z_top_left. Qed.
 
-Lemma Grow_X_Top_Right : forall (nIn nOut : nat) α,
+Lemma grow_X_top_right : forall (nIn nOut : nat) α,
 	X nIn (S (S nOut)) α ∝ 
 	(X nIn (S nOut) α) ⟷ ((X_Spider 1 2 0) ↕ (nWire nOut)).
-Proof. intros. colorswap_of Grow_Z_Top_Right. Qed.
+Proof. intros. colorswap_of grow_Z_top_right. Qed.
 
 Lemma X_rot_l : forall n m α β,
 	X (S n) m (α + β) ∝ X 1 1 α ↕ nWire n ⟷ X (S n) m β.
@@ -82,14 +82,14 @@ Proof. intros. colorswap_of dominated_Z_spider_fusion_bot_left. Qed.
 
 Lemma X_SpiderFusion_TopLeft_BotRight : forall top mid bot input output α β,
 	X input (top + S mid) α ↕ nWire bot ⟷
-	Cast (top + (S mid) + bot) (top + output) (eq_sym (Nat.add_assoc _ _ _)) eq_refl 
+	cast (top + (S mid) + bot) (top + output) (eq_sym (Nat.add_assoc _ _ _)) eq_refl 
 		(nWire top ↕ X (S mid + bot) output β) ∝
 	X (input + bot) (top + output) (α + β).
 Proof. intros. colorswap_of Z_SpiderFusion_TopLeft_BotRight. Qed.
 
 Lemma X_SpiderFusion_BotLeft_TopRight : forall top mid bot input output α β,
 	((nWire top ↕ X input (S mid + bot) α) ⟷
-	Cast (top + ((S mid) + bot)) _ ((Nat.add_assoc _ _ _)) eq_refl 
+	cast (top + ((S mid) + bot)) _ ((Nat.add_assoc _ _ _)) eq_refl 
 		(X (top + (S mid)) output β ↕ nWire bot)) ∝
 	X (top + input) (output + bot) (β + α).
 Proof. intros. colorswap_of Z_SpiderFusion_BotLeft_TopRight. Qed.

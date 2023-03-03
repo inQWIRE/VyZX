@@ -1,11 +1,11 @@
 Require Import CoreData.
 Require Import CoreRules.
 
-Definition Bi_Alg_Z_X := ((Z_Spider 1 2 0) ↕ (Z_Spider 1 2 0) ⟷ (— ↕ ⨉ ↕ —) ⟷ ((X_Spider 2 1 0) ↕ (X_Spider 2 1 0))).
-Definition Bi_Alg_X_Z := ((X_Spider 1 2 0) ↕ (X_Spider 1 2 0) ⟷ (— ↕ ⨉ ↕ —) ⟷ ((Z_Spider 2 1 0) ↕ (Z_Spider 2 1 0))).
+Definition bi_alg_Z_X := ((Z_Spider 1 2 0) ↕ (Z_Spider 1 2 0) ⟷ (— ↕ ⨉ ↕ —) ⟷ ((X_Spider 2 1 0) ↕ (X_Spider 2 1 0))).
+Definition bi_alg_X_Z := ((X_Spider 1 2 0) ↕ (X_Spider 1 2 0) ⟷ (— ↕ ⨉ ↕ —) ⟷ ((Z_Spider 2 1 0) ↕ (Z_Spider 2 1 0))).
 
-Theorem BiAlgebra_rule_Z_X : 
- (X_Spider 2 1 0) ⟷ (Z_Spider 1 2 0) ∝ Bi_Alg_Z_X.
+Theorem bi_algebra_rule_Z_X : 
+ (X_Spider 2 1 0) ⟷ (Z_Spider 1 2 0) ∝ bi_alg_Z_X.
 Proof.
   prop_exists_nonzero 1.
   simpl.
@@ -59,10 +59,10 @@ Proof.
   repeat rewrite Mmult_assoc.
 Admitted.
 
-Theorem BiAlgebra_rule_X_Z : 
- (Z_Spider 2 1 0) ⟷ (X_Spider 1 2 0) ∝ Bi_Alg_X_Z.
+Theorem bi_algebra_rule_X_Z : 
+ (Z_Spider 2 1 0) ⟷ (X_Spider 1 2 0) ∝ bi_alg_X_Z.
 Proof.
-  colorswap_of BiAlgebra_rule_Z_X.
+  colorswap_of bi_algebra_rule_Z_X.
 Qed.
 
 
@@ -75,8 +75,8 @@ Proof.
   rewrite ZX_Stack_Empty_r.
   simpl_casts.
   rewrite wire_loop at 1.
-  rewrite Cap_Z.
-  rewrite Cup_X.
+  rewrite cap_Z.
+  rewrite cup_X.
   replace (0%R) with (0 + 0)%R by lra.
   rewrite <- (@Z_spider_1_1_fusion 0 2).
   rewrite <- X_spider_1_1_fusion.
@@ -125,8 +125,8 @@ Opaque nStack1.
   clear Hl Hr HBiAlgAssoc.
   rewrite <- wire_to_nWire.
 Transparent nStack1.
-  fold Bi_Alg_Z_X.
-  rewrite <- BiAlgebra_rule_Z_X.
+  fold bi_alg_Z_X.
+  rewrite <- bi_algebra_rule_Z_X.
   assert (X_Wrap_Under_L_base : forall α, X 2 1 α ∝ (X 1 2 α ↕ —) ⟷ (— ↕ ⊃)) by admit.
   (* TODO : resurect and make X rules *)
   rewrite X_Wrap_Under_L_base.
@@ -141,7 +141,7 @@ Transparent nStack1.
   rewrite <- (ZX_Stack_Compose_distr ((Z) 0 1 0) — ((Z) (0 + 0) (1 + 0) 0 ↕ —) ⊃).
   assert (Hl: (Z) (0 + 0) (1 + 0) 0 ↕ — ⟷ ⊃ ∝ Z 1 0 0). (* Todo : pull out lemma *)
   {
-    rewrite Cup_Z.
+    rewrite cup_Z.
     rewrite <- Z_0_is_wire.
     rewrite <- Z_add_l.
     rewrite 2 Rplus_0_r.
@@ -155,12 +155,12 @@ Transparent nStack1.
   cleanup_zx.
   rewrite Z_spider_1_1_fusion.
   rewrite Rplus_0_r.
-  rewrite <- Cap_Z.
+  rewrite <- cap_Z.
   rewrite (disconnected_stack_compose_r).
   simpl_casts.
   assert (Hr : ⊂ ⟷ ((X) 1 0 0 ↕ —) ∝ X 0 1 0).
   {
-    rewrite Cap_X.
+    rewrite cap_X.
     rewrite <- X_0_is_wire.
     rewrite <- X_add_r.
     rewrite 2 Rplus_0_r.

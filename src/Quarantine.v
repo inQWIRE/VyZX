@@ -19,7 +19,7 @@ Lemma ZX_3_CNOT_SWAP_is_swap : _3_CNOT_SWAP_ ∝ ⨉.
 Proof.
 Abort.
 
-Lemma nStack_1_nStack : forall {n} (zx : ZX 1 1), (n ↑ zx) ∝ (Cast _ _ (eq_sym (Nat.mul_1_r _)) (eq_sym (Nat.mul_1_r _)) (n ⇑ zx)).
+Lemma nStack_1_nStack : forall {n} (zx : ZX 1 1), (n ↑ zx) ∝ (cast _ _ (eq_sym (Nat.mul_1_r _)) (eq_sym (Nat.mul_1_r _)) (n ⇑ zx)).
 Proof.
   intros.
   unfold eq_rect.
@@ -31,7 +31,7 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma nStack_nStack_1 : forall {n} (zx : ZX 1 1), (n ⇑ zx) ∝ (Cast _ _ (Nat.mul_1_r _) (Nat.mul_1_r _) (n ↑ zx)).
+Lemma nStack_nStack_1 : forall {n} (zx : ZX 1 1), (n ⇑ zx) ∝ (cast _ _ (Nat.mul_1_r _) (Nat.mul_1_r _) (n ↑ zx)).
 Proof.
   intros.
   symmetry.
@@ -81,7 +81,7 @@ Theorem trivial_cap_cup :
   ⊂ ⟷ ⊃ ∝ ⦰.
 Proof. solve_prop 2. Qed.
 
-Lemma Cap_passthrough : forall (zx : ZX 1 1),  
+Lemma cap_passthrough : forall (zx : ZX 1 1),  
   (⊂ ⟷ (zx ↕ —)) ∝ (⊂ ⟷ (— ↕ zx⊤)).
 Proof.
   intros.
@@ -111,11 +111,11 @@ Proof.
     apply H.
 Qed.
 
-Lemma Cup_passthrough : forall (zx : ZX 1 1),
+Lemma cup_passthrough : forall (zx : ZX 1 1),
   (zx ↕ —) ⟷ ⊃ ∝ (— ↕ zx⊤) ⟷ ⊃.
-Proof. transpose_of Cap_passthrough. Qed.
+Proof. transpose_of cap_passthrough. Qed.
 
-Lemma Swap_passthrough_1_1 : forall (zx0 : ZX 1 1) (zx1 : ZX 1 1),
+Lemma swap_passthrough_1_1 : forall (zx0 : ZX 1 1) (zx1 : ZX 1 1),
   (zx0 ↕ zx1) ⟷ ⨉ ∝ ⨉ ⟷ (zx1 ↕ zx0).
 Proof.
   intros.
@@ -138,27 +138,27 @@ Lemma Z_commutes_through_swap_t : forall α,
   ⨉ ⟷ (— ↕ (Z_Spider 1 1 α)).
 Proof.
   intros.
-  rewrite Swap_passthrough_1_1.
+  rewrite swap_passthrough_1_1.
   easy.
 Qed.  
 
-Lemma Spiders_commute_through_swap_b : forall (zx0 zx1 : ZX 1 1),
+Lemma spiders_commute_through_swap_b : forall (zx0 zx1 : ZX 1 1),
   (— ↕ zx0) ⟷ ⨉ ∝ ⨉ ⟷ (zx0 ↕ —) ->      
   (— ↕ zx1) ⟷ ⨉ ∝ ⨉ ⟷ (zx1 ↕ —) ->
   (— ↕ (zx0 ⟷ zx1)) ⟷ ⨉ ∝ ⨉ ⟷ ((zx0 ⟷ zx1) ↕ —).
 Proof.
   intros.
-  rewrite Swap_passthrough_1_1.
+  rewrite swap_passthrough_1_1.
   reflexivity.
 Qed.
 
-Lemma Spiders_commute_through_swap_t : forall (zx0 zx1 : ZX 1 1),
+Lemma spiders_commute_through_swap_t : forall (zx0 zx1 : ZX 1 1),
   (zx0 ↕ —) ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ zx0) ->      
   (zx1 ↕ —) ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ zx1) ->
   ((zx0 ⟷ zx1) ↕ —) ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (zx0 ⟷ zx1)).
 Proof.
   intros.
-  rewrite Swap_passthrough_1_1.
+  rewrite swap_passthrough_1_1.
   reflexivity.
 Qed.
 

@@ -17,7 +17,7 @@ Ltac cleanup_C := autorewrite with cleanup_C_db.
    ability to split spiders off to the side. We only need to prove this one, 
    the others follow through transposes *)
 
-Lemma Grow_Z_Left_2_1 : forall {n} α,
+Lemma grow_Z_left_2_1 : forall {n} α,
   Z (S (S n)) 1 α ∝ 
   (Z 2 1 0 ↕ nWire n) ⟷ Z (S n) 1 α.
 Proof.
@@ -184,21 +184,21 @@ Proof.
     + rewrite big_sum_0; intros; lca.
 Qed.
 
-Lemma Grow_Z_Right_1_2 : forall {n} α,
+Lemma grow_Z_right_1_2 : forall {n} α,
   Z 1 (S (S n)) α ∝ 
   Z 1 (S n) α ⟷ (Z 1 2 0 ↕ nWire n).
 Proof.
   intros.
   replace (Z_Spider 1 (S (S n))%nat α) 
     with ((Z_Spider (S (S n))%nat 1 α)⊤) by reflexivity.
-  rewrite Grow_Z_Left_2_1.
+  rewrite grow_Z_left_2_1.
   simpl.
   rewrite nstack1_transpose.
   rewrite transpose_wire.
   reflexivity.
 Qed.
 
-Lemma Grow_Z_Right_Bot_1_2_Base : forall α,
+Lemma grow_Z_right_bot_1_2_base : forall α,
   Z 1 3 α ∝ Z 1 2 α ⟷ (— ↕ Z 1 2 0).
 Proof. 
   intros. prop_exists_nonzero 1. simpl; Msimpl. unfold Z_semantics.

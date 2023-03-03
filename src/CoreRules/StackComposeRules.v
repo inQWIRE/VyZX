@@ -1,5 +1,5 @@
 Require Import CoreData.CoreData.
-Require Import CastRules.
+Require Import castRules.
 Require Import SpiderInduction.
 Require Export StackRules.
 Require Export WireRules.
@@ -41,7 +41,7 @@ Proof.
   easy.
 Qed.
 
-Lemma push_out_bot : forall {nIn nOut nOutAppendix} (appendix : ZX 0 nOutAppendix) (zx : ZX nIn nOut), zx ↕ appendix ∝ (Cast _ _ (Nat.add_0_r _) (Nat.add_0_r _) zx) ⟷ ((nWire nOut) ↕ appendix).
+Lemma push_out_bot : forall {nIn nOut nOutAppendix} (appendix : ZX 0 nOutAppendix) (zx : ZX nIn nOut), zx ↕ appendix ∝ (cast _ _ (Nat.add_0_r _) (Nat.add_0_r _) zx) ⟷ ((nWire nOut) ↕ appendix).
 Proof.
   intros.
   rewrite (ZX_Stack_Empty_r_rev ($ _, _ ::: zx $)).
@@ -67,7 +67,7 @@ Proof.
   easy.
 Qed.
 
-Lemma pull_out_bot : forall {nIn nOut nInAppendix} (appendix : ZX nInAppendix 0) (zx : ZX nIn nOut), zx ↕ appendix ∝ ((nWire nIn) ↕ appendix) ⟷ (Cast _ _ (Nat.add_0_r _) (Nat.add_0_r _) zx).
+Lemma pull_out_bot : forall {nIn nOut nInAppendix} (appendix : ZX nInAppendix 0) (zx : ZX nIn nOut), zx ↕ appendix ∝ ((nWire nIn) ↕ appendix) ⟷ (cast _ _ (Nat.add_0_r _) (Nat.add_0_r _) zx).
 Proof.
   intros.
   rewrite (ZX_Stack_Empty_r_rev ($ _, _ ::: zx $)).
@@ -84,7 +84,7 @@ Proof.
   easy.
 Qed.
 
-Lemma disconnected_stack_compose_l : forall {n m} (zxIn : ZX n 0) (zxOut : ZX 0 m), zxIn ↕ zxOut ∝ Cast _ _ (@Nat.add_0_r _) (eq_refl) (zxIn ⟷ zxOut).
+Lemma disconnected_stack_compose_l : forall {n m} (zxIn : ZX n 0) (zxOut : ZX 0 m), zxIn ↕ zxOut ∝ cast _ _ (@Nat.add_0_r _) (eq_refl) (zxIn ⟷ zxOut).
 Proof.
   intros.
   rewrite <- (ZX_Compose_Empty_l zxOut) at 1.
@@ -97,7 +97,7 @@ Proof.
   easy.
 Qed.
 
-Lemma disconnected_stack_compose_r : forall {n m} (zxIn : ZX n 0) (zxOut : ZX 0 m), zxOut ↕ zxIn ∝ Cast _ _ (eq_refl) (@Nat.add_0_r _) (zxIn ⟷ zxOut).
+Lemma disconnected_stack_compose_r : forall {n m} (zxIn : ZX n 0) (zxOut : ZX 0 m), zxOut ↕ zxIn ∝ cast _ _ (eq_refl) (@Nat.add_0_r _) (zxIn ⟷ zxOut).
 Proof.
   intros.
   rewrite <- (ZX_Compose_Empty_l zxOut) at 1.

@@ -184,17 +184,17 @@ Proof. apply compose_compat; assumption. Qed.
 Lemma cast_compat :
   forall n m n' m' prfn0 prfm0 prfn1 prfm1,
     forall (zx0 : ZX n m) (zx1 : ZX n m), zx0 ∝ zx1 ->
-    Cast n' m' prfn0 prfm0 zx0 ∝ Cast n' m' prfn1 prfm1 zx1.
+    cast n' m' prfn0 prfm0 zx0 ∝ cast n' m' prfn1 prfm1 zx1.
 Proof.
   intros n m n' m' Hn0 Hm0 Hn1 Hm1 zx0 zx1 [x [Hzx0 Hx]].
   subst.
   prop_exists_nonzero x; auto.
-  rewrite Cast_semantics.
-  rewrite Cast_semantics.
+  rewrite cast_semantics.
+  rewrite cast_semantics.
   assumption.
 Qed.
 
-Add Parametric Morphism (n m : nat) : (Cast n m eq_refl eq_refl)
+Add Parametric Morphism (n m : nat) : (cast n m eq_refl eq_refl)
   with signature (@proportional n m) ==> 
                  (@proportional n m) as cast_mor.
 Proof. apply cast_compat. Qed.
@@ -249,7 +249,7 @@ Proof.
   reflexivity.
 Qed.
 
-Add Parametric Morphism (nIn nOut : nat) : (@ColorSwap nIn nOut)
+Add Parametric Morphism (nIn nOut : nat) : (@color_swap nIn nOut)
   with signature (@proportional nIn nOut) ==> (@proportional nIn nOut) 
     as colorswap_mor.
 Proof. apply colorswap_compat. Qed.

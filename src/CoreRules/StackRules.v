@@ -1,5 +1,5 @@
 Require Export CoreData.CoreData.
-Require Import CastRules.
+Require Import castRules.
 Require Import SpiderInduction.
 
 Local Open Scope ZX_scope.
@@ -8,7 +8,7 @@ Lemma ZX_Stack_assoc :
 forall {n0 n1 n2 m0 m1 m2}
 	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2),
 	(zx0 ↕ zx1) ↕ zx2 ∝ 
-		Cast ((n0 + n1) + n2) ((m0 + m1) + m2) 
+		cast ((n0 + n1) + n2) ((m0 + m1) + m2) 
 				 (eq_sym(Nat.add_assoc _ _ _)) (eq_sym(Nat.add_assoc _ _ _)) 
 											(zx0 ↕ (zx1 ↕ zx2)).
 Proof.                                                      
@@ -16,7 +16,7 @@ Proof.
 	prop_exists_nonzero 1.  
 	simpl.
 	Msimpl.
-	rewrite (@Cast_semantics (n0 + (n1 + n2)) _ ((n0 + n1) + n2)%nat).
+	rewrite (@cast_semantics (n0 + (n1 + n2)) _ ((n0 + n1) + n2)%nat).
 	rewrite kron_assoc; auto with wf_db.
 Qed.
 
@@ -24,7 +24,7 @@ Lemma ZX_Stack_assoc_back :
 forall {n0 n1 n2 m0 m1 m2}
 	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2),
 	zx0 ↕ (zx1 ↕ zx2) ∝ 
-		Cast (n0 + (n1 + n2)) (m0 + (m1 + m2)) 
+		cast (n0 + (n1 + n2)) (m0 + (m1 + m2)) 
 				 (Nat.add_assoc _ _ _) (Nat.add_assoc _ _ _) 
 											((zx0 ↕ zx1) ↕ zx2).
 Proof.                                                      
@@ -32,7 +32,7 @@ Proof.
 	prop_exists_nonzero 1.  
 	simpl.
 	Msimpl.
-	rewrite (@Cast_semantics ((n0 + n1) + n2) _ (n0 + (n1 + n2))%nat).
+	rewrite (@cast_semantics ((n0 + n1) + n2) _ (n0 + (n1 + n2))%nat).
 	simpl; restore_dims.
 	rewrite kron_assoc; auto with wf_db.
 Qed.
@@ -49,19 +49,19 @@ Qed.
 
 Lemma ZX_Stack_Empty_r : forall {n m : nat} (zx : ZX n m),
 	zx ↕ ⦰ ∝ 
-		Cast (n + 0) (m + 0) (Nat.add_0_r _) (Nat.add_0_r _) zx.
+		cast (n + 0) (m + 0) (Nat.add_0_r _) (Nat.add_0_r _) zx.
 Proof.
 	intros.
 	prop_exists_nonzero 1.
 	simpl.
 	Msimpl.
-	rewrite (@Cast_semantics n m (n + 0) (m + 0)).
+	rewrite (@cast_semantics n m (n + 0) (m + 0)).
 	reflexivity.
 Qed.
 
 Lemma ZX_Stack_Empty_r_rev : forall {n m : nat} (zx : ZX n m),
 	zx ∝ 
-		Cast _ _ (eq_sym (Nat.add_0_r _)) (eq_sym (Nat.add_0_r _)) (zx ↕ ⦰).
+		cast _ _ (eq_sym (Nat.add_0_r _)) (eq_sym (Nat.add_0_r _)) (zx ↕ ⦰).
 Proof.
 	intros.
 	prop_exists_nonzero 1.
@@ -136,7 +136,7 @@ Proof. easy. Qed.
 
 Lemma nStack1_r : forall n (zx : ZX 1 1), 
 	(S n) ↑ zx ∝ 
-	Cast (S n) (S n) (eq_sym (Nat.add_1_r _)) (eq_sym (Nat.add_1_r _)) ((n ↑ zx) ↕ zx).
+	cast (S n) (S n) (eq_sym (Nat.add_1_r _)) (eq_sym (Nat.add_1_r _)) ((n ↑ zx) ↕ zx).
 Proof.
 induction n.
 - intros.
@@ -208,7 +208,7 @@ Qed.
 
 Lemma nstack_split : forall n m {nIn mOut} (zx : ZX nIn mOut),
 	(n + m) ⇑ zx ∝ 
-	Cast _ _ (Nat.mul_add_distr_r _ _ _) (Nat.mul_add_distr_r _ _ _) 
+	cast _ _ (Nat.mul_add_distr_r _ _ _) (Nat.mul_add_distr_r _ _ _) 
 		((n ⇑ zx) ↕ (m ⇑ zx)).
 Proof.
 	intros.

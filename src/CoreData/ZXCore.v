@@ -27,7 +27,7 @@ Inductive ZX : nat -> nat -> Type :=
           ZX (n_0 + n_1) (m_0 + m_1)
   | Compose {n m o} (zx0 : ZX n m) (zx1 : ZX m o) : ZX n o.
 
-Definition Cast (n m : nat) {n' m'} 
+Definition cast (n m : nat) {n' m'} 
               (eqIn : n = n') (eqOut : m = m') (zx : ZX n' m') : ZX n m.
 Proof.
   destruct eqIn.
@@ -48,7 +48,7 @@ Notation "A ↕ B" := (Stack A B)
   (left associativity, at level 40) : ZX_scope. (* \updownarrow *)
 Notation "'Z'" := Z_Spider (no associativity, at level 1) : ZX_scope.
 Notation "'X'" := X_Spider (no associativity, at level 1) : ZX_scope.
-Notation "$ n , m ::: A $" := (Cast n m _ _ A) (at level 20) : ZX_scope.
+Notation "$ n , m ::: A $" := (cast n m _ _ A) (at level 20) : ZX_scope.
 
 (* 
 We provide two separate options for semantic functions, one based on sparse 
@@ -70,25 +70,25 @@ Fixpoint ZX_semantics {n m} (zx : ZX n m) :
   | Compose zx0 zx1 => (ZX_semantics zx1) × (ZX_semantics zx0)
   end.
 
-Lemma Cast_semantics : forall {n m n' m'} {eqn eqm} (zx : ZX n m),
-  ZX_semantics (Cast n' m' eqn eqm zx) = ZX_semantics zx.
+Lemma cast_semantics : forall {n m n' m'} {eqn eqm} (zx : ZX n m),
+  ZX_semantics (cast n' m' eqn eqm zx) = ZX_semantics zx.
 Proof.
   intros.
   subst.
   easy.
 Qed.
 
-Definition ZX_Cast_semantics_dim {n m n' m' : nat} (zx : ZX n m) : Matrix (2 ^ n') (2 ^ m') := ZX_semantics zx.
+Definition ZX_cast_semantics_dim {n m n' m' : nat} (zx : ZX n m) : Matrix (2 ^ n') (2 ^ m') := ZX_semantics zx.
 
-Lemma Cast_semantics_dim : forall {n m n' m'} {eqn eqm} (zx : ZX n m),
-  ZX_semantics (Cast n' m' eqn eqm zx) = ZX_Cast_semantics_dim zx.
+Lemma cast_semantics_dim : forall {n m n' m'} {eqn eqm} (zx : ZX n m),
+  ZX_semantics (cast n' m' eqn eqm zx) = ZX_cast_semantics_dim zx.
 Proof.
   intros.
-  unfold ZX_Cast_semantics_dim.
-  apply Cast_semantics.
+  unfold ZX_cast_semantics_dim.
+  apply cast_semantics.
 Qed.
 
-Ltac simpl_cast_semantics := try repeat rewrite Cast_semantics; try repeat (rewrite Cast_semantics_dim; unfold ZX_Cast_semantics_dim).
+Ltac simpl_cast_semantics := try repeat rewrite cast_semantics; try repeat (rewrite cast_semantics_dim; unfold ZX_cast_semantics_dim).
 
 Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) : 
   Matrix (2 ^ m) (2 ^ n) := 
@@ -271,7 +271,7 @@ Qed.
 Opaque adjoint.
 
 Reserved Notation "⊙ zx" (at level 0). (* \odot *) 
-Fixpoint ColorSwap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
+Fixpoint color_swap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
   match zx with
   | X n m α   => Z n m α
   | Z n m α   => X n m α
@@ -279,7 +279,7 @@ Fixpoint ColorSwap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut :=
   | zx0 ⟷ zx1 => (⊙zx0) ⟷ (⊙zx1)
   | otherwise => otherwise
   end
-  where "⊙ zx" := (ColorSwap zx) : ZX_scope.
+  where "⊙ zx" := (color_swap zx) : ZX_scope.
 
 Lemma ZX_semantics_Colorswap_comm {nIn nOut} : forall (zx : ZX nIn nOut),
   ZX_semantics (⊙ zx) = nOut ⨂ hadamard × (ZX_semantics zx) × nIn ⨂ hadamard.
