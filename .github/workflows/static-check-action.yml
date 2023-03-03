@@ -23,4 +23,4 @@ jobs:
         with:
           files: src/**/*.v
       - name: Get new nochecks
-        run: python .hooks/Nocheck_finder ${{ steps.changed-files-specific.outputs.all_changed_files }}"
+        run: python .hooks/Nocheck_finder ${{ steps.changed-files-specific.outputs.all_changed_files }}
