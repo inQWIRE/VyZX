@@ -1,4 +1,4 @@
-name: CI
+name: Coq Build
 
 on:
   push:
