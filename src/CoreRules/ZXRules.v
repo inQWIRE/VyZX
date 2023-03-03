@@ -1,7 +1,7 @@
 Require Import CoreData.CoreData.
 Require Import CoreRules.ZRules.
 Require Import CoreRules.WireRules.
-Require Import CoreRules.castRules.
+Require Import CoreRules.CastRules.
 Require Import CoreRules.StackComposeRules.
 Require Import CoreRules.CoreAutomation.
 Require Export CoreRules.ZRules.

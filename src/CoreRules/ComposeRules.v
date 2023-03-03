@@ -1,5 +1,5 @@
 Require Export CoreData.CoreData.
-Require Import castRules.
+Require Import CastRules.
 Require Import SpiderInduction.
 
 Local Open Scope ZX_scope.

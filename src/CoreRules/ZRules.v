@@ -1,6 +1,6 @@
 Require Import CoreData.CoreData.
 Require Import CoreAutomation.
-Require Import castRules.
+Require Import CastRules.
 Require Import StackComposeRules.
 Require Import WireRules.
 Require Import SpiderInduction.

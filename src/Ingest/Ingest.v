@@ -1,13 +1,13 @@
 Require Import SQIR.UnitarySem.
 Require Import SQIR.Equivalences.
+Require Import QuantumLib.Quantum.
 Require Import CoreData.
 Require Import CoreRules.
 Require Import Gates.
 Require Import ZXPad.
-Require Import QuantumLib.Quantum.
 
 
-Open Scope ZX_scope.
+Local Open Scope ZX_scope.
 
 (* Conversion  to base ZX diagrams *)
 

@@ -1,5 +1,5 @@
 Require Import CoreData.CoreData.
-Require Import castRules.
+Require Import CastRules.
 Require Import SpiderInduction.
 Require Export StackRules.
 Require Export WireRules.

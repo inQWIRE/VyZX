@@ -15,7 +15,7 @@ Proof.
 Qed.
 
 (* Needs to be diagrammatic *)
-Lemma 3_cnot_swap_is_swap : _3_CNOT_SWAP_ ∝ ⨉.
+Lemma _3_cnot_swap_is_swap : _3_CNOT_SWAP_ ∝ ⨉.
 Proof.
 Abort.
 
