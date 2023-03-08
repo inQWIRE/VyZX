@@ -1,16 +1,16 @@
 Require Import CoreData.CoreData.
-Require Import CoreRules.ZRules.
 Require Import CoreRules.WireRules.
 Require Import CoreRules.CastRules.
 Require Import CoreRules.StackComposeRules.
 Require Import CoreRules.CoreAutomation.
 Require Export CoreRules.ZRules.
+Require Export CoreRules.XRules.
 
 
 
 Theorem X_state_copy : forall (r n : nat),
 	(X 0 1 ((INR r) * PI) ⟷ Z 1 n 0) ∝
-	cast 0%nat n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (X 0 1 ((INR r) * PI))).
+	cast 0%nat n (mult_n_O _) (eq_sym (Nat.mul_1_r _)) (n ⇑ (X 0 1 ((INR r) * PI))).
 Proof.
 	intros.
 	assert (X_state_copy_ind : (X 0 1 (INR r * PI) ⟷ Z 1 2 0) ∝
@@ -69,7 +69,7 @@ Qed.
 
 Theorem Z_state_copy : forall (r n : nat),
 	(Z 0 1 ((INR r) * PI) ⟷ X 1 n 0) ∝
-	cast 0%nat n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (Z 0 1 ((INR r) * PI))).
+	cast 0%nat n (mult_n_O _) (eq_sym (Nat.mul_1_r _)) (n ⇑ (Z 0 1 ((INR r) * PI))).
 Proof.
 	intros.
 	eapply (cast_diagrams (n * 0) (n * 1)).
@@ -93,9 +93,9 @@ Proof.
 		all: lia.
 Qed.
 
-Theorem X_pi_copy : forall n,
+Theorem X_state_pi_copy : forall n,
 	((X 0 1 PI) ⟷ Z 1 n 0) ∝ 
-	(cast 0 n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (X 0 1 PI))).
+	(cast 0 n (mult_n_O _) (eq_sym (Nat.mul_1_r _)) (n ⇑ (X 0 1 PI))).
 Proof.
 	intros.
 	replace (PI)%R with (1 * PI)%R by lra.
@@ -104,9 +104,9 @@ Proof.
 	easy.
 Qed.
 
-Theorem X_0_copy : forall n,
+Theorem X_state_0_copy : forall n,
 	((X 0 1 0) ⟷ Z 1 n 0) ∝ 
-	(cast 0 n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (X 0 1 0))).
+	(cast 0 n (mult_n_O _) (eq_sym (Nat.mul_1_r _)) (n ⇑ (X 0 1 0))).
 Proof.
 	intros.
 	replace (0)%R with (0 * PI)%R at 1 by lra.
@@ -116,9 +116,9 @@ Proof.
 	easy.
 Qed.
 
-Theorem Z_pi_copy : forall n,
+Theorem Z_state_pi_copy : forall n,
 	((Z 0 1 PI) ⟷ X 1 n 0) ∝ 
-	(cast 0 n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (Z 0 1 PI))).
+	(cast 0 n (mult_n_O _) (eq_sym (Nat.mul_1_r _)) (n ⇑ (Z 0 1 PI))).
 Proof.
 	intros.
 	replace (PI)%R with (1 * PI)%R by lra.
@@ -127,9 +127,9 @@ Proof.
 	easy.
 Qed.
 
-Theorem Z_0_copy : forall n,
+Theorem Z_state_0_copy : forall n,
 	((Z 0 1 0) ⟷ X 1 n 0) ∝ 
-	(cast 0 n (mult_n_O _) (eq_sym (mult_1_r _)) (n ⇑ (Z 0 1 0))).
+	(cast 0 n (mult_n_O _) (eq_sym (Nat.mul_1_r _)) (n ⇑ (Z 0 1 0))).
 Proof.
 	intros.
 	replace (0)%R with (0 * PI)%R at 1 by lra.
@@ -137,4 +137,140 @@ Proof.
 	rewrite Z_state_copy.
 	replace (0 * PI)%R with (0)%R at 1 by lra.
 	easy.
+Qed.
+
+Lemma Z_copy : forall n r, 
+	(Z 1 1 (INR r * PI) ⟷ X 1 n 0) ∝
+	X 1 n 0 ⟷ 
+		(cast n n
+			(eq_sym (Nat.mul_1_r _))
+			(eq_sym (Nat.mul_1_r _))
+			(n ⇑ (Z 1 1 (INR r * PI)))).
+Proof.
+	intros.
+	assert (Z_copy_ind : (Z 1 1 (INR r * PI) ⟷ X 1 2 0) ∝
+		X 1 2 0 ⟷ (Z 1 1 (INR r * PI) ↕ Z 1 1 (INR r * PI))).
+	{ 
+		prop_exists_nonzero (1); Msimpl; simpl.
+		unfold X_semantics; unfold Z_semantics.
+		simpl. solve_matrix.
+		all: autorewrite with Cexp_db.
+		all: destruct (INR_pi_exp r); rewrite H.
+		all: try lca; C_field_simplify; try lca.
+		all: nonzero.
+	} 
+	eapply (cast_diagrams 1 (n * 1)).
+	rewrite 2 cast_compose_distribute.
+	simpl_casts.
+	erewrite (@cast_compose_mid _ _ _ (n * 1) _ (X 1 n 0)).
+	simpl_casts.
+	induction n; [ | destruct n].
+	- simpl.
+		solve_prop 1.
+	- simpl.
+		repeat rewrite X_0_is_wire.
+		cleanup_zx.
+		simpl_casts.
+		easy.
+	- simpl.
+		rewrite grow_X_top_right.
+		simpl in IHn.
+		rewrite <- compose_assoc.
+		rewrite IHn.
+		rewrite compose_assoc.
+		rewrite <- (stack_compose_distr 
+			(Z 1 1 (INR r * PI)) 				(X 1 2 0) 
+			(n ⇑ (Z 1 1 (INR r * PI))) (n_wire (n * 1))).
+		rewrite Z_copy_ind.
+		Search (n_wire _ ⟷ _).
+		rewrite nwire_removal_r.
+		rewrite <- (nwire_removal_l (n ⇑ Z 1 1 (INR r * PI))) at 1.
+		rewrite stack_compose_distr.
+		rewrite compose_assoc.
+		rewrite (stack_assoc (Z 1 1 (INR r * PI))).
+		simpl_casts.
+		easy.
+	Unshelve.
+	all: lia.
+Qed.
+
+Lemma X_copy : forall n r,
+	(X 1 1 (INR r * PI) ⟷ Z 1 n 0) ∝
+	Z 1 n 0 ⟷ 
+		(cast n n
+			(eq_sym (Nat.mul_1_r _))
+			(eq_sym (Nat.mul_1_r _))
+			(n ⇑ (X 1 1 (INR r * PI)))).
+Proof.
+	intros.
+	apply colorswap_diagrams.
+	simpl.
+	rewrite cast_colorswap.
+	rewrite n_stack_colorswap.
+	simpl.
+	apply Z_copy.
+Qed.
+
+Lemma Z_0_copy : forall n, 
+	(Z 1 1 0 ⟷ X 1 n 0) ∝
+	X 1 n 0 ⟷ 
+		(cast n n
+			(eq_sym (Nat.mul_1_r _))
+			(eq_sym (Nat.mul_1_r _))
+			(n ⇑ (Z 1 1 0))).
+Proof.
+	intros.
+	specialize (Z_copy n 0).
+	intros.
+	simpl in H.
+	rewrite Rmult_0_l in H.
+	apply H.
+Qed.
+
+Lemma Z_pi_copy : forall n, 
+	(Z 1 1 PI ⟷ X 1 n 0) ∝
+	X 1 n 0 ⟷ 
+		(cast n n
+			(eq_sym (Nat.mul_1_r _))
+			(eq_sym (Nat.mul_1_r _))
+			(n ⇑ (Z 1 1 PI))).
+Proof.
+	intros.
+	specialize (Z_copy n 1).
+	intros.
+	simpl in H.
+	rewrite Rmult_1_l in H.
+	apply H.
+Qed.
+
+Lemma X_0_copy : forall n, 
+	(X 1 1 0 ⟷ Z 1 n 0) ∝
+	Z 1 n 0 ⟷ 
+		(cast n n
+			(eq_sym (Nat.mul_1_r _))
+			(eq_sym (Nat.mul_1_r _))
+			(n ⇑ (X 1 1 0))).
+Proof.
+	intros.
+	specialize (X_copy n 0).
+	intros.
+	simpl in H.
+	rewrite Rmult_0_l in H.
+	apply H.
+Qed.
+
+Lemma X_pi_copy : forall n, 
+	(X 1 1 PI ⟷ Z 1 n 0) ∝
+	Z 1 n 0 ⟷ 
+		(cast n n
+			(eq_sym (Nat.mul_1_r _))
+			(eq_sym (Nat.mul_1_r _))
+			(n ⇑ (X 1 1 PI))).
+Proof.
+	intros.
+	specialize (X_copy n 1).
+	intros.
+	simpl in H.
+	rewrite Rmult_1_l in H.
+	apply H.
 Qed.
