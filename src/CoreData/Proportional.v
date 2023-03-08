@@ -182,20 +182,17 @@ Add Parametric Morphism (n o m : nat)  : Compose
 Proof. apply compose_compat; assumption. Qed.
 
 Lemma cast_compat :
-  forall n m n' m' prfn0 prfm0 prfn1 prfm1,
+  forall n m n' m' prfn0 prfm0,
     forall (zx0 : ZX n m) (zx1 : ZX n m), zx0 ∝ zx1 ->
-    cast n' m' prfn0 prfm0 zx0 ∝ cast n' m' prfn1 prfm1 zx1.
+    cast n' m' prfn0 prfm0 zx0 ∝ cast n' m' prfn0 prfm0 zx1.
 Proof.
-  intros n m n' m' Hn0 Hm0 Hn1 Hm1 zx0 zx1 [x [Hzx0 Hx]].
+  intros n m n' m' Hn Hm zx0 zx1 [x [Hzx0 Hx]].
   subst.
   prop_exists_nonzero x; auto.
-  rewrite cast_semantics.
-  rewrite cast_semantics.
-  assumption.
 Qed.
 
-Add Parametric Morphism (n m : nat) : (cast n m eq_refl eq_refl)
-  with signature (@proportional n m) ==> 
+Add Parametric Morphism (n m : nat) {n' m' : nat} {prfn prfm} : (@cast n m n' m' prfn prfm)
+  with signature (@proportional n' m') ==> 
                  (@proportional n m) as cast_mor.
 Proof. apply cast_compat. Qed.
 
