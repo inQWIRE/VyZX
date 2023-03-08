@@ -132,7 +132,7 @@ Transparent n_stack1.
   rewrite X_Wrap_Under_L_base.
   repeat rewrite <- compose_assoc.
   rewrite <- stack_wire_distribute_r.
-  rewrite Z_0_copy.
+  rewrite Z_state_0_copy.
   simpl_casts.
   simpl.
   cleanup_zx; simpl_casts.
