@@ -113,13 +113,13 @@ Lemma Z_wrap_over_top_left : forall n m α,
 Proof.
 	induction m.
 	- intros.
-		rewrite <- Z_wrap_over_top_rightight_top_0.
+		rewrite <- Z_wrap_over_top_right_0.
 		cleanup_zx.
 		simpl_casts.
 		reflexivity.
 	- intros.
 		destruct m.
-		+ rewrite <- Z_wrap_over_top_rightight_top_base.
+		+ rewrite <- Z_wrap_over_top_right_base.
 			rewrite wire_to_n_wire at 2.
 			reflexivity.
 		+ rewrite grow_Z_top_right.
@@ -467,3 +467,63 @@ Proof. intros. transpose_of (@Z_self_swap_absorbtion_right_top m n α). Qed.
 
 Lemma Z_self_swap_absorbtion_left : forall {n n' m α}, ((n_wire n' ↕ (⨉ ↕ n_wire n)) ⟷ Z (n' + S (S n)) m α) ∝ Z (n' + S (S n)) m α.
 Proof. intros. transpose_of (@Z_self_swap_absorbtion_right m n n' α). Qed.
+
+(* @nocheck name *)
+Lemma wrap_under_dimension : forall n, (n + 1 + 1 = n + 2)%nat.
+Proof. lia. Qed.
+
+Lemma Z_wrap_under_bot_left : forall n m α,
+	Z n (m + 1) α ∝ 
+	(cast n (n + 1 + 1) 
+		(eq_sym (Nat.add_0_r _)) (wrap_under_dimension _)
+		(n_wire n ↕ ⊂)) ⟷
+			(Z (n + 1) m α ↕ Wire).
+Proof.
+	intros.
+	rewrite (Z_add_l_base_rot).
+	rewrite stack_wire_distribute_r.
+	rewrite Z_0_is_wire.
+	rewrite stack_assoc.
+	rewrite <- compose_assoc.
+	simpl.
+	eapply (cast_diagrams (n + 0) (m + 1)).
+	repeat rewrite cast_compose_distribute.
+	simpl_casts.
+	erewrite (@cast_compose_mid (n + 0) (n + 1 + 1) 3 (n + 2) _ ($ n + 0, n + 1 + 1 ::: n_wire n ↕ ⊂ $)).
+	simpl_casts.
+	rewrite <- Z_0_2_0_is_cup.
+	rewrite wire_to_n_wire at 2.
+	rewrite wire_to_n_wire at 3.
+	rewrite n_wire_stack.
+	rewrite <- (stack_compose_distr
+		(n_wire n) (Z n 1 0)
+		(Z 0 2 0)  (n_wire 2)).
+	cleanup_zx.
+	rewrite <- (nwire_removal_r (Z n 1 0)).
+	rewrite <- (nwire_removal_l (Z 0 2 0)).
+	rewrite stack_compose_distr.
+	rewrite compose_assoc.
+	rewrite wire_to_n_wire at 3.
+	specialize (Z_spider_fusion_bot_left_top_right 
+		1 0 1 0 m 0 α); intros.
+	rewrite cast_id in H.
+	rewrite H.
+	clear H.
+	cleanup_zx.
+	simpl_casts.
+	rewrite Z_absolute_fusion.
+	rewrite Rplus_0_r.
+	rewrite Rplus_0_l.
+	easy.
+	Unshelve.
+	all: lia.
+Qed.
+
+Lemma Z_wrap_under_bot_right : forall n m α,
+	Z (n + 1) m α ∝ 
+		(Z n (m + 1) α ↕ —) ⟷ 
+	(cast (m + 1 + 1) m
+		(wrap_under_dimension _)
+		(eq_sym (Nat.add_0_r _))
+		(n_wire m ↕ ⊃)).
+Proof. transpose_of Z_wrap_under_bot_left. Qed.

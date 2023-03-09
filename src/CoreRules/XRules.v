@@ -129,3 +129,20 @@ Proof. intros. colorswap_of (@Z_self_swap_absorbtion_left_top n m α). Qed.
 
 Lemma X_self_swap_absorbtion_left : forall {n n' m α}, ((n_wire n' ↕ (⨉ ↕ n_wire n)) ⟷ X (n' + S (S n)) m α) ∝ X (n' + S (S n)) m α.
 Proof. intros. colorswap_of (@Z_self_swap_absorbtion_left n n' m α). Qed.
+
+Lemma X_wrap_under_bot_left : forall n m α,
+	X n (m + 1) α ∝ 
+	(cast n (n + 1 + 1) 
+		(eq_sym (Nat.add_0_r _)) (wrap_under_dimension _)
+		(n_wire n ↕ ⊂)) ⟷
+			(X (n + 1) m α ↕ Wire).
+Proof. colorswap_of Z_wrap_under_bot_left. Qed.
+
+Lemma Z_wrap_under_bot_right : forall n m α,
+	X (n + 1) m α ∝ 
+		(X n (m + 1) α ↕ —) ⟷ 
+	(cast (m + 1 + 1) m
+		(wrap_under_dimension _)
+		(eq_sym (Nat.add_0_r _))
+		(n_wire m ↕ ⊃)).
+Proof. colorswap_of Z_wrap_under_bot_right. Qed.
