@@ -138,7 +138,7 @@ Lemma X_wrap_under_bot_left : forall n m α,
 			(X (n + 1) m α ↕ Wire).
 Proof. colorswap_of Z_wrap_under_bot_left. Qed.
 
-Lemma Z_wrap_under_bot_right : forall n m α,
+Lemma X_wrap_under_bot_right : forall n m α,
 	X (n + 1) m α ∝ 
 		(X n (m + 1) α ↕ —) ⟷ 
 	(cast (m + 1 + 1) m
