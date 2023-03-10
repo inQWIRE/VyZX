@@ -11,53 +11,183 @@ Local Open Scope ZX_scope.
 
 (* Conversion  to base ZX diagrams *)
 
-Lemma a_swap_ind : forall n, a_swap_semantics (S (S (S n))) = swap ⊗ (I (2 ^ (S n))) × (I 2 ⊗ a_swap_semantics (S (S n))) × (swap ⊗ (I (2 ^ (S n)))).
+(* Proving correctness of conversion *)
+
+Lemma swap_correct :
+  ZX_semantics ⨉ = swap.
+Proof. solve_matrix. Qed.
+
+(* A linear mapping which takes | x y1 ... yn > -> | y1 .. yn x > *)
+Fixpoint top_wire_to_bottom (n : nat) : Square (2 ^ n) :=
+  match n with
+  | 0   => I 1
+  | S k => match k with
+           | 0   => I 2
+           | S j => (@Mmult _ (2^n) _) ((I 2) ⊗ (top_wire_to_bottom k)) (swap ⊗ (j ⨂ (I 2)))
+           end
+  end.
+
+Open Scope matrix_scope.
+Definition bottom_wire_to_top (n : nat) : Square (2 ^ n) :=
+  (top_wire_to_bottom n)⊤.
+
+Lemma top_to_bottom_correct : forall n, ZX_semantics (top_to_bottom n) = top_wire_to_bottom n.
+Proof.
+  intros.
+  destruct n; [ reflexivity | ].
+  destruct n; [ easy | ].
+  induction n.
+  - easy.
+  - simpl.
+    simpl in IHn.
+    rewrite <- IHn.
+    rewrite n_wire_semantics.
+    rewrite kron_n_I.
+    rewrite 2 id_kron.
+    replace (2 * 2 ^ n)%nat with (2 ^ n * 2)%nat by lia.
+    easy.
+Qed.
+
+Lemma top_wire_to_bottom_ind : forall n, top_wire_to_bottom (S (S n)) = @Mmult _ (2 ^ (S (S n))) _ ((I 2) ⊗ top_wire_to_bottom (S n)) (swap ⊗ (I (2 ^ n))).
+Proof.
+  intros.
+  induction n.
+  - Msimpl.
+    simpl.
+    Msimpl.
+    easy.
+  - rewrite IHn.
+    simpl.
+    apply Mmult_simplify.
+    + apply kron_simplify; easy.
+    + apply kron_simplify; [easy | ].
+      rewrite kron_n_I.
+      rewrite id_kron.
+      replace (2 ^ n + (2 ^ n + 0))%nat with (2 ^ n * 2)%nat by lia.
+      easy.
+Qed.
+
+Lemma bottom_wire_to_top_ind : forall n, bottom_wire_to_top (S (S n)) = @Mmult _ (2 ^ (S (S n))) _ (swap ⊗ (I (2 ^ n))) ((I 2) ⊗ bottom_wire_to_top (S n)).
+Proof.
+  intros.
+  apply transpose_matrices.
+  unfold bottom_wire_to_top.
+  rewrite Mmult_transpose.
+  restore_dims.
+  rewrite Matrix.transpose_involutive.
+  restore_dims.
+  rewrite (kron_transpose 2 2 (2 ^ (S n)) (2 ^ S n)).
+  replace (Nat.pow 2 (S (S n)))%nat with ((2 * 2) * (2 ^ n))%nat by (simpl; lia).
+  rewrite (kron_transpose  (2 * 2) (2 * 2) (2 ^ n) (2 ^ n) swap (I (2 ^ n))).
+  rewrite 2 id_transpose_eq.
+  rewrite swap_transpose.
+  rewrite Matrix.transpose_involutive.
+  restore_dims.
+  rewrite (top_wire_to_bottom_ind n).
+  easy.
+Qed.
+
+(* Well foundedness of semantics *)
+
+Lemma WF_top_to_bottom (n : nat) : WF_Matrix (top_wire_to_bottom n).
+Proof.
+  destruct n; try auto with wf_db. 
+  induction n.
+  - simpl.
+    auto with wf_db.
+  - unfold top_wire_to_bottom.
+    apply WF_mult; try auto with wf_db.
+    apply WF_kron.
+    1,2: simpl; lia.
+    all: auto with wf_db.
+Qed.
+
+Global Hint Resolve WF_top_to_bottom : wf_db.
+
+Lemma WF_bottom_to_top (n : nat) : WF_Matrix (bottom_wire_to_top n).
+Proof. unfold bottom_wire_to_top. auto with wf_db. Qed.
+
+Global Hint Resolve WF_bottom_to_top : wf_db.
+
+Lemma bottom_to_top_correct : forall n, ZX_semantics (bottom_to_top n) = bottom_wire_to_top n.
+Proof.
+  intros.
+  unfold bottom_to_top.
+  unfold bottom_wire_to_top.
+  rewrite semantics_transpose_comm.
+  rewrite top_to_bottom_correct.
+  easy.
+Qed.
+
+Lemma swap_spec' : swap = ((ket 0 × bra 0)  ⊗ (ket 0 × bra 0) .+ (ket 0 × bra 1)  ⊗ (ket 1 × bra 0)
+  .+ (ket 1 × bra 0)  ⊗ (ket 0 × bra 1) .+ (ket 1 × bra 1)  ⊗ (ket 1 × bra 1)).
+Proof.
+  solve_matrix.
+Qed.
+
+Definition a_swap_semantics (n : nat) : Square (2 ^ n) :=
+  match n with
+  | 0   => I 1
+  | S k => (@Mmult _ (2 ^ n) _ ((I 2) ⊗ top_wire_to_bottom (k)) ((bottom_wire_to_top (S k))))
+  end.
+
+Lemma a_swap_correct : forall n, ZX_semantics (a_swap n) = a_swap_semantics n.
 Proof.
   intros.
   unfold a_swap_semantics.
-  unfold bottom_wire_to_top.
-  rewrite 3 top_wire_to_bottom_ind.
-  remember (top_wire_to_bottom (S n)) as TB.
-  rewrite Mmult_transpose.
-  rewrite kron_id_dist_r; auto with wf_db.
-  restore_dims.
-  repeat rewrite <- Mmult_assoc.
-  replace (2 ^ S (S n))%nat with ((2 * 2 * 2 ^ n))%nat.
-  rewrite kron_transpose.
-  rewrite swap_transpose.
-  rewrite id_transpose_eq.
-  rewrite kron_assoc; try auto with wf_db.
-  rewrite (id_kron (2 ^ n) 2).
-  replace (2 * (2 * 2 * 2 ^ n))%nat with (2 * 2 ^ S n * 2)%nat.
-  replace (2 * 2 * 2 ^ S n)%nat with (2 * 2 * 2 ^ n * 2)%nat.
-  repeat rewrite Mmult_assoc.
-  apply Mmult_simplify.
-  + replace (2 ^ (S n))%nat with (2 ^ n * 2)%nat.
-    easy.
-    rewrite Nat.mul_comm.
-    simpl.
-    easy.
-  + repeat rewrite kron_id_dist_l; try auto with wf_db.
-    repeat rewrite kron_id_dist_r; try auto with wf_db.
-    replace (I 2 ⊗ ((TB) ⊤ ⊗ I 2)) with ((I 2 ⊗ TB) ⊤ ⊗ I 2).
-    rewrite <- kron_id_dist_l.
-    simpl.
-    restore_dims.
-    rewrite Mmult_assoc.
-    easy.
-  all: try (subst; auto with wf_db).
-  - try (apply WF_kron; try auto with wf_db; simpl; lia).
-  - rewrite kron_transpose.
-    rewrite id_transpose_eq.
-    rewrite kron_assoc; subst; auto with wf_db.
-  - rewrite Nat.mul_comm; apply WF_mult; apply WF_kron; try auto with wf_db; simpl; lia.
-  - apply WF_kron; try auto with wf_db; simpl; lia.
-    + simpl; lia.
-    + simpl; lia.
-    + simpl; lia.
-    + apply WF_transpose; apply WF_kron; try (simpl; lia); auto with wf_db.      
-    + apply WF_transpose; apply WF_kron; try (simpl; lia); subst; auto with wf_db.
+  destruct n; [ reflexivity | ].
+  rewrite <- bottom_to_top_correct.
+  rewrite <- top_to_bottom_correct.
+  simpl.
+  easy.
 Qed.
+
+Lemma WF_a_swap_semantics (n : nat) :
+ WF_Matrix (a_swap_semantics n).
+Proof.
+  intros.
+  unfold a_swap_semantics.
+  destruct n; auto with wf_db.
+Qed.
+
+Global Hint Resolve WF_a_swap_semantics : wf_db.
+
+(* TODO: Move these to somewhere appropriate *)
+Lemma stack_semantics {n m o p} : forall (zx0 : ZX n m) (zx1 : ZX o p),
+  ZX_semantics (zx0 ↕ zx1) = ZX_semantics zx0 ⊗ ZX_semantics zx1.
+Proof. easy. Qed.
+
+(* TODO: Move these to somewhere appropriate *)
+Lemma compose_semantics {n m o} : forall (zx0 : ZX n m) (zx1 : ZX m o),
+  ZX_semantics (zx0 ⟷ zx1) = @Mmult (2 ^ n) (2 ^ m) (2 ^ o) (ZX_semantics zx1) (ZX_semantics zx0).
+Proof. easy. Qed.
+
+Lemma matrix_offset_swaps_comm_bottom_right :
+  I 2 ⊗ swap × (swap ⊗ I 2) = 
+  swap ⊗ I 2 × (I 2 ⊗ swap) × (swap ⊗ I 2) × (I 2 ⊗ swap).
+Proof.
+
+  (* solve_matrix. *)
+Admitted.
+
+(* Lemma matrix_offset_swaps_comm_top_left :
+  swap ⊗ I 2 × (I 2 ⊗ swap) = 
+  I 2 ⊗ swap × (swap ⊗ I 2) × (I 2 ⊗ swap) × (swap ⊗ I 2)
+Proof. solve_matrix. Qed. *)
+
+Lemma a_swap_ind : forall n, a_swap_semantics (S (S (S n))) = swap ⊗ (I (2 ^ (S n))) × (I 2 ⊗ a_swap_semantics (S (S n))) × (swap ⊗ (I (2 ^ (S n)))).
+Proof.
+  intros.
+  remember (swap ⊗ I (2 ^ S n) × (I 2 ⊗ a_swap_semantics (S (S n))) × (swap ⊗ I (2 ^ S n))) as right_side.
+  unfold a_swap_semantics.
+  rewrite bottom_wire_to_top_ind.
+  rewrite top_wire_to_bottom_ind.
+  rewrite <- Mmult_assoc.
+  rewrite kron_id_dist_l.
+  replace (2 ^ S n)%nat with (2 * 2 ^ n)%nat by (simpl; lia).
+  rewrite <- id_kron.
+Admitted.
+
 
 Lemma a_swap_sem_base : forall n, a_swap_semantics (S (S n)) = uc_eval (@SWAP (S (S n)) 0 (S n)).
 Proof.
@@ -77,8 +207,12 @@ Proof.
     unfold top_wire_to_bottom.
     rewrite unfold_pad.
     simpl.
-    rewrite id_transpose_eq.
     rewrite id_kron.
+    rewrite Mmult_transpose.
+    rewrite id_transpose_eq.
+    rewrite kron_1_r.
+    replace 4%nat with (2 * 2)%nat by lia.
+    rewrite swap_transpose.
     Msimpl.
     apply swap_spec'.
   - rewrite a_swap_ind.
