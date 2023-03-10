@@ -1,4 +1,5 @@
 Require Import CoreData.CoreData.
+
 Require Import SpiderInduction.
 
 Lemma cast_id :
@@ -15,12 +16,12 @@ Qed.
 Ltac simpl_casts := (autorewrite with cast_simpl_db). 
 
 
-Lemma cast_stack_l : forall {nTop nTop' mTop mTop' nBot mBot} eqnTop eqmTop 
+Lemma cast_stack_l : forall {nTop nTop' mTop mTop' nBot mBot} prfnTop prfmTop 
                           (zxTop : ZX nTop mTop) (zxBot : ZX nBot mBot),
-  (cast nTop' mTop' eqnTop eqmTop zxTop) ↕ zxBot ∝ 
+  (cast nTop' mTop' prfnTop prfmTop zxTop) ↕ zxBot ∝ 
   cast (nTop' + nBot) (mTop' + mBot)  
-       (f_equal2_plus _ _ _ _ (eqnTop) eq_refl)
-       (f_equal2_plus _ _ _ _ (eqmTop) eq_refl)
+       (f_equal2_plus _ _ _ _ (prfnTop) eq_refl)
+       (f_equal2_plus _ _ _ _ (prfmTop) eq_refl)
        (zxTop ↕ zxBot).
 Proof.
   intros.
@@ -29,12 +30,12 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma cast_stack_r : forall {nTop mTop nBot nBot' mBot mBot'} eqnBot eqmBot 
+Lemma cast_stack_r : forall {nTop mTop nBot nBot' mBot mBot'} prfnBot prfmBot 
                           (zxTop : ZX nTop mTop) (zxBot : ZX nBot mBot),
-  zxTop ↕ (cast nBot' mBot' eqnBot eqmBot zxBot) ∝ 
+  zxTop ↕ (cast nBot' mBot' prfnBot prfmBot zxBot) ∝ 
   cast (nTop + nBot') (mTop + mBot')  
-       (f_equal2_plus _ _ _ _ eq_refl eqnBot)
-       (f_equal2_plus _ _ _ _ eq_refl eqmBot)
+       (f_equal2_plus _ _ _ _ eq_refl prfnBot)
+       (f_equal2_plus _ _ _ _ eq_refl prfmBot)
        (zxTop ↕ zxBot).
 Proof.
   intros.
@@ -198,54 +199,38 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma cast_Z :
-  forall {n n' m m'} prfn prfm α,
-  cast n' m' prfn prfm (Z n m α) ∝ Z n' m' α.
+Lemma cast_simplify :
+  forall {n n' m m'} prfn0 prfm0 prfn1 prfm1  (zx0 zx1 : ZX n m),
+  zx0 ∝ zx1 ->
+  cast n' m' prfn0 prfm0 zx0 ∝ cast n' m' prfn1 prfm1 zx1.
 Proof.
   intros.
-  subst.
-  simpl_casts.
-  reflexivity.
-Qed.
-
-Lemma cast_X :
-  forall {n n' m m'} prfn prfm α,
-  cast n' m' prfn prfm (X n m α) ∝ X n' m' α.
-Proof.
-  intros.
-  subst.
-  simpl_casts.
-  reflexivity.
-Qed.
-
-
-#[export] Hint Rewrite @cast_Z @cast_X: cast_simpl_db.
-
-
-Lemma cast_n_stack1 : forall {n n'} prfn (zx : ZX 1 1),
-  cast n' n' prfn prfn (n ↑ zx) ∝ n' ↑ zx.
-Proof.
-  intros.
-  destruct prfn.
   simpl_casts.
   easy.
 Qed.
 
-Lemma cast_n_wire : forall {n n'} prfn,
-  cast n' n' prfn prfn (n_wire n) ∝ n_wire n'.
+Lemma cast_backwards :
+  forall {n0 m0 n1 m1} prfn prfm prfn' prfm' (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
+  cast n1 m1 prfn prfm zx0 ∝ zx1 <->
+  cast n0 m0 prfn' prfm' zx1 ∝ zx0.
 Proof.
   intros.
-  apply cast_n_stack1.
+  split; symmetry; subst;
+  simpl_casts; [rewrite H | rewrite <- H]; 
+  simpl_casts; easy.
 Qed.
 
-Lemma cast_n_box : forall {n n'} prfn,
-  cast n' n' prfn prfn (n_wire n) ∝ n_wire n'.
+Lemma cast_diagrams :
+  forall {n m} n' m' prfn prfm (zx0 zx1 : ZX n m),
+  cast n' m' prfn prfm zx0 ∝ cast n' m' prfn prfm zx1 ->
+  zx0 ∝ zx1.
 Proof.
   intros.
-  apply cast_n_stack1.
+  subst.
+  repeat rewrite cast_id in H.
+  easy.
 Qed.
 
-#[export] Hint Rewrite @cast_n_stack1 @cast_n_wire @cast_n_box : cast_simpl_db.
 
 Lemma cast_transpose : forall {n m n' m'} prfn prfm (zx : ZX n m),
   (cast n' m' prfn prfm zx) ⊤ ∝ cast m' n' prfm prfn (zx ⊤). 
@@ -289,34 +274,63 @@ Qed.
   @cast_adj 
   @cast_colorswap : cast_simpl_db.
 
-Lemma cast_simplify :
-forall {n n' m m'} prfn0 prfm0 prfn1 prfm1  (zx0 zx1 : ZX n m),
-zx0 ∝ zx1 ->
-cast n' m' prfn0 prfm0 zx0 ∝ cast n' m' prfn1 prfm1 zx1.
-Proof.
+Lemma cast_fn : forall {n n' m m'} prfn prfm (f : forall n m : nat, ZX n m), cast n' m' prfn prfm (f n m) ∝ f n' m'.
+Proof. 
   intros.
+  destruct prfn, prfm.
   simpl_casts.
   easy.
 Qed.
 
-Lemma cast_backwards :
-forall {n0 m0 n1 m1} prfn prfm prfn' prfm' (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
-  cast n1 m1 prfn prfm zx0 ∝ zx1 <->
-  cast n0 m0 prfn' prfm' zx1 ∝ zx0.
-Proof.
+Lemma cast_fn_eq_dim : forall {n n'} prfn (f : forall n : nat, ZX n n), cast n' n' prfn prfn (f n) ∝ f n'.
+Proof. 
   intros.
-  split; symmetry; subst;
-  simpl_casts; [rewrite H | rewrite <- H]; 
-  simpl_casts; easy.
-Qed.
-
-Lemma cast_diagrams :
-  forall {n m} n' m' prfn prfm (zx0 zx1 : ZX n m),
-  cast n' m' prfn prfm zx0 ∝ cast n' m' prfn prfm zx1 ->
-  zx0 ∝ zx1.
-Proof.
-  intros.
-  subst.
-  repeat rewrite cast_id in H.
+  destruct prfn.
+  simpl_casts.
   easy.
 Qed.
+
+Lemma cast_Z :
+  forall {n n' m m'} prfn prfm α,
+  cast n' m' prfn prfm (Z n m α) ∝ Z n' m' α.
+Proof.
+  intros.
+  rewrite (cast_fn prfn prfm (fun n m => Z n m α)).
+  easy.
+Qed.
+
+Lemma cast_X :
+  forall {n n' m m'} prfn prfm α,
+  cast n' m' prfn prfm (X n m α) ∝ X n' m' α.
+Proof.
+  intros.
+  rewrite (cast_fn prfn prfm (fun n m => X n m α)).
+  easy.
+Qed.
+
+#[export] Hint Rewrite @cast_Z @cast_X: cast_simpl_db.
+
+Lemma cast_n_stack1 : forall {n n'} prfn (zx : ZX 1 1),
+  cast n' n' prfn prfn (n ↑ zx) ∝ n' ↑ zx.
+Proof.
+  intros.
+  rewrite (cast_fn_eq_dim prfn (fun n => n_stack1 n zx)).
+  easy.
+Qed.
+
+Lemma cast_n_wire : forall {n n'} prfn,
+  cast n' n' prfn prfn (n_wire n) ∝ n_wire n'.
+Proof.
+  intros.
+  apply cast_n_stack1.
+Qed.
+
+Lemma cast_n_box : forall {n n'} prfn,
+  cast n' n' prfn prfn (n_wire n) ∝ n_wire n'.
+Proof.
+  intros.
+  apply cast_n_stack1.
+Qed.
+
+
+#[export] Hint Rewrite @cast_n_stack1 @cast_n_wire @cast_n_box : cast_simpl_db.
