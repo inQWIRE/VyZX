@@ -6,3 +6,4 @@ Require Export CastRules.
 Require Export CoreAutomation.
 Require Export XRules.
 Require Export ZXRules.
+Require Export SwapRules.

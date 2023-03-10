@@ -182,7 +182,6 @@ Proof.
 			(Z 1 1 (INR r * PI)) 				(X 1 2 0) 
 			(n ⇑ (Z 1 1 (INR r * PI))) (n_wire (n * 1))).
 		rewrite Z_copy_ind.
-		Search (n_wire _ ⟷ _).
 		rewrite nwire_removal_r.
 		rewrite <- (nwire_removal_l (n ⇑ Z 1 1 (INR r * PI))) at 1.
 		rewrite stack_compose_distr.

@@ -1,6 +1,8 @@
-Require Import CoreData.CoreData.
-Require Import CoreRules.CoreRules.
-Require Import Gates.Gates.
+Require Import CoreData.
+Require Import CoreRules.
+Require Import Gates.
+
+Local Open Scope ZX.
 
 Lemma swap_self_inverse : ⨉ ⟷ ⨉ ∝ n_wire 2.
 Proof.
