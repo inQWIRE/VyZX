@@ -468,7 +468,7 @@ Proof. intros. transpose_of (@Z_self_swap_absorbtion_right_top m n α). Qed.
 Lemma Z_self_swap_absorbtion_left : forall {n n' m α}, ((n_wire n' ↕ (⨉ ↕ n_wire n)) ⟷ Z (n' + S (S n)) m α) ∝ Z (n' + S (S n)) m α.
 Proof. intros. transpose_of (@Z_self_swap_absorbtion_right m n n' α). Qed.
 
-(* @nocheck name *)
+(* @nocheck Z_X *)
 Lemma wrap_under_dimension : forall n, (n + 1 + 1 = n + 2)%nat.
 Proof. lia. Qed.
 
