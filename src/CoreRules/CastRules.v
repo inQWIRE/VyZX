@@ -2,6 +2,8 @@ Require Import CoreData.CoreData.
 
 Require Import SpiderInduction.
 
+Open Scope ZX_scope.
+
 Lemma cast_id :
 forall {n m} prfn prfm (zx : ZX n m),
   cast n m prfn prfm zx ∝ zx.

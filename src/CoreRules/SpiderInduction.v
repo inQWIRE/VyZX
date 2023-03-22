@@ -1,5 +1,7 @@
 Require Import CoreData.CoreData.
 
+Open Scope ZX_scope.
+
 (* Spider Induction *)
 
 #[export] Hint Rewrite 
@@ -61,7 +63,7 @@ Proof.
     rewrite plus_n_Sm.
     rewrite Nat.add_mod by lia.
     rewrite Nat.mod_same by lia.
-    rewrite plus_0_r.
+    rewrite Nat.add_0_r.
     rewrite Nat.mod_mod by lia.
     apply Nat.mod_small; lia. }
   assert ( mod_4_comp : forall i, 
@@ -71,7 +73,7 @@ Proof.
       with ((S i) + ((S i) + ((S i) + i)))%nat by lia.
     repeat (rewrite Nat.add_mod by lia;
             rewrite Nat.mod_same by lia;
-            rewrite plus_0_l).
+            rewrite Nat.add_0_l).
     repeat rewrite Nat.mod_mod by lia.
     apply Nat.mod_small; lia. }
   intros.
@@ -88,10 +90,10 @@ Proof.
   unfold Z_semantics.
   simpl.
   rewrite Hm.
-  rewrite plus_0_r.
+  rewrite Nat.add_0_r.
   rewrite <- plus_n_Sm.
   simpl.
-  rewrite plus_0_r.
+  rewrite Nat.add_0_r.
   repeat rewrite <- plus_n_Sm.
   bdestruct (x =? 1)%nat; bdestruct (y =? S (S (S (m + m + (m + m)))))%nat.
   - rewrite H, H0.
