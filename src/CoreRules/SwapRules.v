@@ -9,31 +9,97 @@ Lemma swap_compose :
   ⨉ ⟷ ⨉ ∝ n_wire 2.
 Proof. solve_prop 1. Qed.
 
+Lemma top_wire_to_bottom_ind : forall n, top_wire_to_bottom (S (S n)) = @Mmult _ (2 ^ (S (S n))) _ ((I 2) ⊗ top_wire_to_bottom (S n)) (swap ⊗ (I (2 ^ n))).
+Proof.
+  intros.
+  induction n.
+  - Msimpl.
+    simpl.
+    Msimpl.
+    easy.
+  - rewrite IHn.
+    simpl.
+    apply Mmult_simplify.
+    + apply kron_simplify; easy.
+    + apply kron_simplify; [easy | ].
+      rewrite kron_n_I.
+      rewrite id_kron.
+      replace (2 ^ n + (2 ^ n + 0))%nat with (2 ^ n * 2)%nat by lia.
+      easy.
+Qed.
 
+(* Well foundedness of semantics *)
 
-Fixpoint top_to_bottom_helper (n : nat) : ZX (S n) (S n) :=
-  match n with 
-  | 0   => Wire
-  | S k => Compose (Stack Swap (n_wire k)) (Stack Wire (top_to_bottom_helper k))
-  end.
+Lemma WF_top_to_bottom (n : nat) : WF_Matrix (top_wire_to_bottom n).
+Proof.
+  destruct n; try auto with wf_db.
+  induction n.
+  - simpl; auto with wf_db.
+  - simpl. try auto with wf_db.
+Qed.
 
-Definition top_to_bottom (n : nat) : ZX n n :=
-  match n with
-  | 0 => Empty
-  | S k => top_to_bottom_helper k
-  end.
+Global Hint Resolve WF_top_to_bottom : wf_db.
 
-Definition bottom_to_top (n : nat) : ZX n n :=
-  (top_to_bottom n)⊤.
+Lemma WF_bottom_to_top (n : nat) : WF_Matrix (bottom_wire_to_top n).
+Proof. unfold bottom_wire_to_top. auto with wf_db. Qed.
 
-Definition a_swap (n : nat) : ZX n n :=
-  match n with
-  | 0   => Empty
-  | S k => bottom_to_top (S k) ⟷ (— ↕ top_to_bottom k)
-  end.
+Global Hint Resolve WF_bottom_to_top : wf_db.
 
-(* Arbitrary Swap Semantics *)
+Lemma WF_a_swap_semantics (n : nat) :
+ WF_Matrix (a_swap_semantics n).
+Proof.
+  intros.
+  unfold a_swap_semantics.
+  destruct n; auto with wf_db.
+Qed.
 
+Global Hint Resolve WF_a_swap_semantics : wf_db.
+
+(* Proving correctness of conversion *)
+
+Lemma top_to_bottom_correct : forall n, ZX_semantics (top_to_bottom n) = top_wire_to_bottom n.
+Proof.
+  intros.
+  destruct n; [ reflexivity | ].
+  destruct n; [ easy | ].
+  induction n.
+  - easy.
+  - simpl.
+    simpl in IHn.
+    rewrite <- IHn.
+    rewrite n_wire_semantics.
+    rewrite kron_n_I.
+    rewrite 2 id_kron.
+    replace (2 * 2 ^ n)%nat with (2 ^ n * 2)%nat by lia.
+    easy.
+Qed.
+
+Lemma bottom_to_top_correct : forall n, ZX_semantics (bottom_to_top n) = bottom_wire_to_top n.
+Proof.
+  intros.
+  unfold bottom_to_top.
+  unfold bottom_wire_to_top.
+  rewrite semantics_transpose_comm.
+  rewrite top_to_bottom_correct.
+  easy.
+Qed.
+
+Lemma a_swap_correct : forall n, ZX_semantics (a_swap n) = a_swap_semantics n.
+Proof.
+  intros.
+  unfold a_swap_semantics.
+  destruct n; [ reflexivity | ].
+  rewrite <- bottom_to_top_correct.
+  rewrite <- top_to_bottom_correct.
+  simpl.
+  easy.
+Qed.
+
+Lemma swap_spec' : swap = ((ket 0 × bra 0)  ⊗ (ket 0 × bra 0) .+ (ket 0 × bra 1)  ⊗ (ket 1 × bra 0)
+  .+ (ket 1 × bra 0)  ⊗ (ket 0 × bra 1) .+ (ket 1 × bra 1)  ⊗ (ket 1 × bra 1)).
+Proof.
+  solve_matrix.
+Qed.
 
 Lemma top_to_bottom_grow_l : forall n, 
   top_to_bottom (S (S n)) ∝ (⨉ ↕ n_wire n) ⟷ (— ↕ top_to_bottom (S n)).
@@ -115,4 +181,24 @@ Proof.
   easy.
 Qed.
 
-Definition n_swap := Z 1 1 0.
+Lemma a_swap_2_is_swap : a_swap 2 ∝ ⨉.
+Proof.
+  solve_prop 1.
+Qed.
+
+(* n_swap proofs *)
+
+Opaque a_swap. (* For n_swap proofs we don't want a_swap to unfold, instead we use lemmata from above*)
+
+Lemma n_swap_2_is_swap : n_swap 2 ∝ ⨉.
+Proof.
+  intros.
+  simpl.
+  simpl_casts.
+  cleanup_zx.
+  rewrite wire_to_n_wire.
+  rewrite n_wire_stack.
+  cleanup_zx.
+  apply a_swap_2_is_swap.
+Qed.
+
