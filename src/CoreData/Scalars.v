@@ -1,8 +1,9 @@
-Require Import CoreData.
+Require Import Proportional.
+Require Import ZXCore.
 
 Local Open Scope ZX_scope.
 
-Lemma Scalar_general : forall (zx : ZX 0 0), ZX_semantics zx = ((ZX_semantics zx) 0%nat 0%nat) .* I 1.
+Lemma scalar_general : forall (zx : ZX 0 0), ZX_semantics zx = ((ZX_semantics zx) 0%nat 0%nat) .* I 1.
 Proof.
   intros.
   prep_matrix_equality.
@@ -64,45 +65,45 @@ Proof.
     reflexivity.
 Qed.
 
-Ltac solve_scalar := intros; rewrite Scalar_general; apply Mscale_simplify; try reflexivity.
+Ltac solve_scalar := intros; rewrite scalar_general; apply Mscale_simplify; try reflexivity.
 
-Definition Scalar_1_plus_Cexp_alpha α := Z_Spider 0 0 α.
+Definition scalar_1_plus_cexp_alpha α := Z_Spider 0 0 α.
 
-Theorem Scalar_Z_general : forall α, (ZX_semantics (Scalar_1_plus_Cexp_alpha α)) = (1 + Cexp(α)) .* I 1.
+Theorem scalar_Z_general : forall α, (ZX_semantics (scalar_1_plus_cexp_alpha α)) = (1 + Cexp(α)) .* I 1.
 Proof. solve_scalar. Qed.
 
-Global Opaque Scalar_1_plus_Cexp_alpha.
+Global Opaque scalar_1_plus_cexp_alpha.
 
-Definition Scalar_2 := Scalar_1_plus_Cexp_alpha 0.
+Definition scalar_2 := scalar_1_plus_cexp_alpha 0.
 
-Theorem Scalar_Z_0_2 : (ZX_semantics Scalar_2) = 2 .* I 1.
+Theorem scalar_Z_0_2 : (ZX_semantics scalar_2) = 2 .* I 1.
 Proof. 
-  unfold Scalar_2.
-  rewrite Scalar_Z_general. 
+  unfold scalar_2.
+  rewrite scalar_Z_general. 
   rewrite Cexp_0.
   lma.
 Qed.
 
-Global Opaque Scalar_2.
+Global Opaque scalar_2.
 
-Definition Scalar_0 := Scalar_1_plus_Cexp_alpha PI.
+Definition scalar_0 := scalar_1_plus_cexp_alpha PI.
 
-Theorem Scalar_Z_PI_0: (ZX_semantics Scalar_0) = 0 .* I 1.
+Theorem scalar_Z_pi_0: (ZX_semantics scalar_0) = 0 .* I 1.
 Proof.
-  unfold Scalar_0.
-  rewrite Scalar_Z_general.
+  unfold scalar_0.
+  rewrite scalar_Z_general.
   autorewrite with Cexp_db.
   solve_matrix.
 Qed.
 
-Global Opaque Scalar_0.
+Global Opaque scalar_0.
 
-Definition Scalar_sqrt_2 := Compose (X_Spider 0 1 0) (Z_Spider 1 0 0).
+Definition scalar_sqrt_2 := Compose (X_Spider 0 1 0) (Z_Spider 1 0 0).
 
-Theorem Scalar_X_alpha_Z_0_sqrt_2 : (ZX_semantics Scalar_sqrt_2) = (√2) .* I 1.
+Theorem scalar_X_alpha_Z_0_sqrt_2 : (ZX_semantics scalar_sqrt_2) = (√2) .* I 1.
 Proof.
   solve_scalar.
-  unfold Scalar_sqrt_2.
+  unfold scalar_sqrt_2.
   simpl.
   unfold Mmult.
   simpl.
@@ -131,16 +132,16 @@ Proof.
   reflexivity.
 Qed. 
 
-Global Opaque Scalar_sqrt_2.
+Global Opaque scalar_sqrt_2.
 
-Definition Scalar_Cexp_alpha_times_sqrt_2 α := Compose (X_Spider 0 1 α) (Z_Spider 1 0 PI).
+Definition scalar_cexp_alpha_times_sqrt_2 α := Compose (X_Spider 0 1 α) (Z_Spider 1 0 PI).
 
 Opaque Ropp.
 
-Theorem Scalar_X_alpha_Z_PI_sqrt_2 : forall α, (ZX_semantics (Scalar_Cexp_alpha_times_sqrt_2 α)) = (√2 * Cexp(α)) .* I 1.
+Theorem scalar_X_alpha_Z_pi_sqrt_2 : forall α, (ZX_semantics (scalar_cexp_alpha_times_sqrt_2 α)) = (√2 * Cexp(α)) .* I 1.
 Proof.
   solve_scalar.
-  unfold Scalar_Cexp_alpha_times_sqrt_2.
+  unfold scalar_cexp_alpha_times_sqrt_2.
   simpl.
   unfold Mmult; simpl.
   autorewrite with Cexp_db.
@@ -155,15 +156,15 @@ Proof.
   lca.
 Qed.
 
-Global Opaque Scalar_Cexp_alpha_times_sqrt_2.
+Global Opaque scalar_cexp_alpha_times_sqrt_2.
 
-Definition Scalar_1_div_sqrt_2 := Compose (Z_Spider 0 3 0) (X_Spider 3 0 0).
+Definition scalar_1_div_sqrt_2 := Compose (Z_Spider 0 3 0) (X_Spider 3 0 0).
 
 
-Theorem Scalar_X_Z_triple_1_sqrt_2 : (ZX_semantics Scalar_1_div_sqrt_2) = (1 / √ 2) .* I 1.
+Theorem scalar_X_Z_triple_1_sqrt_2 : (ZX_semantics scalar_1_div_sqrt_2) = (1 / √ 2) .* I 1.
 Proof.
   solve_scalar.
-  unfold Scalar_1_div_sqrt_2.
+  unfold scalar_1_div_sqrt_2.
   simpl.
   simpl.
   unfold Mmult; simpl.
@@ -200,9 +201,9 @@ Proof.
   lca.
 Qed.
 
-Global Opaque Scalar_1_div_sqrt_2.
+Global Opaque scalar_1_div_sqrt_2.
 
-Theorem Scalar_n_stack : forall (zx : ZX 0 0) c n, ZX_semantics zx = c .* I 1 -> ZX_semantics (nStack n zx) = c ^ n .* I 1.
+Theorem scalar_n_stack : forall (zx : ZX 0 0) c n, ZX_semantics zx = c .* I 1 -> ZX_semantics (n ⇑ zx) = c ^ n .* I 1.
 Proof.
   intros.
   induction n.
@@ -219,9 +220,9 @@ Proof.
         reflexivity.
 Qed.
 
-Hint Rewrite Scalar_X_Z_triple_1_sqrt_2 Scalar_X_alpha_Z_PI_sqrt_2 Scalar_X_alpha_Z_0_sqrt_2 Scalar_Z_PI_0 Scalar_Z_0_2 Scalar_Z_general : zx_scalar_db.
+Hint Rewrite scalar_X_Z_triple_1_sqrt_2 scalar_X_alpha_Z_pi_sqrt_2 scalar_X_alpha_Z_0_sqrt_2 scalar_Z_pi_0 scalar_Z_0_2 scalar_Z_general : zx_scalar_db.
 
-Lemma Scalar_1_div_sqrt_2_sqrt_identity : ZX_semantics (Stack Scalar_1_div_sqrt_2 Scalar_sqrt_2) = ZX_semantics ⦰.
+Lemma scalar_1_div_sqrt_2_sqrt_identity : ZX_semantics (Stack scalar_1_div_sqrt_2 scalar_sqrt_2) = ZX_semantics ⦰.
 Proof.
   simpl.
   autorewrite with zx_scalar_db.
@@ -231,12 +232,12 @@ Proof.
   solve_matrix.
 Qed.
 
-Lemma Scalar_kron : forall c c', (c .* (I 1)) ⊗ (c' .* (I 1)) = c * c' .* I 1.
+Lemma scalar_kron : forall c c', (c .* (I 1)) ⊗ (c' .* (I 1)) = c * c' .* I 1.
 Proof.
   intros.
   solve_matrix.
 Qed.
 
-Hint Rewrite Scalar_1_div_sqrt_2_sqrt_identity Scalar_kron : zx_scalar_db.
+Hint Rewrite scalar_1_div_sqrt_2_sqrt_identity scalar_kron : zx_scalar_db.
 
 Local Close Scope ZX_scope.
