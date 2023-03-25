@@ -92,14 +92,6 @@ Qed.
 Lemma WF_top_to_bottom (n : nat) : WF_Matrix (top_wire_to_bottom n).
 Proof.
   destruct n; try auto with wf_db. 
-  induction n.
-  - simpl.
-    auto with wf_db.
-  - unfold top_wire_to_bottom.
-    apply WF_mult; try auto with wf_db.
-    apply WF_kron.
-    1,2: simpl; lia.
-    all: auto with wf_db.
 Qed.
 
 Global Hint Resolve WF_top_to_bottom : wf_db.
