@@ -9,11 +9,12 @@ Require Import PeanoNat.
 
 Section StrongInduction.
 
-  Variable P:nat -> Prop.
+  Variable P : nat -> Prop.
 
   (** The stronger inductive hypothesis given in strong induction. The standard
   [nat ] induction principle provides only n = pred m, with [P 0] required
   separately. *)
+(* @nocheck name *)
   Hypothesis IH : forall m, (forall n, n < m -> P n) -> P m.
 
 (* @nocheck name *)
