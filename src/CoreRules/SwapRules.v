@@ -28,30 +28,6 @@ Proof.
       easy.
 Qed.
 
-(* Well foundedness of semantics *)
-
-Lemma WF_top_to_bottom (n : nat) : WF_Matrix (top_wire_to_bottom n).
-Proof.
-  destruct n; try auto with wf_db.
-  induction n.
-  - simpl; auto with wf_db.
-  - simpl. try auto with wf_db.
-Qed.
-
-Global Hint Resolve WF_top_to_bottom : wf_db.
-
-Lemma WF_bottom_to_top (n : nat) : WF_Matrix (bottom_wire_to_top n).
-Proof. unfold bottom_wire_to_top. auto with wf_db. Qed.
-
-Global Hint Resolve WF_bottom_to_top : wf_db.
-
-Lemma WF_a_swap_semantics (n : nat) :
- WF_Matrix (a_swap_semantics n).
-Proof.
-  intros.
-  unfold a_swap_semantics.
-  destruct n; auto with wf_db.
-Qed.
 
 Global Hint Resolve WF_a_swap_semantics : wf_db.
 
@@ -114,6 +90,26 @@ Lemma offset_swaps_comm_bot_right :
  — ↕ ⨉ ⟷ (⨉ ↕ —)  ∝ 
  ⨉ ↕ — ⟷ (— ↕ ⨉) ⟷ (⨉ ↕ —) ⟷ (— ↕ ⨉). 
 Proof. solve_prop 1. Qed.
+
+Lemma bottom_wire_to_top_ind : forall n, bottom_wire_to_top (S (S n)) = @Mmult _ (2 ^ (S (S n))) _ (swap ⊗ (I (2 ^ n))) ((I 2) ⊗ bottom_wire_to_top (S n)).
+Proof.
+  intros.
+  apply transpose_matrices.
+  unfold bottom_wire_to_top.
+  rewrite Mmult_transpose.
+  restore_dims.
+  rewrite Matrix.transpose_involutive.
+  restore_dims.
+  rewrite (kron_transpose 2 2 (2 ^ (S n)) (2 ^ S n)).
+  replace (Nat.pow 2 (S (S n)))%nat with ((2 * 2) * (2 ^ n))%nat by (simpl; lia).
+  rewrite (kron_transpose  (2 * 2) (2 * 2) (2 ^ n) (2 ^ n) swap (I (2 ^ n))).
+  rewrite 2 id_transpose_eq.
+  rewrite swap_transpose.
+  rewrite Matrix.transpose_involutive.
+  restore_dims.
+  rewrite (top_wire_to_bottom_ind n).
+  easy.
+Qed.
 
 Lemma bottom_to_top_grow_r : forall n, 
   bottom_to_top (S (S n)) ∝ (— ↕ bottom_to_top (S n)) ⟷ (⨉ ↕ n_wire n).
@@ -186,9 +182,72 @@ Proof.
   solve_prop 1.
 Qed.
 
+
+Lemma a_swap_3_order_indep :
+  I 2 ⊗ swap × (swap ⊗ I 2) × (I 2 ⊗ swap) = (swap ⊗ I 2) × (I 2 ⊗ swap) × (swap ⊗ I 2).
+Proof.
+  (* solve_matrix *) (* Commented out for performance*)
+Admitted.
+
+Lemma a_swap_semantics_ind : forall n, a_swap_semantics (S (S (S n))) = swap ⊗ (I (2 ^ (S n))) × (I 2 ⊗ a_swap_semantics (S (S n))) × (swap ⊗ (I (2 ^ (S n)))).
+Proof.
+  intros.
+  rewrite <- 2 a_swap_correct.
+  simpl.
+  repeat rewrite kron_id_dist_l by shelve.
+  restore_dims.
+  rewrite <- 2 (kron_assoc (I 2) (I 2) (_)) by shelve.
+  repeat rewrite id_kron.
+  replace ((2 ^ n + (2 ^ n + 0)))%nat with (2 ^ (S n))%nat by (simpl; lia).
+  restore_dims.
+  repeat rewrite <- Mmult_assoc.
+  restore_dims.
+  rewrite (kron_mixed_product swap (I _) (I (2 * 2)) (_)).
+  Msimpl.
+  repeat rewrite Mmult_assoc.
+  restore_dims.
+  repeat rewrite Mmult_assoc.
+  remember (ZX_semantics (top_to_bottom_helper n) ⊤%ZX) as ZX_tb_t.
+  remember (ZX_semantics (top_to_bottom_helper n)) as ZX_tb.
+  restore_dims.
+  rewrite (kron_mixed_product (I (2 * 2)) ZX_tb_t swap (I (2 ^ (S n)))) .
+  Msimpl; [ | shelve].
+  rewrite <- (Mmult_1_r _ _ (swap ⊗ ZX_tb)) by shelve.
+  rewrite n_wire_transpose.
+  rewrite n_wire_semantics.
+  rewrite <- 2 kron_assoc by shelve.
+  restore_dims.
+  repeat rewrite <- Mmult_assoc by shelve.
+  rewrite <- 2 kron_id_dist_r by shelve.
+  rewrite a_swap_3_order_indep.
+  rewrite 2 kron_id_dist_r by shelve.
+  repeat rewrite <- Mmult_assoc by shelve.
+  restore_dims.
+  rewrite (kron_assoc _ (I 2) (I (2 ^ n))) by shelve.
+  rewrite id_kron.
+  replace (2 * (2 ^ n))%nat with (2 ^ (S n))%nat by (simpl; lia).
+  restore_dims.
+  repeat rewrite <- Mmult_assoc by shelve.
+  rewrite kron_mixed_product.
+  Msimpl.
+  2,3: shelve.
+  restore_dims.
+  repeat rewrite Mmult_assoc by shelve.
+  restore_dims.
+  rewrite kron_mixed_product.
+  Msimpl; [ | shelve].
+  easy.
+Unshelve.
+all: subst; auto with wf_db.
+all: try (apply WF_kron; try lia; replace (2 ^ n + (2 ^ n + 0))%nat with (2 ^ (S n))%nat by (simpl; lia); auto with wf_db).
+  apply WF_mult.
+  auto with wf_db.
+  apply WF_kron; try lia; replace (2 ^ n + (2 ^ n + 0))%nat with (2 ^ (S n))%nat by (simpl; lia); auto with wf_db.
+Qed. 
+
 (* n_swap proofs *)
 
-Opaque a_swap. (* For n_swap proofs we don't want a_swap to unfold, instead we use lemmata from above*)
+Opaque a_swap a_swap_semantics. (* For n_swap proofs we don't want a_swap to unfold, instead we use lemmata from above*)
 
 Lemma n_swap_2_is_swap : n_swap 2 ∝ ⨉.
 Proof.
@@ -202,3 +261,19 @@ Proof.
   apply a_swap_2_is_swap.
 Qed.
 
+Lemma n_swap_mat_ind_correct : forall n, ZX_semantics (n_swap n) = n_swap_mat_ind n.
+Proof.
+  intros.
+  strong induction n.
+  do 2 (destruct n; [ easy | ]).
+  assert (n < (S (S n)))%nat by lia.
+  specialize (H n H0).
+  clear H0.
+  simpl.
+  simpl_cast_semantics.
+  simpl.
+  rewrite H.
+  rewrite a_swap_correct.
+  restore_dims.
+  rewrite kron_assoc; auto with wf_db.
+Qed.

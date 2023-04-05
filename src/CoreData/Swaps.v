@@ -1,4 +1,5 @@
 Require Import ZXCore.
+Require Import StrongInduction.
 Require Export QuantumLib.Quantum.
 
 Open Scope ZX_scope.
@@ -40,11 +41,41 @@ Open Scope matrix_scope.
 Definition bottom_wire_to_top (n : nat) : Square (2 ^ n) :=
   (top_wire_to_bottom n)⊤.
 
+(* Well foundedness of semantics *)
+
+Lemma WF_top_to_bottom (n : nat) : WF_Matrix (top_wire_to_bottom n).
+Proof.
+  destruct n; try auto with wf_db.
+  induction n.
+  - simpl; auto with wf_db.
+  - simpl. try auto with wf_db.
+Qed.
+
+Global Hint Resolve WF_top_to_bottom : wf_db.
+
+Lemma WF_bottom_to_top (n : nat) : WF_Matrix (bottom_wire_to_top n).
+Proof. unfold bottom_wire_to_top. auto with wf_db. Qed.
+
+Global Hint Resolve WF_bottom_to_top : wf_db.
+
+
+
 Definition a_swap_semantics (n : nat) : Square (2 ^ n) :=
   match n with
   | 0   => I 1
   | S k => (@Mmult _ (2 ^ n) _ ((I 2) ⊗ top_wire_to_bottom (k)) ((bottom_wire_to_top (S k))))
   end.
+
+Lemma WF_a_swap_semantics (n : nat) :
+  WF_Matrix (a_swap_semantics n).
+Proof.
+  intros.
+  unfold a_swap_semantics.
+  destruct n; auto with wf_db.
+Qed.
+ 
+Global Hint Resolve WF_a_swap_semantics : wf_db.
+
 
 Fixpoint n_swap (n : nat) : ZX n n :=
   match n with 
@@ -53,4 +84,59 @@ Fixpoint n_swap (n : nat) : ZX n n :=
   | (S (S n)) => a_swap (S (S n)) ⟷ (— ↕ (@cast _ _ (n + 1)%nat (n + 1)%nat (eq_sym (@Nat.add_1_r n)) (eq_sym (@Nat.add_1_r n)) (n_swap n ↕ —)))
   end.
   
+Fixpoint n_swap_mat_ind (n : nat) : Matrix (2 ^ n) (2 ^ n) :=
+  match n with
+  | 0 => I 1
+  | 1 => I 2
+  | S (S n) => @Mmult _ (2 ^ (S (S n))) _ (((I 2) ⊗ n_swap_mat_ind n ⊗ (I 2))) (a_swap_semantics (S (S n)))
+  end.
+
+Lemma WF_n_swap_mat_ind : forall n, WF_Matrix (n_swap_mat_ind n).
+Proof.
+  intros.
+  strong induction n.
+  do 2 (destruct n; [ simpl; auto with wf_db | ]).
+  assert (n < (S (S n)))%nat by lia.
+  specialize (H n H0); clear H0.
+  simpl.
+  destruct n.
+  apply WF_mult.
+  + apply WF_kron; try lia.
+    apply WF_kron; try lia.
+    1-3: auto with wf_db.
+  + apply WF_mult; [ auto with wf_db | ].
+    replace (2 ^ 0 + (2 ^ 0 + 0) + (2 ^ 0 + (2 ^ 0 + 0) + 0))%nat with (2 ^ 2)%nat by (simpl; lia).
+    auto with wf_db.
+  + apply WF_mult; auto with wf_db.
+    apply WF_mult; auto with wf_db.
+    replace (2 ^ S n + (2 ^ S n + 0) + (2 ^ S n + (2 ^ S n + 0) + 0))%nat with (2 ^ (S (S (S n))))%nat by (simpl; lia).
+    auto with wf_db.
+Qed.
+
+Definition n_swap_mat (n : nat) : Matrix (2 ^ n) (2 ^ n) :=
+  fun x y =>
+  if (x <? (2 ^ n))%nat && (y <? (2 ^ n))%nat then
+    if x =? (2 ^ n - 1 - y)%nat then
+      C1
+    else 
+      C0
+  else
+    C0.
   
+Lemma WF_n_swap_mat : forall n, WF_Matrix (n_swap_mat n).
+Proof. 
+  intros.
+  unfold WF_Matrix.
+  intros.
+  unfold n_swap_mat.
+  destruct H.
+  + bdestruct (x <? 2 ^ n); [ lia | ].
+    rewrite andb_false_l.
+    easy.
+  + bdestruct (y <? 2 ^ n); [ lia | ].
+    rewrite andb_false_r.
+    easy.
+Qed.
+
+Global Hint Resolve WF_n_swap_mat_ind WF_n_swap_mat : wf_db.
+    
