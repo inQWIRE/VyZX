@@ -127,8 +127,14 @@ Opaque n_stack1.
 Transparent n_stack1.
   fold bi_alg_Z_X.
   rewrite <- bi_algebra_rule_Z_X.
-  assert (X_Wrap_Under_L_base : forall α, X 2 1 α ∝ (X 1 2 α ↕ —) ⟷ (— ↕ ⊃)) by admit.
-  (* TODO : resurect and make X rules *)
+  assert (X_Wrap_Under_L_base : forall α, X 2 1 α ∝ (X 1 2 α ↕ —) ⟷ (— ↕ ⊃)).
+  {
+    intros.
+    rewrite (X_wrap_under_bot_right 1).
+    simpl_casts.
+    rewrite <- wire_to_n_wire.
+    easy.
+  }
   rewrite X_Wrap_Under_L_base.
   repeat rewrite <- compose_assoc.
   rewrite <- stack_wire_distribute_r.
@@ -169,7 +175,7 @@ Transparent n_stack1.
   rewrite compose_assoc.
   rewrite Hr.
   easy.
-Admitted.
+Qed.
 
 Theorem hopf_rule_X_Z : 
   (X_Spider 1 2 0) ⟷ (Z_Spider 2 1 0) ∝ (X_Spider 1 0 0) ⟷ (Z_Spider 0 1 0).
