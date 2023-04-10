@@ -59,8 +59,6 @@ Proof. unfold bottom_wire_to_top. auto with wf_db. Qed.
 
 Global Hint Resolve WF_bottom_to_top : wf_db.
 
-
-
 Definition a_swap_semantics (n : nat) : Square (2 ^ n) :=
   match n with
   | 0   => I 1
@@ -77,12 +75,10 @@ Qed.
  
 Global Hint Resolve WF_a_swap_semantics : wf_db.
 
-
 Fixpoint n_swap (n : nat) : ZX n n :=
-  match n with 
-  | 0 => ⦰ 
-  | 1 => —
-  | (S (S n)) => a_swap (S (S n)) ⟷ (— ↕ (@cast _ _ (n + 1)%nat (n + 1)%nat (eq_sym (@Nat.add_1_r n)) (eq_sym (@Nat.add_1_r n)) (n_swap n ↕ —)))
+  match n with
+  | 0 => ⦰
+  | (S n) => bottom_to_top (S n) ⟷ (— ↕ n_swap n)
   end.
   
 Fixpoint n_swap_mat_ind (n : nat) : Matrix (2 ^ n) (2 ^ n) :=
@@ -114,7 +110,19 @@ Proof.
     auto with wf_db.
 Qed.
 
-Global Hint Resolve WF_n_swap_mat_ind : wf_db.
-
+Fixpoint n_swap_mat (n : nat) : Matrix (2 ^ n) (2 ^ n) :=
+  match n with
+  | 0 => I 1
+  | (S n) => (I 2 ⊗ (n_swap_mat n)) × bottom_wire_to_top (S n)
+  end.
+  
+Lemma WF_n_swap_mat : forall n, WF_Matrix (n_swap_mat n).
+Proof. 
+  intros.
+  induction n; try auto with wf_db.
+  simpl.
+  unfold bottom_wire_to_top.
+  auto with wf_db.
+Qed.
 
     

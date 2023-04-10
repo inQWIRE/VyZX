@@ -29,7 +29,6 @@ Proof.
 Qed.
 
 
-Global Hint Resolve WF_a_swap_semantics : wf_db.
 
 (* Proving correctness of conversion *)
 
@@ -179,7 +178,15 @@ Qed.
 
 Lemma a_swap_2_is_swap : a_swap 2 ∝ ⨉.
 Proof.
-  solve_prop 1.
+  unfold a_swap.
+  unfold bottom_to_top.
+  simpl.
+  cleanup_zx.
+  simpl_casts.
+  rewrite wire_to_n_wire.
+  rewrite n_wire_stack.
+  cleanup_zx.
+  easy.
 Qed.
 
 
@@ -253,29 +260,118 @@ Lemma n_swap_2_is_swap : n_swap 2 ∝ ⨉.
 Proof.
   intros.
   simpl.
-  simpl_casts.
+  unfold bottom_to_top.
+  simpl.
   cleanup_zx.
+  simpl_casts.
   rewrite wire_to_n_wire.
   rewrite n_wire_stack.
   cleanup_zx.
-  apply a_swap_2_is_swap.
+  easy.
 Qed.
 
-Lemma n_swap_mat_ind_correct : forall n, ZX_semantics (n_swap n) = n_swap_mat_ind n.
+Lemma n_swap_1_is_wire : n_swap 1 ∝ —.
 Proof.
-  intros.
-  strong induction n.
-  do 2 (destruct n; [ easy | ]).
-  assert (n < (S (S n)))%nat by lia.
-  specialize (H n H0).
-  clear H0.
   simpl.
-  simpl_cast_semantics.
-  simpl.
-  rewrite H.
-  rewrite a_swap_correct.
-  restore_dims.
-  rewrite kron_assoc; auto with wf_db.
+  cleanup_zx.
+  simpl_casts.
+  easy.
+Qed.
+Lemma n_swap_grow_l : forall n,
+  n_swap (S n) ∝ bottom_to_top (S n) ⟷ (— ↕ n_swap n).
+Proof.
+  induction n.
+  - simpl.
+    cleanup_zx.
+    easy.
+  - simpl.
+    easy.
+Qed.
+
+Lemma n_swap_grow_r : forall n,
+  n_swap (S n) ∝ (— ↕ n_swap n) ⟷ top_to_bottom (S n).
+Proof.
+  induction n.
+  - simpl.
+    cleanup_zx.
+    easy.
+  - simpl.
+    fold (top_to_bottom (S n)).
+    rewrite <- (n_swap_grow_l n).
+    rewrite IHn at 1.
+    rewrite bottom_to_top_grow_r.
+    rewrite stack_wire_distribute_l.
+    rewrite (stack_assoc_back — —).
+    simpl_casts.
+    rewrite wire_to_n_wire at 3 4.
+    rewrite n_wire_stack.
+    repeat rewrite compose_assoc.
+    rewrite <- (compose_assoc (⨉ ↕ n_wire n)).
+    rewrite (nwire_stack_compose_botleft ⨉ (n_swap n)).
+    rewrite <- (nwire_stack_compose_topleft (n_swap n) ⨉).
+    repeat rewrite <- compose_assoc.
+    simpl.
+    cleanup_zx.
+    simpl_casts.
+    rewrite stack_wire_distribute_l.
+    repeat rewrite compose_assoc.
+    rewrite stack_assoc.
+    simpl_casts.
+    easy.
+Qed.
+
+Lemma n_swap_transpose : forall n,
+  (n_swap n) ⊤ ∝ n_swap n.
+Proof.
+  induction n; try easy.
+  - simpl.
+    rewrite IHn.
+    unfold bottom_to_top at 1.
+    rewrite Proportional.transpose_involutive.
+    rewrite <- n_swap_grow_l.
+    rewrite <- n_swap_grow_r.
+    easy.
+Qed.
+
+Lemma top_to_bottom_colorswap : forall n,
+  ⊙ (top_to_bottom n) ∝ top_to_bottom n.
+Proof.
+  destruct n; [ easy | ].
+  induction n.
+  - easy.
+  - simpl.
+    fold (top_to_bottom (S n)).
+    rewrite IHn.
+    rewrite n_wire_colorswap.
+    easy.
+Qed.
+
+Lemma bottom_to_top_colorswap : forall n,
+  ⊙ (bottom_to_top n) ∝ bottom_to_top n.
+Proof.
+  destruct n; [easy | ].
+  induction n.
+    - easy.
+    - unfold bottom_to_top.
+      rewrite top_to_bottom_grow_l.
+      simpl.
+      fold (top_to_bottom (S n)).
+      fold (bottom_to_top (S n)).
+      rewrite IHn.
+      rewrite n_wire_transpose.
+      rewrite n_wire_colorswap.
+      easy.
+Qed.
+
+Lemma n_swap_colorswap : forall n,
+  ⊙ (n_swap n) ∝ n_swap n.
+Proof.
+  induction n.
+  - easy.
+  - simpl.
+    rewrite IHn.
+    rewrite bottom_to_top_colorswap.
+    easy.
 Qed.
 
 Lemma swap_pullthrough_top_right_Z_1_1 : forall α, (Z 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (Z 1 1 α)).
