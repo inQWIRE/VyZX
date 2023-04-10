@@ -277,6 +277,7 @@ Proof.
   simpl_casts.
   easy.
 Qed.
+
 Lemma n_swap_grow_l : forall n,
   n_swap (S n) ∝ bottom_to_top (S n) ⟷ (— ↕ n_swap n).
 Proof.
@@ -380,3 +381,31 @@ Proof. intros. solve_prop 1. Qed.
 Lemma swap_pullthrough_top_right_X_1_1 : forall α, (X 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (X 1 1 α)).
 Proof. intros. colorswap_of swap_pullthrough_top_right_Z_1_1. Qed.
   
+Lemma b_swap_1_1_is_swap : b_swap 1 1 ∝ ⨉.
+Proof.
+  intros.
+  simpl.
+  cleanup_zx.
+  simpl_casts.
+  rewrite wire_to_n_wire.
+  rewrite n_wire_stack.
+  cleanup_zx.
+  easy.
+Qed.
+
+Lemma b_swap_0_is_wire : forall m, b_swap 0 m ∝ n_wire m.
+Proof. intros; easy. Qed.
+
+Lemma b_swap_colorswap : forall n m,
+  ⊙ (b_swap n m) ∝ b_swap n m.
+Proof.
+  intros.
+  induction n.
+  - simpl. rewrite n_wire_colorswap. easy.
+  - simpl.
+    simpl_casts.
+    simpl.
+    rewrite top_to_bottom_colorswap.
+    rewrite IHn.
+    easy.
+Qed.

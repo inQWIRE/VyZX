@@ -125,4 +125,15 @@ Proof.
   auto with wf_db.
 Qed.
 
+Lemma b_swap_dim : forall n m, (S n + m = 1 + (n + m))%nat. Proof. lia. Qed.
+
+Fixpoint b_swap (n m : nat) : ZX (n + m) (n + m) :=
+  match n with
+  | 0 => (n_wire (0 + m))
+  | (S n) => (@Compose _ (S n + m) _) 
+                (cast _ _ (b_swap_dim n m) (b_swap_dim n m) 
+                  (Stack — (b_swap n m)))
+                (top_to_bottom (S n + m))
+  end.
     
+
