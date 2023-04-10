@@ -26,15 +26,31 @@ Lemma grow_Z_top_right : forall (nIn nOut : nat) α,
 	(Z nIn (S nOut) α) ⟷ ((Z_Spider 1 2 0) ↕ (n_wire nOut)).
 Proof.
 	intros.
-	replace α%R with (0 + α)%R at 1 by lra.
-	rewrite <- Z_spider_1_1_fusion.
+	apply transpose_diagrams.
 	simpl.
-	rewrite grow_Z_right_1_2.
-	rewrite <- compose_assoc.
-	rewrite Z_spider_1_1_fusion.
-	replace (0+α)%R with α%R by lra.
-	reflexivity.
+	rewrite nstack1_transpose.
+	rewrite transpose_wire.
+	apply grow_Z_top_left.
 Qed.
+
+Lemma grow_Z_bot_left : forall n {m o α},
+	Z (n + m) o α ∝ 
+	(n_wire n ↕ Z m 1 0) ⟷ Z (n + 1) o α.
+Proof.
+Admitted.
+
+Lemma grow_Z_bot_right : forall {n m} o {α},
+	Z n (m + o) α ∝ 
+	Z n (m + 1) α ⟷ (n_wire m ↕ Z 1 o 0).
+Proof.
+	intros.
+	apply transpose_diagrams.
+	simpl.
+	rewrite nstack1_transpose.
+	rewrite transpose_wire.
+	apply grow_Z_bot_left.
+Qed.
+
 
 Lemma Z_rot_l : forall n m α β,
 	Z (S n) m (α + β) ∝ Z 1 1 α ↕ n_wire n ⟷ Z (S n) m β.

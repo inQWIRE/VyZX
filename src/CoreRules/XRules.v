@@ -13,6 +13,17 @@ Lemma grow_X_top_right : forall (nIn nOut : nat) α,
 	(X nIn (S nOut) α) ⟷ ((X_Spider 1 2 0) ↕ (n_wire nOut)).
 Proof. intros. colorswap_of grow_Z_top_right. Qed.
 
+Lemma grow_X_bot_left : forall n {m o α},
+	X (n + m) o α ∝ 
+	(n_wire n ↕ X m 1 0) ⟷ X (n + 1) o α.
+Proof. intros. colorswap_of (@grow_Z_bot_left n m o α). Qed.
+
+Lemma grow_X_bot_right : forall {n m} o {α},
+	X n (m + o) α ∝ 
+	X n (m + 1) α ⟷ (n_wire m ↕ X 1 o 0).
+Proof. intros. colorswap_of (@grow_Z_bot_right n m o α). Qed.
+
+
 Lemma X_rot_l : forall n m α β,
 	X (S n) m (α + β) ∝ X 1 1 α ↕ n_wire n ⟷ X (S n) m β.
 Proof. intros. colorswap_of Z_rot_l. Qed.

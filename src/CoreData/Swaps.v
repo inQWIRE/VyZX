@@ -1,6 +1,7 @@
 Require Import ZXCore.
 Require Import StrongInduction.
 Require Export QuantumLib.Quantum.
+Require Export QuantumLib.Permutations.
 
 Open Scope ZX_scope.
 
@@ -113,30 +114,7 @@ Proof.
     auto with wf_db.
 Qed.
 
-Definition n_swap_mat (n : nat) : Matrix (2 ^ n) (2 ^ n) :=
-  fun x y =>
-  if (x <? (2 ^ n))%nat && (y <? (2 ^ n))%nat then
-    if x =? (2 ^ n - 1 - y)%nat then
-      C1
-    else 
-      C0
-  else
-    C0.
-  
-Lemma WF_n_swap_mat : forall n, WF_Matrix (n_swap_mat n).
-Proof. 
-  intros.
-  unfold WF_Matrix.
-  intros.
-  unfold n_swap_mat.
-  destruct H.
-  + bdestruct (x <? 2 ^ n); [ lia | ].
-    rewrite andb_false_l.
-    easy.
-  + bdestruct (y <? 2 ^ n); [ lia | ].
-    rewrite andb_false_r.
-    easy.
-Qed.
+Global Hint Resolve WF_n_swap_mat_ind : wf_db.
 
-Global Hint Resolve WF_n_swap_mat_ind WF_n_swap_mat : wf_db.
+
     
