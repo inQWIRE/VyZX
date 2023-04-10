@@ -24,7 +24,6 @@ Proof.
   all: split; nonzero.
 Qed.
 
-
 Lemma _H_is_box : _H_ ∝ □.
 Proof.
   prop_exists_nonzero (Cexp (PI/4)).
@@ -36,6 +35,14 @@ Proof.
   try apply c_proj_eq; try simpl; try R_field_simplify; try reflexivity; (try split; try apply RtoC_neq; try apply sqrt2_neq_0; try auto).
 Qed.
 
+Lemma _Rz_is_Rz : forall α, ZX_semantics (_Rz_ α) = phase_shift α.
+Proof.
+  intros.
+  simpl.
+  unfold Z_semantics, phase_shift.
+  simpl.
+  lma.
+Qed.
 
 Lemma cnot_l_is_cnot : ZX_semantics _CNOT_ = (/ √ 2)%C .* cnot.
 Proof.
@@ -44,24 +51,6 @@ Proof.
   solve_matrix.
   all: autorewrite with Cexp_db.
   all: lca.
-Qed.
-
-Lemma cnot_inv_is_swapped_cnot : ZX_semantics _CNOT_inv_ = (/ √ 2)%C .* (swap × cnot × swap)%M.
-Proof.
-  simpl.
-  unfold Z_semantics, X_semantics.
-  solve_matrix.
-  all: autorewrite with Cexp_db.
-  all: lca.
-Qed.
-
-Lemma _Rz_is_Rz : forall α, ZX_semantics (_Rz_ α) = phase_shift α.
-Proof.
-  intros.
-  simpl.
-  unfold Z_semantics, phase_shift.
-  simpl.
-  lma.
 Qed.
 
 Lemma cnot_involutive : _CNOT_R ⟷ _CNOT_ ∝ n_wire 2. 
@@ -184,5 +173,22 @@ Proof.
   cleanup_zx.
   rewrite <- wire_to_n_wire.
   subst.
+  easy.
+Qed.
+
+Lemma cnot_inv_is_swapped_cnot : _CNOT_inv_ ∝ ⨉ ⟷ _CNOT_ ⟷ ⨉.
+Admitted.
+
+Lemma notc_is_swapp_cnot : _NOTC_ ∝ ⨉ ⟷ _CNOT_ ⟷ ⨉. 
+Admitted.
+
+Lemma notc_r_is_swapp_cnot_r : _NOTC_R ∝ ⨉ ⟷ _CNOT_R ⟷ ⨉. 
+Admitted.
+
+Lemma notc_is_notc_r : _NOTC_ ∝ _NOTC_R.
+Proof.
+  rewrite notc_is_swapp_cnot.
+  rewrite cnot_is_cnot_r.
+  rewrite <- notc_r_is_swapp_cnot_r.
   easy.
 Qed.

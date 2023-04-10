@@ -277,3 +277,10 @@ Proof.
   restore_dims.
   rewrite kron_assoc; auto with wf_db.
 Qed.
+
+Lemma swap_pullthrough_top_right_Z_1_1 : forall α, (Z 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (Z 1 1 α)).
+Proof. intros. solve_prop 1. Qed.
+
+Lemma swap_pullthrough_top_right_X_1_1 : forall α, (X 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (X 1 1 α)).
+Proof. intros. colorswap_of swap_pullthrough_top_right_Z_1_1. Qed.
+  
