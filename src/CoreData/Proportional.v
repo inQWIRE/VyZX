@@ -1,5 +1,6 @@
 Require Import ZXCore.
 Require Import Setoid.
+Require Import QuantumLib.Polar.
 
 (* 
 A generalized form of proportionality which can be used to build notions for 
@@ -369,3 +370,16 @@ Proof.
   destruct H as [c [H cneq0]].
   rewrite H.
 Abort.
+Search "ceiling".
+
+Lemma complex_decompose : forall z : C, 
+  exists k (α β : R), z = (√2)^k * (1 + Cexp(α)) * (√2 * Cexp(β)).
+Proof.
+  intro.
+  remember (rect_to_polar z) as polar.
+  destruct polar as [R θ].
+  exists (ConstructiveReals.CRfloor (Rlog (√2) (R / 2)%R)).
+  unfold rect_to_polar in Heqpolar.
+  unfold get_arg in Heqpolar.
+  fold get_arg in Heqpolar.
+
