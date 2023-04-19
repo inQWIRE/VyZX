@@ -15,14 +15,16 @@ jobs:
           - '8.14'
           - '8.15'
           - '8.16'
+          - '8.17'
           - 'dev'
         ocaml_version:
           - 'default'
       fail-fast: false # don't stop jobs if one fails
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: coq-community/docker-coq-action@v1
         with:
+          opam_file: 'coq-vyzx.opam'
           before_install: |
             startGroup "Print opam config"
               opam pin -y coq-sqir https://github.com/inQWIRE/SQIR.git;
