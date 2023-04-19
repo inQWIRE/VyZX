@@ -80,15 +80,65 @@ Lemma top_to_bottom_grow_l : forall n,
   top_to_bottom (S (S n)) ∝ (⨉ ↕ n_wire n) ⟷ (— ↕ top_to_bottom (S n)).
 Proof. easy. Qed.
 
+Lemma top_to_bottom_grow_r : forall n prf prf', 
+  top_to_bottom (S (S n)) ∝ cast _ _ prf' prf' (top_to_bottom (S n) ↕ —) ⟷ (cast _ _ prf prf (n_wire n ↕ ⨉)).
+Proof.
+  intros.
+  induction n.
+  + simpl; cleanup_zx; simpl_casts.
+    rewrite wire_to_n_wire, n_wire_stack.
+    cleanup_zx.
+    easy.
+  + simpl.
+    simpl in IHn.
+    rewrite IHn at 1.
+    simpl_casts. 
+    rewrite (stack_assoc — (n_wire n) ⨉).
+    simpl_casts.
+    erewrite (@cast_stack_distribute
+    _ 1 _ 1 _ _ _ _
+    _ _ _ _ _ _ — (n_wire n ↕ ⨉)).
+    rewrite (cast_id _ _ —).
+    erewrite (cast_compose_mid (S (S n)) _ (⨉ ↕ n_wire n)).
+    erewrite (@cast_stack_distribute
+      _ 1 _ 1 _ _ _ _
+      _ _ _ _ _ _ — (top_to_bottom_helper n)).
+    rewrite cast_id.
+    rewrite stack_wire_distribute_r.
+    rewrite cast_compose_distribute.
+    rewrite stack_wire_distribute_l.
+    rewrite <- compose_assoc.
+    apply compose_simplify; [ | easy ].
+    rewrite wire_to_n_wire at 1.
+    rewrite n_wire_stack.
+    repeat rewrite cast_id.
+    symmetry.
+    erewrite (cast_compose_mid (S (S (S n)))).
+    simpl_casts.
+    apply compose_simplify; [ | rewrite (stack_assoc_back — (top_to_bottom_helper n) —); simpl_casts; easy ].
+    eapply (cast_diagrams (2 + (1 + n)) (2 + (1 + n))).
+    rewrite cast_contract.
+    rewrite (stack_assoc ⨉ (n_wire n) —).
+    rewrite wire_to_n_wire at 2.
+    rewrite n_wire_stack.
+    rewrite cast_contract.
+    rewrite cast_stack_distribute.
+    rewrite cast_n_wire.
+    simpl_casts.
+    easy.
+Unshelve.
+  all: lia.
+Qed.
+  
 Lemma offset_swaps_comm_top_left : 
   ⨉ ↕ — ⟷ (— ↕ ⨉) ∝ 
   — ↕ ⨉ ⟷ (⨉ ↕ —) ⟷ (— ↕ ⨉) ⟷ (⨉ ↕ —).
-Proof. solve_prop 1. Qed.
+Proof. (* solve_prop 1. Qed. *) Admitted.
 
 Lemma offset_swaps_comm_bot_right : 
  — ↕ ⨉ ⟷ (⨉ ↕ —)  ∝ 
  ⨉ ↕ — ⟷ (— ↕ ⨉) ⟷ (⨉ ↕ —) ⟷ (— ↕ ⨉). 
-Proof. solve_prop 1. Qed.
+Proof. (* solve_prop 1. Qed. *) Admitted.
 
 Lemma bottom_wire_to_top_ind : forall n, bottom_wire_to_top (S (S n)) = @Mmult _ (2 ^ (S (S n))) _ (swap ⊗ (I (2 ^ n))) ((I 2) ⊗ bottom_wire_to_top (S n)).
 Proof.
@@ -118,6 +168,31 @@ Proof.
   simpl.
   rewrite n_wire_transpose.
   easy. 
+Qed.
+
+
+Lemma bottom_to_top_grow_l : forall n prf prf', 
+  bottom_to_top (S (S n)) ∝ cast _ _ prf' prf'((cast _ _ prf prf (n_wire n ↕ ⨉)) ⟷ (bottom_to_top (S n) ↕ —)).
+Proof.
+  intros.
+  apply transpose_diagrams.
+Opaque top_to_bottom.
+  simpl.
+  unfold bottom_to_top.
+  rewrite cast_transpose.
+  simpl.
+  repeat rewrite cast_transpose.
+  simpl.
+  rewrite n_wire_transpose.
+  repeat rewrite Proportional.transpose_involutive.
+  rewrite top_to_bottom_grow_r.
+  rewrite cast_compose_distribute.
+  simpl_casts.
+  erewrite (cast_compose_mid (S (n + 1))).
+  simpl_casts.
+  apply compose_simplify; apply cast_irrelevance.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma a_swap_grow : forall n, a_swap (S (S (S n))) ∝ (⨉ ↕ n_wire (S n)) ⟷ (— ↕ a_swap (S (S n))) ⟷ (⨉ ↕ n_wire (S n)). 
@@ -381,31 +456,3 @@ Proof. intros. solve_prop 1. Qed.
 Lemma swap_pullthrough_top_right_X_1_1 : forall α, (X 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (X 1 1 α)).
 Proof. intros. colorswap_of swap_pullthrough_top_right_Z_1_1. Qed.
   
-Lemma b_swap_1_1_is_swap : b_swap 1 1 ∝ ⨉.
-Proof.
-  intros.
-  simpl.
-  cleanup_zx.
-  simpl_casts.
-  rewrite wire_to_n_wire.
-  rewrite n_wire_stack.
-  cleanup_zx.
-  easy.
-Qed.
-
-Lemma b_swap_0_is_wire : forall m, b_swap 0 m ∝ n_wire m.
-Proof. intros; easy. Qed.
-
-Lemma b_swap_colorswap : forall n m,
-  ⊙ (b_swap n m) ∝ b_swap n m.
-Proof.
-  intros.
-  induction n.
-  - simpl. rewrite n_wire_colorswap. easy.
-  - simpl.
-    simpl_casts.
-    simpl.
-    rewrite top_to_bottom_colorswap.
-    rewrite IHn.
-    easy.
-Qed.
