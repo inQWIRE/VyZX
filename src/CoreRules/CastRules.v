@@ -284,7 +284,7 @@ Proof.
   easy.
 Qed.
 
-Lemma cast_fn_eq_dim : forall {n n'} prfn (f : forall n : nat, ZX n n), cast n' n' prfn prfn (f n) ∝ f n'.
+Lemma cast_fn_eq_dim : forall {n n'} prfn prfn' (f : forall n : nat, ZX n n), cast n' n' prfn prfn' (f n) ∝ f n'.
 Proof. 
   intros.
   destruct prfn.
