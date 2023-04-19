@@ -316,7 +316,7 @@ Lemma cast_n_stack1 : forall {n n'} prfn (zx : ZX 1 1),
   cast n' n' prfn prfn (n ↑ zx) ∝ n' ↑ zx.
 Proof.
   intros.
-  rewrite (cast_fn_eq_dim prfn (fun n => n_stack1 n zx)).
+  rewrite (cast_fn_eq_dim prfn prfn (fun n => n_stack1 n zx)).
   easy.
 Qed.
 
