@@ -201,6 +201,27 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma change_cast :
+  forall {n m} n' m' n'' m'' {prfn prfm prfn' prfm' prfn'' prfm''} (zx : ZX n m),
+  cast n' m' prfn prfm zx ∝
+  cast n' m' prfn' prfm' (cast n'' m'' prfn'' prfm'' zx).
+Proof.
+  intros.
+  subst.
+  repeat rewrite cast_id.
+  easy.
+Qed.
+
+Lemma cast_irrelevance :
+  forall {n m n' m' prfn0 prfm0 prfn1 prfm1} (zx : ZX n m),
+  cast n' m' prfn0 prfm0 zx ∝ cast n' m' prfn1 prfm1 zx.
+Proof.
+  intros.
+  subst.
+  simpl_casts.
+  easy.
+Qed.
+
 Lemma cast_simplify :
   forall {n n' m m'} prfn0 prfm0 prfn1 prfm1  (zx0 zx1 : ZX n m),
   zx0 ∝ zx1 ->
