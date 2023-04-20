@@ -194,6 +194,7 @@ Opaque top_to_bottom.
 Unshelve.
 all: lia.
 Qed.
+Transparent top_to_bottom.
 
 Lemma a_swap_grow : forall n, a_swap (S (S (S n))) ∝ (⨉ ↕ n_wire (S n)) ⟷ (— ↕ a_swap (S (S n))) ⟷ (⨉ ↕ n_wire (S n)). 
 Proof.
