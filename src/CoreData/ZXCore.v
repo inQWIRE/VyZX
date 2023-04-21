@@ -89,7 +89,7 @@ Proof.
   apply cast_semantics.
 Qed.
 
-Ltac simpl_cast_semantics := try repeat rewrite cast_semantics; try repeat (rewrite cast_semantics_dim; unfold cast_semantics_dim_eqn).
+Tactic Notation "simpl_cast_semantics" := try repeat rewrite cast_semantics; try repeat (rewrite cast_semantics_dim; unfold cast_semantics_dim_eqn).
 (* @nocheck name *)
 
 Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) : 

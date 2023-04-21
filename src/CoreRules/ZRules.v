@@ -70,7 +70,7 @@ Proof.
 	- simpl.
 		rewrite (grow_Z_top_left n m β).
 		rewrite <- compose_assoc.
-		rewrite (stack_assoc_back (Z 1 1 α) —).
+		auto_cast_eqn (rewrite (stack_assoc_back (Z 1 1 α) —)).
 		simpl_casts.
 		rewrite <- (stack_compose_distr (Z 1 1 α ↕ —) (Z 2 1 0) (n_wire n)).
 		cleanup_zx.
@@ -80,8 +80,6 @@ Proof.
 		rewrite <- IHn.
 		rewrite <- (grow_Z_top_left n).
 		easy.
-Unshelve.
-all: lia.
 Qed.
 
 Lemma Z_rot_r : forall n m α β,

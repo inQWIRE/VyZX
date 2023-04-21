@@ -265,8 +265,6 @@ Proof.
   rewrite n_wire_stack.
   cleanup_zx.
   easy.
-Unshelve.
-all: lia.
 Qed.
 
 
@@ -348,8 +346,6 @@ Proof.
   rewrite n_wire_stack.
   cleanup_zx.
   easy.
-Unshelve.
-all: lia.
 Qed.
 
 Lemma n_swap_1_is_wire : n_swap 1 ∝ —.
@@ -358,8 +354,6 @@ Proof.
   cleanup_zx.
   simpl_casts.
   easy.
-Unshelve.
-all: lia.
 Qed.
 
 Lemma n_swap_grow_l : forall n,
@@ -371,8 +365,6 @@ Proof.
     easy.
   - simpl.
     easy.
-Unshelve.
-all: lia.
 Qed.
 
 Lemma n_swap_grow_r : forall n,

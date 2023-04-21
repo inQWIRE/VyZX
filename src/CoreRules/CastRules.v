@@ -29,9 +29,10 @@ Qed.
 Ltac cast_irrelevance := 
   apply cast_simplify; try easy.
 
+Tactic Notation "auto_cast_eqn" tactic3(tac) := unshelve tac; try lia; shelve_unifiable.
 
 #[export] Hint Rewrite @cast_id : cast_simpl_db.
-Ltac simpl_casts := (autorewrite with cast_simpl_db); repeat cast_irrelevance. 
+Tactic Notation "simpl_casts" := auto_cast_eqn (autorewrite with cast_simpl_db); repeat cast_irrelevance.
 
 
 Lemma cast_stack_l : forall {nTop nTop' mTop mTop' nBot mBot} prfnTop prfmTop prfn prfm
@@ -114,14 +115,14 @@ Lemma cast_contract_l : forall {n m n0 m0 n1 m1} prfn0 prfm0 prfn1 prfm1 prfn pr
     ∝ zx1.
 Proof.
   intros; split; intros.
-  - rewrite <- cast_symm in H.
-    rewrite cast_contract in H.
-    exact H.
-  - rewrite <- cast_symm.
+  - auto_cast_eqn (rewrite <- cast_symm in H).
     simpl_casts.
-    exact H.
-Unshelve.
-all: lia.
+    rewrite <- H.
+    simpl_casts.
+  - auto_cast_eqn (rewrite <- cast_symm).
+    simpl_casts.
+    rewrite <- H.
+    cast_irrelevance.
 Qed.
 
 #[export] Hint Rewrite @cast_contract_l : cast_simpl_db.
@@ -133,14 +134,14 @@ Lemma cast_contract_r : forall {n m n0 m0 n1 m1} prfn0 prfm0 prfn1 prfm1 prfn pr
   zx0 ∝ cast n0 m0 prfn prfm zx1.
 Proof.
   intros; split; intros.
-  - rewrite cast_symm in H.
-    rewrite cast_contract in H.
-    exact H.
+  - auto_cast_eqn (rewrite cast_symm in H).
+    auto_cast_eqn (rewrite cast_contract in H).
+    rewrite H.
+    cast_irrelevance.
   - simpl_casts.
-    rewrite cast_symm.
-    exact H.
-Unshelve.
-all: lia.
+    auto_cast_eqn (rewrite cast_symm).
+    rewrite H.
+    cast_irrelevance.
 Qed.
 
 Lemma cast_compose_distribute :

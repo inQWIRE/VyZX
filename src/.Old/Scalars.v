@@ -64,7 +64,7 @@ Proof.
     reflexivity.
 Qed.
 
-Ltac solve_scalar := intros; rewrite Scalar_general; apply Mscale_simplify; try reflexivity.
+Tactic Notation "solve_scalar" := intros; rewrite Scalar_general; apply Mscale_simplify; try reflexivity.
 
 Definition Scalar_1_plus_Cexp_alpha α := Z_Spider 0 0 α.
 

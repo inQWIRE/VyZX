@@ -124,8 +124,6 @@ Proof.
   rewrite stack_empty_r.
   simpl_casts.
   easy.
-Unshelve.
-all: lia.
 Qed.
 
 Lemma wire_transpose : —⊤ ∝ —.
