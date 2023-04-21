@@ -121,7 +121,7 @@ Lemma wire_to_n_wire :
   — ∝ n_wire 1.
 Proof.
   simpl.
-  rewrite stack_empty_r.
+  auto_cast_eqn (rewrite stack_empty_r).
   simpl_casts.
   easy.
 Qed.

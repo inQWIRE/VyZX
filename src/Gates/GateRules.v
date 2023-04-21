@@ -94,12 +94,10 @@ Proof.
   rewrite <- (stack_compose_distr (— ↕ ⊂) (Z 2 2 _ ↕ —) — —).
   cleanup_zx.
   rewrite wire_to_n_wire at 1.
-  rewrite <- (cast_id (eq_sym (Nat.add_0_r _)) (wrap_under_dimension 1) (n_wire 1 ↕ ⊂)).
+  erewrite <- (cast_id _ _ (n_wire 1 ↕ ⊂)).
   rewrite <- Z_wrap_under_bot_left.
-  assert (1 = 1 + 0)%nat as Hcast by lia;
-  rewrite <- (cast_id Hcast (eq_refl) (Z _ (1 + 2) _));
-  simpl_casts;
-  clear Hcast.
+  erewrite <- (cast_id _ _ (Z _ (1 + 2) _));
+  simpl_casts.
   rewrite wire_to_n_wire.
   rewrite grow_Z_bot_right.
   rewrite grow_X_top_left.

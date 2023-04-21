@@ -91,16 +91,16 @@ Lemma dominated_X_spider_fusion_bot_left : forall m n0 n1 i α β,
 	X i (n1 + m) (α + β).
 Proof. intros. colorswap_of dominated_Z_spider_fusion_bot_left. Qed.
 
-Lemma X_spider_fusion_top_left_bot_right : forall top mid bot input output α β,
+Lemma X_spider_fusion_top_left_bot_right : forall top mid bot input output α β prfn prfm,
 	X input (top + S mid) α ↕ n_wire bot ⟷
-	cast (top + (S mid) + bot) (top + output) (eq_sym (Nat.add_assoc _ _ _)) eq_refl 
+	cast (top + (S mid) + bot) (top + output) prfn prfm
 		(n_wire top ↕ X (S mid + bot) output β) ∝
 	X (input + bot) (top + output) (α + β).
 Proof. intros. colorswap_of Z_spider_fusion_top_left_bot_right. Qed.
 
-Lemma X_spider_fusion_bot_left_top_right : forall top mid bot input output α β,
+Lemma X_spider_fusion_bot_left_top_right : forall top mid bot input output α β prfn prfm,
 	((n_wire top ↕ X input (S mid + bot) α) ⟷
-	cast (top + ((S mid) + bot)) _ ((Nat.add_assoc _ _ _)) eq_refl 
+	cast (top + ((S mid) + bot)) _ prfn prfm 
 		(X (top + (S mid)) output β ↕ n_wire bot)) ∝
 	X (top + input) (output + bot) (β + α).
 Proof. intros. colorswap_of Z_spider_fusion_bot_left_top_right. Qed.
@@ -141,19 +141,19 @@ Proof. intros. colorswap_of (@Z_self_swap_absorbtion_left_top n m α). Qed.
 Lemma X_self_swap_absorbtion_left : forall {n n' m α}, ((n_wire n' ↕ (⨉ ↕ n_wire n)) ⟷ X (n' + S (S n)) m α) ∝ X (n' + S (S n)) m α.
 Proof. intros. colorswap_of (@Z_self_swap_absorbtion_left n n' m α). Qed.
 
-Lemma X_wrap_under_bot_left : forall n m α,
+Lemma X_wrap_under_bot_left : forall n m α prfn prfm,
 	X n (m + 1) α ∝ 
 	(cast n (n + 1 + 1) 
-		(eq_sym (Nat.add_0_r _)) (wrap_under_dimension _)
+		prfn prfm
 		(n_wire n ↕ ⊂)) ⟷
 			(X (n + 1) m α ↕ Wire).
 Proof. colorswap_of Z_wrap_under_bot_left. Qed.
 
-Lemma X_wrap_under_bot_right : forall n m α,
+Lemma X_wrap_under_bot_right : forall n m α prfn prfm,
 	X (n + 1) m α ∝ 
 		(X n (m + 1) α ↕ —) ⟷ 
 	(cast (m + 1 + 1) m
-		(wrap_under_dimension _)
-		(eq_sym (Nat.add_0_r _))
+		prfn
+		prfm
 		(n_wire m ↕ ⊃)).
 Proof. colorswap_of Z_wrap_under_bot_right. Qed.

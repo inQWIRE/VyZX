@@ -8,9 +8,9 @@ Require Export CoreRules.XRules.
 
 
 
-Theorem X_state_copy : forall (r n : nat),
+Theorem X_state_copy : forall (r n : nat) prfn prfm,
 	(X 0 1 ((INR r) * PI) ⟷ Z 1 n 0) ∝
-	cast 0%nat n (mult_n_O _) (eq_sym (Nat.mul_1_r _)) (n ⇑ (X 0 1 ((INR r) * PI))).
+	cast 0%nat n prfn prfm (n ⇑ (X 0 1 ((INR r) * PI))).
 Proof.
 	intros.
 	assert (X_state_copy_ind : (X 0 1 (INR r * PI) ⟷ Z 1 2 0) ∝
@@ -67,9 +67,9 @@ Proof.
 		all: lia.
 Qed.
 
-Theorem Z_state_copy : forall (r n : nat),
+Theorem Z_state_copy : forall (r n : nat) prfn prfm,
 	(Z 0 1 ((INR r) * PI) ⟷ X 1 n 0) ∝
-	cast 0%nat n (mult_n_O _) (eq_sym (Nat.mul_1_r _)) (n ⇑ (Z 0 1 ((INR r) * PI))).
+	cast 0%nat n prfn prfm (n ⇑ (Z 0 1 ((INR r) * PI))).
 Proof.
 	intros.
 	eapply (cast_diagrams (n * 0) (n * 1)).
@@ -93,9 +93,9 @@ Proof.
 		all: lia.
 Qed.
 
-Theorem X_state_pi_copy : forall n,
+Theorem X_state_pi_copy : forall n prfn prfm,
 	((X 0 1 PI) ⟷ Z 1 n 0) ∝ 
-	(cast 0 n (mult_n_O _) (eq_sym (Nat.mul_1_r _)) (n ⇑ (X 0 1 PI))).
+	(cast 0 n prfn prfm (n ⇑ (X 0 1 PI))).
 Proof.
 	intros.
 	replace (PI)%R with (1 * PI)%R by lra.
@@ -104,9 +104,9 @@ Proof.
 	easy.
 Qed.
 
-Theorem X_state_0_copy : forall n,
+Theorem X_state_0_copy : forall n prfn prfm,
 	((X 0 1 0) ⟷ Z 1 n 0) ∝ 
-	(cast 0 n (mult_n_O _) (eq_sym (Nat.mul_1_r _)) (n ⇑ (X 0 1 0))).
+	(cast 0 n prfn prfm (n ⇑ (X 0 1 0))).
 Proof.
 	intros.
 	replace (0)%R with (0 * PI)%R at 1 by lra.
@@ -116,9 +116,9 @@ Proof.
 	easy.
 Qed.
 
-Theorem Z_state_pi_copy : forall n,
+Theorem Z_state_pi_copy : forall n prfn prfm,
 	((Z 0 1 PI) ⟷ X 1 n 0) ∝ 
-	(cast 0 n (mult_n_O _) (eq_sym (Nat.mul_1_r _)) (n ⇑ (Z 0 1 PI))).
+	(cast 0 n prfn prfm (n ⇑ (Z 0 1 PI))).
 Proof.
 	intros.
 	replace (PI)%R with (1 * PI)%R by lra.
@@ -127,9 +127,9 @@ Proof.
 	easy.
 Qed.
 
-Theorem Z_state_0_copy : forall n,
+Theorem Z_state_0_copy : forall n prfn prfm,
 	((Z 0 1 0) ⟷ X 1 n 0) ∝ 
-	(cast 0 n (mult_n_O _) (eq_sym (Nat.mul_1_r _)) (n ⇑ (Z 0 1 0))).
+	(cast 0 n prfn prfm (n ⇑ (Z 0 1 0))).
 Proof.
 	intros.
 	replace (0)%R with (0 * PI)%R at 1 by lra.
@@ -139,12 +139,10 @@ Proof.
 	easy.
 Qed.
 
-Lemma Z_copy : forall n r, 
+Lemma Z_copy : forall n r prfn prfm, 
 	(Z 1 1 (INR r * PI) ⟷ X 1 n 0) ∝
 	X 1 n 0 ⟷ 
-		(cast n n
-			(eq_sym (Nat.mul_1_r _))
-			(eq_sym (Nat.mul_1_r _))
+		(cast n n prfn prfm
 			(n ⇑ (Z 1 1 (INR r * PI)))).
 Proof.
 	intros.
@@ -193,12 +191,11 @@ Proof.
 	all: lia.
 Qed.
 
-Lemma X_copy : forall n r,
+Lemma X_copy : forall n r prfn prfm,
 	(X 1 1 (INR r * PI) ⟷ Z 1 n 0) ∝
 	Z 1 n 0 ⟷ 
 		(cast n n
-			(eq_sym (Nat.mul_1_r _))
-			(eq_sym (Nat.mul_1_r _))
+			prfn prfm
 			(n ⇑ (X 1 1 (INR r * PI)))).
 Proof.
 	intros.
@@ -210,12 +207,10 @@ Proof.
 	apply Z_copy.
 Qed.
 
-Lemma Z_0_copy : forall n, 
+Lemma Z_0_copy : forall n prfn prfm, 
 	(Z 1 1 0 ⟷ X 1 n 0) ∝
 	X 1 n 0 ⟷ 
-		(cast n n
-			(eq_sym (Nat.mul_1_r _))
-			(eq_sym (Nat.mul_1_r _))
+		(cast n n prfn prfm
 			(n ⇑ (Z 1 1 0))).
 Proof.
 	intros.
@@ -226,12 +221,10 @@ Proof.
 	apply H.
 Qed.
 
-Lemma Z_pi_copy : forall n, 
+Lemma Z_pi_copy : forall n prfn prfm, 
 	(Z 1 1 PI ⟷ X 1 n 0) ∝
 	X 1 n 0 ⟷ 
-		(cast n n
-			(eq_sym (Nat.mul_1_r _))
-			(eq_sym (Nat.mul_1_r _))
+		(cast n n prfn prfm
 			(n ⇑ (Z 1 1 PI))).
 Proof.
 	intros.
@@ -242,12 +235,10 @@ Proof.
 	apply H.
 Qed.
 
-Lemma X_0_copy : forall n, 
+Lemma X_0_copy : forall n prfn prfm, 
 	(X 1 1 0 ⟷ Z 1 n 0) ∝
 	Z 1 n 0 ⟷ 
-		(cast n n
-			(eq_sym (Nat.mul_1_r _))
-			(eq_sym (Nat.mul_1_r _))
+		(cast n n prfn prfm
 			(n ⇑ (X 1 1 0))).
 Proof.
 	intros.
@@ -258,12 +249,10 @@ Proof.
 	apply H.
 Qed.
 
-Lemma X_pi_copy : forall n, 
+Lemma X_pi_copy : forall n prfn prfm, 
 	(X 1 1 PI ⟷ Z 1 n 0) ∝
 	Z 1 n 0 ⟷ 
-		(cast n n
-			(eq_sym (Nat.mul_1_r _))
-			(eq_sym (Nat.mul_1_r _))
+		(cast n n prfn prfm
 			(n ⇑ (X 1 1 PI))).
 Proof.
 	intros.

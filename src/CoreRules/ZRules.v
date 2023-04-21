@@ -324,9 +324,9 @@ Lemma dominated_Z_spider_fusion_bot_left : forall m n0 n1 i α β,
 	Z i (n1 + m) (α + β).
 Proof. intros. transpose_of dominated_Z_spider_fusion_bot_right. Qed.
 
-Lemma Z_spider_fusion_top_left_bot_right : forall top mid bot input output α β,
+Lemma Z_spider_fusion_top_left_bot_right : forall top mid bot input output α β prfn prfm,
 	Z input (top + S mid) α ↕ n_wire bot ⟷
-	cast (top + (S mid) + bot) (top + output) (eq_sym (Nat.add_assoc _ _ _)) eq_refl 
+	cast (top + (S mid) + bot) (top + output) prfn prfm 
 		(n_wire top ↕ Z (S mid + bot) output β) ∝
 	Z (input + bot) (top + output) (α + β).
 Proof.
@@ -376,9 +376,9 @@ Unshelve.
 all: lia.
 Qed.
 
-Lemma Z_spider_fusion_bot_left_top_right : forall top mid bot input output α β,
+Lemma Z_spider_fusion_bot_left_top_right : forall top mid bot input output α β prfn prfm,
 	((n_wire top ↕ Z input (S mid + bot) α) ⟷
-	cast (top + ((S mid) + bot)) _ ((Nat.add_assoc _ _ _)) eq_refl 
+	cast (top + ((S mid) + bot)) _ prfn prfm 
 		(Z (top + (S mid)) output β ↕ n_wire bot)) ∝
 	Z (top + input) (output + bot) (β + α).
 Proof.
@@ -496,14 +496,11 @@ Proof. intros. transpose_of (@Z_self_swap_absorbtion_right_top m n α). Qed.
 Lemma Z_self_swap_absorbtion_left : forall {n n' m α}, ((n_wire n' ↕ (⨉ ↕ n_wire n)) ⟷ Z (n' + S (S n)) m α) ∝ Z (n' + S (S n)) m α.
 Proof. intros. transpose_of (@Z_self_swap_absorbtion_right m n n' α). Qed.
 
-(* @nocheck Z_X *)
-Lemma wrap_under_dimension : forall n, (n + 1 + 1 = n + 2)%nat.
-Proof. lia. Qed.
 
-Lemma Z_wrap_under_bot_left : forall n m α,
+Lemma Z_wrap_under_bot_left : forall n m α prfn prfm,
 	Z n (m + 1) α ∝ 
 	(cast n (n + 1 + 1) 
-		(eq_sym (Nat.add_0_r _)) (wrap_under_dimension _)
+		prfn prfm
 		(n_wire n ↕ ⊂)) ⟷
 			(Z (n + 1) m α ↕ Wire).
 Proof.
@@ -534,6 +531,7 @@ Proof.
 	rewrite wire_to_n_wire at 3.
 	specialize (Z_spider_fusion_bot_left_top_right 
 		1 0 1 0 m 0 α); intros.
+	specialize (H eq_refl eq_refl).
 	rewrite cast_id in H.
 	rewrite H.
 	clear H.
@@ -547,11 +545,11 @@ Unshelve.
 all: lia.
 Qed.
 
-Lemma Z_wrap_under_bot_right : forall n m α,
+Lemma Z_wrap_under_bot_right : forall n m α prfn prfm,
 	Z (n + 1) m α ∝ 
 		(Z n (m + 1) α ↕ —) ⟷ 
 	(cast (m + 1 + 1) m
-		(wrap_under_dimension _)
-		(eq_sym (Nat.add_0_r _))
+		prfn
+		prfm
 		(n_wire m ↕ ⊃)).
 Proof. transpose_of Z_wrap_under_bot_left. Qed.
