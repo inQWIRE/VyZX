@@ -28,10 +28,10 @@ Inductive ZX : nat -> nat -> Type :=
   | Compose {n m o} (zx0 : ZX n m) (zx1 : ZX m o) : ZX n o.
 
 Definition cast (n m : nat) {n' m'} 
-              (eqIn : n = n') (eqOut : m = m') (zx : ZX n' m') : ZX n m.
+              (prfn : n = n') (prfm : m = m') (zx : ZX n' m') : ZX n m.
 Proof.
-  destruct eqIn.
-  destruct eqOut.
+  destruct prfn.
+  destruct prfm.
   exact zx.
 Defined.
 
