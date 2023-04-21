@@ -175,6 +175,8 @@ Transparent n_stack1.
   rewrite compose_assoc.
   rewrite Hr.
   easy.
+Unshelve.
+all: lia.
 Qed.
 
 Theorem hopf_rule_X_Z : 

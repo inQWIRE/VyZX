@@ -190,7 +190,7 @@ Opaque top_to_bottom.
   simpl_casts.
   erewrite (cast_compose_mid (S (n + 1))).
   simpl_casts.
-  apply compose_simplify; apply cast_irrelevance.
+  apply compose_simplify; cast_irrelevance.
 Unshelve.
 all: lia.
 Qed.
@@ -250,6 +250,8 @@ Proof.
   apply stack_simplify; [ easy | ].
   rewrite <- bottom_to_top_grow_r.
   easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma a_swap_2_is_swap : a_swap 2 ∝ ⨉.
@@ -263,6 +265,8 @@ Proof.
   rewrite n_wire_stack.
   cleanup_zx.
   easy.
+Unshelve.
+all: lia.
 Qed.
 
 
@@ -344,6 +348,8 @@ Proof.
   rewrite n_wire_stack.
   cleanup_zx.
   easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma n_swap_1_is_wire : n_swap 1 ∝ —.
@@ -352,6 +358,8 @@ Proof.
   cleanup_zx.
   simpl_casts.
   easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma n_swap_grow_l : forall n,
@@ -363,6 +371,8 @@ Proof.
     easy.
   - simpl.
     easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma n_swap_grow_r : forall n,
@@ -395,6 +405,8 @@ Proof.
     rewrite stack_assoc.
     simpl_casts.
     easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma n_swap_transpose : forall n,

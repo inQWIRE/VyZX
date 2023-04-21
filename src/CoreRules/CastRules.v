@@ -14,17 +14,30 @@ Proof.
   simpl; lma.
 Qed.
 
+Lemma cast_simplify :
+  forall {n n' m m'} prfn0 prfm0 prfn1 prfm1  (zx0 zx1 : ZX n m),
+  zx0 ∝ zx1 ->
+  cast n' m' prfn0 prfm0 zx0 ∝ cast n' m' prfn1 prfm1 zx1.
+Proof.
+  intros.
+  destruct H; destruct H.
+  prop_exists_nonzero x;
+  simpl_cast_semantics;
+  congruence.
+Qed.
+
+Ltac cast_irrelevance := 
+  apply cast_simplify; try easy.
+
+
 #[export] Hint Rewrite @cast_id : cast_simpl_db.
-Ltac simpl_casts := (autorewrite with cast_simpl_db). 
+Ltac simpl_casts := (autorewrite with cast_simpl_db); repeat cast_irrelevance. 
 
 
-Lemma cast_stack_l : forall {nTop nTop' mTop mTop' nBot mBot} prfnTop prfmTop 
+Lemma cast_stack_l : forall {nTop nTop' mTop mTop' nBot mBot} prfnTop prfmTop prfn prfm
                           (zxTop : ZX nTop mTop) (zxBot : ZX nBot mBot),
   (cast nTop' mTop' prfnTop prfmTop zxTop) ↕ zxBot ∝ 
-  cast (nTop' + nBot) (mTop' + mBot)  
-       (f_equal2_plus _ _ _ _ (prfnTop) eq_refl)
-       (f_equal2_plus _ _ _ _ (prfmTop) eq_refl)
-       (zxTop ↕ zxBot).
+  cast (nTop' + nBot) (mTop' + mBot) prfn prfm (zxTop ↕ zxBot).
 Proof.
   intros.
   subst.
@@ -32,13 +45,10 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma cast_stack_r : forall {nTop mTop nBot nBot' mBot mBot'} prfnBot prfmBot 
+Lemma cast_stack_r : forall {nTop mTop nBot nBot' mBot mBot'} prfnBot prfmBot prfn prfm
                           (zxTop : ZX nTop mTop) (zxBot : ZX nBot mBot),
   zxTop ↕ (cast nBot' mBot' prfnBot prfmBot zxBot) ∝ 
-  cast (nTop + nBot') (mTop + mBot')  
-       (f_equal2_plus _ _ _ _ eq_refl prfnBot)
-       (f_equal2_plus _ _ _ _ eq_refl prfmBot)
-       (zxTop ↕ zxBot).
+  cast (nTop + nBot') (mTop + mBot') prfn prfm (zxTop ↕ zxBot).
 Proof.
   intros.
   subst.
@@ -63,16 +73,17 @@ Qed.
 
 
 Lemma cast_contract : 
-  forall {n0 m0 n1 m1 n2 m2} prfn01 prfm01 prfn12 prfm12 (zx : ZX n0 m0),
+  forall {n0 m0 n1 m1 n2 m2} prfn01 prfm01 prfn12 prfm12 prfn prfm (zx : ZX n0 m0),
     cast n2 m2 prfn12 prfm12 
       (cast n1 m1 prfn01 prfm01
         zx) ∝
-    cast n2 m2 (eq_trans prfn12 prfn01) (eq_trans prfm12 prfm01) 
-      zx.
+    cast n2 m2 prfn prfm zx.
 Proof.
   intros; subst.
   prop_exists_nonzero 1.
-  simpl; lma.
+  simpl.
+  simpl_cast_semantics.
+  lma.
 Qed.
 
 
@@ -96,10 +107,10 @@ Proof.
 Qed.
 
 
-Lemma cast_contract_l : forall {n m n0 m0 n1 m1} prfn0 prfm0 prfn1 prfm1 
+Lemma cast_contract_l : forall {n m n0 m0 n1 m1} prfn0 prfm0 prfn1 prfm1 prfn prfm
                                        (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
   cast n m prfn0 prfm0 zx0 ∝ cast n m prfn1 prfm1 zx1 <->
-  cast n1 m1 (eq_trans (eq_sym prfn1) prfn0) (eq_trans (eq_sym prfm1) prfm0) zx0
+  cast n1 m1 prfn prfm zx0
     ∝ zx1.
 Proof.
   intros; split; intros.
@@ -109,16 +120,17 @@ Proof.
   - rewrite <- cast_symm.
     simpl_casts.
     exact H.
+Unshelve.
+all: lia.
 Qed.
 
 #[export] Hint Rewrite @cast_contract_l : cast_simpl_db.
 
 
-Lemma cast_contract_r : forall {n m n0 m0 n1 m1} prfn0 prfm0 prfn1 prfm1 
+Lemma cast_contract_r : forall {n m n0 m0 n1 m1} prfn0 prfm0 prfn1 prfm1 prfn prfm
                                        (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
   cast n m prfn0 prfm0 zx0 ∝ cast n m prfn1 prfm1 zx1 <->
-  zx0 ∝ cast n0 m0 (eq_trans (eq_sym prfn0) prfn1) 
-                   (eq_trans (eq_sym prfm0) prfm1) zx1.
+  zx0 ∝ cast n0 m0 prfn prfm zx1.
 Proof.
   intros; split; intros.
   - rewrite cast_symm in H.
@@ -127,38 +139,8 @@ Proof.
   - simpl_casts.
     rewrite cast_symm.
     exact H.
-Qed.
-
-(* Reverse lemmas so you don't need complex proof structure within the stacks *)
-
-Lemma add_same_l : forall (n n' m : nat) (prfn : (n + m = n' + m)%nat), 
-  (n = n')%nat.
-Proof. intros. lia. Qed.
-
-Lemma cast_stack_top : forall {n0 n0' n1 m0 m0' m1} prfn prfm 
-                            (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
-  cast (n0' + n1) (m0' + m1) prfn prfm (zx0 ↕ zx1) ∝ 
-  ((cast n0' m0' (add_same_l n0' n0 n1 prfn) (add_same_l m0' m0 m1 prfm)) zx0 
-    ↕ zx1).
-Proof.
-  intros.
-  simpl_casts.
-  easy.
-Qed.
-
-Lemma add_same_r : forall (n m m' : nat) (prfn : (n + m = n + m')%nat), 
-  (m = m')%nat.
-Proof. intros. lia. Qed.
-
-Lemma cast_stack_bot : forall {n0 n1 n1' m0 m1 m1'} prfn prfm 
-  (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
-  cast (n0 + n1') (m0 + m1') prfn prfm (zx0 ↕ zx1) ∝ 
-  (zx0 ↕ 
-    (cast n1' m1' (add_same_r n0 n1' n1 prfn) (add_same_r m0 m1' m1 prfm)) zx1).
-Proof.
-  intros.
-  simpl_casts.
-  easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma cast_compose_distribute :
@@ -209,26 +191,6 @@ Proof.
   intros.
   subst.
   repeat rewrite cast_id.
-  easy.
-Qed.
-
-Lemma cast_irrelevance :
-  forall {n m n' m' prfn0 prfm0 prfn1 prfm1} (zx : ZX n m),
-  cast n' m' prfn0 prfm0 zx ∝ cast n' m' prfn1 prfm1 zx.
-Proof.
-  intros.
-  subst.
-  simpl_casts.
-  easy.
-Qed.
-
-Lemma cast_simplify :
-  forall {n n' m m'} prfn0 prfm0 prfn1 prfm1  (zx0 zx1 : ZX n m),
-  zx0 ∝ zx1 ->
-  cast n' m' prfn0 prfm0 zx0 ∝ cast n' m' prfn1 prfm1 zx1.
-Proof.
-  intros.
-  simpl_casts.
   easy.
 Qed.
 

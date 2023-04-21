@@ -18,6 +18,8 @@ Proof.
   simpl_casts.
   rewrite n_wire_stack.
   easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma pad_bot_1_simpl : forall {n m} (zx : ZX n m), pad_bot 1 zx ∝ cast _ _ (Nat.add_1_r n) (Nat.add_1_r m) (pad_bot_1 zx).
@@ -26,6 +28,8 @@ Proof.
   unfold pad_bot_1.
   simpl_casts.
   easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma pad_bot_contract : forall {n m} (zx : ZX n m) pad1 pad2, pad_bot pad2 (pad_bot pad1 zx) ∝ cast (n + pad1 + pad2) (m + pad1 + pad2) (eq_sym (Nat.add_assoc _ _ _)) (eq_sym (Nat.add_assoc _ _ _)) (pad_bot (pad1 + pad2) zx).
@@ -36,6 +40,8 @@ Proof.
   simpl_casts.
   rewrite n_wire_stack.
   easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma pad_top_bot_comm : forall {n m} (zx : ZX n m) padT padB, (pad_top padT (pad_bot padB zx)) ∝ cast (padT + (n + padB)) (padT + (m + padB)) (Nat.add_assoc _ _ _) (Nat.add_assoc _ _ _) (pad_bot padB (pad_top padT zx)).
@@ -45,6 +51,8 @@ Proof.
   rewrite stack_assoc_back.
   simpl_casts.
   easy.
+Unshelve.
+all: lia.
 Qed.
 
 
@@ -55,6 +63,8 @@ Proof.
   rewrite stack_assoc.
   simpl_casts.
   easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma pad_top_bot_semantics : forall {n m} (zx : ZX n m) padT padB, ZX_semantics (pad_top padT (pad_bot padB zx)) = I (2 ^ padT) ⊗ (ZX_semantics zx) ⊗ I (2 ^ padB).

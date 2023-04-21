@@ -13,12 +13,11 @@ ZX_semantics (zx0 ⟷ zx1) = @Mmult (2 ^ n) (2 ^ m) (2 ^ o) (ZX_semantics zx1) (
 Proof. easy. Qed.
 
 Lemma stack_assoc : 
-forall {n0 n1 n2 m0 m1 m2}
-	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2),
+forall {n0 n1 n2 m0 m1 m2} 
+	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2) prfn prfm,
 	(zx0 ↕ zx1) ↕ zx2 ∝ 
-		cast ((n0 + n1) + n2) ((m0 + m1) + m2) 
-				 (eq_sym(Nat.add_assoc _ _ _)) (eq_sym(Nat.add_assoc _ _ _)) 
-											(zx0 ↕ (zx1 ↕ zx2)).
+		cast ((n0 + n1) + n2) ((m0 + m1) + m2) prfn prfm	
+				(zx0 ↕ (zx1 ↕ zx2)).
 Proof.                                                      
 	intros.
 	prop_exists_nonzero 1.  
@@ -30,19 +29,17 @@ Qed.
 
 Lemma stack_assoc_back : 
 forall {n0 n1 n2 m0 m1 m2}
-	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2),
+	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2) prfn prfm,
 	zx0 ↕ (zx1 ↕ zx2) ∝ 
-		cast (n0 + (n1 + n2)) (m0 + (m1 + m2)) 
-				 (Nat.add_assoc _ _ _) (Nat.add_assoc _ _ _) 
-											((zx0 ↕ zx1) ↕ zx2).
+		cast (n0 + (n1 + n2)) (m0 + (m1 + m2)) prfn prfm
+				((zx0 ↕ zx1) ↕ zx2).
 Proof.                                                      
 	intros.
-	prop_exists_nonzero 1.  
-	simpl.
-	Msimpl.
-	rewrite (@cast_semantics ((n0 + n1) + n2) _ (n0 + (n1 + n2))%nat).
-	simpl; restore_dims.
-	rewrite kron_assoc; auto with wf_db.
+	rewrite <- cast_symm.
+	rewrite <- stack_assoc.
+	easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma stack_empty_l : forall {nIn nOut} (zx : ZX nIn nOut),
@@ -55,9 +52,9 @@ Proof.
 	lma.
 Qed.
 
-Lemma stack_empty_r : forall {n m : nat} (zx : ZX n m),
+Lemma stack_empty_r : forall {n m : nat} (zx : ZX n m) prfn prfm,
 	zx ↕ ⦰ ∝ 
-		cast (n + 0) (m + 0) (Nat.add_0_r _) (Nat.add_0_r _) zx.
+		cast (n + 0) (m + 0) prfn prfm zx.
 Proof.
 	intros.
 	prop_exists_nonzero 1.
@@ -67,9 +64,9 @@ Proof.
 	reflexivity.
 Qed.
 
-Lemma stack_empty_r_rev : forall {n m : nat} (zx : ZX n m),
+Lemma stack_empty_r_rev : forall {n m : nat} (zx : ZX n m) prfn prfm,
 	zx ∝ 
-		cast _ _ (eq_sym (Nat.add_0_r _)) (eq_sym (Nat.add_0_r _)) (zx ↕ ⦰).
+		cast _ _ prfn prfm (zx ↕ ⦰).
 Proof.
 	intros.
 	prop_exists_nonzero 1.
@@ -142,9 +139,9 @@ Lemma n_stack1_l : forall n (zx : ZX 1 1),
 	(S n) ↑ zx ∝ zx ↕ (n ↑ zx).
 Proof. easy. Qed.
 
-Lemma n_stack1_r : forall n (zx : ZX 1 1), 
+Lemma n_stack1_r : forall n (zx : ZX 1 1) prfn prfm, 
 	(S n) ↑ zx ∝ 
-	cast (S n) (S n) (eq_sym (Nat.add_1_r _)) (eq_sym (Nat.add_1_r _)) ((n ↑ zx) ↕ zx).
+	cast (S n) (S n) prfn prfm ((n ↑ zx) ↕ zx).
 Proof.
 induction n.
 - intros.
@@ -162,6 +159,8 @@ induction n.
 	rewrite stack_assoc_back.
 	simpl_casts.
 	easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma stack_wire_distribute_l : forall {n m o} (zx0 : ZX n m) (zx1 : ZX m o),
@@ -195,6 +194,8 @@ Proof.
 		rewrite stack_assoc_back.
 		simpl_casts.
 		easy.
+Unshelve.
+all: lia.
 Qed.
 
 (* Lemma n_wire_collapse_r : forall {n0 n1 m1} (zx0 : ZX n0 0) (zx1 : ZX n1 m1),
@@ -212,12 +213,13 @@ Proof.
 		rewrite (stack_assoc zx).
 		simpl_casts.
 		reflexivity.
+Unshelve.
+all: lia.
 Qed.
 
-Lemma nstack_split : forall n m {nIn mOut} (zx : ZX nIn mOut),
+Lemma nstack_split : forall n m {nIn mOut} (zx : ZX nIn mOut) prfn prfm,
 	(n + m) ⇑ zx ∝ 
-	cast _ _ (Nat.mul_add_distr_r _ _ _) (Nat.mul_add_distr_r _ _ _) 
-		((n ⇑ zx) ↕ (m ⇑ zx)).
+	cast _ _ prfn prfm ((n ⇑ zx) ↕ (m ⇑ zx)).
 Proof.
 	intros.
 	dependent induction n.
@@ -230,4 +232,6 @@ Proof.
 		rewrite stack_assoc.
 		simpl_casts.
 		reflexivity.
+Unshelve.
+all: lia.
 Qed.

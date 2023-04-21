@@ -131,6 +131,8 @@ Proof.
   rewrite <- (stack_compose_distr — — — —).
   cleanup_zx.
   easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma cnot_is_cnot_r : _CNOT_ ∝ _CNOT_R.
@@ -174,6 +176,8 @@ Proof.
   rewrite <- wire_to_n_wire.
   subst.
   easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma cnot_inv_is_swapped_cnot : _CNOT_inv_ ∝ ⨉ ⟷ _CNOT_ ⟷ ⨉.

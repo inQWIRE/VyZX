@@ -34,6 +34,8 @@ Proof.
   cleanup_zx;
   simpl_casts).
   easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma n_cup_1_cup : n_cup 1 ∝ ⊃.
@@ -48,6 +50,8 @@ Proof.
   repeat rewrite n_wire_stack.
   cleanup_zx.
   easy.
+Unshelve.
+all: lia.
 Qed.
 
 Opaque n_cup.
@@ -72,7 +76,8 @@ Qed.
 
 Global Open Scope ZX_scope.
 
-Lemma n_cup_helper_grow_l : forall n prfn prfm, n_cup_helper (S n) ∝ cast _ _ prfn prfm (n_wire n ↕ ⊃ ↕ n_wire n) ⟷ n_cup_helper n.
+Lemma n_cup_helper_grow_l : forall n prfn prfm, 
+  n_cup_helper (S n) ∝ cast _ _ prfn prfm (n_wire n ↕ ⊃ ↕ n_wire n) ⟷ n_cup_helper n.
 Proof.
   intros.
   induction n.

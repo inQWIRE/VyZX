@@ -1,7 +1,11 @@
 Require Import CoreData.CoreData.
 Require Import CoreAutomation.
+Require Import CapCupRules.
+Require Import CapCupRules.
 Require Import CastRules.
 Require Import StackComposeRules.
+Require Import SwapRules.
+Require Import SwapRules.
 Require Import WireRules.
 Require Import SpiderInduction.
 
@@ -76,6 +80,8 @@ Proof.
 		rewrite <- IHn.
 		rewrite <- (grow_Z_top_left n).
 		easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma Z_rot_r : forall n m α β,
@@ -111,6 +117,8 @@ Proof.
 		rewrite <- Z_rot_l.
 		rewrite Rplus_0_r.
 		easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma Z_appendix_rot_r : forall n m α β,
@@ -179,6 +187,8 @@ Proof.
 			rewrite <- nstack1_split.
 			rewrite <- (grow_Z_top_right n (S m)).
 			easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma Z_wrap_over_top_right : forall n m α,
@@ -230,6 +240,8 @@ Proof.
 			rewrite <- nstack1_split.
 			rewrite <- (grow_Z_top_right n (m + o)).
 			easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma Z_add_l : forall n m {o α β γ},
@@ -362,6 +374,8 @@ Proof.
 	rewrite <- Z_add_r.
 	replace (α + 0 + β + 0)%R with (α + β)%R by lra.
 	easy.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma Z_spider_fusion_bot_left_top_right : forall top mid bot input output α β,
@@ -531,8 +545,8 @@ Proof.
 	rewrite Rplus_0_r.
 	rewrite Rplus_0_l.
 	easy.
-	Unshelve.
-	all: lia.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma Z_wrap_under_bot_right : forall n m α,
