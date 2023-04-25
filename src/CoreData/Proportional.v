@@ -3,6 +3,8 @@ Require Import Setoid.
 Require Import QuantumLib.Polar.
 Require Import Coq.Reals.ClassicalDedekindReals.
 Require Import Coq.Reals.Rdefinitions.
+Require Import ZArith.
+Module Import Zabs2N.
 
 (* 
 A generalized form of proportionality which can be used to build notions for 
@@ -373,13 +375,15 @@ Proof.
   rewrite H.
 Abort.
 
+Global Close Scope ZX_scope.
+Print Visibility.
+
 Lemma complex_decompose : forall z : C, 
   exists k (α β : R), z = (√2)^k * (1 + Cexp(α)) * (√2 * Cexp(β)).
 Proof.
   intro.
   remember (rect_to_polar z) as polar.
   destruct polar as [r θ].
-  remember (ConstructiveRcomplete.Rfloor (Rrepr (Rlog (√2) (r / 2)%R))) as floor.
-  destruct floor.
-  exists (BinIntDef.Z.to_nat x).
+  remember (up (Rlog (√2) (r / 2))) as ceiling.
+  exists ((Z.abs_N ceiling) + 1).
 Abort.
