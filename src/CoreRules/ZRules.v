@@ -5,7 +5,6 @@ Require Import CapCupRules.
 Require Import CastRules.
 Require Import StackComposeRules.
 Require Import SwapRules.
-Require Import SwapRules.
 Require Import WireRules.
 Require Import SpiderInduction.
 
@@ -517,9 +516,7 @@ Proof.
 	erewrite (@cast_compose_mid (n + 0) (n + 1 + 1) 3 (n + 2) _ ($ n + 0, n + 1 + 1 ::: n_wire n ↕ ⊂ $)).
 	simpl_casts.
 	rewrite <- Z_0_2_0_is_cup.
-	rewrite wire_to_n_wire at 2.
-	rewrite wire_to_n_wire at 3.
-	rewrite n_wire_stack.
+	bundle_wires.
 	rewrite <- (stack_compose_distr
 		(n_wire n) (Z n 1 0)
 		(Z 0 2 0)  (n_wire 2)).
@@ -553,3 +550,47 @@ Lemma Z_wrap_under_bot_right : forall n m α prfn prfm,
 		prfm
 		(n_wire m ↕ ⊃)).
 Proof. transpose_of Z_wrap_under_bot_left. Qed.
+
+Lemma Z_self_top_to_bottom_absorbtion_right_base : forall n m α, Z n m α ⟷ top_to_bottom m ∝ Z n m α.
+Proof.
+	intros.
+	destruct m; [ simpl; cleanup_zx; easy | ].
+	destruct m; [ simpl; cleanup_zx; easy | ].
+	generalize dependent n.
+	generalize dependent α.
+	induction m; intros.
+	- simpl.
+		cleanup_zx.
+		simpl_casts.
+		bundle_wires.
+		cleanup_zx.
+		rewrite Z_self_swap_absorbtion_right_base.
+		easy.
+	- rewrite top_to_bottom_grow_r.
+		erewrite <- (@cast_Z n _  ((S (S m)) + 1)).
+		rewrite Z_add_r_base_rot.
+		rewrite (cast_compose_mid ((S (S m)) + 1)).
+		rewrite cast_contract.
+		simpl_casts.
+		rewrite compose_assoc.
+		rewrite cast_compose_l.
+		simpl_casts.
+		rewrite <- (compose_assoc (Z 1 (S (S m)) 0 ↕ Z 1 1 0)).
+		rewrite <- stack_compose_distr.
+		rewrite IHm.
+		rewrite wire_removal_r.
+		rewrite <- compose_assoc.
+		rewrite <- Z_add_r.
+		rewrite cast_Z.
+		rewrite cast_compose_r.
+		rewrite cast_Z.
+		rewrite (stack_empty_r_rev ⨉).
+		replace ⦰ with (n_wire 0) by easy.
+		rewrite cast_id.
+		rewrite Z_self_swap_absorbtion_right.
+		simpl_casts.
+		easy.
+Unshelve.
+	all: lia.
+Qed.
+	

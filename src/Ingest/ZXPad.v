@@ -17,7 +17,7 @@ Proof.
   unfold pad_top.
   rewrite stack_assoc_back.
   simpl_casts.
-  rewrite n_wire_stack.
+  bundle_wires.
   easy.
 Unshelve.
 all: lia.
@@ -30,7 +30,6 @@ Proof.
   unfold pad_bot_1.
   simpl_casts.
   easy.
-  
 Qed.
 
 Lemma pad_bot_contract : forall {n m} (zx : ZX n m) pad1 pad2 prfn prfm, pad_bot pad2 (pad_bot pad1 zx) ∝ cast (n + pad1 + pad2) (m + pad1 + pad2) prfn prfm (pad_bot (pad1 + pad2) zx).
@@ -39,7 +38,7 @@ Proof.
   unfold pad_bot.
   rewrite stack_assoc.
   simpl_casts.
-  rewrite n_wire_stack.
+  bundle_wires.
   easy.
 Unshelve.
 all: lia.

@@ -155,3 +155,8 @@ Proof.
   Msimpl; simpl.
   solve_matrix.
 Qed.
+
+Lemma n_stack_n_wire_1_n_wire : forall n, n ↑ (n_wire 1) ∝ n_wire n.
+Proof.
+  intros. rewrite <- wire_to_n_wire. easy.
+Qed.

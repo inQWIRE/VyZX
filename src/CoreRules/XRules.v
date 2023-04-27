@@ -1,6 +1,7 @@
 Require Import CoreData.CoreData.
 Require Import WireRules.
 Require Import CoreAutomation.
+Require Import SwapRules.
 Require Import ZRules.
 
 Lemma grow_X_top_left : forall (nIn nOut : nat) α,
@@ -157,3 +158,6 @@ Lemma X_wrap_under_bot_right : forall n m α prfn prfm,
 		prfm
 		(n_wire m ↕ ⊃)).
 Proof. colorswap_of Z_wrap_under_bot_right. Qed.
+
+Lemma X_self_top_to_bottom_absorbtion_right_base : forall n m α, X n m α ⟷ top_to_bottom m ∝ X n m α.
+Proof. colorswap_of Z_self_top_to_bottom_absorbtion_right_base. Qed.

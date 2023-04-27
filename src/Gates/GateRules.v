@@ -69,8 +69,7 @@ Proof.
   rewrite (stack_assoc_back — — (X 1 2 0)).
   rewrite (stack_assoc_back — — (X 2 1 0)).
   simpl_casts.
-  rewrite wire_to_n_wire at 3 4 6 7.
-  rewrite n_wire_stack.
+  bundle_wires.
   rewrite (compose_assoc (— ↕ (⊂ ↕ —))).
   rewrite wire_to_n_wire at 4.
   rewrite (nwire_stack_compose_topleft (X 2 1 0) (Z 2 2 (0 + 0))).
@@ -168,10 +167,8 @@ Proof.
   rewrite 2 stack_assoc_back; simpl_casts.
   rewrite <- (stack_wire_distribute_r (⊂ ↕ —) (— ↕ ⊃)).
   rewrite yank_r.
-  rewrite wire_to_n_wire.
-  rewrite 2 n_wire_stack.
+  bundle_wires.
   cleanup_zx.
-  rewrite <- wire_to_n_wire.
   subst.
   easy.
 Unshelve.

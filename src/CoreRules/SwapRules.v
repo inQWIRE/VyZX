@@ -86,7 +86,7 @@ Proof.
   intros.
   induction n.
   + simpl; cleanup_zx; simpl_casts.
-    rewrite wire_to_n_wire, n_wire_stack.
+    bundle_wires.
     cleanup_zx.
     easy.
   + simpl.
@@ -109,8 +109,7 @@ Proof.
     rewrite stack_wire_distribute_l.
     rewrite <- compose_assoc.
     apply compose_simplify; [ | easy ].
-    rewrite wire_to_n_wire at 1.
-    rewrite n_wire_stack.
+    bundle_wires.
     repeat rewrite cast_id.
     symmetry.
     erewrite (cast_compose_mid (S (S (S n)))).
@@ -119,10 +118,9 @@ Proof.
     eapply (cast_diagrams (2 + (1 + n)) (2 + (1 + n))).
     rewrite cast_contract.
     rewrite (stack_assoc ⨉ (n_wire n) —).
-    rewrite wire_to_n_wire at 2.
-    rewrite n_wire_stack.
     rewrite cast_contract.
     rewrite cast_stack_distribute.
+    bundle_wires.
     rewrite cast_n_wire.
     simpl_casts.
     easy.
@@ -227,8 +225,7 @@ Proof.
   rewrite (stack_assoc ⨉ — (n_wire n)).
   rewrite 2 (stack_assoc_back — —).
   simpl_casts.
-  rewrite wire_to_n_wire at 1 2 3 7 9 10.
-  repeat rewrite n_wire_stack.
+  bundle_wires.
   repeat rewrite <- compose_assoc.
   rewrite (nwire_stack_compose_topleft (bottom_to_top (S n)) ⨉).
   rewrite <- nwire_stack_compose_botleft.
@@ -261,8 +258,7 @@ Proof.
   simpl.
   cleanup_zx.
   simpl_casts.
-  rewrite wire_to_n_wire.
-  rewrite n_wire_stack.
+  bundle_wires.
   cleanup_zx.
   easy.
 Qed.
@@ -342,8 +338,7 @@ Proof.
   simpl.
   cleanup_zx.
   simpl_casts.
-  rewrite wire_to_n_wire.
-  rewrite n_wire_stack.
+  bundle_wires.
   cleanup_zx.
   easy.
 Qed.
@@ -382,8 +377,7 @@ Proof.
     rewrite stack_wire_distribute_l.
     rewrite (stack_assoc_back — —).
     simpl_casts.
-    rewrite wire_to_n_wire at 3 4.
-    rewrite n_wire_stack.
+    bundle_wires.
     repeat rewrite compose_assoc.
     rewrite <- (compose_assoc (⨉ ↕ n_wire n)).
     rewrite (nwire_stack_compose_botleft ⨉ (n_swap n)).
@@ -394,7 +388,8 @@ Proof.
     simpl_casts.
     rewrite stack_wire_distribute_l.
     repeat rewrite compose_assoc.
-    rewrite stack_assoc.
+    rewrite (stack_assoc_back — — (n_swap _)).
+    cleanup_zx.
     simpl_casts.
     easy.
 Unshelve.
@@ -444,6 +439,18 @@ Proof.
       easy.
 Qed.
 
+Lemma a_swap_colorswap : forall n,
+  ⊙ (a_swap n) ∝ a_swap n.
+Proof.
+  induction n.
+  - easy.
+  - Local Transparent a_swap.
+    simpl.
+    rewrite bottom_to_top_colorswap.
+    rewrite top_to_bottom_colorswap.
+    easy.
+Qed.
+
 Lemma n_swap_colorswap : forall n,
   ⊙ (n_swap n) ∝ n_swap n.
 Proof.
@@ -454,6 +461,13 @@ Proof.
     rewrite bottom_to_top_colorswap.
     easy.
 Qed.
+
+#[export] Hint Rewrite
+  (fun n => @bottom_to_top_colorswap n)
+  (fun n => @top_to_bottom_colorswap n)
+  (fun n => @a_swap_colorswap n)
+  (fun n => @n_swap_colorswap n)
+  : colorswap_db.
 
 Lemma swap_pullthrough_top_right_Z_1_1 : forall α, (Z 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (Z 1 1 α)).
 Proof. intros. solve_prop 1. Qed.

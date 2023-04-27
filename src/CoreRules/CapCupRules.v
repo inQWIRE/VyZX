@@ -44,8 +44,7 @@ Proof.
   simpl.
   cleanup_zx.
   simpl_casts.
-  rewrite wire_to_n_wire.
-  repeat rewrite n_wire_stack.
+  bundle_wires.
   cleanup_zx.
   easy.
 Qed.
@@ -81,8 +80,7 @@ Proof.
     simpl_casts.
     cleanup_zx.
     simpl_casts.
-    rewrite wire_to_n_wire.
-    rewrite n_wire_stack.
+    bundle_wires.
     cleanup_zx.
     easy.
   - simpl.
@@ -91,8 +89,7 @@ Proof.
     simpl_casts.
     rewrite stack_wire_distribute_l.
     rewrite stack_wire_distribute_r.
-    rewrite wire_to_n_wire at 1 4 7 9.
-    rewrite n_wire_stack.
+    bundle_wires.
     erewrite <- (@cast_n_wire (n + 1) (1 + n)).
     rewrite <- ComposeRules.compose_assoc.
     apply compose_simplify; [ | easy].
@@ -102,14 +99,15 @@ Proof.
     apply compose_simplify; [ | apply cast_simplify; easy].
     simpl_casts.
     rewrite 2 stack_assoc.
-    rewrite n_wire_stack.
     simpl_casts.
-    rewrite 2 stack_assoc_back.
-    rewrite n_wire_stack.
+    rewrite 3 stack_assoc_back.
     simpl_casts.
-    erewrite <- (@cast_n_wire (n + 1) (1 + n)) at 3.
+    erewrite <- (@cast_n_wire (n + 1) (1 + n)) at 2.
     rewrite cast_stack_r.
-    apply cast_simplify.
+    simpl.
+    rewrite (stack_assoc (— ↕ n_wire n ↕ ⊃) (n_wire n) —). 
+    bundle_wires.
+    simpl_casts.
     easy.
 Unshelve.
   all: lia.

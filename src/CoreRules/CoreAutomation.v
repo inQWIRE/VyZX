@@ -4,6 +4,26 @@ Require Import StackRules.
 Require Import WireRules.
 Require Import StackComposeRules.
 
+Ltac wire_to_n_wire_safe_aux zx :=
+  match zx with
+  | ?n ↑ — => idtac (* Guards from recursively unfolding n_wire into (n ↑ (n_wire 1)) *)
+  | ?n ↑ ?zx => wire_to_n_wire_safe_aux zx
+  | ?zx1 ↕ ?zx2 => wire_to_n_wire_safe_aux zx1; wire_to_n_wire_safe_aux zx2
+  | ?zx1 ⟷ ?zx2 => wire_to_n_wire_safe_aux zx1; wire_to_n_wire_safe_aux zx2
+  | — => rewrite wire_to_n_wire
+  | cast _ _ _ _ ?zx => wire_to_n_wire_safe_aux zx
+  | _ => idtac
+  end.
+
+Ltac wire_to_n_wire_safe := 
+match goal with 
+  | [ |- ?zx1 ∝ ?zx2] => try (wire_to_n_wire_safe_aux zx1); try (wire_to_n_wire_safe_aux zx2); repeat rewrite n_stack_n_wire_1_n_wire
+end.
+
+Tactic Notation "bundle_wires" := wire_to_n_wire_safe; (* change wires to n_wires *)
+                                  repeat rewrite n_wire_stack; (* stack n_wire *)
+                                  repeat rewrite <- wire_to_n_wire. (* restore *)
+
 #[export] Hint Rewrite 
   (fun n => @compose_empty_l n)
   (fun n => @compose_empty_r n)
