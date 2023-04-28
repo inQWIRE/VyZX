@@ -177,3 +177,10 @@ Proof. colorswap_of Z_n_wrap_under_r_base_unswapped. Qed.
 
 Lemma X_n_wrap_under_r_base : forall n m α, X (n + m) 0 α ∝ (X n m α ↕ n_wire m) ⟷ n_cup m.
 Proof. colorswap_of Z_n_wrap_under_r_base. Qed.
+
+Lemma X_n_wrap_over_r_base_unswapped : forall n m α, X (m + n) 0 α ∝ (n_wire m ↕ X n m α) ⟷ n_cup_unswapped m.
+Proof. colorswap_of Z_n_wrap_over_r_base_unswapped. Qed.
+	
+Lemma X_n_wrap_over_r_base : forall n m α, X (m + n) 0 α ∝ (n_wire m ↕ X n m α) ⟷ n_cup m.
+Proof. colorswap_of Z_n_wrap_over_r_base. Qed.
+	

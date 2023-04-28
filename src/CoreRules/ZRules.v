@@ -769,3 +769,71 @@ Proof.
 	rewrite Z_n_wrap_under_r_base_unswapped.
 	easy.
 Qed.
+
+Lemma Z_n_wrap_over_r_base_unswapped : forall n m α, Z (m + n) 0 α ∝ (n_wire m ↕ Z n m α) ⟷ n_cup_unswapped m.
+Proof.
+	intros.
+	generalize dependent n.
+	generalize dependent α.
+	induction m; intros; [simpl; cleanup_zx; simpl_casts; subst; easy | ].
+	remember (Z (S m + n) 0 α) as LHS.
+	rewrite n_cup_unswapped_grow_l.
+	rewrite <- (@cast_Z n _ (1 + m)).
+	rewrite Z_add_r_base_rot.
+	simpl_casts.
+	rewrite stack_nwire_distribute_l. (* TODO: rename *)
+	rewrite n_wire_grow_r at 2.
+	rewrite <- compose_assoc.
+	rewrite (compose_assoc (n_wire (S m) ↕ Z n 2 α)).
+	rewrite cast_stack_l.
+	rewrite 2 stack_assoc.
+	simpl_casts.
+	erewrite <- (cast_compose_mid_contract (S m + 2) (S m + S m) (m + m) _ _ _ _ _ _ (n_wire m ↕ (— ↕ (Z 1 1 0 ↕ Z 1 m 0))) (n_wire m ↕ (⊃ ↕ n_wire m))).
+	rewrite <- stack_nwire_distribute_l.
+	rewrite stack_assoc_back.
+	simpl_casts.
+	rewrite <- (stack_compose_distr (— ↕ (Z 1 1 0)) ⊃ (Z 1 m 0)).
+	rewrite (stack_empty_r_rev ⊃).
+	simpl_casts.
+	replace ⦰ with (n_wire 0) by easy.
+	rewrite <- (Z_wrap_over_top_left 1 0).
+	cleanup_zx.
+	rewrite Z_2_0_0_is_cap.
+	rewrite n_wire_grow_r.
+	rewrite cast_stack_l.
+	rewrite stack_assoc.
+	simpl_casts.
+	erewrite (cast_compose_mid (m + 3) _ _ (cast _ _ _ _ _) (cast _ _ _ _ (n_wire m ↕ (⊃ ↕ Z 1 m 0)))).
+	rewrite cast_contract.
+	rewrite cast_contract.
+	rewrite <- cast_compose_mid_contract.
+	rewrite <- stack_compose_distr.
+	cleanup_zx.
+	rewrite <- (nwire_stack_compose_botleft ⊃ (Z 1 m 0)).
+	rewrite <- compose_assoc.
+	rewrite <- (Z_wrap_over_top_left n 1).
+	simpl.
+	cleanup_zx.
+	rewrite Z_spider_1_1_fusion.
+	eapply (cast_diagrams (m + (S n)) 0).
+	rewrite cast_compose_l.
+	simpl_casts.
+	rewrite <- IHm.
+	replace (α + 0)%R with α by lra.
+	rewrite HeqLHS.
+	simpl_casts.
+	easy.
+Unshelve.
+	all: lia.
+Qed.
+
+Lemma Z_n_wrap_over_r_base : forall n m α, Z (m + n) 0 α ∝ (n_wire m ↕ Z n m α) ⟷ n_cup m.
+Proof.
+	intros.
+	rewrite n_cup_inv_n_swap_n_wire.
+	rewrite <- compose_assoc.
+	rewrite <- stack_nwire_distribute_l.
+	rewrite Z_n_swap_absorbtion_right_base.
+	rewrite Z_n_wrap_over_r_base_unswapped.
+	easy.
+Qed.
