@@ -184,3 +184,14 @@ Proof. colorswap_of Z_n_wrap_over_r_base_unswapped. Qed.
 Lemma X_n_wrap_over_r_base : forall n m α, X (m + n) 0 α ∝ (n_wire m ↕ X n m α) ⟷ n_cup m.
 Proof. colorswap_of Z_n_wrap_over_r_base. Qed.
 	
+Lemma X_n_wrap_over_l_base_unswapped : forall n m α, X 0 (n + m) α ∝ n_cap_unswapped n ⟷ (n_wire n ↕ X n m α).
+Proof. transpose_of X_n_wrap_over_r_base_unswapped. Qed.
+
+Lemma X_n_wrap_over_l_base : forall n m α, X 0 (n + m) α ∝ n_cap n ⟷ (n_wire n ↕ X n m α).
+Proof. transpose_of X_n_wrap_over_r_base. Qed.
+
+Lemma X_n_wrap_under_l_base_unswapped : forall n m α, X 0 (m + n) α ∝ n_cap_unswapped n ⟷ (X n m α ↕ n_wire n).
+Proof. transpose_of X_n_wrap_under_r_base_unswapped. Qed.
+
+Lemma X_n_wrap_under_l_base : forall n m α, X 0 (m + n) α ∝ n_cap n ⟷ (X n m α ↕ n_wire n).
+Proof. transpose_of X_n_wrap_under_r_base. Qed.

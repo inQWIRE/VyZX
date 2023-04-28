@@ -837,3 +837,15 @@ Proof.
 	rewrite Z_n_wrap_over_r_base_unswapped.
 	easy.
 Qed.
+
+Lemma Z_n_wrap_over_l_base_unswapped : forall n m α, Z 0 (n + m) α ∝ n_cap_unswapped n ⟷ (n_wire n ↕ Z n m α).
+Proof. transpose_of Z_n_wrap_over_r_base_unswapped. Qed.
+
+Lemma Z_n_wrap_over_l_base : forall n m α, Z 0 (n + m) α ∝ n_cap n ⟷ (n_wire n ↕ Z n m α).
+Proof. transpose_of Z_n_wrap_over_r_base. Qed.
+
+Lemma Z_n_wrap_under_l_base_unswapped : forall n m α, Z 0 (m + n) α ∝ n_cap_unswapped n ⟷ (Z n m α ↕ n_wire n).
+Proof. transpose_of Z_n_wrap_under_r_base_unswapped. Qed.
+
+Lemma Z_n_wrap_under_l_base : forall n m α, Z 0 (m + n) α ∝ n_cap n ⟷ (Z n m α ↕ n_wire n).
+Proof. transpose_of Z_n_wrap_under_r_base. Qed.

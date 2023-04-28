@@ -135,7 +135,7 @@ Proof.
   easy.
 Qed.
 
-Lemma n_cup_colorswap : forall n, n_cup n ∝ ⊙ (n_cup n).
+Lemma n_cup_colorswap : forall n, ⊙ (n_cup n) ∝ n_cup n.
 Proof. 
   intros.
 Local Transparent n_cup.
@@ -147,9 +147,64 @@ Local Transparent n_cup.
   easy.
 Qed.
 
-(* TODO: Transpose & n_cap colorswap *)
+Lemma n_cap_unswapped_colorswap : forall n, ⊙ (n_cap_unswapped n) ∝ n_cap_unswapped n.
+Proof.
+  intros.
+  unfold n_cap_unswapped.
+  rewrite colorswap_transpose_commute.
+  rewrite n_cup_unswapped_colorswap.
+  easy.
+Qed.
+
+Lemma n_cap_colorswap : forall n, ⊙ (n_cap n) ∝ n_cap n.
+Proof. 
+  intros.
+  unfold n_cap.
+  rewrite colorswap_transpose_commute.
+  rewrite n_cup_colorswap.
+  easy.
+Qed.
 
 #[export] Hint Rewrite
   (fun n => @n_cup_colorswap n)
+  (fun n => @n_cap_colorswap n)
   (fun n => @n_cup_unswapped_colorswap n)
+  (fun n => @n_cap_unswapped_colorswap n)
   : colorswap_db.
+
+Lemma n_cup_unswapped_transpose : forall n, (n_cup_unswapped n)⊤ ∝ n_cap_unswapped n.
+Proof.
+  intros.
+  unfold n_cap_unswapped.
+  easy.
+Qed.
+
+Lemma n_cap_unswapped_transpose : forall n, (n_cap_unswapped n)⊤ ∝ n_cup_unswapped n.
+Proof.
+  intros.
+  unfold n_cap_unswapped.
+  rewrite Proportional.transpose_involutive.
+  easy.
+Qed.
+
+Lemma n_cup_transpose : forall n, (n_cup n)⊤ ∝ n_cap n.
+Proof.
+  intros.
+  unfold n_cap.
+  easy.
+Qed.
+
+Lemma n_cap_transpose : forall n, (n_cap n)⊤ ∝ n_cup n.
+Proof.
+  intros.
+  unfold n_cap.
+  rewrite Proportional.transpose_involutive.
+  easy.
+Qed.
+
+#[export] Hint Rewrite
+  (fun n => @n_cup_unswapped_transpose n)
+  (fun n => @n_cap_unswapped_transpose n)
+  (fun n => @n_cup_transpose n)
+  (fun n => @n_cap_transpose n)
+  : transpose_db.

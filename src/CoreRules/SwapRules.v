@@ -194,6 +194,21 @@ all: lia.
 Qed.
 Transparent top_to_bottom.
 
+Lemma top_to_bottom_transpose : forall n, (top_to_bottom n)⊤ ∝ bottom_to_top n.
+Proof.
+  intros.
+  unfold bottom_to_top.
+  easy.
+Qed.
+
+Lemma bottom_to_top_transpose : forall n, (bottom_to_top n)⊤ ∝ top_to_bottom n.
+Proof.
+  intros.
+  unfold bottom_to_top.
+  rewrite Proportional.transpose_involutive.
+  easy.
+Qed.
+
 Lemma a_swap_grow : forall n, a_swap (S (S (S n))) ∝ (⨉ ↕ n_wire (S n)) ⟷ (— ↕ a_swap (S (S n))) ⟷ (⨉ ↕ n_wire (S n)). 
 Proof.
   intros.
@@ -326,6 +341,23 @@ all: try (apply WF_kron; try lia; replace (2 ^ n + (2 ^ n + 0))%nat with (2 ^ (S
   apply WF_kron; try lia; replace (2 ^ n + (2 ^ n + 0))%nat with (2 ^ (S n))%nat by (simpl; lia); auto with wf_db.
 Qed. 
 
+Lemma a_swap_transpose : forall n,
+  (a_swap n) ⊤ ∝ a_swap n.
+Proof.
+  intros.
+  strong induction n.
+  destruct n; [ easy | ].
+  destruct n; [ simpl; cleanup_zx; simpl_casts; easy | ].
+  destruct n; [ rewrite a_swap_2_is_swap; easy | ].
+  rewrite a_swap_grow.
+Local Opaque a_swap.
+  simpl.
+  repeat rewrite n_wire_transpose.
+  rewrite compose_assoc.
+  rewrite H by lia.
+  easy.
+Qed.
+
 (* n_swap proofs *)
 
 Opaque a_swap a_swap_semantics. (* For n_swap proofs we don't want a_swap to unfold, instead we use lemmata from above*)
@@ -408,6 +440,13 @@ Proof.
     rewrite <- n_swap_grow_r.
     easy.
 Qed.
+
+#[export] Hint Rewrite
+  (fun n => @bottom_to_top_transpose n)
+  (fun n => @top_to_bottom_transpose n)
+  (fun n => @n_swap_transpose n)
+  (fun n => @a_swap_transpose n)
+  : transpose_db.
 
 Lemma top_to_bottom_colorswap : forall n,
   ⊙ (top_to_bottom n) ∝ top_to_bottom n.

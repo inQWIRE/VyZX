@@ -16,6 +16,8 @@ Fixpoint n_cup_unswapped (n : nat) : ZX (n + n) 0 :=
               ⊃
   end.
 
+Definition n_cap_unswapped n := (n_cup_unswapped n)⊤. 
+
 Definition n_cup n := (n_swap (n) ↕ n_wire n) ⟷ (n_cup_unswapped n).
 
 Definition n_cap n := (n_cup n) ⊤.
