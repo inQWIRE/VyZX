@@ -3,6 +3,7 @@ Require Import ComposeRules.
 Require Import CastRules.
 Require Import WireRules.
 Require Import StackRules.
+Require Import SwapRules.
 Require Import CoreAutomation.
 
 Lemma cup_Z : ⊃ ∝ Z 2 0 0.
@@ -71,8 +72,8 @@ Qed.
 
 Global Open Scope ZX_scope.
 
-Lemma n_cup_helper_grow_l : forall n prfn prfm, 
-  n_cup_helper (S n) ∝ cast _ _ prfn prfm (n_wire n ↕ ⊃ ↕ n_wire n) ⟷ n_cup_helper n.
+Lemma n_cup_unswapped_grow_l : forall n prfn prfm, 
+  n_cup_unswapped (S n) ∝ cast _ _ prfn prfm (n_wire n ↕ ⊃ ↕ n_wire n) ⟷ n_cup_unswapped n.
 Proof.
   intros.
   induction n.
@@ -113,5 +114,42 @@ Unshelve.
   all: lia.
 Qed.
 
+Lemma n_cup_inv_n_swap_n_wire : forall n, n_cup n ∝ n_wire n ↕ n_swap n ⟷ n_cup_unswapped n.
+Proof.
+  intros.
+  strong induction n.
+  destruct n; [ | destruct n].
+  - simpl. rewrite n_cup_0_empty. cleanup_zx. simpl_casts. easy.
+  - simpl. rewrite n_cup_1_cup. cleanup_zx. simpl_casts. bundle_wires. cleanup_zx. easy.
+Abort.
 
-  
+Lemma n_cup_unswapped_colorswap : forall n, ⊙ (n_cup_unswapped n) ∝ n_cup_unswapped n.
+Proof. 
+  intros.
+  induction n; [ easy | ].
+  simpl.
+  apply compose_simplify; [ | easy ].
+  rewrite cast_colorswap.
+  simpl.
+  rewrite IHn.
+  easy.
+Qed.
+
+Lemma n_cup_colorswap : forall n, n_cup n ∝ ⊙ (n_cup n).
+Proof. 
+  intros.
+Local Transparent n_cup.
+  unfold n_cup.
+  simpl.
+  rewrite n_wire_colorswap.
+  rewrite n_swap_colorswap.
+  rewrite n_cup_unswapped_colorswap.
+  easy.
+Qed.
+
+(* TODO: Transpose & n_cap colorswap *)
+
+#[export] Hint Rewrite
+  (fun n => @n_cup_colorswap n)
+  (fun n => @n_cup_unswapped_colorswap n)
+  : colorswap_db.

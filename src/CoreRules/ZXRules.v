@@ -160,7 +160,7 @@ Proof.
 	eapply (cast_diagrams 1 (n * 1)).
 	rewrite 2 cast_compose_distribute.
 	simpl_casts.
-	erewrite (@cast_compose_mid _ _ _ (n * 1) _ (X 1 n 0)).
+	erewrite (@cast_compose_mid _ _ _ (n * 1)%nat _ _ (X 1 n 0)).
 	simpl_casts.
 	induction n; [ | destruct n].
 	- simpl.

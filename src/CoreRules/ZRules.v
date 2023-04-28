@@ -1,7 +1,6 @@
 Require Import CoreData.CoreData.
 Require Import CoreAutomation.
 Require Import CapCupRules.
-Require Import CapCupRules.
 Require Import CastRules.
 Require Import StackComposeRules.
 Require Import SwapRules.
@@ -513,7 +512,7 @@ Proof.
 	eapply (cast_diagrams (n + 0) (m + 1)).
 	repeat rewrite cast_compose_distribute.
 	simpl_casts.
-	erewrite (@cast_compose_mid (n + 0) (n + 1 + 1) 3 (n + 2) _ ($ n + 0, n + 1 + 1 ::: n_wire n ↕ ⊂ $)).
+	erewrite (@cast_compose_mid (n + 0) (n + 1 + 1) 3 (n + 2) _ _ ($ n + 0, n + 1 + 1 ::: n_wire n ↕ ⊂ $)).
 	simpl_casts.
 	rewrite <- Z_0_2_0_is_cup.
 	bundle_wires.
@@ -593,4 +592,180 @@ Proof.
 Unshelve.
 	all: lia.
 Qed.
+
+Lemma Z_self_bottom_to_top_absorbtion_right_base : forall n m α, Z n m α ⟷ bottom_to_top m ∝ Z n m α.
+Proof.
+	intros.
+	destruct m; [ simpl; cleanup_zx; easy | ].
+	destruct m; [ simpl; cleanup_zx; easy | ].
+	generalize dependent n.
+	generalize dependent α.
+	induction m; intros.
+	- simpl.
+		unfold bottom_to_top, top_to_bottom.
+		simpl.
+		cleanup_zx.
+		simpl_casts.
+		bundle_wires.
+		cleanup_zx.
+		rewrite Z_self_swap_absorbtion_right_base.
+		easy.
+	- rewrite bottom_to_top_grow_r.
+		erewrite <- (@cast_Z n _  (1 + (S (S m)))).
+		rewrite Z_add_r_base_rot.
+		rewrite (cast_compose_mid (1 + (S (S m)))).
+		rewrite cast_contract.
+		simpl_casts.
+		rewrite compose_assoc.
+		rewrite <- (compose_assoc (Z 1 1 0 ↕ Z 1 (S (S m)) 0)).
+		rewrite <- stack_compose_distr.
+		rewrite IHm.
+		rewrite wire_removal_r.
+		rewrite <- compose_assoc.
+		rewrite <- Z_add_r.
+		rewrite <- (stack_empty_l ⨉).
+		replace ⦰ with (n_wire 0) by easy.
+		rewrite <- (@cast_Z n _ (0 + (S (S (S m))))).
+		rewrite cast_compose_l.
+		rewrite (stack_assoc (n_wire 0) ⨉ (n_wire _)).
+		simpl_casts.
+		rewrite Z_self_swap_absorbtion_right.
+		easy.
+Unshelve.
+	all: lia.
+Qed.
+
+Lemma Z_a_swap_absorbtion_right_base : forall n m α, Z n m α ⟷ a_swap m ∝ Z n m α.
+Proof.
+	intros.
+	destruct m; [ simpl; cleanup_zx; easy | ].
+	destruct m; [ simpl; cleanup_zx; easy | ].
+	Local Opaque top_to_bottom.
+	simpl.
+	rewrite <- compose_assoc.
+	rewrite (Z_self_bottom_to_top_absorbtion_right_base n (S (S m)) α).
+	rewrite <- (@cast_Z n _ (1 + (S m))) at 1.  
+	rewrite Z_add_r_base_rot at 1.
+	simpl_casts.
+	rewrite compose_assoc.
+	rewrite <- (stack_compose_distr (Z 1 1 0) —).
+	rewrite Z_self_top_to_bottom_absorbtion_right_base.
+	rewrite wire_removal_r.
+	rewrite <- (Z_add_r_base_rot 1 (S m)).
+	easy.
+Unshelve.
+  all: lia.
+Qed.
+
+Lemma Z_n_swap_absorbtion_right_base : forall n m α, Z n m α ⟷ n_swap m ∝ Z n m α.
+Proof.
+	intros n m.
+	generalize dependent n.
+	strong induction m.
+	intros.
+	destruct m; [ simpl; cleanup_zx; easy | ].
+	destruct m; [ simpl; cleanup_zx; easy | ].
+	simpl.
+	rewrite <- compose_assoc.
+	rewrite (Z_self_bottom_to_top_absorbtion_right_base n (S (S m)) α).
+	rewrite <- (@cast_Z n _ (1 + (S m))) at 1.  
+	rewrite Z_add_r_base_rot at 1.
+	simpl_casts.
+	rewrite compose_assoc.
+	rewrite <- (stack_compose_distr (Z 1 1 0) —).
+	rewrite <- compose_assoc.
+	rewrite (Z_self_bottom_to_top_absorbtion_right_base).
+	rewrite <- (@cast_Z 1 _ (1 + m) (S m)).
+	rewrite Z_add_r_base_rot.
+	simpl_casts.
+	rewrite compose_assoc.
+	rewrite <- (stack_compose_distr (Z 1 1 0) —).
+	rewrite (H m); [ | shelve ].
+	rewrite wire_removal_r.
+	rewrite <- (Z_add_r_base_rot 1 m).
+	rewrite <- (Z_add_r_base_rot 1 (1 + m)).
+	easy.
+Unshelve.
+  all: lia.
+Qed.
+
+Lemma Z_n_wrap_under_r_base_unswapped : forall n m α, Z (n + m) 0 α ∝ (Z n m α ↕ n_wire m) ⟷ n_cup_unswapped m.
+Proof.
+	intros.
+	generalize dependent n.
+	generalize dependent α.
+	induction m; intros; [simpl; cleanup_zx; simpl_casts; subst; easy | ].
+	remember (Z (n + (S m)) _ _) as LHS.
+	rewrite n_cup_unswapped_grow_l.
+	rewrite <- (@cast_Z n _ (m + 1)).
+	rewrite Z_add_r_base_rot.
+	simpl_casts.
+	rewrite <- compose_assoc.
+	simpl.
+	rewrite cast_compose_r.
+	simpl_casts.
+	rewrite (cast_compose_l _ _ (Z n 2 α ⟷ (Z 1 m 0 ↕ Z 1 1 0) ↕ n_wire S m)).
+	simpl_casts.
+	rewrite stack_assoc.
+	rewrite stack_nwire_distribute_r.
+	rewrite (stack_assoc (Z 1 m 0) _ (n_wire (S m))).
+	simpl_casts.
+	rewrite compose_assoc.
+	simpl.
+	rewrite (stack_assoc_back (Z 1 1 0) — (n_wire m)).
+	simpl_casts.
+	erewrite <- cast_compose_mid_contract.
+	simpl_casts.
+	erewrite <- (@cast_id (2 + m) (2 + m) _ _ (Z 1 1 0 ↕ — ↕ (n_wire m))).
+	rewrite <- (stack_compose_distr (Z 1 m 0) (n_wire m) _ (⊃ ↕ n_wire m)).
+	simpl_casts.
+	cleanup_zx.
+	rewrite <- (stack_compose_distr (— ↕ —) ⊃ (n_wire m) (n_wire m)).
+	bundle_wires.
+	cleanup_zx.
+	rewrite cast_compose_r.
+	simpl_casts.
+	simpl.
+	rewrite (stack_assoc_back _ —).
+	rewrite (stack_assoc_back _ ⊃ (n_wire m)).
+	rewrite <- cast_compose_mid_contract.
+	rewrite <- stack_nwire_distribute_r.
+	rewrite <- (nwire_stack_compose_botleft (Z 1 m 0) ⊃).
+	simpl.
+	cleanup_zx; simpl_casts.
+	rewrite <- compose_assoc.
+	rewrite stack_assoc_back.
+	simpl_casts.
+	rewrite cast_compose_r.
+	simpl_casts.
+	rewrite <- stack_wire_distribute_r.
+	rewrite <- Z_0_is_wire at 1.
+	rewrite <- Z_add_r_base_rot.
+	erewrite (cast_compose_l _ _ (Z _ _ _ ↕ —)).
+	erewrite (cast_compose_partial_contract_r _ _ _ m _ _ _ _ _ _ _ (n_wire m ↕ ⊃)).
+	rewrite <- (@Z_wrap_under_bot_right n m α).
+	simpl_casts.
+	eapply (cast_diagrams (n + 1 + m) 0).
+	erewrite <- (@cast_Z (n + 1) _ (m) (m + 0)).
+	rewrite cast_stack_l.
+	rewrite (cast_compose_mid (m + m)).
+	rewrite 2 cast_contract.
+	rewrite <- cast_compose_mid_contract.
+	rewrite <- IHm.
+	rewrite HeqLHS.
+	simpl_casts.
+	easy.
+Unshelve.
+	all: lia.
+Qed.
 	
+Lemma Z_n_wrap_under_r_base : forall n m α, Z (n + m) 0 α ∝ (Z n m α ↕ n_wire m) ⟷ n_cup m.
+Proof.
+	intros.
+	unfold n_cup.
+	rewrite <- compose_assoc.
+	rewrite <- stack_nwire_distribute_r.
+	rewrite Z_n_swap_absorbtion_right_base.
+	rewrite Z_n_wrap_under_r_base_unswapped.
+	easy.
+Qed.

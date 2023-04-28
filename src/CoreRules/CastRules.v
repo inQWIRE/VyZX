@@ -176,13 +176,41 @@ Proof.
 Qed.
 
 Lemma cast_compose_mid :
-  forall {n m o} m' prfm (zx0 : ZX n m) (zx1 : ZX m o),
-  zx0 ⟷ zx1 ∝ cast n m' eq_refl prfm zx0 ⟷ cast m' o prfm eq_refl zx1.
+  forall {n m o} m' prfm prfm' (zx0 : ZX n m) (zx1 : ZX m o),
+  zx0 ⟷ zx1 ∝ cast n m' eq_refl prfm zx0 ⟷ cast m' o prfm' eq_refl zx1.
 Proof.
   intros.
   subst.
   simpl_casts.
   reflexivity.
+Qed.
+
+Lemma cast_compose_mid_contract :
+  forall {n m o} n' m' o' prfn prfn' prfm prfm' prfo prfo' (zx0 : ZX n m) (zx1 : ZX m o),
+  cast n' o' prfn prfo (zx0 ⟷ zx1) ∝ cast n' m' prfn' prfm zx0 ⟷ cast m' o' prfm' prfo' zx1.
+Proof.
+  intros.
+  subst.
+  simpl_casts.
+  reflexivity.
+Qed.
+
+Lemma cast_compose_partial_contract_r : forall {n m o} n' m' o' o'' prfn prfm prfo prfo' prfo'' prfo''' (zx0 : ZX n m') (zx1 : ZX m o),
+  cast n' o' prfn prfo (zx0 ⟷ cast m' o' prfm prfo' zx1) ∝ cast n' o' prfn prfo'' (zx0 ⟷ cast m' o'' prfm prfo''' zx1).
+Proof.
+  intros.
+  subst.
+  simpl_casts.
+  easy.
+Qed.
+
+Lemma cast_compose_partial_contract_l : forall {n m o} n' n'' m' o' prfn prfn' prfn'' prfn''' prfm prfo (zx0 : ZX n m) (zx1 : ZX m' o),
+  cast n' o' prfn prfo (cast n' m' prfn' prfm zx0 ⟷ zx1) ∝ cast n' o' prfn'' prfo (cast n'' m' prfn''' prfm zx0 ⟷ zx1).
+Proof.
+  intros.
+  subst.
+  simpl_casts.
+  easy.
 Qed.
 
 Lemma change_cast :
@@ -297,23 +325,23 @@ Qed.
 
 #[export] Hint Rewrite @cast_Z @cast_X: cast_simpl_db.
 
-Lemma cast_n_stack1 : forall {n n'} prfn (zx : ZX 1 1),
-  cast n' n' prfn prfn (n ↑ zx) ∝ n' ↑ zx.
+Lemma cast_n_stack1 : forall {n n'} prfn prfm (zx : ZX 1 1),
+  cast n' n' prfn prfm (n ↑ zx) ∝ n' ↑ zx.
 Proof.
   intros.
-  rewrite (cast_fn_eq_dim prfn prfn (fun n => n_stack1 n zx)).
+  rewrite (cast_fn_eq_dim prfn prfm (fun n => n_stack1 n zx)).
   easy.
 Qed.
 
-Lemma cast_n_wire : forall {n n'} prfn,
-  cast n' n' prfn prfn (n_wire n) ∝ n_wire n'.
+Lemma cast_n_wire : forall {n n'} prfn prfm,
+  cast n' n' prfn prfm (n_wire n) ∝ n_wire n'.
 Proof.
   intros.
   apply cast_n_stack1.
 Qed.
 
-Lemma cast_n_box : forall {n n'} prfn,
-  cast n' n' prfn prfn (n_wire n) ∝ n_wire n'.
+Lemma cast_n_box : forall {n n'} prfn prfm,
+  cast n' n' prfn prfm (n_box n) ∝ n_box n'.
 Proof.
   intros.
   apply cast_n_stack1.

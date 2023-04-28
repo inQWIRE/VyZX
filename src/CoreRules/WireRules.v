@@ -86,7 +86,7 @@ Proof.
     rewrite cast_id.
     rewrite cast_compose_distribute.
     simpl_casts.
-    erewrite (cast_compose_mid m _ ($ n, m + 0 ::: zx0 $)).
+    erewrite (cast_compose_mid m _ _ ($ n, m + 0 ::: zx0 $)).
     simpl_casts.
     easy.
     Unshelve.
@@ -98,7 +98,7 @@ Proof.
     rewrite cast_id.
     rewrite cast_compose_distribute.
     simpl_casts.
-    erewrite (cast_compose_mid (m + (p + 1)) _ 
+    erewrite (cast_compose_mid (m + (p + 1)) _ _
                   ($ n + (p + 1), m + (S p) ::: zx0 ↕ (n_wire p ↕ —)$)).
     simpl_casts.
     rewrite 3 stack_assoc_back.
@@ -107,7 +107,7 @@ Proof.
     rewrite cast_id.
     rewrite cast_compose_distribute.
     rewrite 2 cast_contract.
-    erewrite (cast_compose_mid (m + p + 1) _ 
+    erewrite (cast_compose_mid (m + p + 1) _ _
                   ($ n + p + 1, m + (p + 1) ::: zx0 ↕ n_wire p ↕ — $)).
     simpl_casts.
     rewrite <- stack_wire_distribute_r.
@@ -159,4 +159,13 @@ Qed.
 Lemma n_stack_n_wire_1_n_wire : forall n, n ↑ (n_wire 1) ∝ n_wire n.
 Proof.
   intros. rewrite <- wire_to_n_wire. easy.
+Qed.
+
+Lemma n_wire_grow_r : forall n prfn prfm, n_wire (S n) ∝ cast _ _ prfn prfm (n_wire n ↕ —).
+Proof.
+  intros.
+  rewrite wire_to_n_wire at 3.
+  rewrite n_wire_stack.
+  rewrite (@cast_n_wire (n + 1) (S n) prfn prfm).
+  easy.
 Qed.

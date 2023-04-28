@@ -99,7 +99,7 @@ Proof.
     _ 1 _ 1 _ _ _ _
     _ _ _ _ _ _ — (n_wire n ↕ ⨉)).
     rewrite (cast_id _ _ —).
-    erewrite (cast_compose_mid (S (S n)) _ (⨉ ↕ n_wire n)).
+    erewrite (cast_compose_mid (S (S n)) _ _ (⨉ ↕ n_wire n)).
     erewrite (@cast_stack_distribute
       _ 1 _ 1 _ _ _ _
       _ _ _ _ _ _ — (top_to_bottom_helper n)).

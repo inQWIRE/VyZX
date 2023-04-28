@@ -1,5 +1,6 @@
 Require Import CoreData.CoreData.
 Require Import WireRules.
+Require Import CapCupRules.
 Require Import CoreAutomation.
 Require Import SwapRules.
 Require Import ZRules.
@@ -161,3 +162,18 @@ Proof. colorswap_of Z_wrap_under_bot_right. Qed.
 
 Lemma X_self_top_to_bottom_absorbtion_right_base : forall n m α, X n m α ⟷ top_to_bottom m ∝ X n m α.
 Proof. colorswap_of Z_self_top_to_bottom_absorbtion_right_base. Qed.
+
+Lemma X_self_bottom_to_top_absorbtion_right_base : forall n m α, X n m α ⟷ bottom_to_top m ∝ X n m α.
+Proof. colorswap_of Z_self_bottom_to_top_absorbtion_right_base. Qed.
+
+Lemma X_a_swap_absorbtion_right_base : forall n m α, X n m α ⟷ a_swap m ∝ X n m α.
+Proof. colorswap_of Z_a_swap_absorbtion_right_base. Qed.
+
+Lemma X_n_swap_absorbtion_right_base : forall n m α, X n m α ⟷ n_swap m ∝ X n m α.
+Proof. colorswap_of Z_n_swap_absorbtion_right_base. Qed.
+
+Lemma X_n_wrap_under_r_base_unswapped : forall n m α, X (n + m) 0 α ∝ (X n m α ↕ n_wire m) ⟷ n_cup_unswapped m.
+Proof. colorswap_of Z_n_wrap_under_r_base_unswapped. Qed.
+
+Lemma X_n_wrap_under_r_base : forall n m α, X (n + m) 0 α ∝ (X n m α ↕ n_wire m) ⟷ n_cup m.
+Proof. colorswap_of Z_n_wrap_under_r_base. Qed.
