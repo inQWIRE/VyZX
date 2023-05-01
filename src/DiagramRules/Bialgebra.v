@@ -84,39 +84,39 @@ Proof.
   repeat rewrite stack_wire_distribute_r.
   repeat rewrite compose_assoc.
   rewrite wire_to_n_wire.
-  rewrite (stack_assoc (Z 0 1 0) (n_wire 1) (n_wire 1)).
-  rewrite (stack_assoc (Z 1 2 0) (n_wire 1) (n_wire 1)).
-  rewrite (stack_assoc (X 1 0 0) (n_wire 1) (n_wire 1)).
-  rewrite (stack_assoc (X 2 1 0) (n_wire 1) (n_wire 1)).
+  rewrite (stack_assoc (𝒵 0 1 0) (n_wire 1) (n_wire 1)).
+  rewrite (stack_assoc (𝒵 1 2 0) (n_wire 1) (n_wire 1)).
+  rewrite (stack_assoc (𝒳 1 0 0) (n_wire 1) (n_wire 1)).
+  rewrite (stack_assoc (𝒳 2 1 0) (n_wire 1) (n_wire 1)).
   simpl_casts.
   rewrite n_wire_stack.
 Opaque n_stack1.
   simpl.
   repeat rewrite <- compose_assoc.
-  rewrite <- (push_out_top (Z 0 1 0)).
-  assert (Hl : (Z 0 1 0 ↕ Z 1 2 0) ⟷ ((Z) 1 2 0 ↕ n_wire 2) ∝ Z 0 1 0 ↕ n_wire 1 ⟷ (Z 1 2 0 ↕ Z 1 2 0)).
+  rewrite <- (push_out_top (𝒵 0 1 0)).
+  assert (Hl : (𝒵 0 1 0 ↕ 𝒵 1 2 0) ⟷ (𝒵 1 2 0 ↕ n_wire 2) ∝ 𝒵 0 1 0 ↕ n_wire 1 ⟷ (𝒵 1 2 0 ↕ 𝒵 1 2 0)).
   {
     rewrite <- stack_compose_distr.
     rewrite nwire_removal_r.
-    rewrite <- (nwire_removal_l (Z 1 2 0)) at 2.
+    rewrite <- (nwire_removal_l (𝒵 1 2 0)) at 2.
     rewrite stack_compose_distr.
     easy.
   }
   rewrite Hl.
   repeat rewrite compose_assoc.
-  rewrite <- (pull_out_top (X 1 0 0)).
-  assert (Hr : X 2 1 0 ↕ n_wire 2 ⟷ (X 1 0 0 ↕ X 2 1 0) ∝ X 2 1 0 ↕ (X) 2 1 0 ⟷ ((X) 1 0 0 ↕ n_wire 1)).
+  rewrite <- (pull_out_top (𝒳 1 0 0)).
+  assert (Hr : 𝒳 2 1 0 ↕ n_wire 2 ⟷ (𝒳 1 0 0 ↕ 𝒳 2 1 0) ∝ 𝒳 2 1 0 ↕ 𝒳 2 1 0 ⟷ (𝒳 1 0 0 ↕ n_wire 1)).
   {
     rewrite <- stack_compose_distr.
     rewrite nwire_removal_l.
-    rewrite <- (nwire_removal_r (X 2 1 0)) at 2.
+    rewrite <- (nwire_removal_r (𝒳 2 1 0)) at 2.
     rewrite stack_compose_distr.
     easy.
   }
   rewrite Hr.
   repeat rewrite <- compose_assoc.
-  assert (HBiAlgAssoc : (Z) 0 1 0 ↕ n_wire 1 ⟷ ((Z) 1 2 0 ↕ (Z) 1 2 0) ⟷ (n_wire 1 ↕ ⨉ ↕ n_wire 1) ⟷ ((X) 2 1 0 ↕ (X) 2 1 0) ⟷ ((X) 1 0 0 ↕ n_wire 1) ∝ 
-    (Z) 0 1 0 ↕ n_wire 1 ⟷ (((Z) 1 2 0 ↕ (Z) 1 2 0) ⟷ (n_wire 1 ↕ ⨉ ↕ n_wire 1) ⟷ ((X) 2 1 0 ↕ (X) 2 1 0)) ⟷ ((X) 1 0 0 ↕ n_wire 1)).
+  assert (HBiAlgAssoc : 𝒵 0 1 0 ↕ n_wire 1 ⟷ (𝒵 1 2 0 ↕ 𝒵 1 2 0) ⟷ (n_wire 1 ↕ ⨉ ↕ n_wire 1) ⟷ (𝒳 2 1 0 ↕ 𝒳 2 1 0) ⟷ (𝒳 1 0 0 ↕ n_wire 1) ∝ 
+    𝒵 0 1 0 ↕ n_wire 1 ⟷ ((𝒵 1 2 0 ↕ 𝒵 1 2 0) ⟷ (n_wire 1 ↕ ⨉ ↕ n_wire 1) ⟷ (𝒳 2 1 0 ↕ 𝒳 2 1 0)) ⟷ (𝒳 1 0 0 ↕ n_wire 1)).
   {
     repeat rewrite compose_assoc.
     easy.
@@ -127,8 +127,8 @@ Opaque n_stack1.
 Transparent n_stack1.
   fold bi_alg_Z_X.
   rewrite <- bi_algebra_rule_Z_X.
-  assert (X_Wrap_Under_L_base : forall α, X 2 1 α ∝ (X 1 2 α ↕ —) ⟷ (— ↕ ⊃)) by admit.
-  (* TODO : resurect and make X rules *)
+  assert (X_Wrap_Under_L_base : forall α, 𝒳 2 1 α ∝ (𝒳 1 2 α ↕ —) ⟷ (— ↕ ⊃)) by admit.
+  (* TODO : resurect and make 𝒳 rules *)
   rewrite X_Wrap_Under_L_base.
   repeat rewrite <- compose_assoc.
   rewrite <- stack_wire_distribute_r.
@@ -136,10 +136,10 @@ Transparent n_stack1.
   simpl_casts.
   simpl.
   cleanup_zx; simpl_casts.
-  rewrite (stack_assoc (Z 0 1 0) ((Z) (0 + 0) (1 + 0) 0) —).
+  rewrite (stack_assoc (𝒵 0 1 0) (𝒵 (0 + 0) (1 + 0) 0) —).
   simpl_casts.
-  rewrite <- (stack_compose_distr ((Z) 0 1 0) — ((Z) (0 + 0) (1 + 0) 0 ↕ —) ⊃).
-  assert (Hl: (Z) (0 + 0) (1 + 0) 0 ↕ — ⟷ ⊃ ∝ Z 1 0 0). (* Todo : pull out lemma *)
+  rewrite <- (stack_compose_distr (𝒵 0 1 0) — (𝒵 (0 + 0) (1 + 0) 0 ↕ —) ⊃).
+  assert (Hl: 𝒵 (0 + 0) (1 + 0) 0 ↕ — ⟷ ⊃ ∝ 𝒵 1 0 0). (* Todo : pull out lemma *)
   {
     rewrite cup_Z.
     rewrite <- Z_0_is_wire.
@@ -149,16 +149,16 @@ Transparent n_stack1.
   }
   rewrite Hl.
   cleanup_zx.
-  rewrite (stack_empty_r_rev (Z 1 2 0)).
+  rewrite (stack_empty_r_rev (𝒵 1 2 0)).
   simpl_casts.
-  rewrite <- (stack_compose_distr (Z 0 1 0) (Z 1 2 0) (Z 1 0 0) ⦰).
+  rewrite <- (stack_compose_distr (𝒵 0 1 0) (𝒵 1 2 0) (𝒵 1 0 0) ⦰).
   cleanup_zx.
   rewrite Z_spider_1_1_fusion.
   rewrite Rplus_0_r.
   rewrite <- cap_Z.
   rewrite (disconnected_stack_compose_r).
   simpl_casts.
-  assert (Hr : ⊂ ⟷ ((X) 1 0 0 ↕ —) ∝ X 0 1 0).
+  assert (Hr : ⊂ ⟷ (𝒳 1 0 0 ↕ —) ∝ 𝒳 0 1 0).
   {
     rewrite cap_X.
     rewrite <- X_0_is_wire.

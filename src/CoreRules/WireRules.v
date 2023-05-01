@@ -4,7 +4,7 @@ Require Import CastRules.
 
 Local Open Scope ZX_scope.
 
-Lemma Z_0_is_wire : Z 1 1 0 ∝ —.
+Lemma Z_0_is_wire : 𝒵 1 1 0 ∝ —.
 Proof.
   intros.
   prop_exists_nonzero 1.
@@ -26,7 +26,7 @@ Proof.
   easy.
 Qed.
 
-Lemma Z_2_0_0_is_cap : Z 2 0 0 ∝ ⊃.
+Lemma Z_2_0_0_is_cap : 𝒵 2 0 0 ∝ ⊃.
 Proof.
   prop_exists_nonzero 1.
   simpl.
@@ -34,7 +34,7 @@ Proof.
   apply Cexp_0.
 Qed.
 
-Lemma Z_0_2_0_is_cup : Z 0 2 0 ∝ ⊂.
+Lemma Z_0_2_0_is_cup : 𝒵 0 2 0 ∝ ⊂.
 Proof.
   prop_exists_nonzero 1.
   simpl.
@@ -68,7 +68,7 @@ Proof.
   easy.
 Qed.
 
-Lemma X_0_is_wire : X 1 1 0 ∝ —.
+Lemma X_0_is_wire : 𝒳 1 1 0 ∝ —.
 Proof.
   apply colorswap_diagrams.
   simpl.

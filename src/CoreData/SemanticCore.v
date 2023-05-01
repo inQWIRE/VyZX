@@ -1,5 +1,5 @@
 (* 
-Contains the definitions for Z and X spider semantics, their equivalence, 
+Contains the definitions for 𝒵 and 𝒳 spider semantics, their equivalence, 
 and well formedness 
 *)
 

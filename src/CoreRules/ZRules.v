@@ -6,8 +6,8 @@ Require Import WireRules.
 Require Import SpiderInduction.
 
 Lemma grow_Z_top_left : forall (nIn nOut : nat) α,
-	Z (S (S nIn)) nOut α ∝  
-	(Z 2 1 0) ↕ (n_wire nIn) ⟷ (Z (S nIn) nOut α).
+	𝒵 (S (S nIn)) nOut α ∝  
+	(𝒵 2 1 0) ↕ (n_wire nIn) ⟷ (𝒵 (S nIn) nOut α).
 Proof.
 	intros.
 	replace α%R with (0 + α)%R at 1 by lra.
@@ -22,8 +22,8 @@ Proof.
 Qed.
 
 Lemma grow_Z_top_right : forall (nIn nOut : nat) α,
-	Z nIn (S (S nOut)) α ∝ 
-	(Z nIn (S nOut) α) ⟷ ((Z_Spider 1 2 0) ↕ (n_wire nOut)).
+	𝒵 nIn (S (S nOut)) α ∝ 
+	(𝒵 nIn (S nOut) α) ⟷ ((𝒵 1 2 0) ↕ (n_wire nOut)).
 Proof.
 	intros.
 	replace α%R with (0 + α)%R at 1 by lra.
@@ -37,10 +37,10 @@ Proof.
 Qed.
 
 Lemma Z_rot_l : forall n m α β,
-	Z (S n) m (α + β) ∝ Z 1 1 α ↕ n_wire n ⟷ Z (S n) m β.
+	𝒵 (S n) m (α + β) ∝ 𝒵 1 1 α ↕ n_wire n ⟷ 𝒵 (S n) m β.
 Proof.
 	assert (Z_rot_passthrough : forall α β, 
-		(Z 1 1 α ↕ — ⟷ Z 2 1 β) ∝ Z 2 1 β ⟷ Z 1 1 α).
+		(𝒵 1 1 α ↕ — ⟷ 𝒵 2 1 β) ∝ 𝒵 2 1 β ⟷ 𝒵 1 1 α).
 		{ solve_prop 1. }
 	induction n; intros.
 	- cleanup_zx.
@@ -50,9 +50,9 @@ Proof.
 	- simpl.
 		rewrite (grow_Z_top_left n m β).
 		rewrite <- compose_assoc.
-		rewrite (stack_assoc_back (Z 1 1 α) —).
+		rewrite (stack_assoc_back (𝒵 1 1 α) —).
 		simpl_casts.
-		rewrite <- (stack_compose_distr (Z 1 1 α ↕ —) (Z 2 1 0) (n_wire n)).
+		rewrite <- (stack_compose_distr (𝒵 1 1 α ↕ —) (𝒵 2 1 0) (n_wire n)).
 		cleanup_zx.
 		rewrite Z_rot_passthrough.
 		rewrite stack_nwire_distribute_r.
@@ -63,7 +63,7 @@ Proof.
 Qed.
 
 Lemma Z_rot_r : forall n m α β,
-	Z n (S m) (α + β) ∝  Z n (S m) α ⟷ (Z 1 1 β ↕ n_wire m).
+	𝒵 n (S m) (α + β) ∝  𝒵 n (S m) α ⟷ (𝒵 1 1 β ↕ n_wire m).
 Proof.
 	intros.
 	rewrite Rplus_comm.
@@ -75,10 +75,10 @@ Proof.
 Qed.
 
 Lemma Z_appendix_rot_l : forall n m α β,
-	Z n m (α + β) ∝ (Z 0 1 α ↕ n_wire n) ⟷ Z (S n) m β.
+	𝒵 n m (α + β) ∝ (𝒵 0 1 α ↕ n_wire n) ⟷ 𝒵 (S n) m β.
 Proof.
 	assert (Z_appendix_base : forall α β,
-		(Z 0 1 α ↕ — ⟷ Z 2 1 β) ∝ Z 1 1 (α + β)).
+		(𝒵 0 1 α ↕ — ⟷ 𝒵 2 1 β) ∝ 𝒵 1 1 (α + β)).
 		{ solve_prop 1. }
 	induction n; intros.
 	- cleanup_zx.
@@ -87,10 +87,10 @@ Proof.
 		easy.
 	- rewrite grow_Z_top_left.
 		simpl.
-		rewrite (stack_assoc_back (Z 0 1 α) —).
+		rewrite (stack_assoc_back (𝒵 0 1 α) —).
 		simpl_casts.
 		rewrite <- compose_assoc.
-		rewrite <- (@stack_nwire_distribute_r _ _ _ n (Z 0 1 α ↕ —) (Z 2 1 0)).
+		rewrite <- (@stack_nwire_distribute_r _ _ _ n (𝒵 0 1 α ↕ —) (𝒵 2 1 0)).
 		rewrite Z_appendix_base.
 		rewrite <- Z_rot_l.
 		rewrite Rplus_0_r.
@@ -98,7 +98,7 @@ Proof.
 Qed.
 
 Lemma Z_appendix_rot_r : forall n m α β,
-	Z n m (β + α) ∝ Z n (S m) α ⟷ (Z 1 0 β ↕ n_wire m).
+	𝒵 n m (β + α) ∝ 𝒵 n (S m) α ⟷ (𝒵 1 0 β ↕ n_wire m).
 Proof. 
 	intros.
 	apply transpose_diagrams.
@@ -109,7 +109,7 @@ Proof.
 Qed.
 
 Lemma Z_wrap_over_top_left : forall n m α,
-	Z (S n) m α ∝ (Wire ↕ Z n (S m) α) ⟷  (Cup ↕ n_wire m).
+	𝒵 (S n) m α ∝ (Wire ↕ 𝒵 n (S m) α) ⟷  (Cup ↕ n_wire m).
 Proof.
 	induction m.
 	- intros.
@@ -124,15 +124,15 @@ Proof.
 			reflexivity.
 		+ rewrite grow_Z_top_right.
 			rewrite IHm.
-			rewrite <- (stack_empty_l (Z 1 2 0 ↕ (m ↑ —))).
+			rewrite <- (stack_empty_l (𝒵 1 2 0 ↕ (m ↑ —))).
 			fold (n_wire m).
 			replace ⦰ with (n_wire 0) by auto.
-			specialize (nwire_stack_compose_botleft ⊃ (Z 1 2 0 ↕ n_wire m)); intros.
+			specialize (nwire_stack_compose_botleft ⊃ (𝒵 1 2 0 ↕ n_wire m)); intros.
 			simpl in H.
 			rewrite compose_assoc.
 			rewrite H.
 			clear H.
-			specialize (nwire_stack_compose_topleft (Z 1 2 0 ↕ n_wire m) ⊃); intros.
+			specialize (nwire_stack_compose_topleft (𝒵 1 2 0 ↕ n_wire m) ⊃); intros.
 			rewrite <- H.
 			clear H.
 			rewrite <- compose_assoc.
@@ -145,20 +145,20 @@ Proof.
 			simpl_casts.
 			rewrite <- compose_assoc.
 			rewrite <- (stack_wire_distribute_l 
-				((Z) n (S m) α ⟷ ((Z) 1 2 0 ↕ (m ↑ —))) 
-				(— ↕ ((Z) 1 2 0 ↕ n_wire m))).
+				((𝒵) n (S m) α ⟷ ((𝒵) 1 2 0 ↕ (m ↑ —))) 
+				(— ↕ ((𝒵) 1 2 0 ↕ n_wire m))).
 			rewrite compose_assoc.
 			fold (n_wire m).
 			rewrite stack_assoc_back.
 			simpl_casts.
-			rewrite <- (stack_compose_distr (Z 1 2 0) (— ↕ Z 1 2 0) 
+			rewrite <- (stack_compose_distr (𝒵 1 2 0) (— ↕ 𝒵 1 2 0) 
 																					(n_wire m) (n_wire m)).
 			rewrite <- grow_Z_right_bot_1_2_base.
 			rewrite grow_Z_top_right.
 			rewrite stack_compose_distr.
 			rewrite <- compose_assoc.
 			rewrite <- grow_Z_top_right.
-			rewrite (stack_assoc (Z 1 2 0) (1 ↑ —) (m ↑ —)).
+			rewrite (stack_assoc (𝒵 1 2 0) (1 ↑ —) (m ↑ —)).
 			simpl_casts.
 			rewrite <- nstack1_split.
 			rewrite <- (grow_Z_top_right n (S m)).
@@ -166,7 +166,7 @@ Proof.
 Qed.
 
 Lemma Z_wrap_over_top_right : forall n m α,
-	Z n (S m) α ∝ (Cap ↕ n_wire n) ⟷ (Wire ↕ Z (S n) m α).
+	𝒵 n (S m) α ∝ (Cap ↕ n_wire n) ⟷ (Wire ↕ 𝒵 (S n) m α).
 Proof. 
 	intros. apply transpose_diagrams. simpl. 
 	rewrite nstack1_transpose. rewrite transpose_wire.
@@ -174,7 +174,7 @@ Proof.
 Qed.
 
 Lemma Z_add_r : forall {n} m o {α β γ},
-	Z n (m + o) (α + β + γ) ∝ Z n 2 β ⟷ (Z 1 m α ↕ Z 1 o γ).
+	𝒵 n (m + o) (α + β + γ) ∝ 𝒵 n 2 β ⟷ (𝒵 1 m α ↕ 𝒵 1 o γ).
 Proof.
 	intros.
 	induction m.
@@ -188,8 +188,8 @@ Proof.
 	- destruct m.
 		+ simpl.
 			cleanup_zx.
-			rewrite <- (nwire_removal_l (Z 1 o γ)).
-			rewrite <- (nwire_removal_r (Z 1 1 α)).
+			rewrite <- (nwire_removal_l (𝒵 1 o γ)).
+			rewrite <- (nwire_removal_r (𝒵 1 1 α)).
 			rewrite stack_compose_distr.
 			rewrite <- compose_assoc.
 			rewrite <- Z_rot_r.
@@ -205,11 +205,11 @@ Proof.
 			easy.
 		+ simpl.
 			rewrite (grow_Z_top_right 1 m).
-			rewrite <- (nwire_removal_r (Z 1 o _)).
+			rewrite <- (nwire_removal_r (𝒵 1 o _)).
 			rewrite stack_compose_distr.
 			rewrite <- compose_assoc.
 			rewrite <- IHm.
-			rewrite (stack_assoc (Z 1 2 0) (n_wire m) (n_wire o)).
+			rewrite (stack_assoc (𝒵 1 2 0) (n_wire m) (n_wire o)).
 			simpl_casts.
 			rewrite <- nstack1_split.
 			rewrite <- (grow_Z_top_right n (m + o)).
@@ -217,10 +217,10 @@ Proof.
 Qed.
 
 Lemma Z_add_l : forall n m {o α β γ},
-	Z (n + m) o (α + β + γ) ∝ (Z n 1 α ↕ Z m 1 γ) ⟷ Z 2 o β.
+	𝒵 (n + m) o (α + β + γ) ∝ (𝒵 n 1 α ↕ 𝒵 m 1 γ) ⟷ 𝒵 2 o β.
 Proof. intros. transpose_of (@Z_add_r o n m). Qed.
 
-Lemma Z_add_r_base_rot : forall {n} m o {α}, Z n (m + o) α ∝ Z n 2 α ⟷ (Z 1 m 0 ↕ Z 1 o 0).
+Lemma Z_add_r_base_rot : forall {n} m o {α}, 𝒵 n (m + o) α ∝ 𝒵 n 2 α ⟷ (𝒵 1 m 0 ↕ 𝒵 1 o 0).
 Proof. 
 	intros.
 	rewrite <- (@Z_add_r n m o 0 α 0).
@@ -228,25 +228,25 @@ Proof.
 	easy.
 Qed.
 
-Lemma Z_add_l_base_rot : forall {n} m o {α}, Z (n + m) o α ∝ (Z n 1 0 ↕ Z m 1 0) ⟷ Z 2 o α.
+Lemma Z_add_l_base_rot : forall {n} m o {α}, 𝒵 (n + m) o α ∝ (𝒵 n 1 0 ↕ 𝒵 m 1 0) ⟷ 𝒵 2 o α.
 Proof. intros. transpose_of (@Z_add_r_base_rot o n m). Qed.
 
 Lemma Z_1_2_1_fusion : forall α β,
-	(Z 1 2 α ⟷ Z 2 1 β) ∝ (Z 1 1 (α + β)).
+	(𝒵 1 2 α ⟷ 𝒵 2 1 β) ∝ (𝒵 1 1 (α + β)).
 Proof. solve_prop 1. Qed.
 
 Lemma Z_absolute_fusion : forall {n m o} α β,
-	(Z n (S m) α ⟷ Z (S m) o β) ∝
-	Z n o (α + β).
+	(𝒵 n (S m) α ⟷ 𝒵 (S m) o β) ∝
+	𝒵 n o (α + β).
 Proof.
 	intros.
 	induction m.
 	- apply Z_spider_1_1_fusion.
 	- rewrite grow_Z_top_right, grow_Z_top_left.
 		rewrite compose_assoc.
-		rewrite <- (compose_assoc ((Z 1 2 0) ↕ (m ↑ —))
-																 ((Z 2 1 0) ↕ (m ↑ —))
-																	(Z (S m) o β)) .
+		rewrite <- (compose_assoc ((𝒵 1 2 0) ↕ (m ↑ —))
+																 ((𝒵 2 1 0) ↕ (m ↑ —))
+																	(𝒵 (S m) o β)) .
 		rewrite <- stack_compose_distr.
 		rewrite Z_1_2_1_fusion.
 		rewrite Rplus_0_l.
@@ -256,8 +256,8 @@ Proof.
 Qed.
 
 Lemma dominated_Z_spider_fusion_top_right : forall n m0 m1 o α β,
-	(Z n (S m0) α ↕ n_wire m1 ⟷ Z (S m0 + m1) o β) ∝
-	Z (n + m1) o (α + β).
+	(𝒵 n (S m0) α ↕ n_wire m1 ⟷ 𝒵 (S m0 + m1) o β) ∝
+	𝒵 (n + m1) o (α + β).
 Proof.
 	intros.
 	replace β%R with (0 + β + 0)%R at 1 by lra.
@@ -273,8 +273,8 @@ Qed.
 
 
 Lemma dominated_Z_spider_fusion_bot_right : forall n m0 m1 o α β,
-	((n_wire m1 ↕ (Z n (S m0) α)) ⟷ Z (m1 + (S m0)) o β) ∝
-	Z (m1 + n) o (α + β).
+	((n_wire m1 ↕ (𝒵 n (S m0) α)) ⟷ 𝒵 (m1 + (S m0)) o β) ∝
+	𝒵 (m1 + n) o (α + β).
 Proof.
 	intros.
 	replace β%R with (0 + β + 0)%R at 1 by lra.
@@ -289,30 +289,30 @@ Proof.
 Qed.
 
 Lemma dominated_Z_spider_fusion_top_left : forall m n0 n1 i α β,
-	Z i (S n0 + n1) β ⟷ (Z (S n0) m α ↕ n_wire n1) ∝
-	Z i (m + n1) (α + β).
+	𝒵 i (S n0 + n1) β ⟷ (𝒵 (S n0) m α ↕ n_wire n1) ∝
+	𝒵 i (m + n1) (α + β).
 Proof. intros. transpose_of dominated_Z_spider_fusion_top_right. Qed.
 
 Lemma dominated_Z_spider_fusion_bot_left : forall m n0 n1 i α β,
-	Z i (n1 + S n0) β ⟷ (n_wire n1 ↕ Z (S n0) m α) ∝
-	Z i (n1 + m) (α + β).
+	𝒵 i (n1 + S n0) β ⟷ (n_wire n1 ↕ 𝒵 (S n0) m α) ∝
+	𝒵 i (n1 + m) (α + β).
 Proof. intros. transpose_of dominated_Z_spider_fusion_bot_right. Qed.
 
 Lemma Z_spider_fusion_top_left_bot_right : forall top mid bot input output α β,
-	Z input (top + S mid) α ↕ n_wire bot ⟷
+	𝒵 input (top + S mid) α ↕ n_wire bot ⟷
 	cast (top + (S mid) + bot) (top + output) (eq_sym (Nat.add_assoc _ _ _)) eq_refl 
-		(n_wire top ↕ Z (S mid + bot) output β) ∝
-	Z (input + bot) (top + output) (α + β).
+		(n_wire top ↕ 𝒵 (S mid + bot) output β) ∝
+	𝒵 (input + bot) (top + output) (α + β).
 Proof.
 	intros.
 	replace α%R with (0 + α + 0)%R at 1 by lra.
 	rewrite Z_add_r.
 	rewrite stack_nwire_distribute_r.
 	rewrite compose_assoc.
-	rewrite (stack_assoc (Z 1 top 0)).
+	rewrite (stack_assoc (𝒵 1 top 0)).
 	rewrite cast_compose_r.
 	simpl_casts.
-	rewrite <- (stack_compose_distr (Z 1 top 0) (n_wire top) (Z 1 (S mid) 0 ↕ n_wire bot)).
+	rewrite <- (stack_compose_distr (𝒵 1 top 0) (n_wire top) (𝒵 1 (S mid) 0 ↕ n_wire bot)).
 	cleanup_zx.
 	rewrite dominated_Z_spider_fusion_top_right.
 	rewrite <- (Rplus_0_r (0 + β)).
@@ -321,17 +321,17 @@ Proof.
 	cleanup_zx.
 	rewrite Z_wrap_over_top_right.
 	rewrite stack_nwire_distribute_r.
-	rewrite (stack_assoc — (Z (S input) 1 α) (n_wire bot)).
+	rewrite (stack_assoc — (𝒵 (S input) 1 α) (n_wire bot)).
 	simpl_casts.
 	rewrite compose_assoc.
-	rewrite <- (stack_compose_distr — (Z 1 top 0) (Z (S input) 1 α ↕ n_wire bot)).
+	rewrite <- (stack_compose_distr — (𝒵 1 top 0) (𝒵 (S input) 1 α ↕ n_wire bot)).
 	cleanup_zx.
 	rewrite wire_to_n_wire at 4.
 	rewrite <- compose_assoc.
-	rewrite (nwire_stack_compose_botleft (Z (S input) 1 α)).
+	rewrite (nwire_stack_compose_botleft (𝒵 (S input) 1 α)).
 	rewrite <- Z_add_l.
-	rewrite <- (wire_removal_l (Z 1 top 0)).
-	rewrite <- (nwire_removal_r (Z (S input + bot) _ _)).
+	rewrite <- (wire_removal_l (𝒵 1 top 0)).
+	rewrite <- (nwire_removal_r (𝒵 (S input + bot) _ _)).
 	rewrite stack_compose_distr.
 	rewrite <- compose_assoc.
 	rewrite (stack_assoc ⊂ (n_wire input)).
@@ -340,7 +340,7 @@ Proof.
 	rewrite <- (Z_wrap_over_top_right (input + bot)).
 	rewrite (Z_add_r 1%nat output).
 	rewrite compose_assoc.
-	rewrite <- (stack_compose_distr (Z 1 1 α)).
+	rewrite <- (stack_compose_distr (𝒵 1 1 α)).
 	rewrite Z_absolute_fusion.
 	cleanup_zx.
 	rewrite <- Z_add_r.
@@ -349,10 +349,10 @@ Proof.
 Qed.
 
 Lemma Z_spider_fusion_bot_left_top_right : forall top mid bot input output α β,
-	((n_wire top ↕ Z input (S mid + bot) α) ⟷
+	((n_wire top ↕ 𝒵 input (S mid + bot) α) ⟷
 	cast (top + ((S mid) + bot)) _ ((Nat.add_assoc _ _ _)) eq_refl 
-		(Z (top + (S mid)) output β ↕ n_wire bot)) ∝
-	Z (top + input) (output + bot) (β + α).
+		(𝒵 (top + (S mid)) output β ↕ n_wire bot)) ∝
+	𝒵 (top + input) (output + bot) (β + α).
 Proof.
 	intros.
 	apply transpose_diagrams.
@@ -368,7 +368,7 @@ Transparent cast.
 	easy.
 Qed.
 
-Lemma Z_self_cap_absorbtion_base : forall {n} α, Z n 2%nat α ⟷ ⊃ ∝ Z n 0%nat α.
+Lemma Z_self_cap_absorbtion_base : forall {n} α, 𝒵 n 2%nat α ⟷ ⊃ ∝ 𝒵 n 0%nat α.
 Proof.
 	intros.
 	prop_exists_nonzero 1.
@@ -394,37 +394,37 @@ Proof.
 	lca.
 Qed.
 
-Lemma Z_self_cap_absorbtion_top : forall {n m α}, (Z) n (S (S m)) α ⟷ (⊃ ↕ n_wire m) ∝ Z n m α.
+Lemma Z_self_cap_absorbtion_top : forall {n m α}, 𝒵 n (S (S m)) α ⟷ (⊃ ↕ n_wire m) ∝ 𝒵 n m α.
 Proof.
 	intros.
 	rewrite (Z_add_r_base_rot 2 m).
 	rewrite compose_assoc.
-	rewrite <- (stack_compose_distr (Z 1 2 _) ⊃ (Z 1 m _) (n_wire m)).
+	rewrite <- (stack_compose_distr (𝒵 1 2 _) ⊃ (𝒵 1 m _) (n_wire m)).
 	rewrite Z_self_cap_absorbtion_base.
 	cleanup_zx.
 	rewrite <- Z_add_r_base_rot.
 	easy.
 Qed.
 
-Lemma Z_self_cup_absorbtion_top : forall {n m α}, ((⊂ ↕ n_wire n) ⟷ Z (S (S n)) m α) ∝ (Z n m α).
+Lemma Z_self_cup_absorbtion_top : forall {n m α}, ((⊂ ↕ n_wire n) ⟷ 𝒵 (S (S n)) m α) ∝ (𝒵 n m α).
 Proof. intros. transpose_of (@Z_self_cap_absorbtion_top m n). Qed.
 
-Lemma Z_self_cap_absorbtion : forall {n m m' α}, Z n (m + (S (S m'))) α ⟷ (n_wire m ↕ (⊃ ↕ n_wire m')) ∝ (Z n (m + m') α).
+Lemma Z_self_cap_absorbtion : forall {n m m' α}, 𝒵 n (m + (S (S m'))) α ⟷ (n_wire m ↕ (⊃ ↕ n_wire m')) ∝ (𝒵 n (m + m') α).
 Proof.
 	intros.
 	rewrite Z_add_r_base_rot.
 	rewrite compose_assoc.
-	rewrite <- (stack_compose_distr (Z 1 m _) (n_wire m) (Z 1 (S (S m')) _) (⊃ ↕ n_wire m')).
+	rewrite <- (stack_compose_distr (𝒵 1 m _) (n_wire m) (𝒵 1 (S (S m')) _) (⊃ ↕ n_wire m')).
 	rewrite Z_self_cap_absorbtion_top.
 	cleanup_zx.
 	rewrite <- Z_add_r_base_rot.
 	easy.
 Qed.
 
-Lemma Z_self_cup_absorbtion : forall {n n' m α}, ((n_wire n ↕ (⊂ ↕ n_wire n')) ⟷ Z (n + (S (S n'))) m α) ∝ (Z (n + n') m α).
+Lemma Z_self_cup_absorbtion : forall {n n' m α}, ((n_wire n ↕ (⊂ ↕ n_wire n')) ⟷ 𝒵 (n + (S (S n'))) m α) ∝ (𝒵 (n + n') m α).
 Proof. intros. transpose_of (@Z_self_cap_absorbtion m n n'). Qed.
 
-Lemma Z_self_loop_removal_top : forall {n m α}, Z n m α ∝ (⊂ ↕ n_wire n) ⟷ (— ↕ Z (S n) (S m) α) ⟷ (⊃ ↕ n_wire m).
+Lemma Z_self_loop_removal_top : forall {n m α}, 𝒵 n m α ∝ (⊂ ↕ n_wire n) ⟷ (— ↕ 𝒵 (S n) (S m) α) ⟷ (⊃ ↕ n_wire m).
 Proof.
 	intros.
 	rewrite <- Z_wrap_over_top_right.
@@ -432,40 +432,40 @@ Proof.
 	easy.
 Qed.
 
-Lemma Z_self_swap_absorbtion_right_base : forall {n α}, Z n 2 α ⟷ ⨉ ∝ Z n 2 α.
+Lemma Z_self_swap_absorbtion_right_base : forall {n α}, 𝒵 n 2 α ⟷ ⨉ ∝ 𝒵 n 2 α.
 Proof. intros. solve_prop 1. Qed.
 
-Lemma Z_self_swap_absorbtion_right_top : forall {n m α}, Z n (S (S m)) α ⟷ (⨉ ↕ n_wire m) ∝ Z n (S (S m)) α.
+Lemma Z_self_swap_absorbtion_right_top : forall {n m α}, 𝒵 n (S (S m)) α ⟷ (⨉ ↕ n_wire m) ∝ 𝒵 n (S (S m)) α.
 Proof.
 	intros.
 	rewrite (Z_add_r_base_rot 2 m) at 1.
 	rewrite compose_assoc.
-	rewrite <- (stack_compose_distr (Z 1 2 0) (⨉) (Z 1 m 0) (n_wire m)).
+	rewrite <- (stack_compose_distr (𝒵 1 2 0) (⨉) (𝒵 1 m 0) (n_wire m)).
 	rewrite Z_self_swap_absorbtion_right_base.
 	cleanup_zx.
 	rewrite <- Z_add_r_base_rot.
 	easy.
 Qed.
 
-Lemma Z_self_swap_absorbtion_right : forall {n m m' α}, Z n (m' + S (S m)) α ⟷ (n_wire m' ↕ (⨉ ↕ n_wire m)) ∝ Z n (m' + S (S m)) α.
+Lemma Z_self_swap_absorbtion_right : forall {n m m' α}, 𝒵 n (m' + S (S m)) α ⟷ (n_wire m' ↕ (⨉ ↕ n_wire m)) ∝ 𝒵 n (m' + S (S m)) α.
 Proof.
 	intros.
 	rewrite Z_add_r_base_rot at 1.
 	rewrite compose_assoc.
-	rewrite <- (stack_compose_distr (Z 1 m' 0) (n_wire _) (Z 1 (S (S m)) 0) (⨉ ↕ n_wire _)).
+	rewrite <- (stack_compose_distr (𝒵 1 m' 0) (n_wire _) (𝒵 1 (S (S m)) 0) (⨉ ↕ n_wire _)).
 	rewrite Z_self_swap_absorbtion_right_top.
 	cleanup_zx.
 	rewrite <- Z_add_r_base_rot.
 	easy.
 Qed.
 
-Lemma Z_self_swap_absorbtion_left_base : forall {m α}, (⨉ ⟷ Z 2 m α) ∝ Z 2 m α.
+Lemma Z_self_swap_absorbtion_left_base : forall {m α}, (⨉ ⟷ 𝒵 2 m α) ∝ 𝒵 2 m α.
 Proof. intros. transpose_of (@Z_self_swap_absorbtion_right_base m α). Qed.
 
-Lemma Z_self_swap_absorbtion_left_top : forall {n m α}, ((⨉ ↕ n_wire n) ⟷ Z (S (S n)) m α) ∝ Z (S (S n)) m α.
+Lemma Z_self_swap_absorbtion_left_top : forall {n m α}, ((⨉ ↕ n_wire n) ⟷ 𝒵 (S (S n)) m α) ∝ 𝒵 (S (S n)) m α.
 Proof. intros. transpose_of (@Z_self_swap_absorbtion_right_top m n α). Qed.
 
-Lemma Z_self_swap_absorbtion_left : forall {n n' m α}, ((n_wire n' ↕ (⨉ ↕ n_wire n)) ⟷ Z (n' + S (S n)) m α) ∝ Z (n' + S (S n)) m α.
+Lemma Z_self_swap_absorbtion_left : forall {n n' m α}, ((n_wire n' ↕ (⨉ ↕ n_wire n)) ⟷ 𝒵 (n' + S (S n)) m α) ∝ 𝒵 (n' + S (S n)) m α.
 Proof. intros. transpose_of (@Z_self_swap_absorbtion_right m n n' α). Qed.
 
 (* @nocheck Z_X *)
@@ -473,11 +473,11 @@ Lemma wrap_under_dimension : forall n, (n + 1 + 1 = n + 2)%nat.
 Proof. lia. Qed.
 
 Lemma Z_wrap_under_bot_left : forall n m α,
-	Z n (m + 1) α ∝ 
+	𝒵 n (m + 1) α ∝ 
 	(cast n (n + 1 + 1) 
 		(eq_sym (Nat.add_0_r _)) (wrap_under_dimension _)
 		(n_wire n ↕ ⊂)) ⟷
-			(Z (n + 1) m α ↕ Wire).
+			(𝒵 (n + 1) m α ↕ Wire).
 Proof.
 	intros.
 	rewrite (Z_add_l_base_rot).
@@ -496,11 +496,11 @@ Proof.
 	rewrite wire_to_n_wire at 3.
 	rewrite n_wire_stack.
 	rewrite <- (stack_compose_distr
-		(n_wire n) (Z n 1 0)
-		(Z 0 2 0)  (n_wire 2)).
+		(n_wire n) (𝒵 n 1 0)
+		(𝒵 0 2 0)  (n_wire 2)).
 	cleanup_zx.
-	rewrite <- (nwire_removal_r (Z n 1 0)).
-	rewrite <- (nwire_removal_l (Z 0 2 0)).
+	rewrite <- (nwire_removal_r (𝒵 n 1 0)).
+	rewrite <- (nwire_removal_l (𝒵 0 2 0)).
 	rewrite stack_compose_distr.
 	rewrite compose_assoc.
 	rewrite wire_to_n_wire at 3.
@@ -520,8 +520,8 @@ Proof.
 Qed.
 
 Lemma Z_wrap_under_bot_right : forall n m α,
-	Z (n + 1) m α ∝ 
-		(Z n (m + 1) α ↕ —) ⟷ 
+	𝒵 (n + 1) m α ∝ 
+		(𝒵 n (m + 1) α ↕ —) ⟷ 
 	(cast (m + 1 + 1) m
 		(wrap_under_dimension _)
 		(eq_sym (Nat.add_0_r _))

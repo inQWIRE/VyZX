@@ -506,7 +506,7 @@ Proof.
       simpl_cast_semantics.
       simpl.
       restore_dims.
-      replace (I 2 ⊗ X_semantics 2 1 0 × (Z_semantics 1 2 0 ⊗ I 2)) with (ZX_semantics (((Z) 1 2 0 ↕ — ⟷ (— ↕ (X) 2 1 0)))) by easy.
+      replace (I 2 ⊗ X_semantics 2 1 0 × (Z_semantics 1 2 0 ⊗ I 2)) with (ZX_semantics ((Z_Spider 1 2 0 ↕ — ⟷ (— ↕ X_Spider 2 1 0)))) by easy.
       rewrite cnot_l_is_cnot.
       rewrite <- cnot_decomposition.
       rewrite 2 kron_assoc; try auto with wf_db.

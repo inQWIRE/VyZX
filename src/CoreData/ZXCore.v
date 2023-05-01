@@ -46,8 +46,9 @@ Notation "A ⟷ B" := (Compose A B)
   (left associativity, at level 40) : ZX_scope. (* \longleftrightarrow *)
 Notation "A ↕ B" := (Stack A B) 
   (left associativity, at level 40) : ZX_scope. (* \updownarrow *)
-Notation "'Z'" := Z_Spider (no associativity, at level 1) : ZX_scope.
-Notation "'X'" := X_Spider (no associativity, at level 1) : ZX_scope.
+Notation "'𝒵'" := Z_Spider (no associativity, at level 1) : ZX_scope. (* \calZ *)
+Notation "'𝒳'" := X_Spider (no associativity, at level 1) : ZX_scope. (* \calX *)
+(* Regex replace X ((_|[A-Z]|[a-z]|\d)+|\(.*\)) ((_|[A-Z]|[a-z]|\d)+|\(.*\)) (.|\(.*\)) -> 𝒳 $1 $3 $5 *)
 Notation "$ n , m ::: A $" := (cast n m _ _ A) (at level 20) : ZX_scope.
 
 (* 
@@ -60,8 +61,8 @@ Fixpoint ZX_semantics {n m} (zx : ZX n m) :
   Matrix (2 ^ m) (2 ^ n) := 
   match zx with
   | ⦰ => I 1
-  | X _ _ α => X_semantics n m α
-  | Z _ _ α => Z_semantics n m α
+  | 𝒳 _ _ α => X_semantics n m α
+  | 𝒵 _ _ α => Z_semantics n m α
   | ⊃ => list2D_to_matrix [[C1;C0;C0;C1]]
   | ⊂ => list2D_to_matrix [[C1];[C0];[C0];[C1]]  
   | ⨉ => swap
@@ -96,8 +97,8 @@ Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) :
   Matrix (2 ^ m) (2 ^ n) := 
   match zx with
   | ⦰ => I 1
-  | X _ _ α => X_dirac_semantics n m α
-  | Z _ _ α => Z_dirac_semantics n m α
+  | 𝒳 _ _ α => X_dirac_semantics n m α
+  | 𝒵 _ _ α => Z_dirac_semantics n m α
   | ⊃ => list2D_to_matrix [[C1;C0;C0;C1]]
   | ⊂ => list2D_to_matrix [[C1];[C0];[C0];[C1]]  
   | ⨉ => swap
@@ -197,8 +198,8 @@ Reserved Notation "zx ⊤" (at level 0). (* \top *)
 Fixpoint transpose {nIn nOut} (zx : ZX nIn nOut) : ZX nOut nIn :=
   match zx with
   | ⦰ => ⦰
-  | Z mIn mOut α => Z mOut mIn α
-  | X mIn mOut α => X mOut mIn α
+  | 𝒵 mIn mOut α => 𝒵 mOut mIn α
+  | 𝒳 mIn mOut α => 𝒳 mOut mIn α
   | zx0 ⟷ zx1 => (zx1 ⊤) ⟷ (zx0 ⊤)
   | zx1 ↕ zx2 => (zx1 ⊤) ↕ (zx2 ⊤)
   | ⊂ => ⊃
@@ -219,8 +220,8 @@ Qed.
 Reserved Notation "zx ⊼" (at level 0). (* \barwedge *)
 Fixpoint conjugate {n m} (zx : ZX n m) : ZX n m :=
   match zx with
-  | Z n m α => Z n m (-α)
-  | X n m α => X n m (-α)
+  | 𝒵 n m α => 𝒵 n m (-α)
+  | 𝒳 n m α => 𝒳 n m (-α)
   | zx0 ⟷ zx1 => (zx0⊼) ⟷ (zx1⊼)
   | zx1 ↕ zx2 => zx1⊼ ↕ zx2⊼
   | other => other
@@ -277,8 +278,8 @@ Opaque adjoint.
 Reserved Notation "⊙ zx" (at level 0). (* \odot *) 
 Fixpoint color_swap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
   match zx with
-  | X n m α   => Z n m α
-  | Z n m α   => X n m α
+  | 𝒳 n m α   => 𝒵 n m α
+  | 𝒵 n m α   => 𝒳 n m α
   | zx1 ↕ zx2 => (⊙ zx1) ↕ (⊙ zx2)
   | zx0 ⟷ zx1 => (⊙zx0) ⟷ (⊙zx1)
   | otherwise => otherwise

@@ -20,8 +20,8 @@ Ltac cleanup_C := autorewrite with cleanup_C_db.
    the others follow through transposes *)
 
 Lemma grow_Z_left_2_1 : forall {n} α,
-  Z (S (S n)) 1 α ∝ 
-  (Z 2 1 0 ↕ n_wire n) ⟷ Z (S n) 1 α.
+  𝒵 (S (S n)) 1 α ∝ 
+  (𝒵 2 1 0 ↕ n_wire n) ⟷ 𝒵 (S n) 1 α.
 Proof.
   assert ( pow2Pos : forall n, exists m, (2^n = S m)%nat ).
   { induction n;
@@ -187,8 +187,8 @@ Proof.
 Qed.
 
 Lemma grow_Z_right_1_2 : forall {n} α,
-  Z 1 (S (S n)) α ∝ 
-  Z 1 (S n) α ⟷ (Z 1 2 0 ↕ n_wire n).
+  𝒵 1 (S (S n)) α ∝ 
+  𝒵 1 (S n) α ⟷ (𝒵 1 2 0 ↕ n_wire n).
 Proof.
   intros.
   replace (Z_Spider 1 (S (S n))%nat α) 
@@ -201,7 +201,7 @@ Proof.
 Qed.
 
 Lemma grow_Z_right_bot_1_2_base : forall α,
-  Z 1 3 α ∝ Z 1 2 α ⟷ (— ↕ Z 1 2 0).
+  𝒵 1 3 α ∝ 𝒵 1 2 α ⟷ (— ↕ 𝒵 1 2 0).
 Proof. 
   intros. prop_exists_nonzero 1. simpl; Msimpl. unfold Z_semantics.
   gridify.
@@ -211,7 +211,7 @@ Proof.
 Qed.
 
 Lemma Z_wrap_over_top_right_base : forall n α,
-  (— ↕ Z n 2 α) ⟷ (Cup ↕ —) ∝ Z (S n) 1 α.
+  (— ↕ 𝒵 n 2 α) ⟷ (Cup ↕ —) ∝ 𝒵 (S n) 1 α.
 Proof.
   intros.
   prop_exists_nonzero 1.
@@ -326,7 +326,7 @@ Proof.
 Qed.
 
 Lemma Z_wrap_over_top_right_0 : forall n α,
-  (— ↕ Z n 1 α) ⟷ Cup ∝ Z (S n) 0 α.
+  (— ↕ 𝒵 n 1 α) ⟷ Cup ∝ 𝒵 (S n) 0 α.
 Proof.
   intros.
   prop_exists_nonzero 1.
@@ -451,7 +451,7 @@ Proof.
 Qed.
 
 Lemma Z_wrap_over_top_left_0 : forall n α,
-  Cap ⟷ (— ↕ Z 1 n α) ∝ Z 0 (S n) α.
+  Cap ⟷ (— ↕ 𝒵 1 n α) ∝ 𝒵 0 (S n) α.
 Proof.
   intros.
   apply transpose_diagrams.

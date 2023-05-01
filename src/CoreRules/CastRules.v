@@ -294,19 +294,19 @@ Qed.
 
 Lemma cast_Z :
   forall {n n' m m'} prfn prfm α,
-  cast n' m' prfn prfm (Z n m α) ∝ Z n' m' α.
+  cast n' m' prfn prfm (𝒵 n m α) ∝ 𝒵 n' m' α.
 Proof.
   intros.
-  rewrite (cast_fn prfn prfm (fun n m => Z n m α)).
+  rewrite (cast_fn prfn prfm (fun n m => 𝒵 n m α)).
   easy.
 Qed.
 
 Lemma cast_X :
   forall {n n' m m'} prfn prfm α,
-  cast n' m' prfn prfm (X n m α) ∝ X n' m' α.
+  cast n' m' prfn prfm (𝒳 n m α) ∝ 𝒳 n' m' α.
 Proof.
   intros.
-  rewrite (cast_fn prfn prfm (fun n m => X n m α)).
+  rewrite (cast_fn prfn prfm (fun n m => 𝒳 n m α)).
   easy.
 Qed.
 

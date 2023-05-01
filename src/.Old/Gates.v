@@ -5,27 +5,27 @@ Local Open Scope ZX_scope.
 
 (** Gate Definitions in the ZX Calculus *)
 
-Notation "'_S_'" := (Z 1 1 (PI / 2)) (at level 40).
-Notation "'_T_'" := (Z 1 1 (PI / 4)) (at level 40).
-Notation "'_Z_'" := (Z 1 1 PI) (at level 40).
-Notation "'_X_'" := (X 1 1 PI) (at level 40).
+Notation "'_S_'" := (𝒵 1 1 (PI / 2)) (at level 40).
+Notation "'_T_'" := (𝒵 1 1 (PI / 4)) (at level 40).
+Notation "'_Z_'" := (𝒵 1 1 PI) (at level 40).
+Notation "'_X_'" := (𝒳 1 1 PI) (at level 40).
 Notation "'_Y_'" := (_Z_ ⟷ _X_) (at level 40).
 
 Notation "'_H_'" := 
-    ((Z 1 1 (PI/2)) ⟷ (X 1 1 (PI/2)) ⟷ (Z 1 1 (PI/2)))
+    ((𝒵 1 1 (PI/2)) ⟷ (𝒳 1 1 (PI/2)) ⟷ (𝒵 1 1 (PI/2)))
     (at level 40).
 
 Notation "'_CNOT_'" :=
-  ((Z 1 2 0 ↕ —) ⟷ (— ↕ X 2 1 0)).
+  ((𝒵 1 2 0 ↕ —) ⟷ (— ↕ 𝒳 2 1 0)).
 
 Notation "'_CNOT_R'" :=
-  ((— ↕ X 1 2 0) ⟷ (Z 2 1 0 ↕ —)).
+  ((— ↕ 𝒳 1 2 0) ⟷ (𝒵 2 1 0 ↕ —)).
 
 Notation "'_NOTC_'" :=
-  ((— ↕ Z 1 2 0 ) ⟷ (X 2 1 0 ↕ —)).
+  ((— ↕ 𝒵 1 2 0 ) ⟷ (𝒳 2 1 0 ↕ —)).
 
 Notation "'_NOTC_R'" :=
-  ((X 1 2 0 ↕ —) ⟷ (— ↕ Z 2 1 0 )).
+  ((𝒳 1 2 0 ↕ —) ⟷ (— ↕ 𝒵 2 1 0 )).
 
 (** Gate rewriting rules *)
 

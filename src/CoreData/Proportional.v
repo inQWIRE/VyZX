@@ -3,8 +3,6 @@ Require Import Setoid.
 Require Import QuantumLib.Polar.
 Require Import Coq.Reals.ClassicalDedekindReals.
 Require Import Coq.Reals.Rdefinitions.
-Require Import ZArith.
-Module Import Zabs2N.
 
 (* 
 A generalized form of proportionality which can be used to build notions for 
@@ -348,8 +346,8 @@ Proof.
 Qed.
 
 Lemma Z_spider_1_1_fusion : forall {nIn nOut} α β, 
-  (Z nIn 1 α) ⟷ (Z 1 nOut β) ∝
-  Z nIn nOut (α + β).
+  (𝒵 nIn 1 α) ⟷ (𝒵 1 nOut β) ∝
+  𝒵 nIn nOut (α + β).
 Proof.
   prop_exists_nonzero 1.
   Msimpl.
@@ -357,8 +355,8 @@ Proof.
 Qed.
 
 Lemma X_spider_1_1_fusion : forall {nIn nOut} α β, 
-  (X nIn 1 α) ⟷ (X 1 nOut β) ∝
-  X nIn nOut (α + β).
+  (𝒳 nIn 1 α) ⟷ (𝒳 1 nOut β) ∝
+  𝒳 nIn nOut (α + β).
 Proof.
   intros.
   apply colorswap_diagrams.
@@ -376,7 +374,10 @@ Proof.
 Abort.
 
 Global Close Scope ZX_scope.
-Print Visibility.
+(* 
+Require Import ZArith.
+Module Import Zabs2N.
+
 
 Lemma complex_decompose : forall z : C, 
   exists k (α β : R), z = (√2)^k * (1 + Cexp(α)) * (√2 * Cexp(β)).
@@ -385,5 +386,5 @@ Proof.
   remember (rect_to_polar z) as polar.
   destruct polar as [r θ].
   remember (up (Rlog (√2) (r / 2))) as ceiling.
-  exists ((Z.abs_N ceiling) + 1).
 Abort.
+*)
