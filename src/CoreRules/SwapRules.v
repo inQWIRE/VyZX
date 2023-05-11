@@ -32,7 +32,7 @@ Qed.
 
 (* Proving correctness of conversion *)
 
-Lemma top_to_bottom_correct : forall n, ZX_semantics (top_to_bottom n) = top_wire_to_bottom n.
+Lemma top_to_bottom_correct : forall n, ⟦ top_to_bottom n ⟧ = top_wire_to_bottom n.
 Proof.
   intros.
   destruct n; [ reflexivity | ].
@@ -49,7 +49,7 @@ Proof.
     easy.
 Qed.
 
-Lemma bottom_to_top_correct : forall n, ZX_semantics (bottom_to_top n) = bottom_wire_to_top n.
+Lemma bottom_to_top_correct : forall n, ⟦ bottom_to_top n ⟧ = bottom_wire_to_top n.
 Proof.
   intros.
   unfold bottom_to_top.
@@ -59,7 +59,7 @@ Proof.
   easy.
 Qed.
 
-Lemma a_swap_correct : forall n, ZX_semantics (a_swap n) = a_swap_semantics n.
+Lemma a_swap_correct : forall n, ⟦ a_swap n ⟧ = a_swap_semantics n.
 Proof.
   intros.
   unfold a_swap_semantics.
@@ -303,8 +303,8 @@ Proof.
   repeat rewrite Mmult_assoc.
   restore_dims.
   repeat rewrite Mmult_assoc.
-  remember (ZX_semantics (top_to_bottom_helper n) ⊤%ZX) as ZX_tb_t.
-  remember (ZX_semantics (top_to_bottom_helper n)) as ZX_tb.
+  remember (⟦ (top_to_bottom_helper n) ⊤%ZX ⟧) as ZX_tb_t.
+  remember (⟦ top_to_bottom_helper n ⟧) as ZX_tb.
   restore_dims.
   rewrite (kron_mixed_product (I (2 * 2)) ZX_tb_t swap (I (2 ^ (S n)))) .
   Msimpl; [ | shelve].
@@ -510,6 +510,39 @@ Qed.
 
 Lemma swap_pullthrough_top_right_Z_1_1 : forall α, (Z 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (Z 1 1 α)).
 Proof. intros. solve_prop 1. Qed.
+
+
+Lemma swap_pullthrough_top_right_Z : forall n α prfn prfm, ((Z (S n) 1 α) ↕ —) ⟷ ⨉ ∝ cast _ _ prfn prfm (n_swap _ ⟷ (— ↕ (Z (S n) 1 α))).
+Proof.
+  intro n.
+  induction n; intros.
+  - simpl_casts.
+    cleanup_zx.
+    rewrite n_swap_2_is_swap.
+    rewrite swap_pullthrough_top_right_Z_1_1.
+    easy.
+  - rewrite SpiderInduction.grow_Z_left_2_1 at 1.
+    rewrite stack_wire_distribute_r.
+    rewrite compose_assoc.
+    rewrite IHn.
+    simpl_casts.
+    rewrite n_swap_grow_l.
+    rewrite compose_assoc.
+    rewrite (cast_compose_mid_contract _ (S (S n))).
+    simpl_casts.
+    rewrite (stack_assoc (Z 2 1 _) (n_wire n) —).
+    bundle_wires.
+    rewrite bottom_to_top_grow_r.
+    simpl_casts.
+    rewrite (cast_compose_mid (S (S n))).
+    erewrite <- (@cast_n_wire (S n)).
+    rewrite cast_stack_r.
+    rewrite cast_contract.
+    simpl_casts.
+    erewrite (cast_compose_mid_contract _ (S (S n)) _ _ _ _ _ _ _ (— ↕ bottom_to_top (S n)) (⨉ ↕ n_wire n)).
+    simpl_casts.
+Abort.
+
 
 Lemma swap_pullthrough_top_right_X_1_1 : forall α, (X 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (X 1 1 α)).
 Proof. intros. colorswap_of swap_pullthrough_top_right_Z_1_1. Qed.

@@ -69,12 +69,12 @@ Unshelve.
 all: lia.
 Qed.
 
-Lemma pad_top_bot_semantics : forall {n m} (zx : ZX n m) padT padB, ZX_semantics (pad_top padT (pad_bot padB zx)) = I (2 ^ padT) ⊗ (ZX_semantics zx) ⊗ I (2 ^ padB).
+Lemma pad_top_bot_semantics : forall {n m} (zx : ZX n m) padT padB, ⟦ pad_top padT (pad_bot padB zx) ⟧ = I (2 ^ padT) ⊗ (⟦ zx ⟧) ⊗ I (2 ^ padB).
 Proof.
   intros. simpl. rewrite 2 n_wire_semantics. rewrite kron_assoc; auto with wf_db.
 Qed.
 
-Lemma pad_bot_top_semantics : forall {n m} (zx : ZX n m) padT padB, ZX_semantics (pad_bot padB (pad_top padT zx)) = I (2 ^ padT) ⊗ (ZX_semantics zx) ⊗ I (2 ^ padB).
+Lemma pad_bot_top_semantics : forall {n m} (zx : ZX n m) padT padB, ⟦ pad_bot padB (pad_top padT zx) ⟧ = I (2 ^ padT) ⊗ (⟦ zx ⟧) ⊗ I (2 ^ padB).
 Proof.
   intros. simpl. rewrite 2 n_wire_semantics. easy.
 Qed.

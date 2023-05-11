@@ -5,11 +5,11 @@ Require Import SpiderInduction.
 Local Open Scope ZX_scope.
 
 Lemma stack_semantics {n m o p} : forall (zx0 : ZX n m) (zx1 : ZX o p),
-  ZX_semantics (zx0 ↕ zx1) = ZX_semantics zx0 ⊗ ZX_semantics zx1.
+  ⟦ zx0 ↕ zx1 ⟧ = ⟦ zx0 ⟧ ⊗ ⟦ zx1 ⟧.
 Proof. easy. Qed.
 
 Lemma compose_semantics {n m o} : forall (zx0 : ZX n m) (zx1 : ZX m o),
-ZX_semantics (zx0 ⟷ zx1) = @Mmult (2 ^ n) (2 ^ m) (2 ^ o) (ZX_semantics zx1) (ZX_semantics zx0).
+⟦ zx0 ⟷ zx1 ⟧ = @Mmult (2 ^ n) (2 ^ m) (2 ^ o) (⟦ zx1 ⟧) (⟦ zx0 ⟧).
 Proof. easy. Qed.
 
 Lemma stack_assoc : 

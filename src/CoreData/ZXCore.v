@@ -56,6 +56,7 @@ matrices and one based on dirac notation.
 *)
 
 (* @nocheck name *)
+Reserved Notation "⟦ zx ⟧" (at level 68). (* = is 70, need to be below *)
 Fixpoint ZX_semantics {n m} (zx : ZX n m) : 
   Matrix (2 ^ m) (2 ^ n) := 
   match zx with
@@ -67,22 +68,23 @@ Fixpoint ZX_semantics {n m} (zx : ZX n m) :
   | ⨉ => swap
   | — => I 2
   | □ => hadamard
-  | zx0 ↕ zx1 => (ZX_semantics zx0) ⊗ (ZX_semantics zx1) 
-  | Compose zx0 zx1 => (ZX_semantics zx1) × (ZX_semantics zx0)
-  end.
+  | zx0 ↕ zx1 => ⟦ zx0 ⟧ ⊗ ⟦ zx1 ⟧
+  | Compose zx0 zx1 => ⟦ zx1 ⟧ × ⟦ zx0 ⟧
+  end
+  where "⟦ zx ⟧" := (ZX_semantics zx).
 
 Lemma cast_semantics : forall {n m n' m'} {eqn eqm} (zx : ZX n m),
-  ZX_semantics (cast n' m' eqn eqm zx) = ZX_semantics zx.
+  ⟦ cast n' m' eqn eqm zx ⟧ = ⟦ zx ⟧.
 Proof.
   intros.
   subst.
   easy.
 Qed.
 
-Definition cast_semantics_dim_eqn {n m n' m' : nat} (zx : ZX n m) : Matrix (2 ^ n') (2 ^ m') := ZX_semantics zx.
+Definition cast_semantics_dim_eqn {n m n' m' : nat} (zx : ZX n m) : Matrix (2 ^ n') (2 ^ m') := ⟦ zx ⟧.
 
 Lemma cast_semantics_dim : forall {n m n' m'} {eqn eqm} (zx : ZX n m),
-  ZX_semantics (cast n' m' eqn eqm zx) = cast_semantics_dim_eqn zx.
+  ⟦ (cast n' m' eqn eqm zx) ⟧ = cast_semantics_dim_eqn zx.
 Proof.
   intros.
   unfold cast_semantics_dim_eqn.
@@ -109,7 +111,7 @@ Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) :
   end.
 
 Lemma ZX_semantic_equiv : forall n m (zx : ZX n m),
-  ZX_semantics zx = ZX_dirac_sem zx.
+  ⟦ zx ⟧ = ZX_dirac_sem zx.
 Proof.
   intros.
   induction zx; try lma; simpl.
@@ -119,7 +121,7 @@ Proof.
   1,2: subst; rewrite IHzx1, IHzx2; reflexivity.
 Qed.
 
-Theorem WF_ZX : forall nIn nOut (zx : ZX nIn nOut), WF_Matrix (ZX_semantics zx).
+Theorem WF_ZX : forall nIn nOut (zx : ZX nIn nOut), WF_Matrix (⟦ zx ⟧).
 Proof.
   intros.
   induction zx; try (simpl; auto 10 with wf_db).
@@ -151,7 +153,7 @@ Fixpoint n_stack1 n (zx : ZX 1 1) : ZX n n :=
   where "n ↑ zx" := (n_stack1 n zx).
 
 Lemma n_stack1_n_kron : forall n (zx : ZX 1 1), 
-  ZX_semantics (n ↑ zx) = n ⨂ ZX_semantics zx.
+  ⟦ (n ↑ zx) ⟧ = n ⨂ ⟦ zx ⟧.
 Proof.
   intros.
   induction n.
@@ -168,7 +170,7 @@ Definition n_box := fun n => n ↑ Box.
 
 Notation "'n_wire' n" := (n ↑ —) (at level 35).
 
-Lemma n_wire_semantics {n} : ZX_semantics (n_wire n) = I (2^n).
+Lemma n_wire_semantics {n} : ⟦ n_wire n ⟧ = I (2^n).
 Proof.
   induction n; auto.
   simpl.
@@ -177,7 +179,7 @@ Proof.
   auto.
 Qed.
 
-Lemma n_box_semantics {n} : ZX_semantics (n_box n) = n ⨂ hadamard.
+Lemma n_box_semantics {n} : ⟦ n_box n ⟧ = n ⨂ hadamard.
 Proof.
   induction n; auto.
   simpl.
@@ -232,7 +234,7 @@ Definition adjoint {n m} (zx : ZX n m) : ZX m n :=
 Notation "zx †" := (adjoint zx) (at level 0) : ZX_scope.
 
 Lemma semantics_transpose_comm {nIn nOut} : forall (zx : ZX nIn nOut),
-  ZX_semantics (zx ⊤) = ((ZX_semantics zx) ⊤)%M.
+  ⟦ zx ⊤ ⟧ = ((⟦ zx ⟧) ⊤)%M.
 Proof.
   assert (Mmult_trans_dep : forall n m o p (A : Matrix n m) (B : Matrix o p), 
             m = o -> ((A × B) ⊤ = B ⊤ × A ⊤)%M).
@@ -254,7 +256,7 @@ Proof.
 Qed.
 
 Lemma semantics_adjoint_comm {nIn nOut} : forall (zx : ZX nIn nOut),
-  ZX_semantics (zx †) = (ZX_semantics zx) †%M.
+  ⟦ zx † ⟧ = (⟦ zx ⟧) †%M.
 Proof.
   intros.
   induction zx.
@@ -286,7 +288,7 @@ Fixpoint color_swap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut :=
   where "⊙ zx" := (color_swap zx) : ZX_scope.
 
 Lemma semantics_colorswap_comm {nIn nOut} : forall (zx : ZX nIn nOut),
-  ZX_semantics (⊙ zx) = nOut ⨂ hadamard × (ZX_semantics zx) × nIn ⨂ hadamard.
+  ⟦ ⊙ zx ⟧ = nOut ⨂ hadamard × (⟦ zx ⟧) × nIn ⨂ hadamard.
 Proof.
   induction zx.
   - simpl; Msimpl; reflexivity.
@@ -327,8 +329,8 @@ Proof.
 Qed.
 
 Lemma Z_spider_1_1_fusion_eq : forall {nIn nOut} α β, 
-  ZX_semantics ((Z_Spider nIn 1 α) ⟷ (Z_Spider 1 nOut β)) =
-  ZX_semantics (Z_Spider nIn nOut (α + β)).
+  ⟦ (Z_Spider nIn 1 α) ⟷ (Z_Spider 1 nOut β) ⟧ =
+  ⟦ Z_Spider nIn nOut (α + β) ⟧.
 Proof.
   assert (expnonzero : forall a, exists b, (2 ^ a + (2 ^ a + 0) - 1)%nat = S b).
   { 

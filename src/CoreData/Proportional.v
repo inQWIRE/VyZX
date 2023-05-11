@@ -252,7 +252,7 @@ Add Parametric Morphism (nIn nOut : nat) : (@color_swap nIn nOut)
 Proof. apply colorswap_compat. Qed.
 
 Theorem sem_eq_prop : forall {n m} (zx0 : ZX n m) (zx1 : ZX n m),
-  ZX_semantics zx0 = ZX_semantics zx1 -> zx0 ∝ zx1.
+  ⟦ zx0 ⟧ = ⟦ zx1 ⟧ -> zx0 ∝ zx1.
 Proof.
   intros.
   prop_exists_nonzero 1.
@@ -387,7 +387,7 @@ Proof.
 Qed.
 
 Lemma proportional_sound : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut),
-  zx0 ∝ zx1 -> exists (zxConst : ZX 0 0), ZX_semantics zx0 = ZX_semantics (zxConst ↕ zx1).
+  zx0 ∝ zx1 -> exists (zxConst : ZX 0 0), ⟦ zx0 ⟧ = ⟦ zxConst ↕ zx1 ⟧.
 Proof.
   intros.
   simpl; unfold proportional, proportional_general in H.

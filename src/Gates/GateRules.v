@@ -6,7 +6,7 @@ Require Export DiagramRules.
 
 Local Open Scope ZX_scope.
 
-Lemma Z_is_Z : ZX_semantics (_Z_) = σz.
+Lemma Z_is_Z : ⟦ _Z_ ⟧ = σz.
 Proof.
   simpl.
   unfold Z_semantics.
@@ -15,7 +15,7 @@ Proof.
   solve_matrix.
 Qed.
 
-Lemma X_is_X : ZX_semantics (_X_) = σx.
+Lemma X_is_X : ⟦ _X_ ⟧ = σx.
 Proof.
   simpl.
   unfold X_semantics; solve_matrix.
@@ -35,7 +35,7 @@ Proof.
   try apply c_proj_eq; try simpl; try R_field_simplify; try reflexivity; (try split; try apply RtoC_neq; try apply sqrt2_neq_0; try auto).
 Qed.
 
-Lemma _Rz_is_Rz : forall α, ZX_semantics (_Rz_ α) = phase_shift α.
+Lemma _Rz_is_Rz : forall α, ⟦ _Rz_ α ⟧ = phase_shift α.
 Proof.
   intros.
   simpl.
@@ -44,7 +44,7 @@ Proof.
   lma.
 Qed.
 
-Lemma cnot_l_is_cnot : ZX_semantics _CNOT_ = (/ √ 2)%C .* cnot.
+Lemma cnot_l_is_cnot : ⟦ _CNOT_ ⟧ = (/ √ 2)%C .* cnot.
 Proof.
   simpl.
   unfold Z_semantics, X_semantics.
