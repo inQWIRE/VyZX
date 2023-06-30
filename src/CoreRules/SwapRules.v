@@ -261,7 +261,7 @@ Proof.
   rewrite <- 2 stack_wire_distribute_l.
   apply stack_simplify; [ easy | ].
   rewrite <- bottom_to_top_grow_r.
-  easy.
+  easy. 
 Unshelve.
 all: lia.
 Qed.
@@ -547,3 +547,8 @@ Abort.
 Lemma swap_pullthrough_top_right_X_1_1 : forall α, (X 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (X 1 1 α)).
 Proof. intros. colorswap_of swap_pullthrough_top_right_Z_1_1. Qed.
   
+
+  Lemma ohno : forall prfn prfm, ⦰ ∝ (cast _ _ prfn prfm —).
+  Proof.
+    intros; exfalso; easy.
+  Qed.

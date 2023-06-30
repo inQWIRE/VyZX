@@ -236,11 +236,6 @@ Notation "zx †" := (adjoint zx) (at level 0) : ZX_scope.
 Lemma semantics_transpose_comm {nIn nOut} : forall (zx : ZX nIn nOut),
   ⟦ zx ⊤ ⟧ = ((⟦ zx ⟧) ⊤)%M.
 Proof.
-  assert (Mmult_trans_dep : forall n m o p (A : Matrix n m) (B : Matrix o p), 
-            m = o -> ((A × B) ⊤ = B ⊤ × A ⊤)%M).
-    {
-      intros; rewrite Mmult_transpose; rewrite H in *; reflexivity.      
-    }
   induction zx.
   - Msimpl; reflexivity.
   - simpl; solve_matrix.

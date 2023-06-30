@@ -35,6 +35,7 @@ Tactic Notation "bundle_wires" := wire_to_n_wire_safe; (* change wires to n_wire
   @wire_removal_r
   X_0_is_wire
   Z_0_is_wire
+  box_compose
   (fun n m o p => @nwire_stack_compose_topleft n m o p)
   (fun n m o p => @nwire_stack_compose_botleft n m o p)
   : cleanup_zx_db.

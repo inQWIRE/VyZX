@@ -270,11 +270,10 @@ Proof.
 		rewrite compose_assoc.
 		rewrite <- (compose_assoc ((Z 1 2 0) ↕ (m ↑ —))
 																 ((Z 2 1 0) ↕ (m ↑ —))
-																	(Z (S m) o β)) .
+																	(Z (S m) o β)).
 		rewrite <- stack_compose_distr.
 		rewrite Z_1_2_1_fusion.
 		rewrite Rplus_0_l.
-		rewrite Z_0_is_wire.
 		cleanup_zx.
 		apply IHm.
 Qed.
@@ -668,7 +667,7 @@ Proof.
 	simpl.
 	rewrite <- compose_assoc.
 	rewrite (Z_self_bottom_to_top_absorbtion_right_base n (S (S m)) α).
-	rewrite <- (@cast_Z n _ (1 + (S m))) at 1.  
+	rewrite <- (@cast_Z n _ (1 + (S m))) at 1.
 	rewrite Z_add_r_base_rot at 1.
 	simpl_casts.
 	rewrite compose_assoc.
@@ -680,7 +679,7 @@ Proof.
 	simpl_casts.
 	rewrite compose_assoc.
 	rewrite <- (stack_compose_distr (Z 1 1 0) —).
-	rewrite (H m); [ | shelve ].
+	rewrite (H m); [ | lia ].
 	rewrite wire_removal_r.
 	rewrite <- (Z_add_r_base_rot 1 m).
 	rewrite <- (Z_add_r_base_rot 1 (1 + m)).
@@ -849,3 +848,17 @@ Proof. transpose_of Z_n_wrap_under_r_base_unswapped. Qed.
 
 Lemma Z_n_wrap_under_l_base : forall n m α, Z 0 (m + n) α ∝ n_cap n ⟷ (Z n m α ↕ n_wire n).
 Proof. transpose_of Z_n_wrap_under_r_base. Qed.
+
+(* @nocheck name *)
+(* PI is captialized in Coq R *)
+Lemma Z_2_PI : forall n m a, Z n m (INR a * 2 * PI) ∝ Z n m 0.
+Proof.
+	intros.
+	prop_exists_nonzero 1.
+	Msimpl.
+	simpl.
+	unfold Z_semantics. 
+	rewrite Cexp_2_PI.
+	rewrite Cexp_0.
+	easy.
+Qed.

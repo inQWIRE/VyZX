@@ -195,3 +195,8 @@ Proof. transpose_of X_n_wrap_under_r_base_unswapped. Qed.
 
 Lemma X_n_wrap_under_l_base : forall n m α, X 0 (m + n) α ∝ n_cap n ⟷ (X n m α ↕ n_wire n).
 Proof. transpose_of X_n_wrap_under_r_base. Qed.
+
+(* @nocheck name *)
+(* PI is captialized in Coq R *)
+Lemma X_2_PI : forall n m a, X n m (INR a * 2 * PI) ∝ X n m 0.
+Proof. colorswap_of Z_2_PI. Qed.

@@ -100,6 +100,26 @@ Lemma braminus_transpose_ketminus :
   ⟨-∣⊤ = ∣-⟩.
 Proof. unfold braminus; lma. Qed.
 
+(* @nocheck name *)
+(* PI is captialized in Coq R *)
+Lemma Cexp_2_PI : forall a, Cexp (INR a * 2 * PI) = 1.
+Proof.
+	intros.
+	induction a.
+	- simpl.
+		rewrite 2 Rmult_0_l.
+		rewrite Cexp_0.
+		easy.
+	- rewrite S_INR.
+		rewrite 2 Rmult_plus_distr_r.
+		rewrite Rmult_1_l.
+		rewrite double.
+		rewrite <- Rplus_assoc.
+		rewrite 2 Cexp_plus_PI.
+		rewrite IHa.
+		lca.
+Qed.
+
 #[export] Hint Resolve 
   WF_braplus
   WF_braminus : wf_db.

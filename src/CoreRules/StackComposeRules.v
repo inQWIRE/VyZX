@@ -97,7 +97,7 @@ Proof.
   rewrite stack_compose_distr.
   rewrite stack_empty_l.
   auto_cast_eqn (rewrite stack_empty_r).
-  rewrite cast_compose_l.
+  rewrite cast_compose_l. 
   simpl_casts.
   easy.
 Qed.

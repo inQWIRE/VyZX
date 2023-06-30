@@ -169,3 +169,12 @@ Proof.
   rewrite (@cast_n_wire (n + 1) (S n) prfn prfm).
   easy.
 Qed.
+
+Lemma box_compose : □ ⟷ □ ∝ —.
+Proof.
+  prop_exists_nonzero 1.
+  Msimpl.
+  simpl.
+  rewrite MmultHH.
+  easy.
+Qed.

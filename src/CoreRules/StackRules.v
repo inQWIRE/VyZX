@@ -16,9 +16,8 @@ Lemma stack_assoc :
 forall {n0 n1 n2 m0 m1 m2} 
 	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2) prfn prfm,
 	(zx0 ↕ zx1) ↕ zx2 ∝ 
-		cast ((n0 + n1) + n2) ((m0 + m1) + m2) prfn prfm	
-				(zx0 ↕ (zx1 ↕ zx2)).
-Proof.                                                      
+		cast _ _ prfn prfm (zx0 ↕ (zx1 ↕ zx2)).
+Proof.                                               
 	intros.
 	prop_exists_nonzero 1.  
 	simpl.
@@ -235,3 +234,17 @@ Proof.
 Unshelve.
 all: lia.
 Qed.
+
+Lemma nstack1_1 : forall zx, 1 ↑ zx ∝ zx.
+Proof.
+	intros.
+	simpl.
+	rewrite stack_empty_r.
+	simpl_casts.
+	easy.
+Unshelve.
+all: lia.
+Qed.
+
+Lemma nstack1_0 : forall zx, 0 ↑ zx ∝ ⦰.
+Proof. easy. Qed.

@@ -292,7 +292,7 @@ Notation unpadded_cnot_b := (unpadded_cnot base_cnot_1 _CNOT_inv_).
 Lemma unpadded_cnot_t_sem_equiv : forall n, / √ 2 .* uc_eval (@CNOT (S (S n)) 0 (S n)) = ⟦ unpadded_cnot_t 0 (S (S n)) ⟧.
 Proof.
   intros.
-  assert (HSwapSSn : forall n, uc_eval (@SWAP (S (S (S n))) 0 (S n)) = ⟦ pad_bot_1 (a_swap (S (S n)))) ⟧.
+  assert (HSwapSSn : forall n, uc_eval (@SWAP (S (S (S n))) 0 (S n)) = ⟦ (pad_bot_1 (a_swap (S (S n)))) ⟧ ).
   {
     intros.
     Opaque a_swap.
@@ -361,7 +361,7 @@ Proof.
     + apply HSwapSSn.
 Qed.
 
-Lemma unpadded_cnot_b_sem_equiv : forall n, / √ 2 .* uc_eval (@CNOT (S (S n)) (S n) 0) = ⟦ unpadded_cnot_b 0 (S (S n ⟧)).
+Lemma unpadded_cnot_b_sem_equiv : forall n, / √ 2 .* uc_eval (@CNOT (S (S n)) (S n) 0) = ⟦ unpadded_cnot_b 0 (S (S n )) ⟧.
 Proof.
   intros.
   assert (Hhh : hadamard ⊗ I 2 × (I 2 ⊗ hadamard) = hadamard ⊗ hadamard).
