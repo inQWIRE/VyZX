@@ -19,10 +19,9 @@ Proof.
   rewrite <- compose_assoc.
   rewrite <- (stack_compose_distr (Z 0 1 0) (Z 1 2 0) (X 0 1 0) —); cleanup_zx.
   rewrite Z_spider_1_1_fusion.
-  rewrite wire_to_n_wire.
   rewrite <- nwire_stack_compose_botleft.
   rewrite compose_assoc.
-  rewrite <- (n_wire_stack 1 1).
+  rewrite <- (n_wire_stack 1 1); rewrite wire_to_n_wire at 4.
   rewrite (stack_assoc (n_wire 1) (n_wire 1)); simpl_casts.
   rewrite <- (stack_compose_distr (n_wire 1) (n_wire 1) (n_wire 1 ↕ X 0 1 0)).
   rewrite (dominated_X_spider_fusion_bot_right 0 0 1).
