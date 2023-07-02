@@ -9,6 +9,8 @@ Lemma swap_compose :
   ⨉ ⟷ ⨉ ∝ n_wire 2.
 Proof. solve_prop 1. Qed.
 
+Global Hint Rewrite swap_compose : cleanup_zx_db.
+
 Lemma top_wire_to_bottom_ind : forall n, top_wire_to_bottom (S (S n)) = @Mmult _ (2 ^ (S (S n))) _ ((I 2) ⊗ top_wire_to_bottom (S n)) (swap ⊗ (I (2 ^ n))).
 Proof.
   intros.
@@ -546,9 +548,4 @@ Abort.
 
 Lemma swap_pullthrough_top_right_X_1_1 : forall α, (X 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (X 1 1 α)).
 Proof. intros. colorswap_of swap_pullthrough_top_right_Z_1_1. Qed.
-  
 
-  Lemma ohno : forall prfn prfm, ⦰ ∝ (cast _ _ prfn prfm —).
-  Proof.
-    intros; exfalso; easy.
-  Qed.
