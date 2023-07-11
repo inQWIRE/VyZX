@@ -3,14 +3,11 @@ opam-version: "2.0"
 version: "0.1.0"
 synopsis: "Coq library for reasoning about ZX diagrams"
 description: """
-inQWIRE's QuantumLib is a Coq library for reasoning
- about ZX diagrams.
+A Coq library for reasoning about ZX diagrams.
 """
-maintainer: ["inQWIRE Developers"]
-authors: ["inQWIRE"]
+maintainer: ["Anonymous"]
+authors: ["Anonymous"]
 license: "MIT"
-homepage: "https://github.com/inQWIRE/VyZX"
-bug-reports: "https://github.com/inQWIRE/VyZX/issues"
 depends: [
   "dune" {>= "2.8"}
   "coq-quantumlib" {>= "1.1.0"}
@@ -33,4 +30,3 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/inQWIRE/VyZX.git"

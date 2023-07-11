@@ -6,15 +6,13 @@
 (generate_opam_files true)
 
 (license MIT)
-(authors "inQWIRE")
-(maintainers "inQWIRE Developers")
-(source (github inQWIRE/VyZX))
+(authors "Anonymous")
+(maintainers "Anonymous")
 
 (package
  (name coq-vyzx)
  (synopsis "Coq library for reasoning about ZX diagrams")
- (description "\| inQWIRE's QuantumLib is a Coq library for reasoning
-              "\|  about ZX diagrams.
+ (description "\| A Coq library for reasoning about ZX diagrams.
  )
 
  (depends
