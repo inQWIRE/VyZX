@@ -160,3 +160,10 @@ Qed.
 #[export] Hint Rewrite <- Mscale_plus_distr_l : scalar_move_db.
 #[export] Hint Rewrite <- Mscale_plus_distr_r : scalar_move_db.
 
+(* @nocheck name *)
+Definition Csqrt (z : C) :=
+	match z with
+	| (a, b) => (sqrt ((Cmod z + a) / 2), (b / Rabs b) * sqrt((Cmod z - a) / 2))
+	end.
+
+Notation "√ z" := (Csqrt z) : C_scope.
