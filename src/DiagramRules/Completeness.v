@@ -90,26 +90,51 @@ Definition harny_s (l1 l2 l3 : R) := (1 - l2) * (l1 + l3) - (1 + l2) * (1 + l1 *
 
 Definition harny_v (l1 l2 l3 : R) := (1 - l2) * (l1 - l3).
 
-Definition harny_t (l1 l2 l3 : R) := (harny_τ l1 l2 l3) * (harny_u l1 l2 l3 * harny_u l1 l2 l3 - harny_v l1 l2 l3 * harny_v l1 l2 l3).
+Definition harny_t (l1 l2 l3 : R) := 
+  let τ := harny_τ l1 l2 l3 in 
+  let u := harny_u l1 l2 l3 in  
+  let v := harny_v l1 l2 l3 in  
+  τ * (u * u - v * v).
 
-Definition harny_σ1 (l1 l2 l3 : R) : C := (0, -(harny_u l1 l2 l3 + harny_v l1 l2 l3) * sqrt(harny_s l1 l2 l3 / harny_t l1 l2 l3)).
+Definition harny_σ1 (l1 l2 l3 : R) : C := 
+  let u := harny_u l1 l2 l3 in
+  let v := harny_v l1 l2 l3 in
+  let s := harny_s l1 l2 l3 in
+  let t := harny_t l1 l2 l3 in
+  Ci * (-(u + v) * sqrt(s / t)).
 
-Definition harny_σ2 (l1 l2 l3 : R) : C := (harny_τ l1 l2 l3, sqrt(harny_t l1 l2 l3 / harny_s l1 l2 l3)) / (harny_τ l1 l2 l3, -1 * sqrt(harny_t l1 l2 l3 / harny_s l1 l2 l3)).
+Definition harny_σ2 (l1 l2 l3 : R) : C := 
+  let τ := harny_τ l1 l2 l3 in 
+  let u := harny_u l1 l2 l3 in
+  let v := harny_v l1 l2 l3 in
+  let s := harny_s l1 l2 l3 in
+  let t := harny_t l1 l2 l3 in
+  (C1 * τ + Ci * sqrt(t / s)) 
+  / (C1 * τ + -Ci * sqrt(t / s)).
 
-Definition harny_σ3 (l1 l2 l3 : R) : C := (0, -(harny_u l1 l2 l3 - harny_v l1 l2 l3) * sqrt(harny_s l1 l2 l3 / harny_t l1 l2 l3)).
+Definition harny_σ3 (l1 l2 l3 : R) : C := 
+  let u := harny_u l1 l2 l3 in
+  let v := harny_v l1 l2 l3 in
+  let s := harny_s l1 l2 l3 in
+  let t := harny_t l1 l2 l3 in
+  Ci * (-(u - v) * sqrt(s / t)).
 
 Definition harny_k l1 l2 l3 := 
-  let S := harny_s l1 l2 l3 in 
+  let s := harny_s l1 l2 l3 in 
   let τ := harny_τ l1 l2 l3 in 
-  let T := harny_t l1 l2 l3 in 
-  (8 * (S * τ + sqrt((- S) * T)) / (S * τ * τ + T)).
+  let t := harny_t l1 l2 l3 in 
+  (8 * (s * τ + sqrt((- s) * t)) / (s * τ * τ + t)).
 
 Close Scope R.
 Open Scope C.
 
 (* Needs to have an explicit scalar k given which depends on all the above, see harny paper for more details. *)
 Lemma harny_general_phases_color_swap : forall l1 l2 l3 : R,
-	green_box l3 × red_box l2 × green_box l1 = harny_k l1 l2 l3 .* (red_box (harny_σ3 l1 l2 l3) × green_box (harny_σ2 l1 l2 l3) × red_box (harny_σ1 l1 l2 l3)).
+  let k := harny_k l1 l2 l3 in
+  let σ1 := harny_σ1 l1 l2 l3 in
+  let σ2 := harny_σ2 l1 l2 l3 in
+  let σ3 := harny_σ3 l1 l2 l3 in
+	green_box l3 × red_box l2 × green_box l1 = k .* (red_box σ3 × green_box σ2 × red_box σ1).
 Proof.
 	intros.
 	unfold red_box.
