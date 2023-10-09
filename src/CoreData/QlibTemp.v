@@ -2,6 +2,32 @@ From QuantumLib Require Import Matrix.
 From QuantumLib Require Import Quantum.
 
 (* @nocheck name *)
+Lemma Mscale_inv : forall {n m} (A B : Matrix n m) c, c <> C0 -> c .* A = B <-> A = (/ c) .* B.
+Proof.
+  intros.
+  split; intro H0; [rewrite <- H0 | rewrite H0];
+  rewrite Mscale_assoc.
+  - rewrite Cinv_l; [ lma | assumption].  
+  - rewrite Cinv_r; [ lma | assumption].  
+Qed.
+
+(* @nocheck name *)
+Lemma Ropp_lt_0 : forall x : R, x < 0 -> 0 < -x.
+Proof.
+	intros.
+	rewrite <- Ropp_0.
+	apply Ropp_lt_contravar.
+	easy.
+Qed.
+
+(* @nocheck name *)
+Definition Rsqrt (x : R) :C := 
+match Rcase_abs x with
+| left a => Ci * Rsqrt {| nonneg := - x; cond_nonneg := Rlt_le 0 (-x)%R (Ropp_lt_0 x a) |}
+| right a => C1 * Rsqrt {| nonneg := x; cond_nonneg := Rge_le x R0 a |}
+end.
+
+(* @nocheck name *)
 (* *)
 Lemma INR_pi_exp : forall (r : nat),
 	Cexp (INR r * PI) = 1 \/ Cexp (INR r * PI) = -1.
