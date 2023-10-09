@@ -65,60 +65,59 @@ Lemma completeness_BW :
 Proof. (* solve matrix takes forever *)
 Abort.
 
-(* Harny completeness result *)
-Definition GreenBox (a : C) : Matrix 2 2 :=
+(* harny completeness result *)
+Definition green_box (a : C) : Matrix 2 2 :=
 	fun x y => 
 		match (x, y) with 
 		| (0, 0) => 1
 		| (1, 1) => a
 		| _      => 0
 		end.
-Definition RedBox (a : C) : Matrix 2 2 :=
-	hadamard × (GreenBox a) × hadamard.
+Definition red_box (a : C) : Matrix 2 2 :=
+	hadamard × (green_box a) × hadamard.
 
 Open Scope R.
 
-Definition z (α β γ : R) : C := (cos (β / 2) * cos ((α + γ) / 2), (sin(β/2) * cos ((α - γ) / 2))).
+Definition harny_z (α β γ : R) : C := cos (β / 2) * cos ((α + γ) / 2) + (Ci * (sin(β/2) * cos ((α - γ) / 2))).
 
-Definition z_1 (α β γ : R) : C := (cos (β / 2) * sin ((α + γ) / 2), -(sin(β/2) * sin ((α - γ) / 2))).
+Definition harny_z_1 (α β γ : R) : C := cos (β / 2) * sin ((α + γ) / 2) + (Ci * (sin(β/2) * sin ((α - γ) / 2))).
 
-Definition Harny_τ (l1 l2 l3 : R) := (1 - l2) * (l1 + l3) + (1 + l2) * (1 + l1 * l3).
+Definition harny_τ (l1 l2 l3 : R) := (1 - l2) * (l1 + l3) + (1 + l2) * (1 + l1 * l3).
 
-Definition Harny_U (l1 l2 l3 : R) := (1 + l2) * (l1 * l3 - 1).
+Definition harny_u (l1 l2 l3 : R) := (1 + l2) * (l1 * l3 - 1).
 
-Definition Harny_S (l1 l2 l3 : R) := (1 - l2) * (l1 + l3) - (1 + l2) * (1 + l1 * l3).
+Definition harny_s (l1 l2 l3 : R) := (1 - l2) * (l1 + l3) - (1 + l2) * (1 + l1 * l3).
 
-Definition Harny_V (l1 l2 l3 : R) := (1 - l2) * (l1 - l3).
+Definition harny_v (l1 l2 l3 : R) := (1 - l2) * (l1 - l3).
 
-Definition Harny_T (l1 l2 l3 : R) := (Harny_τ l1 l2 l3) * (Harny_U l1 l2 l3 * Harny_U l1 l2 l3 - Harny_V l1 l2 l3 * Harny_V l1 l2 l3).
+Definition harny_t (l1 l2 l3 : R) := (harny_τ l1 l2 l3) * (harny_u l1 l2 l3 * harny_u l1 l2 l3 - harny_v l1 l2 l3 * harny_v l1 l2 l3).
 
+Definition harny_σ1 (l1 l2 l3 : R) : C := (0, -(harny_u l1 l2 l3 + harny_v l1 l2 l3) * sqrt(harny_s l1 l2 l3 / harny_t l1 l2 l3)).
 
-Print Rcase_abs.
-Check Rcase_abs.
+Definition harny_σ2 (l1 l2 l3 : R) : C := (harny_τ l1 l2 l3, sqrt(harny_t l1 l2 l3 / harny_s l1 l2 l3)) / (harny_τ l1 l2 l3, -1 * sqrt(harny_t l1 l2 l3 / harny_s l1 l2 l3)).
 
-Definition Harny_σ1 (l1 l2 l3 : R) : C := (0, -(Harny_U l1 l2 l3 + Harny_V l1 l2 l3) * sqrt(Harny_S l1 l2 l3 / Harny_T l1 l2 l3)).
-
-Definition Harny_σ2 (l1 l2 l3 : R) : C := (Harny_τ l1 l2 l3, sqrt(Harny_T l1 l2 l3 / Harny_S l1 l2 l3)) / (Harny_τ l1 l2 l3, -1 * sqrt(Harny_T l1 l2 l3 / Harny_S l1 l2 l3)).
-
-Definition Harny_σ3 (l1 l2 l3 : R) : C := (0, -(Harny_U l1 l2 l3 - Harny_V l1 l2 l3) * sqrt(Harny_S l1 l2 l3 / Harny_T l1 l2 l3)).
+Definition harny_σ3 (l1 l2 l3 : R) : C := (0, -(harny_u l1 l2 l3 - harny_v l1 l2 l3) * sqrt(harny_s l1 l2 l3 / harny_t l1 l2 l3)).
 
 Close Scope R.
 Open Scope C.
 
-(* Needs to have an explicit scalar k given which depends on all the above, see Harny paper for more details. *)
-Lemma Harny_General_phases_color_swap : forall l1 l2 l3 : R,
-	GreenBox l3 × RedBox l2 × GreenBox l1 = RedBox (Harny_σ3 l1 l2 l3) × GreenBox (Harny_σ2 l1 l2 l3) × RedBox (Harny_σ1 l1 l2 l3).
+(* Needs to have an explicit scalar k given which depends on all the above, see harny paper for more details. *)
+Lemma harny_general_phases_color_swap : forall l1 l2 l3 : R,
+	green_box l3 × red_box l2 × green_box l1 = red_box (harny_σ3 l1 l2 l3) × green_box (harny_σ2 l1 l2 l3) × red_box (harny_σ1 l1 l2 l3).
 Proof.
 	intros.
-	unfold RedBox.
-	unfold GreenBox.
+	unfold red_box.
+	unfold green_box.
+	solve_matrix.
+	C_field_simplify.
+	replace (C2 * C2 * C2 * l2 + C2 * C2 * C2) with ((C2 * C2) *(C2 * (l2 + C1))) by lca.
 Admitted.
 
-(* Prior Harny rule can be used to prove this. *)
-Lemma Harny_Completeness : forall α β γ, 
+(* Prior harny rule can be used to prove this. *)
+Lemma harny_completeness : forall α β γ, 
 	Z 1 1 α ⟷ X 1 1 β ⟷ Z 1 1 γ ∝
-	X 1 1 (get_arg (z α β γ) + get_arg (z_1 α β γ)) ⟷ 
+	X 1 1 (get_arg (harny_z α β γ) + get_arg (harny_z_1 α β γ)) ⟷ 
 	Z 1 1 (2) ⟷
-	X 1 1 (get_arg (z α β γ) + get_arg (z_1 α β γ)).
+	X 1 1 (get_arg (harny_z α β γ) + get_arg (harny_z_1 α β γ)).
 Proof.
 Admitted.
