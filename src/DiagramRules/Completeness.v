@@ -134,21 +134,85 @@ Lemma harny_general_phases_color_swap : forall l1 l2 l3 : R,
   let σ1 := harny_σ1 l1 l2 l3 in
   let σ2 := harny_σ2 l1 l2 l3 in
   let σ3 := harny_σ3 l1 l2 l3 in
-	green_box l3 × red_box l2 × green_box l1 = k .* (red_box σ3 × green_box σ2 × red_box σ1).
+	k .* (green_box l3 × red_box l2 × green_box l1) = (red_box σ3 × green_box σ2 × red_box σ1).
 Proof.
 	intros.
+	unfold σ1, σ2, σ3.
+	unfold harny_σ1, harny_σ2, harny_σ3.
+	unfold harny_u, harny_v, harny_s, harny_τ, harny_t.
+	unfold harny_u, harny_v, harny_s, harny_τ, harny_t.
 	unfold red_box.
 	unfold green_box.
-	solve_matrix.
-	C_field_simplify.
-	replace (C2 * C2 * C2 * l2 + C2 * C2 * C2) with ((C2 * C2) *(C2 * (l2 + C1))) by lca.
+	prep_matrix_equality.
+	intros.
+	destruct x.
+	- destruct y.
+		simpl.
+		unfold Mmult; simpl.
+		R_field_simplify.
+
+	
 Admitted.
+
+Lemma z_spider_to_green_box : forall α,
+ ⟦ Z 1 1 α ⟧ = green_box (Cexp α).
+Proof.
+	intros.
+	simpl.
+	unfold Z_semantics, green_box.
+	solve_matrix.
+Qed.
+
+Lemma x_spider_to_red_box : forall α,
+ ⟦ X 1 1 α ⟧ = red_box (Cexp α).
+Proof.
+	intros.
+	simpl.
+	unfold X_semantics.
+	fold (⟦ Z 1 1 α ⟧).
+	rewrite z_spider_to_green_box.
+	unfold red_box.
+	simpl.
+	rewrite kron_1_l.
+	easy.
+	auto with wf_db.
+Qed.
 
 (* Prior harny rule can be used to prove this. *)
 Lemma harny_completeness : forall α β γ, 
 	Z 1 1 α ⟷ X 1 1 β ⟷ Z 1 1 γ ∝
 	X 1 1 (get_arg (harny_z α β γ) + get_arg (harny_z_1 α β γ)) ⟷ 
-	Z 1 1 (2) ⟷
+	Z 1 1 (2 * get_arg ( Cmod (harny_z α β γ / harny_z_1 α β γ) + Ci)) ⟷
 	X 1 1 (get_arg (harny_z α β γ) + get_arg (harny_z_1 α β γ)).
 Proof.
+	intros.
+	remember (harny_z α β γ) as z.
+	remember (harny_z_1 α β γ) as z_1.
+	remember (harny_k α β γ) as k.
+	prop_exists_nonzero (1%R / k).
+	simpl.
+	fold (⟦ Z 1 1 α ⟧).
+	fold (⟦ X 1 1 β ⟧).
+	fold (⟦ Z 1 1 γ ⟧).
+	fold (⟦ X 1 1 (get_arg z + get_arg z_1 ) ⟧).
+	fold (⟦ Z 1 1 (2 * get_arg ( Cmod (z / z_1) + Ci)) ⟧).
+	fold (⟦ X 1 1 (get_arg z - get_arg z_1) ⟧).
+	repeat rewrite z_spider_to_green_box.
+	repeat rewrite x_spider_to_red_box.
+	Search (_ .* _).
+	assert (H : forall a {n m} (U V : Matrix n m), a <> C0 -> a .* U = V -> U = (C1 / a) .* V).
+	{ 
+		intros.
+		rewrite <- H0.
+		rewrite Mscale_assoc.
+		replace ((C1 / a) * a) with (C1).
+		lma.
+		C_field_simplify.
+		easy.
+		easy.
+	}
+	apply H.
+	admit.
+	rewrite Heqk.
+	repeat rewrite <- Mmult_assoc.
 Admitted.
