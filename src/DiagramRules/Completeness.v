@@ -125,8 +125,40 @@ Definition harny_k l1 l2 l3 :=
   let t := harny_t l1 l2 l3 in 
   (8 * (s * τ + sqrt((- s) * t)) / (s * τ * τ + t)).
 
+#[export] Hint Unfold harny_k harny_s harny_t harny_u harny_v harny_z harny_z_1 harny_τ : harny_db.
+#[export] Hint Unfold harny_σ1 harny_σ2 harny_σ3 : harny_σ_db.
+
 Close Scope R.
 Open Scope C.
+
+Definition create_m (mx my mz mw : C) : (Matrix 2 2)
+  := fun (x y : nat) => match x, y with
+                      | 0, 0 => mx
+                      | 0, 1 => my
+                      | 1, 0 => mz
+                      | 1, 1 => mw
+                      | _, _ => C0
+end.
+
+Lemma harny_simpl : forall l1 l2 l3,
+  let σ1 := harny_σ1 l1 l2 l3 in
+  let σ2 := harny_σ2 l1 l2 l3 in
+  let σ3 := harny_σ3 l1 l2 l3 in
+  let MX := ((C1 + σ3) * (C1 + σ1) + (C1 - σ3) * σ2 * (C1 - σ1)) in
+  let MY := ((C1 + σ3) * (C1 - σ1) + (C1 - σ3) * σ2 * (C1 + σ1)) in
+  let MZ := ((C1 - σ3) * (C1 + σ1) + (C1 + σ3) * σ2 * (C1 - σ1)) in
+  let MW := ((C1 - σ3) * (C1 - σ1) + (C1 + σ3) * σ2 * (C1 + σ1)) in 
+  C2 * C2 .* (red_box σ3 × green_box σ2 × red_box σ1) = create_m MX MY MZ MW.
+Proof.
+  intros.
+  subst MX MY MZ MW.
+  unfold red_box, green_box.
+  solve_matrix;
+  C_field_simplify.
+  all: try lca.
+  all: split; apply RtoC_neq; [apply sqrt2_neq_0 | easy].
+Qed.
+
 
 (* Needs to have an explicit scalar k given which depends on all the above, see harny paper for more details. *)
 Lemma harny_general_phases_color_swap : forall l1 l2 l3 : R,
@@ -136,22 +168,18 @@ Lemma harny_general_phases_color_swap : forall l1 l2 l3 : R,
   let σ3 := harny_σ3 l1 l2 l3 in
 	k .* (green_box l3 × red_box l2 × green_box l1) = (red_box σ3 × green_box σ2 × red_box σ1).
 Proof.
-	intros.
-	unfold σ1, σ2, σ3.
-	unfold harny_σ1, harny_σ2, harny_σ3.
-	unfold harny_u, harny_v, harny_s, harny_τ, harny_t.
-	unfold harny_u, harny_v, harny_s, harny_τ, harny_t.
-	unfold red_box.
-	unfold green_box.
-	prep_matrix_equality.
-	intros.
-	destruct x.
-	- destruct y.
-		simpl.
-		unfold Mmult; simpl.
-		R_field_simplify.
+  intros.
+  pose proof (harny_simpl l1 l2 l3).
+  rewrite Mscale_inv in H.
+  subst σ1 σ2 σ3.
+  rewrite H.
+  subst k.
+  unfold green_box, red_box.
+  autounfold with harny_σ_db.
+  autounfold with harny_db.
+  solve_matrix.
 
-	
+
 Admitted.
 
 Lemma z_spider_to_green_box : forall α,
