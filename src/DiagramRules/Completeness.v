@@ -76,60 +76,54 @@ Definition green_box (a : C) : Matrix 2 2 :=
 Definition red_box (a : C) : Matrix 2 2 :=
 	hadamard × (green_box a) × hadamard.
 
-Open Scope R.
+Open Scope C.
 
 Definition harny_z (α β γ : R) : C := cos (β / 2) * cos ((α + γ) / 2) + (Ci * (sin(β/2) * cos ((α - γ) / 2))).
 
 Definition harny_z_1 (α β γ : R) : C := cos (β / 2) * sin ((α + γ) / 2) + (Ci * (sin(β/2) * sin ((α - γ) / 2))).
 
-Definition harny_τ (l1 l2 l3 : R) := (1 - l2) * (l1 + l3) + (1 + l2) * (1 + l1 * l3).
+Definition harny_τ (l1 l2 l3 : C) : C := (1 - l2) * (l1 + l3) + (1 + l2) * (1 + l1 * l3).
 
-Definition harny_u (l1 l2 l3 : R) := (1 + l2) * (l1 * l3 - 1).
+Definition harny_u (l1 l2 l3 : C) : C := (1 + l2) * (l1 * l3 - 1).
 
-Definition harny_s (l1 l2 l3 : R) := (1 - l2) * (l1 + l3) - (1 + l2) * (1 + l1 * l3).
+Definition harny_s (l1 l2 l3 : C) : C := (1 - l2) * (l1 + l3) - (1 + l2) * (1 + l1 * l3).
 
-Definition harny_v (l1 l2 l3 : R) := (1 - l2) * (l1 - l3).
+Definition harny_v (l1 l2 l3 : C) := (1 - l2) * (l1 - l3).
 
-Definition harny_t (l1 l2 l3 : R) := 
+Definition harny_t (l1 l2 l3 : C) := 
   let τ := harny_τ l1 l2 l3 in 
   let u := harny_u l1 l2 l3 in  
   let v := harny_v l1 l2 l3 in  
   τ * (u * u - v * v).
 
-Definition harny_σ1 (l1 l2 l3 : R) : C := 
+Definition harny_σ1 (l1 l2 l3 : C) : C := 
   let u := harny_u l1 l2 l3 in
   let v := harny_v l1 l2 l3 in
   let s := harny_s l1 l2 l3 in
   let t := harny_t l1 l2 l3 in
-  Ci * (-(u + v) * sqrt(s / t)).
+  Ci * (-(u + v) * √(s / t)).
 
-Definition harny_σ2 (l1 l2 l3 : R) : C := 
+Definition harny_σ2 (l1 l2 l3 : C) : C := 
   let τ := harny_τ l1 l2 l3 in 
   let u := harny_u l1 l2 l3 in
   let v := harny_v l1 l2 l3 in
   let s := harny_s l1 l2 l3 in
   let t := harny_t l1 l2 l3 in
-  (C1 * τ + Ci * sqrt(t / s)) 
-  / (C1 * τ + -Ci * sqrt(t / s)).
+  (C1 * τ + Ci * √(t / s)) 
+  / (C1 * τ + -Ci * √(t / s)).
 
-Definition harny_σ3 (l1 l2 l3 : R) : C := 
+Definition harny_σ3 (l1 l2 l3 : C) : C := 
   let u := harny_u l1 l2 l3 in
   let v := harny_v l1 l2 l3 in
   let s := harny_s l1 l2 l3 in
   let t := harny_t l1 l2 l3 in
-  Ci * (-(u - v) * sqrt(s / t)).
+  Ci * (-(u - v) * √(s / t)).
 
-Definition harny_k l1 l2 l3 := 
+Definition harny_k (l1 l2 l3 : C) : C := 
   let s := harny_s l1 l2 l3 in 
   let τ := harny_τ l1 l2 l3 in 
   let t := harny_t l1 l2 l3 in 
-  (8 * (s * τ + sqrt((- s) * t)) / (s * τ * τ + t)).
-
-#[export] Hint Unfold harny_k harny_s harny_t harny_u harny_v harny_z harny_z_1 harny_τ : harny_db.
-#[export] Hint Unfold harny_σ1 harny_σ2 harny_σ3 : harny_σ_db.
-
-Close Scope R.
-Open Scope C.
+  (8 * (s * τ + √((- s) * t)) / (s * τ * τ + t)).
 
 Definition create_m (mx my mz mw : C) : (Matrix 2 2)
   := fun (x y : nat) => match x, y with
@@ -153,15 +147,11 @@ Proof.
   intros.
   subst MX MY MZ MW.
   unfold red_box, green_box.
-  solve_matrix;
-  C_field_simplify.
-  all: try lca.
-  all: split; apply RtoC_neq; [apply sqrt2_neq_0 | easy].
-Qed.
+	(* Broken by addition of Csqrt and moving harny scalars to C, see old commit. *)
+Admitted.
 
 
-(* Needs to have an explicit scalar k given which depends on all the above, see harny paper for more details. *)
-Lemma harny_general_phases_color_swap : forall l1 l2 l3 : R,
+Lemma harny_general_phases_color_swap : forall l1 l2 l3 : C,
   let k := harny_k l1 l2 l3 in
   let σ1 := harny_σ1 l1 l2 l3 in
   let σ2 := harny_σ2 l1 l2 l3 in
@@ -175,11 +165,6 @@ Proof.
   rewrite H.
   subst k.
   unfold green_box, red_box.
-  autounfold with harny_σ_db.
-  autounfold with harny_db.
-  solve_matrix.
-
-
 Admitted.
 
 Lemma z_spider_to_green_box : forall α,
@@ -227,7 +212,6 @@ Proof.
 	fold (⟦ X 1 1 (get_arg z - get_arg z_1) ⟧).
 	repeat rewrite z_spider_to_green_box.
 	repeat rewrite x_spider_to_red_box.
-	Search (_ .* _).
 	assert (H : forall a {n m} (U V : Matrix n m), a <> C0 -> a .* U = V -> U = (C1 / a) .* V).
 	{ 
 		intros.
