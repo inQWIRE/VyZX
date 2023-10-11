@@ -204,7 +204,7 @@ Proof.
 	intros.
 	remember (harny_z α β γ) as z.
 	remember (harny_z_1 α β γ) as z_1.
-	remember (harny_k α β γ) as k.
+	remember (harny_k (Cexp α) (Cexp β) (Cexp γ)) as k.
 	prop_exists_nonzero (1%R / k).
 	simpl.
 	fold (⟦ Z 1 1 α ⟧).
@@ -227,7 +227,11 @@ Proof.
 		easy.
 	}
 	apply H.
-	admit.
-	rewrite Heqk.
-	repeat rewrite <- Mmult_assoc.
+	- rewrite Heqk.
+		autounfold with harny_db.
+		C_field_simplify.
+		admit.
+	- rewrite Heqk.
+		repeat rewrite <- Mmult_assoc.
+		rewrite harny_general_phases_color_swap.
 Admitted.
