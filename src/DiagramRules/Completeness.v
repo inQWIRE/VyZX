@@ -125,6 +125,9 @@ Definition harny_k (l1 l2 l3 : C) : C :=
   let t := harny_t l1 l2 l3 in 
   (8 * (s * τ + √((- s) * t)) / (s * τ * τ + t)).
 
+#[export] Hint Unfold harny_k harny_s harny_t harny_u harny_v harny_z harny_z_1 harny_τ : harny_db.
+#[export] Hint Unfold harny_σ1 harny_σ2 harny_σ3 : harny_σ_db.
+
 Definition create_m (mx my mz mw : C) : (Matrix 2 2)
   := fun (x y : nat) => match x, y with
                       | 0, 0 => mx
