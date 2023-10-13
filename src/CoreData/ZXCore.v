@@ -73,6 +73,14 @@ Fixpoint ZX_semantics {n m} (zx : ZX n m) :
   end
   where "⟦ zx ⟧" := (ZX_semantics zx).
 
+Lemma zx_compose_spec : forall n m o (zx0 : ZX n m) (zx1 : ZX m o),
+	⟦ zx0 ⟷ zx1 ⟧ = ⟦ zx1 ⟧ × ⟦ zx0 ⟧.
+Proof. easy. Qed.
+
+Lemma zx_stack_spec : forall n m o p (zx0 : ZX n m) (zx1 : ZX o p),
+	⟦ zx0 ↕ zx1 ⟧ = ⟦ zx0 ⟧ ⊗ ⟦ zx1 ⟧.
+Proof. easy. Qed.
+
 Lemma cast_semantics : forall {n m n' m'} {eqn eqm} (zx : ZX n m),
   ⟦ cast n' m' eqn eqm zx ⟧ = ⟦ zx ⟧.
 Proof.
@@ -366,5 +374,238 @@ Proof.
       autorewrite with Cexp_db.
       lca.
 Qed.
+
+Lemma z_1_1_pi_σz :
+	⟦ Z 1 1 PI ⟧ = σz.
+Proof. solve_matrix. autorewrite with Cexp_db. lca. Qed.
+
+Lemma x_1_1_pi_σx :
+	⟦ X 1 1 PI ⟧ = σx.
+Proof. 
+	simpl. 
+	unfold X_semantics. simpl; Msimpl. solve_matrix; autorewrite with Cexp_db. 
+	all: C_field_simplify; [lca | C_field].
+Qed.
+
+Definition zx_triangle : ZX 1 1 :=
+	(X 1 1 (PI/2) ⟷ Z 1 1 (PI/4)) ⟷ ((Z 0 1 (PI/4) ↕ —) ⟷ X 2 1 0) ⟷ (Z 1 2 0 ⟷ (— ↕ (X 1 2 0 ⟷ (Z 1 0 (-PI/4) ↕ Z 1 0 (-PI/4))))).
+
+Definition zx_triangle_left : ZX 1 1 :=
+	(zx_triangle ⊤)%ZX.
+
+Notation "▷" := zx_triangle : ZX_scope. (* \triangleright *)
+Notation "◁" := zx_triangle_left : ZX_scope. (* \triangleleft *)
+
+Lemma triangle_step_1 :
+	⟦ X 1 1 (PI/2) ⟷ Z 1 1 (PI/4) ⟧ = 
+	/ (√ 2)%R .* (∣0⟩ × ⟨+∣) .+ 
+	Cexp (PI / 2) * /(√2)%R .* (∣0⟩ × ⟨-∣) .+ 
+	Cexp (PI / 4) * /(√2)%R .* (∣1⟩ × ⟨+∣) .+ 
+	Cexp (PI / 2) * Cexp (PI / 4) * - /(√2)%R .* (∣1⟩ × ⟨-∣).
+Proof.
+	rewrite ZX_semantic_equiv.
+	unfold_dirac_spider.
+	repeat rewrite Mmult_plus_distr_r.
+	repeat rewrite Mmult_plus_distr_l.
+	autorewrite with scalar_move_db.
+	repeat rewrite Mmult_assoc.
+	rewrite <- 2 (Mmult_assoc (⟨0∣)).
+	rewrite <- 2 (Mmult_assoc (⟨1∣)).
+	restore_dims.
+	autorewrite with ketbra_mult_db.
+	autorewrite with scalar_move_db.
+	Msimpl.
+	lma.
+Qed.
+	
+Lemma triangle_step_2 : 
+	⟦ Z 0 1 (PI/4) ↕ — ⟷ X 2 1 0 ⟧ = 
+	1/(√2)%R .* ∣0⟩⟨0∣ .+ 
+	Cexp (PI/4)/(√2)%R .* ∣0⟩⟨1∣ .+ 
+	Cexp (PI/4)/(√2)%R .* ∣1⟩⟨0∣ .+ 
+	1/(√2)%R .* ∣1⟩⟨1∣.
+		(* (((1 + Cexp (PI/4)) / (√2)%R) .* ∣+⟩ × ⟨+∣ .+ 
+		 ((1 - Cexp (PI/4)) / (√2)%R) .* ∣-⟩ × ⟨-∣). *)
+Proof.
+	rewrite ZX_semantic_equiv.
+	unfold_dirac_spider.
+	Msimpl.
+	rewrite kron_plus_distr_r.
+	repeat rewrite Mmult_plus_distr_r.
+	repeat rewrite Mmult_plus_distr_l.
+	rewrite Mmult_assoc.
+	rewrite (kron_mixed_product (⟨+∣) (⟨+∣)).
+	autorewrite with scalar_move_db.
+	repeat rewrite Mmult_assoc.
+	repeat rewrite (kron_mixed_product (⟨+∣) (⟨+∣)).
+	repeat rewrite (kron_mixed_product (⟨-∣) (⟨-∣)).
+	autorewrite with ketbra_mult_db.
+	repeat rewrite Mscale_kron_dist_l.
+	Msimpl.
+	autorewrite with scalar_move_db.
+	unfold braplus, braminus.
+	unfold xbasis_plus, xbasis_minus.
+	autorewrite with scalar_move_db.
+	rewrite Cexp_0.
+	Msimpl.
+	repeat rewrite Mmult_plus_distr_l.
+	repeat rewrite Mmult_plus_distr_r.
+	autorewrite with scalar_move_db.
+	rewrite Cmult_1_l.
+	replace ((/ (√ 2)%R + Cexp (PI / 4) * / (√ 2)%R) * / (√ 2)%R *
+/ (√ 2)%R) with ((1 + Cexp (PI / 4)) * / ((√2)%R * 2)) by C_field.
+	replace ((/ (√ 2)%R + Cexp (PI / 4) * - / (√ 2)%R) * / (√ 2)%R * / (√ 2)%R) with ((1 - Cexp (PI/4)) / ((√2)%R * 2)) by C_field.
+	remember ((1 + Cexp (PI/4)) * / ((√2)%R * 2)) as v1.
+	remember ((C1 - Cexp (PI / 4)) / ((√ 2)%R * C2)) as v2.
+	repeat rewrite Mscale_plus_distr_r.
+	repeat rewrite Mscale_assoc.
+	replace (v2 * -1 * -1) with v2 by lca.
+	replace (v2 * -1) with (- v2) by lca.
+	replace (v1 .* ∣0⟩⟨0∣ .+ v1 .* ∣1⟩⟨0∣ .+ (v1 .* ∣0⟩⟨1∣ .+ v1 .* ∣1⟩⟨1∣) .+ (v2 .* ∣0⟩⟨0∣ .+ - v2 .* ∣1⟩⟨0∣ .+ (- v2 .* ∣0⟩⟨1∣ .+ v2 .* ∣1⟩⟨1∣))) with ((v1 + v2) .* ∣0⟩⟨0∣ .+ (v1 - v2) .* ∣0⟩⟨1∣ .+ (v1 - v2) .* ∣1⟩⟨0∣ .+ (v1 + v2) .* ∣1⟩⟨1∣) by lma.
+	assert (Hv0 : v1 + v2 = C1 / (√2)%R).
+	{ subst; C_field_simplify. lca. C_field. }
+	assert (Hv1 : v1 - v2 = Cexp (PI/4) / (√2)%R).
+	{ subst; C_field_simplify. lca. C_field. }
+	rewrite Hv0, Hv1.
+	easy.
+Qed.
+
+Lemma triangle_step_3 :
+ ⟦ Z 1 2 0 ⟷ (— ↕ (X 1 2 0 ⟷ (Z 1 0 (-PI/4) ↕ Z 1 0 (-PI/4)))) ⟧ = (1 + Cexp (-PI/4)^2) / (√2)%R .* ∣0⟩⟨0∣ .+ 
+ (√2)%R * Cexp (-PI/4) .* ∣1⟩⟨1∣.
+Proof.
+	assert (H : ⟦ (X 1 2 0 ⟷ (Z 1 0 (-PI/4) ↕ Z 1 0 (-PI/4))) ⟧ = (1 + Cexp (-PI/4))^2 / 2 .* ⟨+∣ .+ 
+	(1 - Cexp (-PI/4))^2 / 2 .* ⟨-∣).
+	{ 
+		rewrite ZX_semantic_equiv.
+		unfold_dirac_spider.
+		rewrite Cexp_0.
+		Msimpl.
+		rewrite Mmult_plus_distr_l.
+		rewrite <- 2 Mmult_assoc.
+		rewrite 2 kron_mixed_product.
+		rewrite 2 Mmult_plus_distr_r.
+		autorewrite with scalar_move_db.
+		autorewrite with ketbra_mult_db.
+		autorewrite with scalar_move_db.
+		rewrite kron_1_l by auto with wf_db.
+		rewrite 2 Mmult_1_l by auto with wf_db.
+		apply Mplus_simplify.
+		- apply Mscale_simplify; try auto.
+			C_field.
+		- apply Mscale_simplify; try auto.
+			C_field.
+	}
+	rewrite zx_compose_spec.
+	rewrite (zx_stack_spec _ _ _ _ —).
+	rewrite H.
+	clear H.
+	rewrite 2 ZX_semantic_equiv.
+	unfold_dirac_spider.
+	rewrite Cexp_0.
+	Msimpl.
+	repeat rewrite Mmult_plus_distr_r.
+	repeat rewrite Mmult_plus_distr_l.
+	rewrite <- 2 Mmult_assoc.
+	rewrite 2 kron_mixed_product.
+	Msimpl.
+	repeat rewrite Mmult_plus_distr_r.
+	autorewrite with scalar_move_db.
+	autorewrite with ketbra_mult_db.
+	autorewrite with scalar_move_db.
+	Msimpl.
+	apply Mplus_simplify.
+	- apply Mscale_simplify; try auto.
+		lca.
+	- apply Mscale_simplify; try auto.
+		C_field_simplify.
+		rewrite Rplus_0_l.
+		repeat rewrite Rmult_0_l.
+		repeat rewrite Rmult_0_r.
+		lca.
+		C_field.
+Qed.
+
+Lemma zx_triangle_semantics : 
+	⟦ ▷ ⟧ = ∣0⟩⟨0∣ .+ ∣1⟩⟨0∣ .+ ∣1⟩⟨1∣.
+Proof.
+	unfold zx_triangle.
+	remember (X 1 1 (PI / 2) ⟷ Z 1 1 (PI / 4)) as t_1.
+	remember (Z 0 1 (PI / 4) ↕ — ⟷ X 2 1 0) as t_2.
+	remember (Z 1 2 0 ⟷ (— ↕ (X 1 2 0 ⟷ (Z 1 0 (- PI / 4) ↕ Z 1 0 (- PI / 4))))) as t_3.
+	simpl.
+	rewrite Heqt_1.
+	rewrite triangle_step_1.
+	rewrite Heqt_2.
+	rewrite zx_compose_spec.
+	rewrite <- zx_compose_spec.
+	rewrite triangle_step_2.
+	repeat rewrite Mmult_plus_distr_l.
+	repeat rewrite Mmult_plus_distr_r.
+	repeat rewrite <- (Mmult_plus_distr_l _ _ _ (⟦ t_3 ⟧)).
+	autorewrite with scalar_move_db.
+	repeat rewrite Mmult_assoc.
+	repeat rewrite <- (Mmult_assoc _ (∣0⟩)).
+	repeat rewrite <- (Mmult_assoc _ (∣1⟩)).
+	autorewrite with ketbra_mult_db.
+	Msimpl.
+	repeat rewrite Mscale_plus_distr_l.
+	repeat rewrite Mscale_plus_distr_r.
+	repeat rewrite Mscale_assoc.
+	replace (/(√2)%R * (C1/(√2)%R)) with (/2) by C_field.
+	replace (/ (√ 2)%R * (Cexp (PI / 4) / (√ 2)%R)) with (Cexp (PI/4)/2) by C_field.
+	replace (Cexp (PI / 2) * / (√ 2)%R * (C1 / (√ 2)%R)) with (Cexp (PI/2)/2) by C_field.
+	replace (Cexp (PI / 2) * / (√ 2)%R * (Cexp (PI / 4) / (√ 2)%R)) with (Cexp ((3 * PI) / 4)/2) by (autorewrite with Cexp_db; C_field_simplify; [lca | C_field ]).
+	replace (Cexp (PI / 4) * / (√ 2)%R * (Cexp (PI / 4) / (√ 2)%R)) with (Cexp (PI/2) / 2) by (autorewrite with Cexp_db; C_field_simplify; [lca | C_field ]).
+	replace (Cexp (PI / 4) * / (√ 2)%R * (C1 / (√ 2)%R)) with (Cexp (PI/4)/2) by C_field.
+	replace (Cexp (PI / 2) * Cexp (PI / 4) * - / (√ 2)%R *
+(Cexp (PI / 4) / (√ 2)%R)) with (/ 2) by (autorewrite with Cexp_db; C_field_simplify; [lca | C_field ]).
+	replace (Cexp (PI / 2) * Cexp (PI / 4) * - / (√ 2)%R * (C1 / (√ 2)%R)) with (-(Cexp ((3 * PI)/4)/2)) by (autorewrite with Cexp_db; C_field_simplify; [lca | C_field ]).
+	remember (/ 2) as v1.
+	remember (Cexp (PI/4)/2) as v2.
+	remember (Cexp(PI/2)/2) as v3.
+	remember (Cexp (3 * PI/4)/2) as v4.
+	replace (v1 .* (∣0⟩ × ⟨+∣) .+ v2 .* (∣1⟩ × ⟨+∣) .+ (v3 .* (∣0⟩ × ⟨-∣) .+ v4 .* (∣1⟩ × ⟨-∣)) .+ (v3 .* (∣0⟩ × ⟨+∣) .+ v2 .* (∣1⟩ × ⟨+∣)) .+ (v1 .* (∣0⟩ × ⟨-∣) .+ - v4 .* (∣1⟩ × ⟨-∣))) with ((v1 + v3) .* (∣0⟩ × ⟨+∣) .+ 2 * v2 .* (∣1⟩ × ⟨+∣) .+ ((v1 + v3) .* (∣0⟩ × ⟨-∣))) by lma.
+	rewrite Heqt_3.
+	rewrite triangle_step_3.
+	repeat rewrite Mmult_plus_distr_l.
+	repeat rewrite Mmult_plus_distr_r.
+	autorewrite with scalar_move_db.
+	repeat rewrite Mmult_assoc.
+	repeat rewrite <- (Mmult_assoc _ (∣0⟩)).
+	repeat rewrite <- (Mmult_assoc _ (∣1⟩)).
+	autorewrite with ketbra_mult_db.
+	Msimpl.
+	repeat rewrite Mscale_assoc.
+	rewrite Heqv2.
+	replace (C2 * (Cexp (PI / 4) / C2) * ((√ 2)%R * Cexp (- PI / 4))) with (1 * (√2)%R) by (autorewrite with Cexp_db; C_field_simplify; [lca | C_field]).
+	rewrite Cmult_1_l.
+	replace ((v1 + v3) * ((1 + Cexp (-PI/4)^2)/(√2)%R)) with (/(√2)%R) by (rewrite Heqv1, Heqv3; autorewrite with Cexp_db; C_field_simplify; [ | C_field]; simpl; C_field_simplify; [lca | C_field]).
+	unfold braplus, braminus.
+	autorewrite with scalar_move_db.
+	repeat rewrite Mmult_plus_distr_l.
+	autorewrite with scalar_move_db.
+	repeat rewrite Mscale_plus_distr_r.
+	rewrite Mscale_assoc.
+	replace (/ (√2)%R * / (√2)%R) with (/2) by C_field.
+	replace ((√2)%R * / (√2)%R) with (C1) by C_field.
+	lma.
+Qed.
+	
+Global Opaque zx_triangle.
+
+Lemma zx_triangle_left_semantics :
+	⟦ ◁ ⟧ = ∣0⟩⟨0∣ .+ ∣0⟩⟨1∣ .+ ∣1⟩⟨1∣.
+Proof.
+	unfold zx_triangle_left.
+	rewrite semantics_transpose_comm.
+	rewrite zx_triangle_semantics.
+	repeat rewrite Mplus_transpose.
+	repeat rewrite Mmult_transpose.
+	rewrite bra0transpose, bra1transpose, ket0transpose, ket1transpose.
+	easy.
+Qed.
+
+Global Opaque zx_triangle_left.
 
 Local Close Scope ZX_scope.

@@ -167,3 +167,213 @@ Definition Csqrt (z : C) : C :=
 	end.
 
 Notation "√ z" := (Csqrt z) : C_scope.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmultplus0 : 
+	⟨+∣ × ∣0⟩ = / (√2)%R .* I 1.
+Proof.
+	unfold braplus.
+	rewrite Mscale_mult_dist_l.
+	rewrite Mmult_plus_distr_r.
+	rewrite Mmult00.
+	rewrite Mmult10.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmult0plus : 
+	⟨0∣ × ∣+⟩ = / (√2)%R .* I 1.
+Proof.
+	unfold xbasis_plus.
+	rewrite Mscale_mult_dist_r.
+	rewrite Mmult_plus_distr_l.
+	rewrite Mmult00.
+	rewrite Mmult01.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmultplus1 : 
+	⟨+∣ × ∣1⟩ = / (√2)%R .* I 1.
+Proof.
+	unfold braplus.
+	rewrite Mscale_mult_dist_l.
+	rewrite Mmult_plus_distr_r.
+	rewrite Mmult01.
+	rewrite Mmult11.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmult1plus : 
+	⟨1∣ × ∣+⟩ = / (√2)%R .* I 1.
+Proof.
+	unfold xbasis_plus.
+	rewrite Mscale_mult_dist_r.
+	rewrite Mmult_plus_distr_l.
+	rewrite Mmult10.
+	rewrite Mmult11.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmultminus0 : 
+	⟨-∣ × ∣0⟩ = / (√2)%R .* I 1.
+Proof.
+	unfold braminus.
+	rewrite Mscale_mult_dist_l.
+	rewrite Mmult_plus_distr_r.
+	rewrite Mmult00.
+	rewrite Mscale_mult_dist_l.
+	rewrite Mmult10.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmult0minus : 
+	⟨0∣ × ∣-⟩ = / (√2)%R .* I 1.
+Proof.
+	unfold xbasis_minus.
+	rewrite Mscale_mult_dist_r.
+	rewrite Mmult_plus_distr_l.
+	rewrite Mmult00.
+	rewrite Mscale_mult_dist_r.
+	rewrite Mmult01.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmultminus1 : 
+	⟨-∣ × ∣1⟩ = - / (√2)%R .* I 1.
+Proof.
+	unfold braminus.
+	rewrite Mscale_mult_dist_l.
+	rewrite Mmult_plus_distr_r.
+	rewrite Mmult01.
+	rewrite Mscale_mult_dist_l.
+	rewrite Mmult11.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmult1minus : 
+	⟨1∣ × ∣-⟩ = - / (√2)%R .* I 1.
+Proof.
+	unfold xbasis_minus.
+	rewrite Mscale_mult_dist_r.
+	rewrite Mmult_plus_distr_l.
+	rewrite Mmult10.
+	rewrite Mscale_mult_dist_r.
+	rewrite Mmult11.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmultminusminus : 
+	⟨-∣ × ∣-⟩ = I 1.
+Proof.
+	unfold braminus.
+	unfold xbasis_minus.
+	repeat rewrite Mscale_mult_dist_l.
+	repeat rewrite Mscale_mult_dist_r.
+	repeat rewrite Mmult_plus_distr_r.
+	repeat rewrite Mmult_plus_distr_l.
+	autorewrite with scalar_move_db.
+	rewrite Mmult00.
+	rewrite Mmult01.
+	rewrite Mmult10.
+	rewrite Mmult11.
+	Msimpl.
+	autorewrite with scalar_move_db.
+	solve_matrix.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmultplusminus : 
+	⟨+∣ × ∣-⟩ = Zero.
+Proof.
+	unfold xbasis_minus.
+	unfold braplus.
+	repeat rewrite Mscale_mult_dist_l.
+	repeat rewrite Mscale_mult_dist_r.
+	repeat rewrite Mmult_plus_distr_r.
+	repeat rewrite Mmult_plus_distr_l.
+	autorewrite with scalar_move_db.
+	rewrite Mmult00.
+	rewrite Mmult01.
+	rewrite Mmult10.
+	rewrite Mmult11.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmultminusplus : 
+	⟨-∣ × ∣+⟩ = Zero.
+Proof.
+	unfold xbasis_plus.
+	unfold braminus.
+	repeat rewrite Mscale_mult_dist_l.
+	repeat rewrite Mscale_mult_dist_r.
+	repeat rewrite Mmult_plus_distr_r.
+	repeat rewrite Mmult_plus_distr_l.
+	autorewrite with scalar_move_db.
+	rewrite Mmult00.
+	rewrite Mmult01.
+	rewrite Mmult10.
+	rewrite Mmult11.
+	Msimpl.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmultplusplus : 
+	⟨+∣ × ∣+⟩ = I 1.
+Proof.
+	unfold xbasis_plus.
+	unfold braplus.
+	repeat rewrite Mscale_mult_dist_l.
+	repeat rewrite Mscale_mult_dist_r.
+	repeat rewrite Mmult_plus_distr_r.
+	repeat rewrite Mmult_plus_distr_l.
+	autorewrite with scalar_move_db.
+	rewrite Mmult00.
+	rewrite Mmult01.
+	rewrite Mmult10.
+	rewrite Mmult11.
+	solve_matrix.
+Qed.
+
+#[export] Hint Rewrite 
+	Mmult00 Mmult01 Mmult10 Mmult11 
+	Mmultplus0 Mmultplus1 Mmultminus0 Mmultminus1
+	Mmult0plus Mmult0minus Mmult1plus Mmult1minus
+	Mmultplusplus Mmultplusminus Mmultminusplus Mmultminusminus
+	: ketbra_mult_db.
+
+Lemma bra0transpose :
+	⟨0∣⊤ = ∣0⟩.
+Proof. solve_matrix. Qed.
+
+Lemma bra1transpose :
+	⟨1∣⊤ = ∣1⟩.
+Proof. solve_matrix. Qed.
+
+Lemma ket0transpose :
+	∣0⟩⊤ = ⟨0∣.
+Proof. solve_matrix. Qed.
+
+Lemma ket1transpose :
+	∣1⟩⊤ = ⟨1∣.
+Proof. solve_matrix. Qed.

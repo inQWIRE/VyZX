@@ -49,21 +49,37 @@ Abort.
 (* @nocheck name *)
 (* Conventional name *)
 Lemma completeness_BW :
-	(Z 0 1 (PI / 4) ↕ Z 1 2 0 ↕ Z 0 1 (PI / 4)) ⟷ 
-	(X 2 1 0 ↕ X 2 1 0) ⟷
-	(Z 1 1 (- PI / 2) ↕ (Z 1 0 (PI / 4))) ⟷
-	(X 1 2 0) ⟷
-	(Z 1 0 (PI / 4) ↕ Z 1 2 0 ↕ (Z 0 1 (PI / 4))) ⟷
-	(— ↕ X 2 1 0) ⟷
-	(— ↕ Z 1 0 (PI / 4)) ∝
-	(X 1 1 (PI / 2)) ⟷
-	(Z 1 1 (PI / 4)) ⟷
-	(X 1 2 PI) ⟷ 
-	(Z 1 0 (PI / 4) ↕ Z 1 2 0 ↕ (Z 0 1 (PI / 4))) ⟷
-	(— ↕ X 2 1 0) ⟷
-	(— ↕ Z 1 0 (PI / 4)).
-Proof. (* solve matrix takes forever *)
-Abort.
+	◁ ⟷ Z 1 1 PI ⟷ ▷ ∝ ▷ ⟷ X 1 1 PI.
+Proof. 
+	prop_exists_nonzero 1.
+	remember (Z 1 1 PI) as z.
+	remember (X 1 1 PI) as x.
+	simpl.
+	rewrite zx_triangle_semantics, zx_triangle_left_semantics.
+	Msimpl.
+	rewrite Heqz, Heqx.
+	rewrite z_1_1_pi_σz, x_1_1_pi_σx.
+	repeat rewrite Mmult_plus_distr_l.
+	repeat rewrite <- (Mmult_assoc _ ∣0⟩).
+	repeat rewrite <- (Mmult_assoc _ ∣1⟩).
+	rewrite ket0_equiv.
+	rewrite ket1_equiv.
+	restore_dims.
+	rewrite Z0_spec.
+	rewrite X0_spec.
+	rewrite Z1_spec.
+	rewrite X1_spec.
+	rewrite <- ket0_equiv.
+	rewrite <- ket1_equiv.
+	autorewrite with scalar_move_db.
+	repeat rewrite Mmult_plus_distr_r.
+	repeat rewrite Mmult_assoc.
+	repeat rewrite <- (Mmult_assoc _ ∣0⟩).
+	repeat rewrite <- (Mmult_assoc _ ∣1⟩).
+	autorewrite with ketbra_mult_db.
+	Msimpl.
+	lma.
+Qed.
 
 (* harny completeness result *)
 Definition green_box (a : C) : Matrix 2 2 :=
@@ -170,6 +186,8 @@ Proof.
   unfold green_box, red_box.
 Admitted.
 
+Transparent Z_semantics.
+
 Lemma z_spider_to_green_box : forall α,
  ⟦ Z 1 1 α ⟧ = green_box (Cexp α).
 Proof.
@@ -178,6 +196,8 @@ Proof.
 	unfold Z_semantics, green_box.
 	solve_matrix.
 Qed.
+
+Transparent X_semantics.
 
 Lemma x_spider_to_red_box : forall α,
  ⟦ X 1 1 α ⟧ = red_box (Cexp α).
