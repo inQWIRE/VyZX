@@ -158,42 +158,6 @@ Proof.
 	repeat rewrite <- kron_mixed_product.
 Admitted.
 
-Lemma cnot_braket :
-	⟦ (Z 1 2 0 ↕ —) ⟷ (— ↕ X 2 1 0) ⟧ = 
-	(1 .* ∣0⟩⊗∣0⟩ × ⟨0∣⊗⟨0∣) .+
-	(1 .* ∣0⟩⊗∣1⟩ × ⟨0∣⊗⟨1∣) .+
-	(1 .* ∣1⟩⊗∣1⟩ × ⟨1∣⊗⟨0∣) .+
-	(1 .* ∣1⟩⊗∣0⟩ × (⟨1∣⊗⟨1∣)).
-Proof.
-	rewrite ZX_semantic_equiv.
-	unfold_dirac_spider.
-	autorewrite with Cexp_db.
-	Msimpl.
-	repeat rewrite kron_plus_distr_l.
-	repeat rewrite kron_plus_distr_r.
-	repeat rewrite Mmult_plus_distr_l.
-	repeat rewrite Mmult_plus_distr_r.
-	repeat rewrite kron_id_dist_l by auto with wf_db.
-	repeat rewrite kron_id_dist_r by auto with wf_db.
-	repeat rewrite kron_assoc by auto with wf_db.
-	repeat rewrite Mmult_assoc.
-	rewrite <- (Mmult_assoc _ (∣0⟩ ⊗ (∣0⟩ ⊗ (I 2)))).
-	rewrite <- (Mmult_assoc _ (∣1⟩ ⊗ (∣1⟩ ⊗ (I 2)))).
-	Msimpl.
-	autorewrite with ketbra_mult_db.
-	autorewrite with scalar_move_db.
-	Msimpl.
-	autorewrite with ketbra_mult_db.
-	autorewrite with scalar_move_db.
-	Msimpl.
-	rewrite <- (kron_plus_distr_l _ _ _ _ ∣0⟩⟨0∣).
-	autorewrite with scalar_move_db.
-	rewrite <- (Mscale_kron_dist_r _ _ _ _ (- / (√2)%R)).
-	rewrite <- (Mscale_kron_dist_r _ _ _ _ (/ (√2)%R) (∣1⟩⟨1∣)).
-	rewrite <- (kron_plus_distr_l _ _ _ _ ∣1⟩⟨1∣).
-	autorewrite with scalar_move_db.
-
-
 (* @nocheck name *)
 (* Conventional name *)
 Lemma completeness_C : forall α β γ,
@@ -443,6 +407,42 @@ Proof. intros; lca. Qed.
 
 (* @nocheck name *)
 (* Conventional name *)
+Lemma Cexp_minus : forall θ,
+	Cexp θ + Cexp (-θ) = 2 * cos θ.
+Proof.
+	intros.
+	unfold Cexp.
+	rewrite cos_neg.
+	rewrite sin_neg.
+	lca.
+Qed.
+
+Lemma xbasis_add_0 : 
+	∣+⟩ .+ ∣-⟩ = (√2)%R .* ∣0⟩.
+Proof.
+	unfold xbasis_plus, xbasis_minus.
+	solve_matrix.
+	C_field.
+Qed.
+
+Lemma xbasis_add_1 : 
+	∣+⟩ .+ -1 .* ∣-⟩ = (√2)%R .* ∣1⟩.
+Proof.
+	unfold xbasis_plus, xbasis_minus.
+	solve_matrix.
+	C_field_simplify; [lca | C_field].
+Qed.
+
+Lemma zbasis_add_plus :
+	∣0⟩ .+ ∣1⟩ = (√2)%R .* ∣+⟩.
+Proof. unfold xbasis_plus. solve_matrix. Qed.
+
+Lemma zbasis_add_minus :
+	∣0⟩ .+ -1 .* ∣1⟩ = (√2)%R .* ∣-⟩.
+Proof. unfold xbasis_minus. solve_matrix. C_field. Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
 Lemma completeness_N : forall α β θ_1 θ_2 γ θ_3,
 	2 * Cexp (θ_3) * cos(γ) = Cexp (θ_1) * cos(α) + Cexp (θ_2) * cos(β) ->
 	(((Z 0 1 α ↕ Z 0 1 (-α) ⟷ X 2 1 0) ⟷ Z 1 1 θ_1) ↕ ((Z 0 1 β ↕ Z 0 1 (-β) ⟷ X 2 1 0) ⟷ Z 1 1 θ_2)) ⟷ ((— ↕ (X 0 1 (PI/2) ⟷ Z 1 2 0) ↕ —) ⟷ (X 2 1 0 ↕ X 2 1 0)) ⟷ (Z 1 1 (PI/4) ↕ Z 1 1 (PI/4)) ⟷ X 2 1 0 ∝ 
@@ -487,9 +487,15 @@ Proof.
 	repeat rewrite Mmult_plus_distr_l.
 	autorewrite with scalar_move_db.
 	(* Simplify scalars here potentially *)
-	(* remember (Cexp (PI / 2) / (√ 2)%R) as cpot.
-	remember ((Cexp α + Cexp (- α)) / (√ 2)%R * Cexp θ_1) as cat1.
-	remember ((Cexp β + Cexp (- β)) / (√ 2)%R * Cexp θ_2) as bat2. *)
+	rewrite 2 Cexp_minus.
+	replace (2 * cos α / (√2)%R * Cexp θ_1) with ((√2)%R * (cos α * Cexp θ_1)) by C_field.
+	replace (2 * cos β / (√2)%R * Cexp θ_2) with ((√2)%R * (cos β * Cexp θ_2)) by C_field.
+	rewrite <- 4 Mscale_assoc.
+	rewrite <- 2 Mscale_plus_distr_r.
+	autorewrite with scalar_move_db.
+	replace (/ (√ 2)%R * ((√ 2)%R * (√ 2)%R)) with ((√2)%R * C1) by C_field.
+	replace (Cexp (PI / 2) / (√ 2)%R * ((√ 2)%R * (√ 2)%R)) with (Ci * (√2)%R) by (autorewrite with Cexp_db; C_field).
+	rewrite Cmult_1_r.
 	(* End simplify block (Can break proof below) *)
 	repeat rewrite Mmult_assoc.
 	repeat rewrite kron_mixed_product.
@@ -502,14 +508,12 @@ Proof.
 	(* Simplify scalars here potentially *)
 	(* End simplify block (Can break proof below) *)
 	Msimpl.
-	remember (/ (√ 2)%R * (((√ 2)%R * / (√ 2)%R + (Cexp β + Cexp (- β)) / (√ 2)%R * Cexp θ_2 * - / (√ 2)%R) * ((√ 2)%R * / (√ 2)%R + (Cexp α + Cexp (- α)) / (√ 2)%R * Cexp θ_1 * - / (√ 2)%R))) as v4.
-	remember (Cexp (PI / 2) / (√ 2)%R * (((√ 2)%R + (Cexp β + Cexp (- β)) / (√ 2)%R * Cexp θ_2) * / (√ 2)%R) * ((√ 2)%R * / (√ 2)%R + (Cexp α + Cexp (- α)) / (√ 2)%R * Cexp θ_1 * - / (√ 2)%R)) as v3.
-	remember (Cexp (PI / 2) / (√ 2)%R * (((√ 2)%R + (Cexp α + Cexp (- α)) / (√ 2)%R * Cexp θ_1) * / (√ 2)%R) * ((√ 2)%R * / (√ 2)%R + (Cexp β + Cexp (- β)) / (√ 2)%R * Cexp θ_2 * - / (√ 2)%R)) as v2.
-	remember (/ (√ 2)%R * (((√ 2)%R + (Cexp β + Cexp (- β)) / (√ 2)%R * Cexp θ_2) * / (√ 2)%R * ((√ 2)%R + (Cexp α + Cexp (- α)) / (√ 2)%R * Cexp θ_1) * / (√ 2)%R)) as v1.
+	replace ((√ 2)%R * ((/ (√ 2)%R + cos β * Cexp θ_2 * / (√ 2)%R) * (/ (√ 2)%R + cos α * Cexp θ_1 * / (√ 2)%R))) with ((1 + cos α * Cexp θ_1 ) * (1 + cos β * Cexp θ_2) / (√2)%R) by C_field.
+	replace (Ci * (√ 2)%R * ((/ (√ 2)%R + cos β * Cexp θ_2 * - / (√ 2)%R) * (/ (√ 2)%R + cos α * Cexp θ_1 * / (√ 2)%R))) with (Ci * (1 + cos α * Cexp θ_1 ) * (1 - cos β * Cexp θ_2) / (√2)%R) by C_field.
+	replace (Ci * (√ 2)%R * ((/ (√ 2)%R + cos β * Cexp θ_2 * / (√ 2)%R) * (/ (√ 2)%R + cos α * Cexp θ_1 * - / (√ 2)%R))) with (Ci * (1 - cos α * Cexp θ_1 ) * (1 + cos β * Cexp θ_2) / (√2)%R) by C_field.
+	replace ((√ 2)%R * ((/ (√ 2)%R + cos β * Cexp θ_2 * - / (√ 2)%R) * (/ (√ 2)%R + cos α * Cexp θ_1 * - / (√ 2)%R))) with ((1 - cos α * Cexp θ_1 ) * (1 - cos β * Cexp θ_2) / (√2)%R) by C_field.
 	rewrite Heqstep_3.
 	rewrite <- Heqfinal_step.
-	rewrite <- (Mscale_mult_dist_r _ _ _ v1), <- (Mscale_mult_dist_r _ _ _ v2), <- (Mscale_mult_dist_r _ _ _ v3), <- (Mscale_mult_dist_r _ _ _ v4).
-	repeat rewrite <- Mmult_plus_distr_l. 
 	rewrite (zx_stack_spec _ _ _ _ (Z 1 1 (PI/4))).
 	repeat rewrite (kron_mixed_product (⟦ Z 1 1 (PI/4) ⟧)(⟦ Z 1 1 (PI/4) ⟧)).
 	rewrite step_3_N.
@@ -521,6 +525,12 @@ Proof.
 	Msimpl.
 	autorewrite with scalar_move_db.
 	rewrite Heqfinal_step at 1.
+	rewrite Heqfinal_step at 1.
+	rewrite Heqfinal_step at 1.
+	rewrite Heqfinal_step at 1.
+	rewrite ZX_semantic_equiv at 1.
+	rewrite ZX_semantic_equiv at 1.
+	rewrite ZX_semantic_equiv at 1.
 	rewrite ZX_semantic_equiv at 1.
 	unfold_dirac_spider.
 	rewrite Cexp_0.
@@ -536,14 +546,84 @@ Proof.
 	autorewrite with ketbra_mult_db.
 	autorewrite with scalar_move_db.
 	Msimpl.
-	remember (((/ (√ 2)%R * / (√ 2)%R + Cexp (PI / 4) * / (√ 2)%R * - / (√ 2)%R) * (/ (√ 2)%R * / (√ 2)%R + Cexp (PI / 4) * / (√ 2)%R * - / (√ 2)%R))) as g1.
-	remember (((/ (√ 2)%R * / (√ 2)%R + Cexp (PI / 4) * - / (√ 2)%R * - / (√ 2)%R) * (/ (√ 2)%R * / (√ 2)%R + Cexp (PI / 4) * / (√ 2)%R * - / (√ 2)%R))) as g2.
-	remember (((/ (√ 2)%R * / (√ 2)%R + Cexp (PI / 4) * / (√ 2)%R * - / (√ 2)%R) * (/ (√ 2)%R * / (√ 2)%R + Cexp (PI / 4) * - / (√ 2)%R * - / (√ 2)%R))) as g3.
-	remember (((/ (√ 2)%R * / (√ 2)%R + Cexp (PI / 4) * - / (√ 2)%R * - / (√ 2)%R) * (/ (√ 2)%R * / (√ 2)%R + Cexp (PI / 4) * - / (√ 2)%R * - / (√ 2)%R))) as g4.
-	remember (((/ (√ 2)%R + Cexp (PI / 4) * / (√ 2)%R) * / (√ 2)%R * ((/ (√ 2)%R + Cexp (PI / 4) * / (√ 2)%R) * / (√ 2)%R))) as k1.
-	remember (((/ (√ 2)%R + Cexp (PI / 4) * - / (√ 2)%R) * / (√ 2)%R * ((/ (√ 2)%R + Cexp (PI / 4) * / (√ 2)%R) * / (√ 2)%R))) as k2.
-remember (((/ (√ 2)%R + Cexp (PI / 4) * / (√ 2)%R) * / (√ 2)%R * ((/ (√ 2)%R + Cexp (PI / 4) * - / (√ 2)%R) * / (√ 2)%R))) as k3.
-remember (((/ (√ 2)%R + Cexp (PI / 4) * - / (√ 2)%R) * / (√ 2)%R * ((/ (√ 2)%R + Cexp (PI / 4) * - / (√ 2)%R) * / (√ 2)%R))) as k4.
+	replace ((/ (√ 2)%R + Cexp (PI / 4) * / (√ 2)%R) * / (√ 2)%R * ((/ (√ 2)%R + Cexp (PI / 4) * / (√ 2)%R) * / (√ 2)%R)) with ((1 + Cexp (PI/4)) * (1 + Cexp (PI/4)) / 4) by (C_field_simplify; [lca | C_field]).
+	replace ((/ (√ 2)%R * / (√ 2)%R + Cexp (PI / 4) * / (√ 2)%R * - / (√ 2)%R) * (/ (√ 2)%R * / (√ 2)%R + Cexp (PI / 4) * / (√ 2)%R * - / (√ 2)%R)) with ((1 - Cexp (PI/4)) * (1 - Cexp (PI/4))/4) by (C_field_simplify; [lca | C_field]).
+	replace ((/ (√ 2)%R + Cexp (PI / 4) * - / (√ 2)%R) * / (√ 2)%R * ((/ (√ 2)%R + Cexp (PI / 4) * / (√ 2)%R) * / (√ 2)%R)) with ((1 + Cexp (PI/4)) * (1 - Cexp (PI/4)) / 4) by (C_field_simplify; [lca | C_field]).
+	replace ((/ (√ 2)%R * / (√ 2)%R + Cexp (PI / 4) * - / (√ 2)%R * - / (√ 2)%R) * (/ (√ 2)%R * / (√ 2)%R + Cexp (PI / 4) * / (√ 2)%R * - / (√ 2)%R)) with ((1 + Cexp (PI/4)) * (1 - Cexp (PI/4)) / 4) by (C_field_simplify; [lca | C_field]).
+	rewrite <- Mscale_plus_distr_r.
+	restore_dims.
+	rewrite xbasis_add_0.
+	replace ((/ (√ 2)%R + Cexp (PI / 4) * / (√ 2)%R) * / (√ 2)%R * ((/ (√ 2)%R + Cexp (PI / 4) * - / (√ 2)%R) * / (√ 2)%R)) with ((1 + Cexp (PI/4)) * (1 - Cexp (PI/4))/4) by (C_field_simplify; [lca | C_field]).
+	replace (((/ (√ 2)%R * / (√ 2)%R +
+Cexp (PI / 4) * / (√ 2)%R * - / (√ 2)%R) *
+(/ (√ 2)%R * / (√ 2)%R +
+Cexp (PI / 4) * - / (√ 2)%R * - / (√ 2)%R))) with ((1 + Cexp (PI/4)) * (1 - Cexp (PI/4))/4) by (C_field_simplify; [lca | C_field]).
+	rewrite <- Mscale_plus_distr_r.
+	restore_dims.
+	rewrite xbasis_add_0.
+	replace ((/ (√ 2)%R + Cexp (PI / 4) * - / (√ 2)%R) * / (√ 2)%R * ((/ (√ 2)%R + Cexp (PI / 4) * - / (√ 2)%R) * / (√ 2)%R)) with ((1 - Cexp (PI/4)) * (1 - Cexp (PI/4))/4) by (C_field_simplify; [lca | C_field]).
+	replace ((/ (√ 2)%R * / (√ 2)%R + Cexp (PI / 4) * - / (√ 2)%R * - / (√ 2)%R) * (/ (√ 2)%R * / (√ 2)%R + Cexp (PI / 4) * - / (√ 2)%R * - / (√ 2)%R)) with ((1 + Cexp (PI/4)) * (1 + Cexp (PI/4))/4) by (C_field_simplify; [lca | C_field]).
+	autorewrite with scalar_move_db.
+	remember ((C1 + cos α * Cexp θ_1) * (C1 + cos β * Cexp θ_2) / (√ 2)%R) as v1.
+	remember (Ci * (C1 + cos α * Cexp θ_1) * (C1 - cos β * Cexp θ_2) / (√ 2)%R) as v2.
+	remember (Ci * (C1 - cos α * Cexp θ_1) * (C1 + cos β * Cexp θ_2) / (√ 2)%R) as v3.
+	remember ((C1 - cos α * Cexp θ_1) * (C1 - cos β * Cexp θ_2) / (√ 2)%R) as v4.
+	remember (C1 + Cexp (PI/4)) as g1.
+	remember (C1 - Cexp (PI/4)) as g2.
+	unfold xbasis_minus, xbasis_plus.
+	repeat rewrite Mscale_plus_distr_r.
+	repeat rewrite Mscale_assoc.
+	replace (g1 * g2) with (1 - Cexp (PI/2)) by (subst; C_field_simplify; autorewrite with Cexp_db; C_field_simplify; [lca | C_field]).
+	replace (1 - Cexp (PI/2)) with ((√2)%R*Cexp (-PI/4)) by (autorewrite with Cexp_db; C_field).
+	replace (g1 * g1) with (1 + 2 * Cexp (PI/4) + Cexp (PI/2)) by (subst; autorewrite with Cexp_db; C_field_simplify; [lca | C_field]).
+	replace (g2 * g2) with (1 - 2 * Cexp (PI/4) + Cexp (PI/2)) by (subst; autorewrite with Cexp_db; C_field_simplify; [lca | C_field]).
+	clear Heqg1; clear g1; clear Heqg2; clear g2.
+	remember ((C1 + C2 * Cexp (PI / 4) + Cexp (PI / 2)) / 4) as g1.
+	remember (((C1 - C2 * Cexp (PI / 4) + Cexp (PI / 2)) / 4)) as g2.
+	replace (v2 * ((√ 2)%R * Cexp (- PI / 4) / 4) * (√ 2)%R) with (v2 * Cexp (- PI / 4) / 2) by (C_field_simplify; [lca | C_field]).
+	replace (v3 * ((√ 2)%R * Cexp (- PI / 4) / 4) * (√ 2)%R) with (v3 * Cexp (- PI / 4) / 2) by (C_field_simplify; [lca | C_field]).
+	autorewrite with scalar_move_db.
+	repeat rewrite <- (Mscale_assoc _ _ _ (-1)).
+	repeat rewrite <- Mscale_plus_distr_r.
+	rewrite zbasis_add_plus.
+	rewrite zbasis_add_minus.
+	autorewrite with scalar_move_db.
+	replace (v1 * g1 * / (√ 2)%R * (√ 2)%R) with (v1 * g1) by C_field.
+	replace (v1 * g2 * / (√ 2)%R * (√ 2)%R) with (v1 * g2) by C_field.
+	replace (v2 * g2 * / (√ 2)%R * (√ 2)%R) with (v2 * g2) by C_field.
+	replace (v4 * g2 * / (√ 2)%R * (√ 2)%R) with (v4 * g2) by C_field.
+	replace (v4 * g1 * / (√ 2)%R * (√ 2)%R) with (v4 * g1) by C_field.
+	replace (v1 * g1 .* ∣+⟩ .+ v1 * g2 .* ∣-⟩ .+ v2 * Cexp (- PI / 4) / C2 .* ∣0⟩ .+ v3 * Cexp (- PI / 4) / C2 .* ∣0⟩ .+ (v4 * g2 .* ∣+⟩ .+ v4 * g1 .* ∣-⟩)) with ((v1 * g1 + v4 * g2) .* ∣+⟩ .+ (v1 * g2 + v4 * g1) .* ∣-⟩ .+ v2 * Cexp (- PI / 4) / C2 .* ∣0⟩ .+ v3 * Cexp (- PI / 4) / C2 .* ∣0⟩) by lma.
+	rewrite Mplus_assoc.
+	rewrite <- Mscale_plus_distr_l.
+	replace ((v2 * Cexp (- PI / 4) / C2 + v3 * Cexp (- PI / 4) / C2)) with ((v2 + v3) * Cexp (-PI/4) /2) by C_field.
+
+	replace (v2 + v3) with (Ci * (√2)%R * (1 - (cos α)*Cexp(θ_1)*cos(β)*Cexp(θ_2))) by (subst; C_field_simplify; [lca | C_field]).
+	replace (Ci * (√ 2)%R * (C1 - cos α * Cexp θ_1 * cos β * Cexp θ_2) * Cexp (- PI / 4) / C2) with (Ci * (C1 - cos α * Cexp θ_1 * cos β * Cexp θ_2) * Cexp (- PI / 4) / (√2)%R) by C_field.
+	unfold xbasis_plus, xbasis_minus.
+	replace ((v1 * g1 + v4 * g2) .* (/ (√ 2)%R .* (∣0⟩ .+ ∣1⟩)) .+ (v1 * g2 + v4 * g1) .* (/ (√ 2)%R .* (∣0⟩ .+ -1 .* ∣1⟩))) with ((((v1 * g1 + v4 * g2) + (v1 * g2 + v4 * g1))/(√2)%R) .* ∣0⟩ .+ (((v1 * g1 + v4 * g2) - (v1 * g2 + v4 * g1))/(√2)%R) .* ∣1⟩) by lma.
+	replace (v1 * g1 + v4 * g2 + (v1 * g2 + v4 * g1)) with (v1 * (g1 + g2) + v4 * (g1 + g2)) by lca.
+	replace (v1 * g1 + v4 * g2 - (v1 * g2 + v4 * g1)) with (v1 * (g1 - g2) + v4 * (g2 - g1)) by lca.
+	replace (g1 + g2) with ((1 + Cexp (PI/2))/2) by (subst; lca).
+	replace ((1 + Cexp (PI/2))/2) with (Cexp (PI/4)/(√2)%R) by (autorewrite with Cexp_db; C_field).
+	replace ((v1 * (Cexp (PI / 4) / (√ 2)%R) + v4 * (Cexp (PI / 4) / (√ 2)%R)) / (√ 2)%R) with ((v1 + v4) * (Cexp (PI/4))/2) by C_field.
+	replace (g1 - g2) with (Cexp (PI/4)) by (subst; autorewrite with Cexp_db; C_field_simplify; [lca | C_field]).
+	replace (g2 - g1) with (- Cexp (PI/4)) by (subst; autorewrite with Cexp_db; C_field_simplify; [lca | C_field]).
+	replace ((v1 * Cexp (PI / 4) + v4 * - Cexp (PI / 4))) with ((v1 - v4) * Cexp (PI/4)) by C_field.
+	replace (v1 + v4) with ((√2)%R * (1 + cos α * Cexp θ_1 * cos β * Cexp θ_2)) by (subst; C_field_simplify; [lca | C_field]).
+	replace (v1 - v4) with ((√2)%R * (cos α * Cexp θ_1 + cos β * Cexp θ_2)) by (subst; C_field_simplify; [lca | C_field]).
+	replace (Ci * (C1 - cos α * Cexp θ_1 * cos β * Cexp θ_2) * Cexp (- PI / 4)) with ((C1 - cos α * Cexp θ_1 * cos β * Cexp θ_2) * Cexp (PI/4)) by (autorewrite with Cexp_db; C_field).
+	rewrite Mplus_comm.
+	rewrite <- Mplus_assoc.
+	rewrite <- Mscale_plus_distr_l.
+	replace ((√ 2)%R * (cos α * Cexp θ_1 + cos β * Cexp θ_2) * Cexp (PI / 4) / (√ 2)%R) with ((cos α * Cexp θ_1 + cos β * Cexp θ_2) * Cexp (PI / 4)) by C_field.
+	
+
+	
+
+
+
+	(* Right hand side *)
 	rewrite Heqstep_1_3.
 	rewrite Heqfinal_step.
 	rewrite <- zx_compose_spec.
@@ -589,12 +669,15 @@ remember (((/ (√ 2)%R + Cexp (PI / 4) * - / (√ 2)%R) * / (√ 2)%R * ((/ (�
 	Msimpl.
 	autorewrite with scalar_move_db.
 	Msimpl.
-	rewrite 2 Mscale_plus_distr_r.
-	rewrite Mscale_assoc.
-	replace ((v1 * k1 + v2 * k2 + v3 * k3 + v4 * k4) * / (√ 2)%R .* ∣0⟩ .+ (v1 * k1 + v2 * k2 + v3 * k3 + v4 * k4) * / (√ 2)%R .* ∣1⟩ .+ ((v1 * g1 + v2 * g2 + v3 * g3 + v4 * g4) * / (√ 2)%R .* ∣0⟩ .+ (v1 * g1 + v2 * g2 + v3 * g3 + v4 * g4) * / (√ 2)%R * -1 .* ∣1⟩)) with (((v1 * k1 + v2 * k2 + v3 * k3 + v4 * k4) + (v1 * g1 + v2 * g2 + v3 * g3 + v4 * g4))/(√2)%R.* ∣0⟩ .+ ((v1 * k1 + v2 * k2 + v3 * k3 + v4 * k4) - (v1 * g1 + v2 * g2 + v3 * g3 + v4 * g4))/(√2)%R .* ∣1⟩) by lma.
-	apply Mplus_simplify.
-Admitted.
-	
+	apply Mplus_simplify; apply Mscale_simplify; try easy.
+	- autorewrite with Cexp_db.
+		C_field_simplify; [lca | C_field].
+	- rewrite Cexp_minus.
+		rewrite (Cmult_comm (cos α)).
+		rewrite (Cmult_comm (cos β)).
+		rewrite <- H.
+		C_field.
+Qed.
 
 (* harny completeness result *)
 Definition green_box (a : C) : Matrix 2 2 :=
