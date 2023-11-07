@@ -129,15 +129,6 @@ Definition red_box_alt (a : C) : Square 2 :=
 	| _      => 0
 	end.
 
-
-Lemma C2_neq_0 : C2 <> C0.
-	Proof.
-		intros.
-		replace C2 with (RtoC (R1 + R1)) by lca.
-		apply RtoC_neq.
-		lra.
-	Qed.
-
 Lemma red_box_eq : forall a, red_box a = red_box_alt a.
 Proof.
 	intros.

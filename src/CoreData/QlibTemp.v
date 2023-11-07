@@ -378,7 +378,8 @@ Lemma ket1transpose :
 	∣1⟩⊤ = ⟨1∣.
 Proof. solve_matrix. Qed.
 
-
+(* @nocheck name *)
+(* qlib standard *)
 Lemma C2_neq_0 : C2 <> C0.
 Proof.
 	intros.
