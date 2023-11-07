@@ -92,6 +92,64 @@ Definition green_box (a : C) : Matrix 2 2 :=
 Definition red_box (a : C) : Matrix 2 2 :=
 	hadamard × (green_box a) × hadamard.
 
+Lemma WF_green_box : forall a, WF_Matrix (green_box a).
+Proof.
+	intros.
+	unfold green_box, WF_Matrix.
+	intros.
+	destruct x.
+	- destruct y.
+		+ destruct H; contradict H; lia.
+		+ easy.
+	- destruct x.
+		+ destruct y.
+			* easy.
+			* destruct y.
+				-- destruct H; contradict H; lia.
+				-- easy.
+		+ easy.
+Qed.
+
+#[export] Hint Resolve WF_green_box : wf_db.
+
+Lemma WF_red_box : forall a, WF_Matrix (red_box a).
+Proof.
+	intros.
+	unfold red_box.
+	auto with wf_db.
+Qed.
+
+Definition red_box_alt (a : C) : Square 2 :=
+	fun x y => 
+	match (x, y) with 
+	| (0, 0) => (a + 1) / C2
+	| (0, 1) => (1 - a) / C2
+	| (1, 0) => (1 - a) / C2
+	| (1, 1) => (a + 1) / C2
+	| _      => 0
+	end.
+
+
+Lemma C2_neq_0 : C2 <> C0.
+	Proof.
+		intros.
+		replace C2 with (RtoC (R1 + R1)) by lca.
+		apply RtoC_neq.
+		lra.
+	Qed.
+
+Lemma red_box_eq : forall a, red_box a = red_box_alt a.
+Proof.
+	intros.
+	unfold red_box, red_box_alt, green_box.
+	solve_matrix; C_field_simplify; try lca. 
+	all: split; [apply C2_neq_0 | apply Csqrt2_neq_0 ].
+Qed.
+
+
+#[export] Hint Resolve WF_red_box : wf_db.
+
+
 Open Scope C.
 
 Definition harny_z (α β γ : R) : C := cos (β / 2) * cos ((α + γ) / 2) + (Ci * (sin(β/2) * cos ((α - γ) / 2))).
@@ -139,7 +197,7 @@ Definition harny_k (l1 l2 l3 : C) : C :=
   let s := harny_s l1 l2 l3 in 
   let τ := harny_τ l1 l2 l3 in 
   let t := harny_t l1 l2 l3 in 
-  (8 * (s * τ + √((- s) * t)) / (s * τ * τ + t)).
+  (2 * (s * τ + √((- s) * t)) / (s * τ * τ + t)).
 
 #[export] Hint Unfold harny_k harny_s harny_t harny_u harny_v harny_z harny_z_1 harny_τ : harny_db.
 #[export] Hint Unfold harny_σ1 harny_σ2 harny_σ3 : harny_σ_db.
@@ -153,6 +211,55 @@ Definition create_m (mx my mz mw : C) : (Matrix 2 2)
                       | _, _ => C0
 end.
 
+Lemma WF_create_m : forall (mx my mz mw : C), WF_Matrix (create_m mx my mz mw).
+Proof.
+	intros.
+	unfold create_m.
+	unfold WF_Matrix.
+	intros.
+	destruct x.
+	- destruct y. 
+		+ destruct H; contradict H; lia.
+		+ destruct y.
+			* destruct H; contradict H; lia.
+			* easy.
+	- destruct x.
+		+ destruct y.
+			* destruct H; contradict H; lia.
+			* destruct y.
+				-- destruct H; contradict H; lia.
+				-- easy.
+		+ easy.
+Qed.   
+
+Lemma scale_create_m : forall (c mx my mz mw : C), c .* (create_m mx my mz mw) = create_m (c * mx) (c * my) (c * mz) (c * mw).
+Proof.
+	intros.
+	unfold create_m.
+	solve_matrix.
+Qed.
+
+Lemma solve_create_m : forall mx mx' my my' mz mz' mw mw', 
+	mx = mx' -> my = my' -> mz = mz' -> mw = mw' ->
+		create_m mx my mz mw = create_m mx' my' mz' mw'.
+Proof.
+	intros.
+	subst.
+	easy.
+Qed.
+
+Lemma solve_create_m' : forall mx mx' my my' mz mz' mw mw', 
+	mx = mx' /\ my = my' /\ mz = mz' /\ mw = mw' ->
+		create_m mx my mz mw = create_m mx' my' mz' mw'.
+Proof.
+	intros.
+	destruct H; destruct H0; destruct H1.
+	apply solve_create_m; easy.
+Qed.
+
+#[export] Hint Resolve WF_create_m : wf_db.
+
+
 Lemma harny_simpl : forall l1 l2 l3,
   let σ1 := harny_σ1 l1 l2 l3 in
   let σ2 := harny_σ2 l1 l2 l3 in
@@ -164,26 +271,72 @@ Lemma harny_simpl : forall l1 l2 l3,
   C2 * C2 .* (red_box σ3 × green_box σ2 × red_box σ1) = create_m MX MY MZ MW.
 Proof.
   intros.
+	assert (WF_Matrix (C2 * C2 .* (red_box σ3 × green_box σ2 × red_box σ1))) as H0 by auto with wf_db.
   subst MX MY MZ MW.
-  unfold red_box, green_box.
-	(* Broken by addition of Csqrt and moving harny scalars to C, see old commit. *)
-Admitted.
+  unfold red_box, green_box, create_m in *.
+	prep_matrix_equality.
+	unfold scale, Mmult in *.
+	destruct x.
+	- do 2 (destruct y; [simpl; C_field_simplify; [ easy | apply Csqrt2_neq_0 ] | ]).
+		unfold WF_Matrix in H0; rewrite H0; [easy |  right; lia].
+	- destruct x.
+		do 2 (destruct y; [simpl; C_field_simplify; [ easy | apply Csqrt2_neq_0 ] | ]).
+		unfold WF_Matrix in H0; rewrite H0; [easy |  right; lia].
+		simpl; C_field_simplify; [ easy | apply Csqrt2_neq_0 ].
+Qed.
 
+
+
+Lemma harny_simpl_l : forall l1 l2 l3,
+  C2 .* (green_box l3 × red_box l2 × green_box l1) = create_m (l2 + 1) ((1 - l2) * l1) (l3 * (1 - l2)) (l1 * (1 + l2) * l3).
+Proof.
+	intros.
+	rewrite red_box_eq.
+	unfold create_m, red_box_alt, green_box.
+	solve_matrix; C_field_simplify; 
+		try (split; [apply Csqrt2_neq_0 | apply C2_neq_0 ]);
+		try lca.
+Qed.
+
+Definition harny_k_1_prop l1 l2 l3 := 
+	let τ := harny_τ l1 l2 l3 in
+  let σ1 := harny_σ1 l1 l2 l3 in
+  let σ2 := harny_σ2 l1 l2 l3 in
+  let σ3 := harny_σ3 l1 l2 l3 in
+	/ C2 * ((σ1 + σ3) * (1 - σ2) + (1 + σ2) * (1 + (σ1 * σ3))) / (1 + l2).
 
 Lemma harny_general_phases_color_swap : forall l1 l2 l3 : C,
   let k := harny_k l1 l2 l3 in
   let σ1 := harny_σ1 l1 l2 l3 in
   let σ2 := harny_σ2 l1 l2 l3 in
   let σ3 := harny_σ3 l1 l2 l3 in
-	k .* (green_box l3 × red_box l2 × green_box l1) = (red_box σ3 × green_box σ2 × red_box σ1).
+	l2 <> - C1 ->
+	k = harny_k_1_prop l1 l2 l3 ->
+	k .* (green_box l3 × red_box l2 × green_box l1) = (red_box σ3 × green_box σ2 × red_box σ1) /\ k <> 0.
 Proof.
-  intros.
-  pose proof (harny_simpl l1 l2 l3).
-  rewrite Mscale_inv in H.
-  subst σ1 σ2 σ3.
-  rewrite H.
-  subst k.
-  unfold green_box, red_box.
+  intros; split; [ | shelve].
+  pose proof (harny_simpl l1 l2 l3) as Hr.
+	pose proof (harny_simpl_l l1 l2 l3) as Hl.
+  rewrite Mscale_inv in Hr; [ | shelve ].
+  rewrite Mscale_inv in Hl; [ | shelve ].
+	assert (forall k, WF_Matrix (k .* (green_box l3 × red_box l2 × green_box l1))) as WF_LHS by auto with wf_db.
+	assert (WF_Matrix (red_box σ3 × green_box σ2 × red_box σ1)) as WF_RHS by auto with wf_db.
+	subst σ1 σ2 σ3.
+	rewrite Hl, Hr in *.
+	autorewrite with scalar_move_db.
+	rewrite 2 scale_create_m.
+	apply solve_create_m.
+	- rewrite H0.
+		unfold harny_k_1_prop.
+		C_field_simplify; [ | shelve].
+		reflexivity.
+	- autounfold with harny_σ_db.
+		C_field_simplify.
+		lca.
+	- admit.
+	-     
+ 
+
 Admitted.
 
 Transparent Z_semantics.
@@ -255,3 +408,4 @@ Proof.
 		repeat rewrite <- Mmult_assoc.
 		rewrite harny_general_phases_color_swap.
 Admitted.
+

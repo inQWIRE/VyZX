@@ -377,3 +377,12 @@ Proof. solve_matrix. Qed.
 Lemma ket1transpose :
 	∣1⟩⊤ = ⟨1∣.
 Proof. solve_matrix. Qed.
+
+
+Lemma C2_neq_0 : C2 <> C0.
+Proof.
+	intros.
+	replace C2 with (RtoC (R1 + R1)) by lca.
+	apply RtoC_neq.
+	lra.
+Qed.
