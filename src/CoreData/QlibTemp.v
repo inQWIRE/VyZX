@@ -377,3 +377,109 @@ Proof. solve_matrix. Qed.
 Lemma ket1transpose :
 	∣1⟩⊤ = ⟨1∣.
 Proof. solve_matrix. Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mplus_plus_minus : ∣+⟩ .+ ∣-⟩ = (√2)%R .* ∣0⟩.
+Proof. 
+	unfold xbasis_plus.
+	unfold xbasis_minus.
+	solve_matrix.
+	C_field.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mplus_plus_minus_opp : ∣+⟩ .+ -1 .* ∣-⟩ = (√2)%R .* ∣1⟩.
+Proof. 
+	unfold xbasis_plus.
+	unfold xbasis_minus.
+	solve_matrix.
+	C_field_simplify.
+	lca.
+	C_field.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mplus_minus_plus : ∣-⟩ .+ ∣+⟩ = (√2)%R .* ∣0⟩.
+Proof. 
+	unfold xbasis_plus.
+	unfold xbasis_minus.
+	solve_matrix.
+	C_field.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mplus_minus_opp_plus : -1 .* ∣-⟩ .+ ∣+⟩ = (√2)%R .* ∣1⟩.
+Proof.
+	unfold xbasis_plus.
+	unfold xbasis_minus.
+	solve_matrix.
+	C_field_simplify.
+	lca.
+	C_field.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mplus_0_1 : ∣0⟩ .+ ∣1⟩ = (√2)%R .* ∣+⟩.
+Proof. 
+	unfold xbasis_plus.
+	unfold xbasis_minus.
+	solve_matrix.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mplus_0_1_opp : ∣0⟩ .+ -1 .* ∣1⟩ = (√2)%R .* ∣-⟩.
+Proof. 
+	unfold xbasis_plus.
+	unfold xbasis_minus.
+	solve_matrix.
+	C_field_simplify.
+	lca.
+	C_field.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mplus_1_0 : ∣1⟩ .+ ∣0⟩ = (√2)%R .* ∣+⟩.
+Proof. 
+	unfold xbasis_plus.
+	unfold xbasis_minus.
+	solve_matrix.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mplus_1_opp_0 : -1 .* ∣1⟩ .+ ∣0⟩ = (√2)%R .* ∣-⟩.
+Proof.
+	unfold xbasis_plus.
+	unfold xbasis_minus.
+	solve_matrix.
+	C_field_simplify.
+	lca.
+	C_field.
+Qed.
+
+Lemma σz_decomposition : σz = ∣0⟩⟨0∣ .+ -1 .* ∣1⟩⟨1∣.
+Proof. solve_matrix. Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Cexp_spec : forall α, Cexp α = cos α + Ci * sin α.
+Proof. intros; lca. Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Cexp_minus : forall θ,
+	Cexp θ + Cexp (-θ) = 2 * cos θ.
+Proof.
+	intros.
+	unfold Cexp.
+	rewrite cos_neg.
+	rewrite sin_neg.
+	lca.
+Qed.
