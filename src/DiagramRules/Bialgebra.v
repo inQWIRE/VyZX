@@ -7,7 +7,7 @@ Definition bi_alg_X_Z := ((X_Spider 1 2 0) ↕ (X_Spider 1 2 0) ⟷ (— ↕ ⨉
 Theorem bi_algebra_rule_Z_X : 
  (X_Spider 2 1 0) ⟷ (Z_Spider 1 2 0) ∝ bi_alg_Z_X.
 Proof.
-  prop_exists_nonzero (√ 2).
+  prop_exists_nonzero (√ 2)%R.
   rewrite 2 ZX_semantic_equiv.
   unfold_dirac_spider.
   autorewrite with Cexp_db.
