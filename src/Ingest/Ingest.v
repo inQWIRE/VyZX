@@ -289,7 +289,7 @@ Qed.
 Notation unpadded_cnot_t := (unpadded_cnot base_cnot _CNOT_).
 Notation unpadded_cnot_b := (unpadded_cnot base_cnot_1 _CNOT_inv_).
 
-Lemma unpadded_cnot_t_sem_equiv : forall n, / √ 2 .* uc_eval (@CNOT (S (S n)) 0 (S n)) = ⟦ unpadded_cnot_t 0 (S (S n)) ⟧.
+Lemma unpadded_cnot_t_sem_equiv : forall n, / (√ 2)%R .* uc_eval (@CNOT (S (S n)) 0 (S n)) = ⟦ unpadded_cnot_t 0 (S (S n)) ⟧.
 Proof.
   intros.
   assert (HSwapSSn : forall n, uc_eval (@SWAP (S (S (S n))) 0 (S n)) = ⟦ (pad_bot_1 (a_swap (S (S n)))) ⟧ ).
@@ -361,7 +361,7 @@ Proof.
     + apply HSwapSSn.
 Qed.
 
-Lemma unpadded_cnot_b_sem_equiv : forall n, / √ 2 .* uc_eval (@CNOT (S (S n)) (S n) 0) = ⟦ unpadded_cnot_b 0 (S (S n )) ⟧.
+Lemma unpadded_cnot_b_sem_equiv : forall n, / (√ 2)%R .* uc_eval (@CNOT (S (S n)) (S n) 0) = ⟦ unpadded_cnot_b 0 (S (S n )) ⟧.
 Proof.
   intros.
   assert (Hhh : hadamard ⊗ I 2 × (I 2 ⊗ hadamard) = hadamard ⊗ hadamard).
@@ -521,7 +521,7 @@ Proof.
     + apply (n_wire dim).
 Defined.
 
-Lemma cnot_n_m_equiv : forall dim n m, (n < dim)%nat -> (m < dim)%nat -> (n < m)%nat -> / √ 2 .* uc_eval (@CNOT dim n m) = ⟦ @cnot_n_m_ingest dim n m ⟧.
+Lemma cnot_n_m_equiv : forall dim n m, (n < dim)%nat -> (m < dim)%nat -> (n < m)%nat -> / (√ 2)%R .* uc_eval (@CNOT dim n m) = ⟦ @cnot_n_m_ingest dim n m ⟧.
 Proof.
   intros.
   rewrite denote_cnot.
@@ -569,7 +569,7 @@ Unshelve.
     easy.
 Qed.
 
-Lemma cnot_m_n_equiv : forall dim n m, (n < dim)%nat -> (m < dim)%nat -> (m < n)%nat -> / √ 2 .* uc_eval (@CNOT dim n m) = ⟦ @cnot_m_n_ingest dim n m ⟧.
+Lemma cnot_m_n_equiv : forall dim n m, (n < dim)%nat -> (m < dim)%nat -> (m < n)%nat -> / (√ 2)%R .* uc_eval (@CNOT dim n m) = ⟦ @cnot_m_n_ingest dim n m ⟧.
 Proof.
   intros.
   rewrite denote_cnot.
@@ -619,7 +619,7 @@ Unshelve.
     easy.
 Qed.
 
-Lemma cnot_ingest_correct : forall dim n m, (n < dim)%nat -> (m < dim)%nat -> (m <> n)%nat -> / √ 2 .* uc_eval (@CNOT dim n m) = ⟦ @cnot_ingest dim n m ⟧.
+Lemma cnot_ingest_correct : forall dim n m, (n < dim)%nat -> (m < dim)%nat -> (m <> n)%nat -> / (√ 2)%R .* uc_eval (@CNOT dim n m) = ⟦ @cnot_ingest dim n m ⟧.
 Proof.
   intros.
   unfold cnot_ingest.
@@ -753,7 +753,7 @@ Proof.
   3: apply Rz_ingest_correct.
   all: destruct H; unfold bounded_list in H.
   1-3: apply H; left; easy. 
-  - exists (/ √ 2 )%C; split; [ | apply nonzero_div_nonzero; apply Csqrt2_neq_0 ].
+  - exists (/ (√ 2)%R )%C; split; [ | apply nonzero_div_nonzero; apply Csqrt2_neq_0 ].
     do 3 (destruct qs; try easy).
     simpl.
     apply cnot_ingest_correct.
@@ -802,7 +802,7 @@ Proof.
   - inversion H.
     subst.
     simpl.
-    exists (/ √2)%C; split; [ | apply nonzero_div_nonzero; apply Csqrt2_neq_0 ].
+    exists (/ (√2)%R)%C; split; [ | apply nonzero_div_nonzero; apply Csqrt2_neq_0 ].
     rewrite cnot_ingest_correct; congruence.
   - simpl.
     exists C1; split; [ | nonzero ].

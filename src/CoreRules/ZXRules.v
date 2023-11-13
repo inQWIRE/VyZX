@@ -16,7 +16,7 @@ Proof.
 	assert (X_state_copy_ind : (X 0 1 (INR r * PI) ⟷ Z 1 2 0) ∝
 		X 0 1 (INR r * PI) ↕ X 0 1 (INR r * PI)).
 	{ 
-		prop_exists_nonzero (/ √ 2); Msimpl; simpl.
+		prop_exists_nonzero (/ (√ 2)%R); Msimpl; simpl.
 		unfold X_semantics; unfold Z_semantics.
 		simpl. solve_matrix.
 		all: autorewrite with Cexp_db.
@@ -27,7 +27,7 @@ Proof.
 	induction n; [| destruct n].
 	- simpl. 
 		simpl_casts.
-		prop_exists_nonzero (√ 2); Msimpl; simpl.
+		prop_exists_nonzero (√ 2)%R; Msimpl; simpl.
 		unfold X_semantics; unfold Z_semantics.
 		simpl.
 		solve_matrix.

@@ -44,7 +44,7 @@ Proof.
   lma.
 Qed.
 
-Lemma cnot_l_is_cnot : ⟦ _CNOT_ ⟧ = (/ √ 2)%C .* cnot.
+Lemma cnot_l_is_cnot : ⟦ _CNOT_ ⟧ = (/ (√ 2)%R) .* cnot.
 Proof.
   simpl.
   unfold Z_semantics, X_semantics.
