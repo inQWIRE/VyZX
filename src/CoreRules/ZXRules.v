@@ -253,20 +253,6 @@ Proof.
 	apply Z_copy.
 Qed.
 
-Lemma Z_0_copy : forall n prfn prfm, 
-	(Z 1 1 0 ⟷ X 1 n 0) ∝
-	X 1 n 0 ⟷ 
-		(cast n n prfn prfm
-			(n ⇑ (Z 1 1 0))).
-Proof.
-	intros.
-	specialize (Z_copy n 0).
-	intros.
-	simpl in H.
-	rewrite Rmult_0_l in H.
-	apply H.
-Qed.
-
 Lemma Z_pi_copy : forall n prfn prfm, 
 	(Z 1 1 PI ⟷ X 1 n 0) ∝
 	X 1 n 0 ⟷ 
@@ -278,20 +264,6 @@ Proof.
 	intros.
 	simpl in H.
 	rewrite Rmult_1_l in H.
-	apply H.
-Qed.
-
-Lemma X_0_copy : forall n prfn prfm, 
-	(X 1 1 0 ⟷ Z 1 n 0) ∝
-	Z 1 n 0 ⟷ 
-		(cast n n prfn prfm
-			(n ⇑ (X 1 1 0))).
-Proof.
-	intros.
-	specialize (X_copy n 0).
-	intros.
-	simpl in H.
-	rewrite Rmult_0_l in H.
 	apply H.
 Qed.
 
