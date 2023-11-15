@@ -253,30 +253,40 @@ Proof.
 	apply Z_copy.
 Qed.
 
-Lemma Z_pi_copy : forall n prfn prfm, 
-	(Z 1 1 PI ⟷ X 1 n 0) ∝
-	X 1 n 0 ⟷ 
+Lemma Z_pi_copy : forall n prfn prfm α, 
+	(Z 1 1 PI ⟷ X 1 n α) ∝
+	X 1 n (-α) ⟷ 
 		(cast n n prfn prfm
 			(n ⇑ (Z 1 1 PI))).
 Proof.
 	intros.
+	replace (α) with (α + 0)%R by lra.
+	rewrite <- (@X_absolute_fusion 1 0 n α 0%R).
+	rewrite <- compose_assoc.
+	rewrite Z_pi_X_comm.
+	rewrite compose_assoc.
 	specialize (Z_copy n 1).
 	intros.
 	simpl in H.
 	rewrite Rmult_1_l in H.
-	apply H.
+	rewrite H.
+	rewrite <- compose_assoc.
+	rewrite X_absolute_fusion.
+	rewrite 2 Rplus_0_r.
+	easy.
 Qed.
 
-Lemma X_pi_copy : forall n prfn prfm, 
-	(X 1 1 PI ⟷ Z 1 n 0) ∝
-	Z 1 n 0 ⟷ 
+Lemma X_pi_copy : forall n prfn prfm α, 
+	(X 1 1 PI ⟷ Z 1 n α) ∝
+	Z 1 n (-α) ⟷ 
 		(cast n n prfn prfm
 			(n ⇑ (X 1 1 PI))).
 Proof.
 	intros.
-	specialize (X_copy n 1).
-	intros.
-	simpl in H.
-	rewrite Rmult_1_l in H.
-	apply H.
+	apply colorswap_diagrams.
+	simpl.
+	rewrite cast_colorswap.
+	rewrite n_stack_colorswap.
+	simpl.
+	apply Z_pi_copy.
 Qed.
