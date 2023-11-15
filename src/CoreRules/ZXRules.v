@@ -191,6 +191,52 @@ Proof.
 	all: lia.
 Qed.
 
+Lemma Z_pi_X_comm : forall α,
+	Z 1 1 PI ⟷ X 1 1 α ∝
+	X 1 1 (-α) ⟷ Z 1 1 PI.
+Proof.
+	intros.
+	prop_exists_nonzero (Cexp α).
+	repeat rewrite ZX_semantic_equiv.
+	Msimpl.
+	simpl.
+	Msimpl.
+	repeat rewrite Mmult_plus_distr_l.
+	repeat rewrite Mmult_plus_distr_r.
+	autorewrite with scalar_move_db.
+	repeat rewrite Mmult_assoc.
+	restore_dims.
+	repeat rewrite <- (Mmult_assoc ⟨-∣).
+	repeat rewrite <- (Mmult_assoc ⟨+∣).
+	repeat rewrite <- (Mmult_assoc ⟨1∣).
+	repeat rewrite <- (Mmult_assoc ⟨0∣).
+	autorewrite with ketbra_mult_db.
+	autorewrite with scalar_move_db.
+	Msimpl.
+	rewrite Cexp_PI.
+	replace (-1 * - / (√ 2)%R) with (/ (√2)%R) by lca.
+	rewrite Mscale_plus_distr_r.
+	repeat rewrite Mscale_assoc.
+	replace (-1 * (Cexp α * - / (√ 2)%R)) with (Cexp α * / (√2)%R) by lca.
+	replace (-1 * / (√ 2)%R) with (-/(√2)%R) by lca.
+	repeat rewrite Mscale_plus_distr_r.
+	repeat rewrite Mscale_assoc.
+	replace (Cexp α * Cexp (-α)) with C1.
+	rewrite Cmult_1_l.
+	lma.
+	rewrite <- Cexp_add.
+	rewrite Rplus_opp_r.
+	rewrite Cexp_0.
+	easy.
+Qed.
+
+Lemma X_pi_Z_comm : forall α,
+	X 1 1 PI ⟷ Z 1 1 α ∝
+	Z 1 1 (-α) ⟷ X 1 1 PI.
+Proof.
+	colorswap_of Z_pi_X_comm.
+Qed.
+
 Lemma X_copy : forall n r prfn prfm,
 	(X 1 1 (INR r * PI) ⟷ Z 1 n 0) ∝
 	Z 1 n 0 ⟷ 

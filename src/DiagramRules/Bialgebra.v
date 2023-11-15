@@ -1,11 +1,11 @@
 Require Import CoreData.
 Require Import CoreRules.
 
-Definition bi_alg_Z_X := ((Z_Spider 1 2 0) ↕ (Z_Spider 1 2 0) ⟷ (— ↕ ⨉ ↕ —) ⟷ ((X_Spider 2 1 0) ↕ (X_Spider 2 1 0))).
-Definition bi_alg_X_Z := ((X_Spider 1 2 0) ↕ (X_Spider 1 2 0) ⟷ (— ↕ ⨉ ↕ —) ⟷ ((Z_Spider 2 1 0) ↕ (Z_Spider 2 1 0))).
+Definition bi_alg_Z_X := ((Z 1 2 0) ↕ (Z 1 2 0) ⟷ (— ↕ ⨉ ↕ —) ⟷ ((X 2 1 0) ↕ (X 2 1 0))).
+Definition bi_alg_X_Z := ((X 1 2 0) ↕ (X 1 2 0) ⟷ (— ↕ ⨉ ↕ —) ⟷ ((Z 2 1 0) ↕ (Z 2 1 0))).
 
 Theorem bi_algebra_rule_Z_X : 
- (X_Spider 2 1 0) ⟷ (Z_Spider 1 2 0) ∝ bi_alg_Z_X.
+ X 2 1 0 ⟷ Z 1 2 0 ∝ bi_alg_Z_X.
 Proof.
   prop_exists_nonzero (√ 2)%R.
   rewrite 2 ZX_semantic_equiv.
@@ -27,14 +27,14 @@ Proof.
 Qed.
 
 Theorem bi_algebra_rule_X_Z : 
- (Z_Spider 2 1 0) ⟷ (X_Spider 1 2 0) ∝ bi_alg_X_Z.
+ Z 2 1 0 ⟷ X 1 2 0 ∝ bi_alg_X_Z.
 Proof.
   colorswap_of bi_algebra_rule_Z_X.
 Qed.
 
 
 Theorem hopf_rule_Z_X : 
-  (Z_Spider 1 2 0) ⟷ (X_Spider 2 1 0) ∝ (Z_Spider 1 0 0) ⟷ (X_Spider 0 1 0).
+  Z 1 2 0 ⟷ X 2 1 0 ∝ Z 1 0 0 ⟷ X 0 1 0.
 Proof.
   intros.
   rewrite <- (@nwire_removal_r 2).
@@ -147,7 +147,7 @@ all: lia.
 Qed.
 
 Theorem hopf_rule_X_Z : 
-  (X_Spider 1 2 0) ⟷ (Z_Spider 2 1 0) ∝ (X_Spider 1 0 0) ⟷ (Z_Spider 0 1 0).
+  (X 1 2 0) ⟷ (Z 2 1 0) ∝ (X 1 0 0) ⟷ (Z 0 1 0).
 Proof.
   colorswap_of hopf_rule_Z_X.
 Qed.
