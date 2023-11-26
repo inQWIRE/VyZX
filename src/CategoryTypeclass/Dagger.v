@@ -12,8 +12,8 @@ Class DaggerCategory (C : Type) `{Category C} : Type := {
 
     preserves_id {A : C} : (identity A) ‡ ≃ identity A;
 
-    (* contravariant {A B M : C} {f : A ~> B} {g : B ~> M} :
-        (g ∘ f) ‡ ≃ f ‡ ∘ g ‡; *)
+    contravariant {A B M : C} {f : A ~> B} {g : B ~> M} :
+        (g ∘ f) ‡ ≃ f ‡ ∘ g ‡;
 }.
 
 Notation "f ‡" := (adjoint f). (* \ddag *)
@@ -21,18 +21,25 @@ Notation "f ‡" := (adjoint f). (* \ddag *)
 Lemma nwire_adjoint : forall n, (n_wire n) † ∝ n_wire n.
 Proof.
     intros.
-    unfold ZXCore.adjoint.
-    unfold ZXCore.transpose.
-    unfold ZXCore.conjugate.
-    destruct n.
-Admitted.
+    induction n; try easy.
+    - intros.
+      unfold ZXCore.adjoint.
+      simpl.
+      unfold ZXCore.adjoint in IHn.
+      rewrite IHn.
+      reflexivity.
+Qed.
+
+Lemma compose_adjoint : forall {n m o}
+    (zx0 : ZX n m) (zx1 : ZX m o), 
+    (zx0 ⟷ zx1) † ∝ zx1 † ⟷ zx0 †.
+Proof.
+    intros; easy.
+Qed.
 
 #[export] Instance ZXDaggerCategory : DaggerCategory nat := {
     adjoint := @ZXCore.adjoint;
     involutive := @Proportional.adjoint_involutive;
-    preserves_id := @nwire_adjoint;
+    preserves_id := nwire_adjoint;
+    contravariant := @compose_adjoint;
 }.
-
-Search ((n_wire _) ⊼).
-Search (n_wire 0).
-Search (ZXCore.conjugate).
