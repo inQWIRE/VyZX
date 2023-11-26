@@ -1,7 +1,6 @@
-
 Require Import CoreData.
 Require Import CoreRules.
-Require Import CategoryTypeclass.
+Require Import Category.
 
 Reserved Notation "A ⊠ B" (at level 40).
 Reserved Notation "f ◇ g" (at level 40).
@@ -12,7 +11,7 @@ Class MonoidalCategory (C : Type) `{Category C} : Type := {
     I : C;
 
     tensor_morph {A B M N : C} : 
-        (A ~> M) -> (B ~> N) -> (A ⊠ B ~> M ⊠ N)
+        (A ~> M) -> (B ~> N) -> (A ⊠ B) ~> (M ⊠ N)
         where "f ◇ g" := (tensor_morph f g);
     
     (* These are all isomorphisms *)
@@ -54,18 +53,18 @@ Class MonoidalCategory (C : Type) `{Category C} : Type := {
         ≃ inv_associator ∘ @inv_associator (A ⊠ B) M N;
 }.
 
-Notation "A ⊠ B" := (tensor A B). (* \otimes *)
-Notation "f ◇ g" := (tensor_morph f g). (* \times *)
+Notation "A ⊠ B" := (tensor A B). (* \boxtimes *)
+Notation "f ◇ g" := (tensor_morph f g). (* \Diamond *)
 
 Definition ZX_associator {n m o} :=
-    let r := (n + (m + o))%nat in
-    let l := ((n + m) + o)%nat in
+    let l := (n + (m + o))%nat in
+    let r := ((n + m) + o)%nat in
     let assoc := Nat.add_assoc n m o in
-        cast r l (eq_refl r) (eq_sym assoc) (n_wire r).
+        cast l r (eq_refl l) (eq_sym assoc) (n_wire l).
 
 Definition ZX_inv_associator {n m o} :=
-    let r := (n + (m + o))%nat in
     let l := ((n + m) + o)%nat in
+    let r := (n + (m + o))%nat in
     let assoc := Nat.add_assoc n m o in 
         cast l r (eq_refl l) assoc (n_wire l).
 

@@ -1,7 +1,7 @@
 Require Import CoreData.
 Require Import CoreRules.
 
-Reserved Notation "A ~> B" (at level 40).
+Reserved Notation "A ~> B" (at level 50).
 Reserved Notation "f ≃ g" (at level 60).
 Reserved Notation "A ≅ B" (at level 60).
 

@@ -1,2 +1,4 @@
 Require Export Category.
-Require Export MonoidalCategory.
+Require Export Monoidal.
+Require Export SymmetricMonoidal.
+Require Export Dagger.
