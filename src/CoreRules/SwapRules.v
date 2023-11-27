@@ -549,3 +549,126 @@ Abort.
 Lemma swap_pullthrough_top_right_X_1_1 : forall α, (X 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (X 1 1 α)).
 Proof. intros. colorswap_of swap_pullthrough_top_right_Z_1_1. Qed.
 
+Definition b_swap_def (n m : nat) := cast (n + m) (m + n) (eq_refl) (Nat.add_comm _ _) (b_swap n m).
+
+Definition top_to_bottom_d (n : nat) := cast (S n) (n + 1) (eq_refl) (Nat.add_1_r _) (top_to_bottom (S n)).
+
+Lemma swap_pullthrough_top_left : forall (zx : ZX 1 1),
+  (zx ↕ —) ⟷ ⨉ ∝
+  ⨉ ⟷ (— ↕ zx).
+Proof.
+  intros.
+  prop_exists_nonzero 1.
+  Msimpl.
+  simpl.
+  solve_matrix.
+  1,3: rewrite WF_ZX by auto; lca.
+  all: rewrite WF_ZX by (right; simpl; lia); lca.
+Qed.
+
+Lemma swap_pullthrough_bot_left : forall (zx : ZX 1 1),
+  (— ↕ zx) ⟷ ⨉ ∝
+  ⨉ ⟷ (zx ↕ —).
+Proof.
+  intros.
+  prop_exists_nonzero 1.
+  Msimpl.
+  simpl.
+  solve_matrix.
+  1,2: rewrite WF_ZX by auto; lca.
+  all: rewrite WF_ZX by (left; simpl; lia); lca.
+Qed.
+
+
+Opaque cast.
+
+Lemma top_to_bottom_pullthrough : forall n (zx : ZX 1 1),
+  (zx ↕ n_wire n) ⟷ top_to_bottom_d n ∝
+  top_to_bottom_d n ⟷ (n_wire n ↕ zx).
+Proof.
+  intros.
+  induction n.
+  - simpl.
+    cleanup_zx.
+    unfold top_to_bottom_d.
+    unfold top_to_bottom.
+    unfold top_to_bottom_helper.
+    eapply (cast_diagrams 1 1).
+    simpl_casts.
+    cleanup_zx.
+    easy.
+  - unfold top_to_bottom_d.
+    rewrite top_to_bottom_grow_l at 1.
+    rewrite cast_compose_distribute.
+    rewrite <- compose_assoc.
+    simpl_casts.
+    replace (n_wire S n) with (— ↕ n_wire n) by easy.
+    rewrite (stack_assoc_back zx —).
+    simpl_casts.
+    rewrite <- (stack_compose_distr (zx ↕ —) ⨉ (n_wire n)).
+    rewrite swap_pullthrough_top_left.
+    rewrite stack_compose_distr.
+    rewrite compose_assoc.
+    erewrite <- (cast_id _ _ (— ↕ zx ↕ n_wire n)).
+    rewrite <- cast_compose_distribute.
+    rewrite stack_assoc.
+    simpl_casts.
+    rewrite <- (stack_wire_distribute_l (zx ↕ n_wire n)).
+    unfold top_to_bottom_d in IHn.
+    simpl.
+    rewrite (@cast_stack_distribute 1 1 1 1).
+    rewrite cast_compose_distribute.
+    fold (top_to_bottom (S n)).
+    simpl_casts.
+    rewrite IHn.
+    simpl.
+    rewrite cast_compose_distribute.
+    rewrite (@cast_stack_distribute 1 1 1 1).
+    rewrite 2 cast_id.
+    rewrite stack_wire_distribute_l.
+    rewrite stack_assoc_back.
+    simpl_casts.
+    rewrite compose_assoc.
+    easy.
+Unshelve.
+all: lia.
+Qed.
+
+Lemma b_swap_pullthrough : forall n m (zx : ZX n n),
+  (zx ↕ n_wire m) ⟷ b_swap_def n m ∝
+  b_swap_def n m ⟷ (n_wire m ↕ zx).
+Proof.
+  induction m; intros.
+  - simpl.
+    cleanup_zx.
+    unfold b_swap_def.
+    simpl.
+    eapply (cast_diagrams n n).
+    repeat rewrite cast_compose_distribute.
+    simpl_casts.
+    rewrite (cast_compose_mid n).
+    simpl_casts.
+    unfold b_swap.
+  Admitted.
+
+
+(* 
+  induction n.
+  intros.
+  - unfold b_swap_def.
+    unfold b_swap.
+    eapply (cast_diagrams m m).
+    rewrite 2 cast_compose_distribute.
+    rewrite (cast_compose_mid m).
+    repeat rewrite cast_contract.
+    rewrite cast_n_wire.
+    erewrite (cast_compose_mid m _ _ ($ m, m + 0 ::: n_wire (0 + m) $)).
+    repeat rewrite cast_contract.
+    rewrite cast_n_wire.
+    admit.
+    (* Need to work with constants -- this branch is true. *)
+  - unfold b_swap_def in *. *)
+
+
+
+

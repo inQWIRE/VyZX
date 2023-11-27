@@ -56,13 +56,13 @@ Class MonoidalCategory (C : Type) `{Category C} : Type := {
 Notation "A ⊠ B" := (tensor A B). (* \boxtimes *)
 Notation "f ◇ g" := (tensor_morph f g). (* \Diamond *)
 
-Definition ZX_associator {n m o} :=
+Definition zx_associator {n m o} :=
     let l := (n + (m + o))%nat in
     let r := ((n + m) + o)%nat in
     let assoc := Nat.add_assoc n m o in
         cast l r (eq_refl l) (eq_sym assoc) (n_wire l).
 
-Definition ZX_inv_associator {n m o} :=
+Definition zx_inv_associator {n m o} :=
     let l := ((n + m) + o)%nat in
     let r := (n + (m + o))%nat in
     let assoc := Nat.add_assoc n m o in 
@@ -70,11 +70,11 @@ Definition ZX_inv_associator {n m o} :=
 
 Lemma associator_lemma : forall {n m o p q r} 
     (zx0 : ZX n m) (zx1 : ZX o p) (zx2 : ZX q r),
-    (zx0 ↕ (zx1 ↕ zx2)) ⟷ ZX_associator 
-    ∝ ZX_associator ⟷ ((zx0 ↕ zx1) ↕ zx2).
+    (zx0 ↕ (zx1 ↕ zx2)) ⟷ zx_associator 
+    ∝ zx_associator ⟷ ((zx0 ↕ zx1) ↕ zx2).
 Proof.
     intros. 
-    unfold ZX_associator.
+    unfold zx_associator.
     rewrite cast_compose_l.
     rewrite cast_compose_r.
     cleanup_zx; simpl_casts.
@@ -82,17 +82,17 @@ Proof.
     reflexivity.
 Qed.
 
-Definition ZX_left_unitor {n} := 
+Definition zx_left_unitor {n} := 
     cast (0 + n) n (Nat.add_0_l n) (eq_refl n) (n_wire n).
 
-Definition ZX_inv_left_unitor {n} := 
+Definition zx_inv_left_unitor {n} := 
     cast n (0 + n) (eq_refl n) (Nat.add_0_l n) (n_wire n).
 
 Lemma left_unitor_lemma : forall {n m} (zx : ZX n m), 
-    ZX_left_unitor ⟷ zx ∝ (n_wire 0) ↕ zx ⟷ ZX_left_unitor.
+    zx_left_unitor ⟷ zx ∝ (n_wire 0) ↕ zx ⟷ zx_left_unitor.
 Proof.
     intros.
-    unfold ZX_left_unitor.
+    unfold zx_left_unitor.
     simpl_casts.
     rewrite nwire_removal_l.
     rewrite stack_empty_l.
@@ -100,17 +100,17 @@ Proof.
     reflexivity.
 Qed.
 
-Definition ZX_right_unitor {n} := 
+Definition zx_right_unitor {n} := 
     cast (n + 0) n (Nat.add_0_r n) (eq_refl n) (n_wire n).
 
-Definition ZX_inv_right_unitor {n} := 
+Definition zx_inv_right_unitor {n} := 
     cast n (n + 0) (eq_refl n) (Nat.add_0_r n) (n_wire n).
 
 Lemma right_unitor_lemma : forall {n m} (zx : ZX n m), 
-    ZX_right_unitor ⟷ zx ∝ zx ↕ (n_wire 0) ⟷ ZX_right_unitor.
+    zx_right_unitor ⟷ zx ∝ zx ↕ (n_wire 0) ⟷ zx_right_unitor.
 Proof.
     intros.
-    unfold ZX_right_unitor; cleanup_zx.
+    unfold zx_right_unitor; cleanup_zx.
     rewrite <- cast_compose_mid_contract.
     cleanup_zx.
     rewrite cast_compose_l; simpl_casts.
@@ -122,13 +122,13 @@ Proof.
 Qed.
 
 Lemma triangle_lemma : forall {n m}, 
-    ZX_inv_associator ⟷ (n_wire n ↕ ZX_left_unitor) ∝ 
-    ZX_right_unitor ↕ n_wire m.
+    zx_inv_associator ⟷ (n_wire n ↕ zx_left_unitor) ∝ 
+    zx_right_unitor ↕ n_wire m.
 Proof.
     intros.
-    unfold ZX_inv_associator.
-    unfold ZX_right_unitor.
-    unfold ZX_left_unitor.
+    unfold zx_inv_associator.
+    unfold zx_right_unitor.
+    unfold zx_left_unitor.
     simpl_casts.
     repeat rewrite <- nstack1_split.
     cleanup_zx.
@@ -137,12 +137,12 @@ Proof.
 Qed.
 
 Lemma pentagon_lemma : forall {n m o p}, 
-    (ZX_inv_associator ↕ n_wire p) ⟷ 
-        (ZX_inv_associator ⟷ (n_wire n ↕ ZX_inv_associator)) 
-    ∝ (@ZX_inv_associator (n + m) o p) ⟷ ZX_inv_associator.
+    (zx_inv_associator ↕ n_wire p) ⟷ 
+        (zx_inv_associator ⟷ (n_wire n ↕ zx_inv_associator)) 
+    ∝ (@zx_inv_associator (n + m) o p) ⟷ zx_inv_associator.
 Proof.
     intros.
-    unfold ZX_inv_associator.
+    unfold zx_inv_associator.
     rewrite <- ComposeRules.compose_assoc.
     simpl_casts.
     repeat rewrite n_wire_stack.
@@ -158,16 +158,16 @@ Qed.
 
     tensor_morph _ _ _ _ := Stack;
 
-    associator := @ZX_associator;
-    inv_associator := @ZX_inv_associator;
+    associator := @zx_associator;
+    inv_associator := @zx_inv_associator;
     associator_iso := Nat.add_assoc;
 
-    left_unitor := @ZX_left_unitor;
-    inv_left_unitor := @ZX_inv_left_unitor;
+    left_unitor := @zx_left_unitor;
+    inv_left_unitor := @zx_inv_left_unitor;
     left_unitor_iso := Nat.add_0_l;
 
-    right_unitor := @ZX_right_unitor;
-    inv_right_unitor := @ZX_inv_right_unitor;
+    right_unitor := @zx_right_unitor;
+    inv_right_unitor := @zx_inv_right_unitor;
     right_unitor_iso := Nat.add_0_r;
 
     bifunctor_id := n_wire_stack;

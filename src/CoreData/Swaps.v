@@ -132,3 +132,11 @@ Fixpoint b_swap (n m : nat) : ZX (n + m) (n + m) :=
   | 0 => (n_wire (0 + m))
   | (S n) => (top_to_bottom (S n + m)) ⟷ (— ↕ (b_swap n m))
   end.
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+    
+>>>>>>> Stashed changes
+=======
+    
+>>>>>>> Stashed changes
