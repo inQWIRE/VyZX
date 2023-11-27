@@ -20,12 +20,12 @@ Class SymmetricMonoidalCategory (C : Type) `{MonoidalCategory C} : Type := {
 }.
 
 
-Definition ZX_braiding {n m} :=
+Definition zx_braiding {n m} :=
     let l := (n + m)%nat in
     let r := (m + n)%nat in
         cast l r (eq_refl l) (Nat.add_comm m n) (b_swap n m).
 
-Definition ZX_inv_braiding {n m} :=
+Definition zx_inv_braiding {n m} :=
     let l := (m + n)%nat in
     let r := (n + m)%nat in
         cast l r (eq_refl l) (Nat.add_comm n m) (b_swap m n).
@@ -49,10 +49,10 @@ Proof.
 Admitted.
 
 Lemma hexagon_lemma_1 : forall {n m o}, 
-    (ZX_braiding ↕ n_wire o) ⟷ (ZX_inv_associator ⟷ (n_wire m ↕ ZX_braiding))
-    ∝ ZX_inv_associator ⟷ ((@ZX_braiding n (m + o)) ⟷ ZX_inv_associator).
+    (zx_braiding ↕ n_wire o) ⟷ (ZX_inv_associator ⟷ (n_wire m ↕ zx_braiding))
+    ∝ ZX_inv_associator ⟷ ((@zx_braiding n (m + o)) ⟷ ZX_inv_associator).
 Proof.
-    unfold ZX_braiding. unfold ZX_inv_associator. intros.
+    unfold zx_braiding. unfold ZX_inv_associator. intros.
     simpl_casts.
     repeat rewrite <- ComposeRules.compose_assoc.
     rewrite b_swap_wires_l. rewrite b_swap_wires_r.
@@ -69,8 +69,8 @@ Proof.
 Admitted.
 
 #[export] Instance ZXSymmetricMonoidalCategory : SymmetricMonoidalCategory nat := {
-    braiding := @ZX_braiding;
-    inv_braiding := @ZX_inv_braiding;
+    braiding := @zx_braiding;
+    inv_braiding := @zx_inv_braiding;
     braiding_iso := Nat.add_comm;
 
     hexagon_1 := @hexagon_lemma_1;
