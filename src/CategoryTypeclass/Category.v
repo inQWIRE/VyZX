@@ -3,12 +3,7 @@ Require Import CoreRules.
 
 Declare Scope Cat_scope.
 Delimit Scope Cat_scope with Cat.
-
 Local Open Scope Cat.
-(* 
-    (f ⊗ g)%Cat
-    (f ⊗ g)%ZX
- *)
 
 Reserved Notation "A ~> B" (at level 50).
 Reserved Notation "f ≃ g" (at level 60).
@@ -30,7 +25,7 @@ Reserved Notation "A ≅ B" (at level 60).
 
 Class Category (C : Type) : Type := {
     morphism : C -> C -> Type
-        where "A ~> B" := (morphism A B) : Cat_scope;
+        where "A ~> B" := (morphism A B);
 
     equiv {A B : C} (f g : A ~> B) : Prop 
         where "f ≃ g" := (equiv f g) : Cat_scope;
@@ -42,7 +37,7 @@ Class Category (C : Type) : Type := {
         f ≃ f;
 
     obj_equiv (A B : C) : Prop 
-        where "A ≅ B" := (obj_equiv A B) : Cat_scope;
+        where "A ≅ B" := (obj_equiv A B);
     obj_equiv_symm {A B : C} : 
         A ≅ B -> B ≅ A;
     obj_equiv_trans {A B M : C} :
@@ -54,19 +49,19 @@ Class Category (C : Type) : Type := {
 
     compose {A B M : C} : 
         (A ~> B) -> (B ~> M) -> (A ~> M) 
-        where "f ∘ g" := (compose g f) : Cat_scope;
+        where "f ∘ g" := (compose f g);
 
-    left_id {A B : C} {f : A ~> B} : (identity B) ∘ f ≃ f;
-    right_id {A B : C} {f : A ~> B} : f ∘ (identity A) ≃ f;
+    left_unit {A B : C} {f : A ~> B} : (identity A) ∘ f ≃ f;
+    right_unit {A B : C} {f : A ~> B} : f ∘ (identity B) ≃ f;
     assoc {A B M N : C}
         {f : A ~> B} {g : B ~> M} {h : M ~> N} : 
-        h ∘ (g ∘ f) ≃ (h ∘ g) ∘ f;
+        (f ∘ g) ∘ h ≃ f ∘ (g ∘ h);
 }.
 
 Notation "A ~> B" := (morphism A B) : Cat_scope.
 Notation "f ≃ g" := (equiv f g) : Cat_scope. (* \simeq *)
 Notation "A ≅ B" := (obj_equiv A B) : Cat_scope. (* \cong *)
-Notation "f ∘ g" := (compose g f) : Cat_scope. (* \circ *)
+Notation "f ∘ g" := (compose f g) : Cat_scope. (* \circ *)
 
 #[export] Instance ZXCategory : Category nat := {
     morphism := ZX;
@@ -85,8 +80,8 @@ Notation "f ∘ g" := (compose g f) : Cat_scope. (* \circ *)
 
     compose := @Compose;
 
-    left_id _ _ := nwire_removal_r;
-    right_id := @nwire_removal_l;
+    left_unit _ _ := nwire_removal_l;
+    right_unit _ _ := nwire_removal_r;
     assoc := @ComposeRules.compose_assoc;
 }.
 

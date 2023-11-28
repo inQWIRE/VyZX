@@ -17,6 +17,18 @@ Definition top_to_bottom (n : nat) : ZX n n :=
   | S k => top_to_bottom_helper k
   end.
 
+Fixpoint n_top_to_bottom_helper (n m k : nat) : ZX (n + m) (n + m) :=
+  match k with
+  | 0 => top_to_bottom (n + m)
+  | S j => Compose (top_to_bottom (n + m)) (n_top_to_bottom_helper n m j)
+  end.
+
+Definition n_top_to_bottom (n m : nat) : ZX (n + m) (n + m) :=
+  match n with
+  | 0 => n_wire (0 + m)
+  | S k => n_top_to_bottom_helper (S k) m k
+  end.
+
 Definition bottom_to_top (n : nat) : ZX n n :=
   (top_to_bottom n)⊤.
 
@@ -132,11 +144,3 @@ Fixpoint b_swap (n m : nat) : ZX (n + m) (n + m) :=
   | 0 => (n_wire (0 + m))
   | (S n) => (top_to_bottom (S n + m)) ⟷ (— ↕ (b_swap n m))
   end.
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-    
->>>>>>> Stashed changes
-=======
-    
->>>>>>> Stashed changes
