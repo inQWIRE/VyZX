@@ -61,8 +61,8 @@ Class MonoidalCategory (C : Type) `{Category C} : Type := {
         ≃ @associator (A × B) M N ∘ associator;
 }.
 
-Notation "A × B" := (tensor A B). (* \times *)
-Notation "f ⊗ g" := (tensor_morph f g). (* \otimes *) 
+Notation "A × B" := (tensor A B) : Cat_scope. (* \times *)
+Notation "f ⊗ g" := (tensor_morph f g) : Cat_scope. (* \otimes *) 
 
 Lemma triangle_lemma : forall {n m}, 
     zx_associator ⟷ (n_wire n ↕ zx_left_unitor) ∝ 

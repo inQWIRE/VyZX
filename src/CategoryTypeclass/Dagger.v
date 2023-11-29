@@ -18,7 +18,7 @@ Class DaggerCategory (C : Type) `{Category C} : Type := {
         (f ∘ g) † ≃ g † ∘ f †;
 }.
 
-Notation "f †" := (adjoint f). (* \dag *)
+Notation "f †" := (adjoint f) : Cat_scope. (* \dag *)
 
 Lemma nwire_adjoint : forall n, ZXCore.adjoint (n_wire n) ∝ n_wire n.
 Proof.

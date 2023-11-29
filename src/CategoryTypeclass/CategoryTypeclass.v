@@ -4,3 +4,4 @@ Require Export BraidedMonoidal.
 Require Export SymmetricMonoidal.
 Require Export Dagger.
 Require Export DaggerMonoidal.
+Require Export CompactClosed.
