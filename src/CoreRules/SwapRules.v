@@ -3,6 +3,7 @@ Require Import WireRules.
 Require Import CoreAutomation.
 Require Import StackComposeRules.
 Require Import CastRules.
+Require Import Setoid.
 
 
 Lemma swap_compose :
@@ -720,3 +721,23 @@ Proof.
 		rewrite <- n_compose_grow_r.
 		easy.
 Qed.
+
+Lemma n_compose_compat :
+  forall m n,
+    forall zx0 zx1 : ZX m m, zx0 ∝ zx1 ->
+    n_compose n zx0 ∝ n_compose n zx1.
+Proof.
+  intros.
+  induction n.
+  - reflexivity.
+  - simpl.
+    rewrite IHn.
+    rewrite H.
+    reflexivity.
+Qed.
+
+Add Parametric Morphism (n d : nat) : (n_stack d)
+  with signature 
+      (@proportional n n) ==> 
+      proportional as ncompose_mor.
+Proof. apply n_stack_compat. Qed.
