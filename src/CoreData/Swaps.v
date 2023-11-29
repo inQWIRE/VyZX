@@ -17,20 +17,20 @@ Definition top_to_bottom (n : nat) : ZX n n :=
   | S k => top_to_bottom_helper k
   end.
 
-Fixpoint n_top_to_bottom_helper (n m k : nat) : ZX (n + m) (n + m) :=
-  match k with
-  | 0 => top_to_bottom (n + m)
-  | S j => Compose (top_to_bottom (n + m)) (n_top_to_bottom_helper n m j)
-  end.
+Fixpoint n_compose n {m} (zx : ZX m m) := 
+  match n with
+  | 0 => n_wire m
+  | S k => zx ⟷ n_compose k zx
+  end. 
 
 Definition n_top_to_bottom (n m : nat) : ZX (n + m) (n + m) :=
-  match n with
-  | 0 => n_wire (0 + m)
-  | S k => n_top_to_bottom_helper (S k) m k
-  end.
+  n_compose n (top_to_bottom (n + m)).
 
 Definition bottom_to_top (n : nat) : ZX n n :=
   (top_to_bottom n)⊤.
+
+Definition n_bottom_to_top (n m : nat) : ZX (m + n) (m + n) :=
+  n_compose n (bottom_to_top (m + n)).
 
 Definition a_swap (n : nat) : ZX n n :=
   match n with

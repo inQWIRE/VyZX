@@ -28,7 +28,7 @@ Definition zx_braiding {n m} :=
 Definition zx_inv_braiding {n m} :=
     let l := (m + n)%nat in
     let r := (n + m)%nat in
-        cast l r (eq_refl l) (Nat.add_comm n m) (n_top_to_bottom m n).
+        cast l r (eq_refl l) (Nat.add_comm n m) (n_bottom_to_top n m).
 
 Lemma n_wire_2 : — ↕ — ∝ n_wire 2.
 Proof.
@@ -36,18 +36,30 @@ Proof.
     simpl_casts. reflexivity.
 Qed.
 
+Lemma n_compose_0 : forall {m} (zx : ZX m m),
+    n_compose 0 zx ∝ n_wire m.
+Proof. easy. Qed.
+
 Lemma zx_braiding_inv_compose : forall {n m},
     zx_braiding ⟷ zx_inv_braiding ∝ n_wire (n + m).
 Proof.
-    unfold zx_braiding. unfold zx_inv_braiding.
-    unfold n_top_to_bottom. 
+    intros.
     induction n.
-    - induction m.
-      + simpl_casts. unfold n_box. 
-        cleanup_zx. simpl. reflexivity.
-      + rewrite cast_compose_l.
-        simpl_casts. cleanup_zx.
-        unfold n_top_to_bottom_helper.
+    - simpl.
+      unfold zx_braiding. unfold zx_inv_braiding.
+      unfold n_top_to_bottom. 
+      unfold n_bottom_to_top.
+      rewrite 2 n_compose_0.
+      simpl_casts.
+      rewrite (cast_compose_mid (0 + m)).
+      simpl_casts.
+      cleanup_zx.
+      easy.
+    - unfold zx_braiding. unfold zx_inv_braiding.
+      unfold n_top_to_bottom. 
+      unfold n_bottom_to_top.
+      rewrite n_compose_grow_r.
+      rewrite n_compose_grow_l.
 Admitted.
 
 Lemma zx_inv_braiding_compose : forall {n m},
