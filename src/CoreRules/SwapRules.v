@@ -693,7 +693,7 @@ Qed.
 Lemma n_compose_grow_r : forall n {m} (zx : ZX m m),
 	n_compose (S n) zx ∝ n_compose n zx ⟷ zx.
 Proof.
-  intros.
+	intros.
 	induction n.
 	- simpl.
 		cleanup_zx.
@@ -723,73 +723,81 @@ Proof.
 Qed.
 
 Lemma n_compose_0 : forall {m} (zx : ZX m m),
-    n_compose 0 zx ∝ n_wire m.
+		n_compose 0 zx ∝ n_wire m.
 Proof. easy. Qed.
 
 Lemma n_compose_top_compose_bottom : forall {n m}, 
-    n_compose n (top_to_bottom m) ⟷ n_compose n (bottom_to_top m) ∝ n_wire m.
+		n_compose n (top_to_bottom m) ⟷ n_compose n (bottom_to_top m) ∝ n_wire m.
 Proof. 
-    intros. induction n.
-    - rewrite cast_compose_mid.
-      simpl_casts. cleanup_zx. reflexivity.
-    - rewrite n_compose_grow_r.
-      rewrite n_compose_grow_l.
-      rewrite <- compose_assoc.
-      rewrite (compose_assoc _ _ (bottom_to_top m)).
-      rewrite top_to_bottom_to_top.
-      cleanup_zx.
-      rewrite IHn.
-      reflexivity.
-    Unshelve. all: easy.
+		intros. induction n.
+		- rewrite cast_compose_mid.
+			simpl_casts. cleanup_zx. reflexivity.
+		- rewrite n_compose_grow_r.
+			rewrite n_compose_grow_l.
+			rewrite <- compose_assoc.
+			rewrite (compose_assoc _ _ (bottom_to_top m)).
+			rewrite top_to_bottom_to_top.
+			cleanup_zx.
+			rewrite IHn.
+			reflexivity.
+		Unshelve. all: easy.
 Qed.
 
 Lemma n_compose_bottom_compose_top : forall {n m},
-    n_compose n (bottom_to_top m) ⟷ n_compose n (top_to_bottom m) ∝ n_wire m.
+		n_compose n (bottom_to_top m) ⟷ n_compose n (top_to_bottom m) ∝ n_wire m.
 Proof.
-    intros. induction n.
-    - rewrite cast_compose_mid.
-      simpl_casts. cleanup_zx. reflexivity.
-    - rewrite n_compose_grow_r.
-      rewrite n_compose_grow_l.
-      rewrite <- compose_assoc.
-      rewrite (compose_assoc _ _ (top_to_bottom m)).
-      rewrite bottom_to_top_to_bottom.
-      cleanup_zx.
-      rewrite IHn.
-      reflexivity.
-    Unshelve. all: easy.
+		intros. induction n.
+		- rewrite cast_compose_mid.
+			simpl_casts. cleanup_zx. reflexivity.
+		- rewrite n_compose_grow_r.
+			rewrite n_compose_grow_l.
+			rewrite <- compose_assoc.
+			rewrite (compose_assoc _ _ (top_to_bottom m)).
+			rewrite bottom_to_top_to_bottom.
+			cleanup_zx.
+			rewrite IHn.
+			reflexivity.
+		Unshelve. all: easy.
 Qed.
 
 Lemma n_compose_n_top_to_bottom : forall n,
-    n_compose n (top_to_bottom n) ∝ n_wire n.
+		n_compose n (top_to_bottom n) ∝ n_wire n.
 Proof.
-    intros.
-    induction n.
-    - easy.
-    - rewrite n_compose_grow_r.
+		intros.
+		induction n.
+		- easy.
+		- rewrite n_compose_grow_r.
 Admitted.
 
 Lemma n_compose_m_compose : forall {n m n'} {zx: ZX n' n'},
-    (n_compose n zx) ⟷ (n_compose m zx) ∝ n_compose (n + m) zx.
+		(n_compose n zx) ⟷ (n_compose m zx) ∝ n_compose (n + m) zx.
 Proof.
-Admitted.
+	induction n; intros.
+	- simpl.
+		cleanup_zx.
+		easy.
+	- simpl.
+		rewrite compose_assoc.
+		rewrite IHn.
+		easy.
+Qed.
 
 Lemma n_compose_compat :
-  forall m n,
-    forall zx0 zx1 : ZX m m, zx0 ∝ zx1 ->
-    n_compose n zx0 ∝ n_compose n zx1.
+	forall m n,
+		forall zx0 zx1 : ZX m m, zx0 ∝ zx1 ->
+		n_compose n zx0 ∝ n_compose n zx1.
 Proof.
-  intros.
-  induction n.
-  - reflexivity.
-  - simpl.
-    rewrite IHn.
-    rewrite H.
-    reflexivity.
+	intros.
+	induction n.
+	- reflexivity.
+	- simpl.
+		rewrite IHn.
+		rewrite H.
+		reflexivity.
 Qed.
 
 Add Parametric Morphism (n d : nat) : (n_compose d)
-  with signature 
-      (@proportional n n) ==> 
-      proportional as ncompose_mor.
+	with signature 
+			(@proportional n n) ==> 
+			proportional as ncompose_mor.
 Proof. apply n_compose_compat. Qed.
