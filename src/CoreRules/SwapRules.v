@@ -690,6 +690,26 @@ Proof.
 			easy.
 Qed.
 
+Lemma n_compose_compat :
+	forall m n,
+		forall zx0 zx1 : ZX m m, zx0 ∝ zx1 ->
+		n_compose n zx0 ∝ n_compose n zx1.
+Proof.
+	intros.
+	induction n.
+	- reflexivity.
+	- simpl.
+		rewrite IHn.
+		rewrite H.
+		reflexivity.
+Qed.
+
+Add Parametric Morphism (n d : nat) : (n_compose d)
+	with signature 
+			(@proportional n n) ==> 
+			proportional as ncompose_mor.
+Proof. apply n_compose_compat. Qed.
+
 Lemma n_compose_grow_r : forall n {m} (zx : ZX m m),
 	n_compose (S n) zx ∝ n_compose n zx ⟷ zx.
 Proof.
@@ -760,14 +780,33 @@ Proof.
 		Unshelve. all: easy.
 Qed.
 
+Lemma top_to_bottom_1 : forall n,
+	top_to_bottom (S n) ∝ n_compose n (bottom_to_top (S n)).
+Proof.
+	induction n.
+	- intros.
+		rewrite n_compose_0.
+		simpl. cleanup_zx. simpl_casts. easy.
+	- intros. 
+		rewrite top_to_bottom_grow_l.
+		rewrite bottom_to_top_grow_r.
+		rewrite IHn.
+		rewrite n_compose_grow_l.
+Admitted.
+	
 Lemma n_compose_n_top_to_bottom : forall n,
 		n_compose n (top_to_bottom n) ∝ n_wire n.
 Proof.
-		intros.
-		induction n.
-		- easy.
-		- rewrite n_compose_grow_r.
-Admitted.
+	intros.
+	induction n.
+	- easy.
+	- rewrite n_compose_grow_r.
+		rewrite <- (@n_compose_top_compose_bottom n).
+		apply compose_compat.
+		+ reflexivity.
+		+ rewrite top_to_bottom_1.
+			reflexivity.
+Qed.
 
 Lemma n_compose_m_compose : forall {n m n'} {zx: ZX n' n'},
 		(n_compose n zx) ⟷ (n_compose m zx) ∝ n_compose (n + m) zx.
@@ -781,23 +820,3 @@ Proof.
 		rewrite IHn.
 		easy.
 Qed.
-
-Lemma n_compose_compat :
-	forall m n,
-		forall zx0 zx1 : ZX m m, zx0 ∝ zx1 ->
-		n_compose n zx0 ∝ n_compose n zx1.
-Proof.
-	intros.
-	induction n.
-	- reflexivity.
-	- simpl.
-		rewrite IHn.
-		rewrite H.
-		reflexivity.
-Qed.
-
-Add Parametric Morphism (n d : nat) : (n_compose d)
-	with signature 
-			(@proportional n n) ==> 
-			proportional as ncompose_mor.
-Proof. apply n_compose_compat. Qed.
