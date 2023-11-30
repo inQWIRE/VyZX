@@ -736,8 +736,8 @@ Proof.
     reflexivity.
 Qed.
 
-Add Parametric Morphism (n d : nat) : (n_stack d)
+Add Parametric Morphism (n d : nat) : (n_compose d)
   with signature 
       (@proportional n n) ==> 
       proportional as ncompose_mor.
-Proof. apply n_stack_compat. Qed.
+Proof. apply n_compose_compat. Qed.

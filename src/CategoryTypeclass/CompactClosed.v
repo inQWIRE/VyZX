@@ -1,4 +1,4 @@
-Require Import CoreData.
+(* Require Import CoreData.
 Require Import CoreRules.
 Require Import Category.
 Require Import Monoidal.
@@ -45,4 +45,4 @@ Admitted.
     counit n := n_cup n;
 }.
 
-Local Close Scope Cat.
+Local Close Scope Cat. *)
