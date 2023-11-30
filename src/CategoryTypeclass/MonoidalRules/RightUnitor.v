@@ -35,7 +35,5 @@ Proof.
     rewrite cast_compose_l; simpl_casts.
     rewrite nwire_removal_l.
     reflexivity.
-    Unshelve.
-    easy.
-    easy.
+    Unshelve. all: easy.
 Qed.

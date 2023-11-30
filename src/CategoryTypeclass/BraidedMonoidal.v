@@ -30,44 +30,6 @@ Definition zx_inv_braiding {n m} :=
     let r := (n + m)%nat in
         cast l r (eq_refl l) (Nat.add_comm n m) (n_bottom_to_top n m).
 
-Lemma n_compose_0 : forall {m} (zx : ZX m m),
-    n_compose 0 zx ∝ n_wire m.
-Proof. easy. Qed.
-
-Lemma compose_n_compose_top_bottom : forall {n m}, 
-    n_compose n (top_to_bottom m) ⟷ n_compose n (bottom_to_top m) ∝ n_wire m.
-Proof. 
-    intros. induction n.
-    - rewrite cast_compose_mid.
-      simpl_casts. cleanup_zx. reflexivity.
-    - rewrite n_compose_grow_r.
-      rewrite n_compose_grow_l.
-      rewrite <- compose_assoc.
-      rewrite (compose_assoc _ _ (bottom_to_top m)).
-      rewrite top_to_bottom_to_top.
-      cleanup_zx.
-      rewrite IHn.
-      reflexivity.
-    Unshelve. all: easy.
-Qed.
-
-Lemma compose_n_compose_bottom_top : forall {n m},
-    n_compose n (bottom_to_top m) ⟷ n_compose n (top_to_bottom m) ∝ n_wire m.
-Proof.
-    intros. induction n.
-    - rewrite cast_compose_mid.
-      simpl_casts. cleanup_zx. reflexivity.
-    - rewrite n_compose_grow_r.
-      rewrite n_compose_grow_l.
-      rewrite <- compose_assoc.
-      rewrite (compose_assoc _ _ (top_to_bottom m)).
-      rewrite bottom_to_top_to_bottom.
-      cleanup_zx.
-      rewrite IHn.
-      reflexivity.
-    Unshelve. all: easy.
-Qed.
-
 Definition n_compose_bot n m := n_compose n (bottom_to_top m).
 Definition n_compose_top n m := n_compose n (top_to_bottom m).
 
@@ -82,7 +44,7 @@ Proof.
     simpl_casts.
     fold (n_compose_bot n (m + n)).
     rewrite cast_fn_eq_dim.
-    rewrite compose_n_compose_top_bottom.
+    rewrite n_compose_top_compose_bottom.
     reflexivity.
     Unshelve. 
     all: rewrite (Nat.add_comm n m); easy.
@@ -99,7 +61,7 @@ Proof.
     simpl_casts.
     fold (n_compose_top n (n + m)).
     rewrite cast_fn_eq_dim.
-    rewrite compose_n_compose_bottom_top.
+    rewrite n_compose_bottom_compose_top.
     reflexivity.
     Unshelve. 
     all: rewrite (Nat.add_comm n m); easy.
