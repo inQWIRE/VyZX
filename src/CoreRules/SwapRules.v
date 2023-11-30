@@ -5,7 +5,6 @@ Require Import StackComposeRules.
 Require Import CastRules.
 Require Import Setoid.
 
-
 Lemma swap_compose :
 	⨉ ⟷ ⨉ ∝ n_wire 2.
 Proof. solve_prop 1. Qed.
@@ -30,8 +29,6 @@ Proof.
 			replace (2 ^ n + (2 ^ n + 0))%nat with (2 ^ n * 2)%nat by lia.
 			easy.
 Qed.
-
-
 
 (* Proving correctness of conversion *)
 
@@ -171,7 +168,6 @@ Proof.
 	easy. 
 Qed.
 
-
 Lemma bottom_to_top_grow_l : forall n prf prf', 
 	bottom_to_top (S (S n)) ∝ cast _ _ prf' prf'((cast _ _ prf prf (n_wire n ↕ ⨉)) ⟷ (bottom_to_top (S n) ↕ —)).
 Proof.
@@ -280,7 +276,6 @@ Proof.
 	cleanup_zx.
 	easy.
 Qed.
-
 
 Lemma a_swap_3_order_indep :
 	I 2 ⊗ swap × (swap ⊗ I 2) × (I 2 ⊗ swap) = (swap ⊗ I 2) × (I 2 ⊗ swap) × (swap ⊗ I 2).
@@ -514,7 +509,6 @@ Qed.
 Lemma swap_pullthrough_top_right_Z_1_1 : forall α, (Z 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (Z 1 1 α)).
 Proof. intros. solve_prop 1. Qed.
 
-
 Lemma swap_pullthrough_top_right_Z : forall n α prfn prfm, ((Z (S n) 1 α) ↕ —) ⟷ ⨉ ∝ cast _ _ prfn prfm (n_swap _ ⟷ (— ↕ (Z (S n) 1 α))).
 Proof.
 	intro n.
@@ -545,7 +539,6 @@ Proof.
 		erewrite (cast_compose_mid_contract _ (S (S n)) _ _ _ _ _ _ _ (— ↕ bottom_to_top (S n)) (⨉ ↕ n_wire n)).
 		simpl_casts.
 Abort.
-
 
 Lemma swap_pullthrough_top_right_X_1_1 : forall α, (X 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (X 1 1 α)).
 Proof. intros. colorswap_of swap_pullthrough_top_right_Z_1_1. Qed.
@@ -579,7 +572,6 @@ Proof.
 	1,2: rewrite WF_ZX by auto; lca.
 	all: rewrite WF_ZX by (left; simpl; lia); lca.
 Qed.
-
 
 Opaque cast.
 
