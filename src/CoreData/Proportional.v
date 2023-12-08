@@ -402,4 +402,10 @@ Proof.
   simpl; unfold proportional, proportional_general in H.
   destruct H as [c [H cneq0]].
   rewrite H.
+  exists (X 0 0 (-2)).
+
+  (* rewrite <- zx_stack_spec.
+  Search (⟦ _ ⟧).
+  Search (α).
+  Search (ZX 0 0). *)
 Abort.

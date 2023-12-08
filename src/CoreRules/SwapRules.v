@@ -783,7 +783,7 @@ Proof.
 		rewrite top_to_bottom_grow_l.
 		rewrite bottom_to_top_grow_r.
 		rewrite IHn.
-		rewrite n_compose_grow_l.
+		rewrite n_compose_grow_r.
 Admitted.
 	
 Lemma n_compose_n_top_to_bottom : forall n,

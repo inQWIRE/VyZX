@@ -20,7 +20,7 @@ Class DaggerCategory (C : Type) `{Category C} : Type := {
 
 Notation "f †" := (adjoint f) : Cat_scope. (* \dag *)
 
-Lemma nwire_adjoint : forall n, ZXCore.adjoint (n_wire n) ∝ n_wire n.
+Lemma nwire_adjoint : forall n, (n_wire n) †%ZX ∝ n_wire n.
 Proof.
     intros.
     induction n; try easy.
@@ -34,7 +34,7 @@ Qed.
 
 Lemma compose_adjoint : forall {n m o}
     (zx0 : ZX n m) (zx1 : ZX m o), 
-    ZXCore.adjoint (zx0 ⟷ zx1) ∝ ZXCore.adjoint zx1 ⟷ ZXCore.adjoint zx0.
+    (zx0 ⟷ zx1) †%ZX ∝ zx1 †%ZX ⟷ zx0 †%ZX.
 Proof.
     intros; easy.
 Qed.
