@@ -10,23 +10,12 @@ Class SymmetricMonoidalCategory (C : Type) `{BraidedMonoidalCategory C} : Type :
     symmetry {A B : C} : (@braiding C H H0 H1 A B) ≃ inv_braiding;
 }.
 
-Lemma cast_n_compose : forall {n n' m} (zx : ZX n n) prf,
-    n_compose m (cast n' n' prf prf zx) ∝ cast n' n' prf prf (n_compose m zx).
-Proof. 
-    intros.
-    induction m.
-    - rewrite n_compose_0.
-      simpl_casts.
-      reflexivity.
-    - simpl.
-      rewrite IHm.
-      rewrite cast_compose_mid_contract.
-      reflexivity.
-Qed.
-
-Lemma n_compose_top_to_bottom_transpose : forall {n m},
-    n_compose n (top_to_bottom (n + m)) ∝ n_compose m (top_to_bottom (n + m)) ⊤.
+Lemma n_top_to_bottom_is_bottom_to_top : forall {n m},
+    n_top_to_bottom n m ∝ n_bottom_to_top m n.
 Proof.
+    unfold n_bottom_to_top. 
+    unfold bottom_to_top.
+    unfold n_top_to_bottom.
     induction n.
     - intros.
       rewrite n_compose_0.
@@ -60,11 +49,8 @@ Lemma braiding_symmetry : forall n m,
 Proof.
     intros.
     unfold zx_braiding. unfold zx_inv_braiding.
-    unfold n_bottom_to_top.
-    unfold bottom_to_top. 
-    unfold n_top_to_bottom.
     apply cast_compat.
-    rewrite n_compose_top_to_bottom_transpose.
+    rewrite n_top_to_bottom_is_bottom_to_top.
     reflexivity.
 Qed.
 

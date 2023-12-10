@@ -33,7 +33,7 @@ Definition zx_inv_braiding {n m} :=
 Definition n_compose_bot n m := n_compose n (bottom_to_top m).
 Definition n_compose_top n m := n_compose n (top_to_bottom m).
 
-Lemma zx_braiding_inv_compose : forall {n m : nat},
+Lemma zx_braiding_inv_compose : forall {n m},
     zx_braiding ⟷ zx_inv_braiding ∝ n_wire (n + m).
 Proof.
     intros.
@@ -67,7 +67,11 @@ Proof.
     all: rewrite (Nat.add_comm n m); easy.
 Qed.
 
-Lemma hexagon_lemma_1_lemma : forall {n m o o'} prf1 prf2 prf3 prf4,
+Lemma S_lemma : forall {n m},
+    (S n + m)%nat = (n + S m)%nat.
+Proof. lia. Qed.
+
+Lemma hexagon_lemma_1_helper : forall {n m o o'} prf1 prf2 prf3 prf4,
     n_top_to_bottom n m ↕ n_wire o
     ⟷ cast (n + m + o) o' prf1 prf2 (n_wire m ↕ n_top_to_bottom n o)
     ∝ cast (n + m + o) o' prf3 prf4 (n_top_to_bottom n (m + o)).
@@ -81,7 +85,27 @@ Proof.
       assert (n_wire (m + (0 + o)) ∝ n_wire (0 + (m + o))) by easy.
       rewrite H. simpl_casts. reflexivity.
     - intros.
-      rewrite 3 n_compose_grow_l.
+      rewrite 1 n_compose_grow_l.
+      assert (top_to_bottom (S n + m) 
+        ∝ cast (S n + m) (S n + m) S_lemma S_lemma (top_to_bottom (n + S m))) 
+        by (rewrite cast_fn_eq_dim; reflexivity).
+      rewrite H.
+      rewrite cast_n_compose.
+      rewrite <- cast_compose_mid_contract. simpl_casts.
+
+      rewrite 1 n_compose_grow_r.
+      rewrite stack_nwire_distribute_l.
+      assert (top_to_bottom (S n + o) 
+        ∝ cast (S n + o) (S n + o) S_lemma S_lemma (top_to_bottom (n + S o)))
+        by (rewrite cast_fn_eq_dim; reflexivity).
+      rewrite H0.
+      rewrite cast_n_compose.
+      rewrite cast_compose_mid_contract. simpl_casts.
+      rewrite <- compose_assoc.
+      rewrite cast_compose_l. simpl_casts.
+      rewrite cast_compose_l. simpl_casts.
+      rewrite stack_nwire_distribute_r.
+      rewrite (compose_assoc (top_to_bottom (n + S m) ↕ n_wire o)).
 Admitted.
 
 Lemma hexagon_lemma_1 : forall {n m o}, 
@@ -100,7 +124,7 @@ Proof.
     rewrite cast_compose_l. simpl_casts.
     rewrite (cast_compose_r _ _ _ (n_wire (m + o + n))).
     cleanup_zx. simpl_casts.
-    rewrite hexagon_lemma_1_lemma.
+    rewrite hexagon_lemma_1_helper.
     reflexivity.
     Unshelve. all: lia.
 Qed.
