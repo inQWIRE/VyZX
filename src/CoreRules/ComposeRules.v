@@ -41,7 +41,6 @@ Proof.
   easy.
 Qed.
 
-
 Lemma compose_transpose : forall {n m o} (zx1 : ZX n m) (zx2 : ZX m o), (zx1 ⟷ zx2) ⊤ ∝ (zx2⊤ ⟷ zx1⊤).
 Proof.
 	intros.
@@ -51,7 +50,6 @@ Proof.
 Qed.
 
 (* Empty diagram removal *)
-
 
 Lemma compose_empty_r : forall {nIn} (zx : ZX nIn 0),
   zx ⟷ ⦰ ∝ zx.

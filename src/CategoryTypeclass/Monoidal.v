@@ -2,6 +2,7 @@ Require Import CoreData.
 Require Import CoreRules.
 Require Import Category.
 Require Import MonoidalRules.
+Require Import Setoid.
 
 Local Open Scope Cat.
 
@@ -13,6 +14,10 @@ Class MonoidalCategory (C : Type) `{Category C} : Type := {
     tensor_morph {A B M N : C} : 
         (A ~> M) -> (B ~> N) -> (A × B) ~> (M × N)
         where "f ⊗ g" := (tensor_morph f g);
+    tensor_morph_compat {A B M N : C} : 
+        forall (f g : A ~> B), f ≃ g ->
+        forall (h j : M ~> N), h ≃ j ->
+        f ⊗ h ≃ g ⊗ j;
     
     (* These are all isomorphisms *)
     associator {A B M : C} : (A × B) × M ~> A × (B × M);
@@ -92,11 +97,21 @@ Proof.
     cleanup_zx; simpl_casts; reflexivity.
 Qed.
 
+Add Parametric Morphism {C : Type} 
+  {Cat : Category C} (MonCat : MonoidalCategory C)
+  (n0 m0 n1 m1 : C) : tensor_morph
+  with signature 
+    (@Category.equiv C Cat n0 m0) ==> 
+    (@Category.equiv C Cat n1 m1) ==> 
+    Category.equiv as stack_mor.
+Proof. apply tensor_morph_compat; assumption. Qed.
+
 #[export] Instance ZXMonoidalCategory : MonoidalCategory nat := {
     tensor := Nat.add;
     I := 0;
 
     tensor_morph _ _ _ _ := Stack;
+    tensor_morph_compat := stack_compat;
 
     associator := @zx_associator;
     inv_associator := @zx_inv_associator;

@@ -1,5 +1,6 @@
 Require Import CoreData.
 Require Import CoreRules.
+Require Import Setoid.
 
 Declare Scope Cat_scope.
 Delimit Scope Cat_scope with Cat.
@@ -50,6 +51,10 @@ Class Category (C : Type) : Type := {
     compose {A B M : C} : 
         (A ~> B) -> (B ~> M) -> (A ~> M) 
         where "f ∘ g" := (compose f g);
+    compose_compat {A B M : C} : 
+        forall (f g : A ~> B), f ≃ g ->
+        forall (h j : B ~> M), h ≃ j ->
+        f ∘ h ≃ g ∘ j;
 
     left_unit {A B : C} {f : A ~> B} : (identity A) ∘ f ≃ f;
     right_unit {A B : C} {f : A ~> B} : f ∘ (identity B) ≃ f;
@@ -57,6 +62,18 @@ Class Category (C : Type) : Type := {
         {f : A ~> B} {g : B ~> M} {h : M ~> N} : 
         (f ∘ g) ∘ h ≃ f ∘ (g ∘ h);
 }.
+
+Add Parametric Relation {C : Type} {Cat : Category C} 
+    (n m : C) : (morphism n m) (equiv)
+  reflexivity proved by (@equiv_refl C Cat n m)
+  symmetry proved by (@equiv_symm C Cat n m)
+  transitivity proved by (@equiv_trans C Cat n m)
+  as prop_equiv_rel.
+
+Add Parametric Morphism {C : Type} {Cat : Category C} (n o m : C) : compose
+  with signature (@equiv C Cat n m) ==> (@equiv C Cat m o) ==> 
+                 equiv as compose_mor.
+Proof. apply compose_compat; assumption. Qed.
 
 Notation "A ~> B" := (morphism A B) : Cat_scope.
 Notation "f ≃ g" := (equiv f g) : Cat_scope. (* \simeq *)
@@ -79,6 +96,7 @@ Notation "f ∘ g" := (compose f g) : Cat_scope. (* \circ *)
     identity n := n_wire n;
 
     compose := @Compose;
+    compose_compat := @Proportional.compose_compat;
 
     left_unit _ _ := nwire_removal_l;
     right_unit _ _ := nwire_removal_r;
