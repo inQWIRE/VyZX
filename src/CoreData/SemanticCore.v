@@ -265,14 +265,14 @@ Proof.
         unfold adjoint.
         simpl.
         destruct x.
-        -- rewrite mult_0_r in H1.
+        -- rewrite Nat.mul_0_r in H1.
            discriminate H1.
         -- destruct (i / (1 ^ n + 0))%nat. 
            ++ simpl.
               destruct x; lca.
            ++ simpl.
               destruct x; lca.
-      * rewrite mult_comm.
+      * rewrite Nat.mul_comm.
         rewrite Nat.divide_div_mul_exact.
         -- rewrite Nat.div_same; [lia | ].
            apply Nat.pow_nonzero; easy.
@@ -335,12 +335,12 @@ Proof.
     + destruct (Nat.mod_divides (S i) (2^S n)); [apply Nat.pow_nonzero; auto |].
       destruct H; [assumption |].
       rewrite H.
-      rewrite mult_comm.
+      rewrite Nat.mul_comm.
       rewrite Nat.divide_div_mul_exact; 
         [ | apply Nat.pow_nonzero; auto | apply Nat.divide_refl ].
       rewrite Nat.div_same; [ | apply Nat.pow_nonzero; auto].
       rewrite Nat.mul_1_r.
-      destruct x; [rewrite mult_0_r in H; discriminate H |].
+      destruct x; [rewrite Nat.mul_0_r in H; discriminate H |].
       unfold ket; simpl.
       destruct x, j; lca.
     + rewrite IHn.
@@ -404,9 +404,9 @@ Proof.
       * replace ((2 ^ n + (2 ^ n + 0 - 1)) mod 2 ^ n)%nat with (2^n-1)%nat.
         -- rewrite IHn; lca.
         -- rewrite Nat.add_mod; [| apply Nat.pow_nonzero; auto].
-           ++ rewrite plus_0_r.
+           ++ rewrite Nat.add_0_r.
               rewrite Nat.mod_same; [| apply Nat.pow_nonzero; auto].
-              rewrite plus_0_l.
+              rewrite Nat.add_0_l.
               rewrite Nat.mod_mod; [| apply Nat.pow_nonzero; auto].
               destruct n.
               ** reflexivity.
@@ -416,7 +416,7 @@ Proof.
                  --- simpl.
                      rewrite Nat.sub_0_r.
                      constructor.
-      * rewrite plus_0_r.
+      * rewrite Nat.add_0_r.
         replace ((2 ^ n + (2 ^ n - 1)) / 2 ^ n)%nat 
           with (((1 * 2 ^ n) + (2 ^ n - 1)) / 2 ^ n)%nat.
         -- rewrite Nat.div_add_l; [| apply Nat.pow_nonzero; auto].
@@ -425,9 +425,9 @@ Proof.
            ++ destruct (Nat.pow_nonzero 2 n); [auto | apply E].
            ++ simpl; rewrite Nat.sub_0_r.
               auto.
-        -- rewrite mult_1_l.
+        -- rewrite Nat.mul_1_l.
            reflexivity.
-    + rewrite plus_0_r.
+    + rewrite Nat.add_0_r.
       rewrite <- (Nat.pow_1_l n).
       replace (S (1 ^ n)) with 2%nat.
       * apply Nat.pow_le_mono_l.
@@ -450,9 +450,9 @@ Proof.
       * replace ((2 ^ n + (2 ^ n + 0 - 1)) mod 2 ^ n)%nat with (2^n-1)%nat.
         -- rewrite IHn; lca.
         -- rewrite Nat.add_mod; [| apply Nat.pow_nonzero; auto].
-           ++ rewrite plus_0_r.
+           ++ rewrite Nat.add_0_r.
               rewrite Nat.mod_same; [| apply Nat.pow_nonzero; auto].
-              rewrite plus_0_l.
+              rewrite Nat.add_0_l.
               rewrite Nat.mod_mod; [| apply Nat.pow_nonzero; auto].
               destruct n.
               ** reflexivity.
@@ -462,7 +462,7 @@ Proof.
                  --- simpl.
                      rewrite Nat.sub_0_r.
                      constructor.
-      * rewrite plus_0_r.
+      * rewrite Nat.add_0_r.
         replace ((2 ^ n + (2 ^ n - 1)) / 2 ^ n)%nat 
            with (((1 * 2 ^ n) + (2 ^ n - 1)) / 2 ^ n)%nat.
         -- rewrite Nat.div_add_l; [| apply Nat.pow_nonzero; auto].
@@ -471,9 +471,9 @@ Proof.
            ++ destruct (Nat.pow_nonzero 2 n); [auto | apply E].
            ++ simpl; rewrite Nat.sub_0_r.
               auto.
-        -- rewrite mult_1_l.
+        -- rewrite Nat.mul_1_l.
            reflexivity.
-    + rewrite plus_0_r.
+    + rewrite Nat.add_0_r.
       rewrite <- (Nat.pow_1_l n).
       replace (S (1 ^ n)) with 2%nat.
       * apply Nat.pow_le_mono_l.
@@ -550,15 +550,15 @@ Proof.
                          replace (S (S n1 + n1) - 1)%nat 
                             with (S (n1 + n1))%nat by reflexivity.
                          rewrite (double_mult n1).
-                         rewrite <- (plus_0_l (2*n1)).
+                         rewrite <- (Nat.add_0_l (2*n1)).
                          replace (S (0 + 2 * n1))%nat 
                             with (1 + 2 * n1)%nat by reflexivity.
                          rewrite Nat.add_mod; [| easy].
-                         rewrite mult_comm.
+                         rewrite Nat.mul_comm.
                          rewrite Nat.mod_mul; [| easy].
                          reflexivity.
                  --- simpl.
-                     rewrite plus_0_r.
+                     rewrite Nat.add_0_r.
                      lia.
            ++ replace (2 ^ S n)%nat with (2 * (2 ^ n))%nat.
               ** destruct (2^n)%nat.
@@ -585,7 +585,7 @@ Proof.
         -- rewrite Nat.eqb_refl.
            destruct x; lca.
         -- simpl.
-           rewrite plus_0_r.
+           rewrite Nat.add_0_r.
            destruct (2 ^ n)%nat eqn:En.
            ++ contradict En.
               ** apply Nat.pow_nonzero; easy.
@@ -594,12 +594,12 @@ Proof.
               rewrite Nat.sub_0_r.
               rewrite double_mult.
               replace (S (2 * n0))%nat with (1 + (2 * n0))%nat by reflexivity.
-              rewrite mult_comm.
+              rewrite Nat.mul_comm.
               rewrite Nat.add_mod; [| easy].
               rewrite Nat.mod_mul; [| easy].
               reflexivity.
         -- simpl.
-           rewrite plus_0_r.
+           rewrite Nat.add_0_r.
            destruct (2 ^ n)%nat.
            ++ reflexivity.
            ++ simpl.
@@ -608,10 +608,10 @@ Proof.
               rewrite <- plus_n_Sm.
               rewrite double_mult.
               replace (S (2 * n0))%nat with ((1 + (2 * n0)))%nat by reflexivity.
-              rewrite plus_comm.
-              rewrite mult_comm.
+              rewrite Nat.add_comm.
+              rewrite Nat.mul_comm.
               rewrite Nat.div_add_l; [| easy].
-              rewrite plus_comm.
+              rewrite Nat.add_comm.
               reflexivity.
     + unfold big_bra_sem.
       rewrite Ex.
@@ -630,10 +630,10 @@ Proof.
               rewrite Nat.eqb_refl in Ex.
               discriminate.
            ++ simpl.
-              rewrite 2 plus_0_r.
-              rewrite <- plus_assoc.
+              rewrite 2 Nat.add_0_r.
+              rewrite <- Nat.add_assoc.
               rewrite <- plus_n_Sm.
-              rewrite plus_0_r.
+              rewrite Nat.add_0_r.
               destruct (2 ^ n)%nat eqn:En.
               ** contradict En.
                  apply Nat.pow_nonzero; easy.
