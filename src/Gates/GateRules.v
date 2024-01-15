@@ -44,6 +44,47 @@ Proof.
   lma.
 Qed.
 
+Lemma Z_unitary : unitary (_Z_).
+Proof.
+  intros.
+  unfold unitary.
+  rewrite Z_is_Z.
+  pose proof σz_unitary.
+  destruct H.
+  easy.
+Qed.
+
+
+Lemma X_unitary : unitary (_X_).
+Proof.
+  intros.
+  unfold unitary.
+  rewrite X_is_X.
+  pose proof σx_unitary.
+  destruct H.
+  easy.
+Qed.
+
+Lemma H_unitary : unitary (□).
+Proof.
+  intros.
+  unfold unitary.
+  simpl.
+  pose proof H_unitary.
+  destruct H.
+  easy.
+Qed.
+
+Lemma Rz_unitary : forall α, unitary (_Rz_ α).
+Proof.
+  intros.
+  unfold unitary.
+  rewrite _Rz_is_Rz.
+  pose proof (phase_unitary α).
+  destruct H.
+  easy.
+Qed.
+
 Lemma cnot_l_is_cnot : ⟦ _CNOT_ ⟧ = (/ (√ 2)%R) .* cnot.
 Proof.
   simpl.
@@ -53,7 +94,7 @@ Proof.
   all: lca.
 Qed.
 
-Lemma cnot_involutive : _CNOT_R ⟷ _CNOT_ ∝ n_wire 2. 
+Lemma cnot_r_l_involutive : _CNOT_R ⟷ _CNOT_ ∝ n_wire 2. 
 Proof.
   rewrite <- compose_assoc.
   rewrite (compose_assoc (— ↕ (X 1 2 0))).
@@ -173,6 +214,13 @@ Proof.
   easy.
 Unshelve.
 all: lia.
+Qed.
+
+Lemma cnot_involutive : _CNOT_ ⟷ _CNOT_ ∝ n_wire 2.
+Proof.
+  rewrite cnot_is_cnot_r at 1.
+  rewrite cnot_r_l_involutive.
+  easy.
 Qed.
 
 Lemma cnot_inv_is_swapped_cnot : _CNOT_inv_ ∝ ⨉ ⟷ _CNOT_ ⟷ ⨉.

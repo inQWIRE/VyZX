@@ -5,7 +5,7 @@ Require Import CompletenessComp.
 
 (* @nocheck name *)
 (* Conventional name *)
-Lemma completeness_SUP : forall α, ((Z 0 1 α) ↕ (Z 0 1 (α + PI))) ⟷ (X 2 1 0) ∝ Z 0 2 (2 *α + PI) ⟷ X 2 1 0.
+Lemma completeness_SUP : forall α, ((Z 0 1 α) ↕ (Z 0 1 (α + PI))) ⟷ (X 2 1 0) ∝ Z 0 2 (2 * α + PI) ⟷ X 2 1 0.
 Proof.
 	intros.
 	prop_exists_nonzero 1;

@@ -483,3 +483,21 @@ Proof.
 	rewrite sin_neg.
 	lca.
 Qed.
+
+Lemma id_simplify : forall a b, a = b -> I a = I b.
+Proof. auto. Qed.
+
+#[export] Hint Rewrite
+	Nat.pow_add_r
+	pow_two_succ_l
+	: id_simpl_db.
+
+Ltac resolve_id := apply id_simplify; simpl; autorewrite with id_simpl_db; lia.
+
+Lemma WF_unitary_rev : forall {n} (A : Square n), WF_Unitary A -> A × A† = I _.
+Proof.
+	intros.
+	unfold WF_Unitary in H.
+	destruct H as [H_WF H].
+	apply Minv_flip; auto with wf_db.
+Qed.

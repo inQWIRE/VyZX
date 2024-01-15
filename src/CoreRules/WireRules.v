@@ -64,8 +64,7 @@ Proof.
   simpl. 
   rewrite 3 n_wire_semantics, id_kron.
   Msimpl.
-  rewrite Nat.pow_add_r.
-  easy.
+  resolve_id.
 Qed.
 
 Lemma X_0_is_wire : X 1 1 0 ∝ —.
@@ -138,6 +137,31 @@ Proof.
     rewrite IHn.
     easy.
 Qed. 
+
+Lemma wire_conjugate : — ⊼ ∝ —.
+Proof. easy. Qed.
+
+Lemma n_wire_conjugate : forall n, (n_wire n)⊼ ∝ n_wire n.
+Proof.
+  intros.
+  induction n.
+  - easy.
+  - simpl.
+    rewrite IHn.
+    easy.
+Qed.
+
+Lemma wire_adjoint : — † ∝ —.
+Proof. easy. Qed.
+
+Lemma n_wire_adjoint : forall n, (n_wire n)† ∝ n_wire n.
+Proof.
+  intros.
+  unfold ZXCore.adjoint.
+  rewrite n_wire_conjugate.
+  rewrite n_wire_transpose.
+  easy.
+Qed.
 
 Lemma n_wire_colorswap : forall n, ⊙ (n_wire n) = n_wire n.
 Proof.

@@ -94,6 +94,18 @@ Proof.
 	lma.
 Qed.
 
+Lemma stack_conj : forall {n m o} (zx1 : ZX n m) (zx2 : ZX m o), (zx1 ↕ zx2) ⊼ ∝ (zx1⊼ ↕ zx2 ⊼).
+Proof. intros. easy. Qed.
+
+Lemma stack_adjoint : forall {n m o} (zx1 : ZX n m) (zx2 : ZX m o), (zx1 ↕ zx2) † ∝ (zx1† ↕ zx2†).
+Proof.
+	intros.
+  unfold ZXCore.adjoint.
+  rewrite stack_conj.
+  rewrite stack_transpose.
+  easy.
+Qed.
+
 Lemma n_stack1_transpose : forall n (zx : ZX 1 1), (n ↑ zx)⊤ ∝ (n ↑ zx⊤).
 Proof.
 	intros.
@@ -248,3 +260,18 @@ Qed.
 
 Lemma nstack1_0 : forall zx, 0 ↑ zx ∝ ⦰.
 Proof. easy. Qed.
+
+Lemma stack_adj : forall {n0 m0 n1 m1} (zx0 : ZX n0 m0) (zx1 : ZX n1 m1), (zx0 ↕ zx1) † ∝ (zx0 † ↕ zx1 †).
+Proof.
+	Local Opaque adjoint.
+	intros.
+	prop_exists_nonzero 1.
+	rewrite semantics_adjoint_comm.
+	simpl.	
+	rewrite 2 semantics_adjoint_comm.
+	Msimpl.
+	easy.
+	Local Transparent adjoint.
+Qed.
+
+

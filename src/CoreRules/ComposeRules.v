@@ -50,6 +50,18 @@ Proof.
 	lma.
 Qed.
 
+Lemma compose_conj : forall {n m o} (zx1 : ZX n m) (zx2 : ZX m o), (zx1 ⟷ zx2) ⊼ ∝ (zx1⊼ ⟷ zx2 ⊼).
+Proof. intros. easy. Qed.
+
+Lemma compose_adjoint : forall {n m o} (zx1 : ZX n m) (zx2 : ZX m o), (zx1 ⟷ zx2) † ∝ (zx2† ⟷ zx1†).
+Proof.
+	intros.
+  unfold ZXCore.adjoint.
+  rewrite compose_conj.
+  rewrite compose_transpose.
+  easy.
+Qed.
+
 (* Empty diagram removal *)
 
 
@@ -110,4 +122,17 @@ Proof.
   rewrite n_wire_semantics.
   Msimpl.
   reflexivity.
+Qed.
+
+Lemma compose_adj : forall {n} (zx0 : ZX n n) (zx1 : ZX n n), (zx0 ⟷ zx1) † ∝ (zx1 † ⟷ zx0 †).
+Proof.
+	Local Opaque adjoint.
+	intros.
+	prop_exists_nonzero 1.
+	rewrite semantics_adjoint_comm.
+	simpl.	
+	rewrite 2 semantics_adjoint_comm.
+	Msimpl.
+	easy.
+  Local Transparent adjoint.
 Qed.

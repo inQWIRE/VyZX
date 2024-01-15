@@ -184,7 +184,7 @@ Proof.
   simpl.
   rewrite IHn.
   rewrite id_kron.
-  auto.
+  resolve_id.
 Qed.
 
 Lemma n_box_semantics {n} : ⟦ n_box n ⟧ = n ⨂ hadamard.
