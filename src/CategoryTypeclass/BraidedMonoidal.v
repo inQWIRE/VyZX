@@ -76,6 +76,7 @@ Lemma hexagon_lemma_1_helper : forall {n m o o'} prf1 prf2 prf3 prf4,
     ⟷ cast (n + m + o) o' prf1 prf2 (n_wire m ↕ n_top_to_bottom n o)
     ∝ cast (n + m + o) o' prf3 prf4 (n_top_to_bottom n (m + o)).
 Proof.
+    intros.
     unfold n_top_to_bottom.
     induction n.
     - intros.
@@ -92,7 +93,6 @@ Proof.
       rewrite H.
       rewrite cast_n_compose.
       rewrite <- cast_compose_mid_contract. simpl_casts.
-
       rewrite 1 n_compose_grow_r.
       rewrite stack_nwire_distribute_l.
       assert (top_to_bottom (S n + o) 
@@ -126,8 +126,14 @@ Proof.
     cleanup_zx. simpl_casts.
     rewrite hexagon_lemma_1_helper.
     reflexivity.
-    Unshelve. all: lia.
 Qed.
+
+Lemma hexagon_lemma_2_helper : forall {n m o o'} prf1 prf2 prf3 prf4,
+    n_bottom_to_top m n ↕ n_wire o
+    ⟷ cast (n + m + o) o' prf1 prf2 (n_wire m ↕ n_bottom_to_top o n)
+    ∝ cast (n + m + o) o' prf3 prf4 (n_bottom_to_top (m + o) n).
+Proof.
+Admitted.
 
 Lemma hexagon_lemma_2 : forall {n m o},
     (zx_inv_braiding ↕ n_wire o) ⟷ zx_associator ⟷ (n_wire m ↕ zx_inv_braiding)
@@ -145,7 +151,9 @@ Proof.
     rewrite cast_compose_l. simpl_casts.
     rewrite (cast_compose_r _ _ _ (n_wire (m + o + n))).
     cleanup_zx. simpl_casts.
-Admitted.
+    rewrite hexagon_lemma_2_helper.
+    reflexivity.
+Qed.
 
 #[export] Instance ZXBraidedMonoidalCategory : BraidedMonoidalCategory nat := {
     braiding := @zx_braiding;

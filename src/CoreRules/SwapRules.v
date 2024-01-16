@@ -4,6 +4,7 @@ Require Import CoreAutomation.
 Require Import StackComposeRules.
 Require Import CastRules.
 Require Import Setoid.
+Require Import Proportional.
 
 Lemma swap_compose :
 	⨉ ⟷ ⨉ ∝ n_wire 2.

@@ -17,16 +17,46 @@ Class CompactClosedCategory (C : Type) `{SymmetricMonoidalCategory C} : Type := 
     unit {A : C} : I ~> A ★ × A;
     counit {A : C} : A × A ★ ~> I;
 
-    (* triangle_1 {A : C} : 
+    triangle_1 {A : C} : 
         inv_right_unitor ∘ (identity A ⊗ unit) ∘ inv_associator 
-        ∘ (counit ⊗ identity A) ∘ left_unitor ≃ identity A; *)
+        ∘ (counit ⊗ identity A) ∘ left_unitor ≃ identity A;
 
-    (* triangle_2 {A : C} : 
+    triangle_2 {A : C} : 
         inv_left_unitor ∘ (unit ⊗ identity A ★) ∘ associator 
-        ∘ (identity A ★ ⊗ counit) ∘ right_unitor ≃ identity A ★; *)
+        ∘ (identity A ★ ⊗ counit) ∘ right_unitor ≃ identity A ★;
 }.
 
 Notation "A ★" := (dual A) : Cat_scope.
+
+Lemma n_yank_l : forall n {prf1 prf2},
+    cast n (n + n + n) prf1 prf2 (n_wire n ↕ n_cap n) 
+    ⟷ (n_cup n ↕ n_wire n) ∝ n_wire n.
+Proof.
+    induction n.
+    - intros.
+      rewrite n_cap_0_empty.
+      rewrite n_cup_0_empty.
+      simpl_casts.
+      cleanup_zx. simpl.
+      simpl_casts. cleanup_zx.
+      easy.
+    - intros.
+Admitted.
+
+Lemma n_yank_r : forall n {prf1 prf2 prf3 prf4},
+    cast n n prf3 prf4 (cast n (n + (n + n)) prf1 prf2 (n_cap n ↕ n_wire n)
+    ⟷ (n_wire n ↕ n_cup n)) ∝ n_wire n.
+Proof.
+    induction n.
+    - intros.
+      rewrite n_cap_0_empty.
+      rewrite n_cup_0_empty.
+      simpl_casts.
+      cleanup_zx. simpl.
+      simpl_casts. cleanup_zx.
+      easy.
+    - intros.
+Admitted.
 
 Lemma zx_triangle_1 : forall n,
     zx_inv_right_unitor ⟷ (n_wire n ↕ n_cap n) ⟷ zx_inv_associator
@@ -41,18 +71,33 @@ Proof.
     simpl_casts. cleanup_zx.
     rewrite cast_compose_r.
     cleanup_zx. simpl_casts.
-    unfold n_cap. unfold n_cup.
-    destruct n.
-    - simpl. cleanup_zx. simpl_casts.
-      cleanup_zx. easy.
-    - rewrite n_swap_grow_l.
-      simpl. 
-Admitted.
+    rewrite n_yank_l.
+    reflexivity.
+Qed.
+
+Lemma zx_triangle_2 : forall n,
+    zx_inv_left_unitor ⟷ (n_cap n ↕ n_wire n) ⟷ zx_associator
+    ⟷ (n_wire n ↕ n_cup n) ⟷ zx_right_unitor ∝ n_wire n.
+Proof.
+    intros.
+    unfold zx_inv_left_unitor.
+    unfold zx_associator.
+    unfold zx_right_unitor.
+    simpl_casts. cleanup_zx.
+    rewrite cast_compose_r.
+    simpl_casts. cleanup_zx.
+    rewrite cast_compose_r.
+    simpl_casts. cleanup_zx.
+    rewrite n_yank_r.
+    reflexivity.
+Qed.
 
 #[export] Instance ZXCompactClosedCategory : CompactClosedCategory nat := {
     dual n := n;
     unit n := n_cap n;
     counit n := n_cup n;
+    triangle_1 := zx_triangle_1;
+    triangle_2 := zx_triangle_2;
 }.
 
 Local Close Scope Cat.
