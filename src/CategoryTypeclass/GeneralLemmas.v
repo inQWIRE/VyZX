@@ -29,7 +29,6 @@ Lemma nwire_stack_compose_topleft_general : forall {C : Type}
     ((identity topIn) ⊗ f0) ∘ (f1 ⊗ (identity botOut)) ≃ (f1 ⊗ f0).
 Proof.
     intros.
-    Search (identity _).
 Admitted.
 
 Local Close Scope Cat.
