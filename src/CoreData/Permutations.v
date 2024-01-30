@@ -1,7 +1,5 @@
 Require Import ZXCore.
-(* Require Import StrongInduction. *)
-(* Require Export QuantumLib.Quantum. *)
-Require Export QuantumLib.Permutations.
+Require Import QuantumLib.Permutations.
 
 Open Scope ZX_scope.
 

@@ -3,3 +3,4 @@ Require Export Proportional.
 Require Export Swaps.
 Require Export StrongInduction.
 Require Export CapCup.
+Require Export Permutations.
