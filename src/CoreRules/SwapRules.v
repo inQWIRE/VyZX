@@ -777,22 +777,19 @@ Qed.
 Lemma top_to_bottom_1 : forall n,
 	top_to_bottom (S n) ∝ n_compose n (bottom_to_top (S n)).
 Proof.
-	(* apply prop_of_equal_perm; auto with zxperm_db.
+    intros.
+	apply prop_of_equal_perm.  
+    all: auto with zxperm_db. 
 	apply perm_of_top_to_bottom_1.
-Qed. *)
-Admitted.
+Qed.
 	
 Lemma n_compose_n_top_to_bottom : forall n,
-		n_compose n (top_to_bottom n) ∝ n_wire n.
+	n_compose n (top_to_bottom n) ∝ n_wire n.
 Proof.
-	induction n.
-	- easy.
-	- rewrite n_compose_grow_r.
-	  rewrite <- (@n_compose_top_compose_bottom n).
-	  apply compose_compat.
-	  + reflexivity.
-	  + rewrite top_to_bottom_1.
-	    reflexivity.
+	intros.
+	apply prop_of_equal_perm; auto with zxperm_db.
+	cleanup_perm_of_zx.
+    easy.
 Qed.
 
 Lemma n_compose_m_compose : forall {n m n'} {zx: ZX n' n'},

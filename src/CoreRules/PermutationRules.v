@@ -4,10 +4,10 @@ Require Import QuantumLib.Permutations.
 Require Import StackComposeRules.
 Require Import CastRules.
 
-Open Scope ZX_scope.
-
 Local Open Scope nat.
 Local Open Scope prg.
+
+Open Scope ZX_scope.
 
 Ltac bdest_lia_replace b0 b1 :=
   replace b0 with b1 by (bdestruct b0; lia).
@@ -1447,7 +1447,7 @@ Qed.
 Lemma perm_of_top_to_bottom_1 n :
 	perm_of_zx (top_to_bottom (S n)) = perm_of_zx (n_compose n (bottom_to_top (S n))).
 Proof.
-  cleanup_perm_of_zx.
+    cleanup_perm_of_zx.
 	destruct n; [rewrite rotr_n, rotl_0_r; easy|].
 	rewrite rotr_eq_rotl_sub.
 	rewrite Nat.mod_small; [f_equal|]; lia.

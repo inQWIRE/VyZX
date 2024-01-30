@@ -3,6 +3,7 @@ Require Import CoreRules.
 Require Import Category.
 Require Import Monoidal.
 Require Import MonoidalRules.
+Require Import PermutationRules.
 
 Local Open Scope Cat.
 
@@ -76,7 +77,14 @@ Lemma hexagon_lemma_1_helper : forall {n m o o'} prf1 prf2 prf3 prf4,
     ⟷ cast (n + m + o) o' prf1 prf2 (n_wire m ↕ n_top_to_bottom n o)
     ∝ cast (n + m + o) o' prf3 prf4 (n_top_to_bottom n (m + o)).
 Proof.
-    intros.
+    intros. unfold n_top_to_bottom. subst.
+    apply (cast_diagrams (n + m + o) (n + m + o) (eq_refl (n + m + o)%nat) prf1).
+    apply prop_of_equal_perm.
+    
+    (* auto with zxperm_db. *)
+    (* cleanup_perm_of_zx. *)
+        
+    (* intros.
     unfold n_top_to_bottom.
     induction n.
     - intros.
@@ -105,7 +113,7 @@ Proof.
       rewrite cast_compose_l. simpl_casts.
       rewrite cast_compose_l. simpl_casts.
       rewrite stack_nwire_distribute_r.
-      rewrite (compose_assoc (top_to_bottom (n + S m) ↕ n_wire o)).
+      rewrite (compose_assoc (top_to_bottom (n + S m) ↕ n_wire o)). *)
 Admitted.
 
 Lemma hexagon_lemma_1 : forall {n m o}, 
@@ -124,6 +132,7 @@ Proof.
     rewrite cast_compose_l. simpl_casts.
     rewrite (cast_compose_r _ _ _ (n_wire (m + o + n))).
     cleanup_zx. simpl_casts.
+    
     rewrite hexagon_lemma_1_helper.
     reflexivity.
 Qed.
