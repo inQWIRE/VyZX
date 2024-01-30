@@ -3,13 +3,13 @@ Require Import QuantumLib.Permutations.
 
 Open Scope ZX_scope.
 
-Inductive ZXPerm : forall n, ZX n n -> Prop :=
-  | PermEmpty : ZXPerm 0 Empty
-  | PermWire : ZXPerm 1 Wire
-  | PermSwap : ZXPerm 2 ⨉
-  | PermStack {n0 n1 zx0 zx1} : (ZXPerm n0 zx0) -> (ZXPerm n1 zx1) -> ZXPerm _ (zx0 ↕ zx1)
-  | PermComp {n zx0 zx1} : (ZXPerm n zx0) -> (ZXPerm n zx1) -> ZXPerm _ (zx0 ⟷ zx1)
-  | PermCast {n m zx} (_ : ZXPerm m zx) (h : n = m) : ZXPerm n (cast n n h h zx).
+Inductive ZX_Perm : forall n, ZX n n -> Prop :=
+  | PermEmpty : ZX_Perm 0 Empty
+  | PermWire : ZX_Perm 1 Wire
+  | PermSwap : ZX_Perm 2 ⨉
+  | PermStack {n0 n1 zx0 zx1} : (ZX_Perm n0 zx0) -> (ZX_Perm n1 zx1) -> ZX_Perm _ (zx0 ↕ zx1)
+  | PermComp {n zx0 zx1} : (ZX_Perm n zx0) -> (ZX_Perm n zx1) -> ZX_Perm _ (zx0 ⟷ zx1)
+  | PermCast {n m zx} (_ : ZX_Perm m zx) (h : n = m) : ZX_Perm n (cast n n h h zx).
 
 Definition swap_permutation : nat -> nat :=
   fun n => match n with

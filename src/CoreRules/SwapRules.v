@@ -5,6 +5,7 @@ Require Import StackComposeRules.
 Require Import CastRules.
 Require Import Setoid.
 Require Import Proportional.
+Require Import PermutationRules.
 
 Lemma swap_compose :
 	⨉ ⟷ ⨉ ∝ n_wire 2.
@@ -776,15 +777,9 @@ Qed.
 Lemma top_to_bottom_1 : forall n,
 	top_to_bottom (S n) ∝ n_compose n (bottom_to_top (S n)).
 Proof.
-	induction n.
-	- intros.
-	  rewrite n_compose_0.
-	  simpl. cleanup_zx. simpl_casts. easy.
-	- intros. 
-	  rewrite top_to_bottom_grow_l.
-	  rewrite IHn.
-	  rewrite bottom_to_top_grow_r.
-	  rewrite n_compose_grow_l.
+	(* apply prop_of_equal_perm; auto with zxperm_db.
+	apply perm_of_top_to_bottom_1.
+Qed. *)
 Admitted.
 	
 Lemma n_compose_n_top_to_bottom : forall n,
