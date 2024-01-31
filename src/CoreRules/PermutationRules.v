@@ -388,11 +388,21 @@ Global Hint Resolve stack_permutations_permutation : perm_db.
 
 Global Hint Resolve permutation_compose : perm_db.
 
-Lemma zxperm_permutation n zx : 
-  ZX_Perm n zx -> permutation n (perm_of_zx zx).
+Lemma zxperm_square {n m zx} : 
+  ZX_Perm n m zx -> n = m.
+Proof.
+  intros H.
+  induction H; subst; easy.
+Qed.
+
+Lemma zxperm_permutation n m zx : 
+  ZX_Perm n m zx -> permutation n (perm_of_zx zx).
 Proof. 
   intros H.
   induction H; show_permutation.
+  - pose proof (zxperm_square H); pose proof (zxperm_square H0); subst.
+    simpl.
+    apply permutation_compose; easy.
 Qed.
 
 Global Hint Resolve zxperm_permutation : perm_db.
@@ -1100,7 +1110,8 @@ Proof.
   1,2: rewrite Nat.pow_add_r, Nat.mul_comm in Hi, Hj; easy.
 Qed.
 
-Lemma stack_permutations_semantics {n0 n1} {zx0 zx1} 
+Lemma stack_permutations_semantics {n0 n1 m0 m1}
+  {zx0 : ZX n0 m0} {zx1 : ZX n1 m1} (H0 : n0 = m0) (H1 : n1 = m1)
   (Hzx0 : ⟦ zx0 ⟧ = zxperm_to_matrix n0 zx0) 
   (Hzx1 : ⟦ zx1 ⟧ = zxperm_to_matrix n1 zx1) 
   (Hzx0perm : permutation n0 (perm_of_zx zx0))
@@ -1110,14 +1121,16 @@ Proof.
   simpl.
   rewrite stack_permutations_matrix; [|easy|easy].
   rewrite Hzx0, Hzx1.
+  subst.
   easy.
 Qed.
 
-Lemma compose_permutation_semantics {n} {zx0 zx1}
+Lemma compose_permutation_semantics {n m o} {zx0 : ZX n m} {zx1 : ZX m o}
+  (H0 : n = m)
   (Hzx0 : ⟦ zx0 ⟧ = zxperm_to_matrix n zx0)
-  (Hzx1 : ⟦ zx1 ⟧ = zxperm_to_matrix n zx1) 
+  (Hzx1 : ⟦ zx1 ⟧ = zxperm_to_matrix m zx1) 
   (Hzx0perm : permutation n (perm_of_zx zx0))
-  (Hzx1perm : permutation n (perm_of_zx zx1)) :
+  (Hzx1perm : permutation m (perm_of_zx zx1)) :
   ⟦ zx0 ⟷ zx1 ⟧ = zxperm_to_matrix n (zx0 ⟷ zx1).
 Proof.
   cbn.
@@ -1125,19 +1138,20 @@ Proof.
   rewrite <- qubit_perm_to_nat_perm_compose.
   - rewrite <- perm_mat_Mmult.
     + rewrite Hzx0, Hzx1.
-      easy.
+      subst; easy.
     + apply qubit_perm_to_nat_perm_bij.
       easy.
-  - easy.
+  - subst; easy.
 Qed.
 
-Lemma cast_permutations_semantics {n m} {zx} {Heq : n = m} 
-  (Hzx : ⟦ zx ⟧ = zxperm_to_matrix m zx) :
-  ⟦ cast _ _ Heq Heq zx ⟧ = zxperm_to_matrix n (cast _ _ Heq Heq zx).
+Lemma cast_permutations_semantics {n0 m0 n1 m1} {zx : ZX n0 m0} 
+  (Hn : n1 = n0) (Hm : m1 = m0)
+  (Hzx : ⟦ zx ⟧ = zxperm_to_matrix n1 zx) :
+  ⟦ cast _ _ Hn Hm zx ⟧ = zxperm_to_matrix n1 (cast _ _ Hn Hm zx).
 Proof. subst; easy. Qed.
 
-Lemma zxperm_permutation_semantics {n zx} : 
-  ZX_Perm n zx -> ⟦ zx ⟧ = zxperm_to_matrix n zx.
+Lemma zxperm_permutation_semantics {n m zx} : 
+  ZX_Perm n m zx -> ⟦ zx ⟧ = zxperm_to_matrix n zx.
 Proof.
   intros H.
   induction H.
@@ -1145,17 +1159,17 @@ Proof.
   - apply wire_permutation_semantics.
   - apply swap_permutation_semantics.
   - eapply stack_permutations_semantics; auto.
+    1,2: eapply zxperm_square; eassumption.
     all: apply zxperm_permutation; easy.
   - apply compose_permutation_semantics; auto.
+    1: eapply zxperm_square; eassumption.
     all: apply zxperm_permutation; easy. 
-  - apply cast_permutations_semantics.
-    easy.
 Qed.
 
 (* ... which enables the main result: *)
 
-Lemma prop_of_equal_perm {n} {zx0 zx1 : ZX n n}
-	(Hzx0 : ZX_Perm n zx0) (Hzx1 : ZX_Perm n zx1)
+Lemma prop_of_equal_perm {n m} {zx0 zx1 : ZX n m}
+	(Hzx0 : ZX_Perm n m zx0) (Hzx1 : ZX_Perm n m zx1)
 	(Hperm : perm_of_zx zx0 = perm_of_zx zx1) :
 	zx0 ∝ zx1.
 Proof.
@@ -1168,39 +1182,42 @@ Qed.
 
 (* Now, we develop some tools for showing things are ZX_Perms *)
 
-Global Hint Resolve PermEmpty PermWire PermSwap PermStack PermComp PermCast : zxperm_db.
+Global Hint Resolve PermEmpty PermWire PermSwap PermStack PermComp : zxperm_db.
 
-Lemma ZX_Perm_iff_cast {n m} {zx} (H : n = m) :
-	ZX_Perm m zx <-> ZX_Perm n (cast _ _ H H zx).
+Lemma ZX_Perm_iff_cast {n0 n1 m0 m1} {zx} (Hn : n1 = n0) (Hm : m1 = m0) :
+ZX_Perm n1 m1 (cast _ _ Hn Hm zx) <-> ZX_Perm n0 m0 zx.
 Proof.
-	split.
-	- constructor; easy.
-	- intros Hperm.
-	  subst; easy.
+	split; intros; subst; easy.
 Qed.
 
-Lemma cast_stack_ZX_Perm {n m o} {zx0} {zx1}
-	(H0 : ZX_Perm n zx0) (H1 : ZX_Perm m zx1) 
-	(Heq : o = n + m) :
-	ZX_Perm o (cast _ _ Heq Heq (zx0 ↕ zx1)).
+Lemma ZX_Perm_cast {n0 n1 m0 m1} {zx} (Hn : n1 = n0) (Hm : m1 = m0) :
+  ZX_Perm n0 m0 zx -> ZX_Perm n1 m1 (cast _ _ Hn Hm zx).
+Proof.
+  rewrite ZX_Perm_iff_cast; intros; easy.
+Qed.
+
+Global Hint Resolve ZX_Perm_cast : zxperm_db.
+
+Lemma cast_stack_ZX_Perm {n0 n1 m0 m1 o p} {zx0} {zx1}
+	(H0 : ZX_Perm n0 m0 zx0) (H1 : ZX_Perm n1 m1 zx1) 
+	(Hn : o = n0 + n1) (Hm : p = m0 + m1) :
+	ZX_Perm o p (cast _ _ Hn Hm (zx0 ↕ zx1)).
 Proof.
   auto with zxperm_db.
 Qed.
 
 Global Hint Resolve cast_stack_ZX_Perm : zxperm_db.
 
-Lemma transpose_ZX_Perm {n} {zx} (H : ZX_Perm n zx) :
-	ZX_Perm n (zx ⊤).
+Lemma transpose_ZX_Perm {n m} {zx} (H : ZX_Perm n m zx) :
+	ZX_Perm m n (zx ⊤).
 Proof.
-	induction H; try solve [simpl; constructor; try easy].
-	(* Only cast left *)
-	subst. easy.
+	induction H; simpl; constructor; try easy.
 Qed.
 
 Global Hint Resolve transpose_ZX_Perm : zxperm_db.
 
 Lemma n_wire_ZX_Perm {n} : 
-	ZX_Perm n (n_wire n).
+	ZX_Perm n n (n_wire n).
 Proof.
 	induction n.
 	- constructor.
@@ -1210,8 +1227,8 @@ Qed.
 
 Global Hint Resolve n_wire_ZX_Perm : zxperm_db.
 
-Lemma n_compose_ZX_Perm {n} {zx} (H : ZX_Perm n zx) k :
-	ZX_Perm _ (n_compose k zx).
+Lemma n_compose_ZX_Perm {n} {zx} (H : ZX_Perm n n zx) k :
+	ZX_Perm _ _ (n_compose k zx).
 Proof.
 	induction k; simpl; auto with zxperm_db.
 Qed.
@@ -1219,7 +1236,7 @@ Qed.
 Global Hint Resolve n_compose_ZX_Perm : zxperm_db.
 
 Lemma top_to_bottom_helper_ZX_Perm n :
-	ZX_Perm (S n) (top_to_bottom_helper n).
+	ZX_Perm (S n) (S n) (top_to_bottom_helper n).
 Proof.
 	induction n.
 	- constructor.
@@ -1232,13 +1249,13 @@ Qed.
 Global Hint Resolve top_to_bottom_helper_ZX_Perm : zxperm_db.
 
 Lemma top_to_bottom_ZX_Perm {n} :
-	ZX_Perm n (top_to_bottom n).
+	ZX_Perm n n (top_to_bottom n).
 Proof.
 	destruct n; simpl; auto with zxperm_db.
 Qed.
 
 Lemma bottom_to_top_ZX_Perm {n} :
-	ZX_Perm n (bottom_to_top n).
+	ZX_Perm n n (bottom_to_top n).
 Proof.
 	apply transpose_ZX_Perm.
 	apply top_to_bottom_ZX_Perm.
@@ -1248,7 +1265,7 @@ Global Hint Resolve top_to_bottom_ZX_Perm bottom_to_top_ZX_Perm : zxperm_db.
 
 (* Some properties of perm_of_zx, and specific values.*)
 
-Lemma perm_of_zx_WF {n} {zx} (H : ZX_Perm n zx) : forall k, 
+Lemma perm_of_zx_WF {n m} {zx} (H : ZX_Perm n m zx) : forall k, 
 	n <= k -> (perm_of_zx zx) k = k.
 Proof.
 	induction H; intros k Hk; try easy.
@@ -1258,13 +1275,13 @@ Proof.
 	  rewrite stack_permutations_high; easy.
 	- simpl.
 	  unfold compose.
+    pose proof (zxperm_square H).
 	  rewrite IHZX_Perm1; rewrite IHZX_Perm2; lia.
-	- subst. apply IHZX_Perm, Hk. 
 Qed.
 
 Global Hint Resolve perm_of_zx_WF : perm_WF_db.
 
-Lemma stack_permutations_zx_idn {n0 n1} {zx} (H : ZX_Perm n0 zx) :
+Lemma stack_permutations_zx_idn {n0 m0 n1} {zx} (H : ZX_Perm n0 m0 zx) :
 	stack_permutations n0 n1 (perm_of_zx zx) idn = 
 	perm_of_zx zx.
 Proof.
@@ -1274,7 +1291,7 @@ Qed.
 
 #[export] Hint Rewrite @stack_permutations_zx_idn : perm_of_zx_cleanup_db.
 
-Lemma stack_permutations_idn_zx {n0 n1} {zx} (H : ZX_Perm n1 zx) :
+Lemma stack_permutations_idn_zx {n0 n1 m1} {zx} (H : ZX_Perm n1 m1 zx) :
 	stack_permutations n0 n1 idn (perm_of_zx zx) = 
 	fun k => if k <? n0 then k else (perm_of_zx zx (k - n0)) + n0.
 Proof.
@@ -1303,8 +1320,8 @@ Lemma perm_of_zx_stack_spec {n m o p} {zx0 : ZX n m} {zx1 : ZX o p} :
 	stack_permutations n o (perm_of_zx zx0) (perm_of_zx zx1).
 Proof. easy. Qed.
 
-Lemma perm_of_zx_stack_n_wire {n} {zx} (H : ZX_Perm n zx) {m} :
-	perm_of_zx (zx ↕ (n_wire m)) = perm_of_zx zx.
+Lemma perm_of_zx_stack_n_wire {n0 m0} {zx} (H : ZX_Perm n0 m0 zx) {n1} :
+	perm_of_zx (zx ↕ (n_wire n1)) = perm_of_zx zx.
 Proof.
 	simpl.
 	rewrite perm_of_n_wire.
@@ -1373,7 +1390,7 @@ Lemma cast_transpose_eq {n0 m0 n1 m1} {zx} {Hn: n0 = n1} {Hm : m0 = m1} :
 	(cast _ _ Hn Hm zx)⊤ = (cast _ _ Hm Hn zx⊤).
 Proof. subst; easy. Qed.
 
-Lemma perm_of_transpose_is_rinv {n} {zx} (H : ZX_Perm n zx) :
+Lemma perm_of_transpose_is_rinv {n m} {zx} (H : ZX_Perm n m zx) :
 	(perm_of_zx zx ∘ perm_of_zx zx⊤)%prg = idn.
 Proof.
 	rewrite <- perm_of_zx_compose_spec.
@@ -1382,6 +1399,9 @@ Proof.
 	  destruct k; [easy|destruct k; [easy|]].
 	  rewrite swap_permutation_WF; rewrite swap_permutation_WF; lia.
 	- simpl.
+    pose proof (zxperm_square H).
+    pose proof (zxperm_square H0).
+    subst.
 	  rewrite stack_permutations_compose.
 	  2,3: auto with perm_db zxperm_db.
 	  rewrite <- 2!perm_of_zx_compose_spec.
@@ -1393,13 +1413,9 @@ Proof.
 	  rewrite <- perm_of_zx_compose_spec, IHZX_Perm2, compose_idn_r.
 	  rewrite <- perm_of_zx_compose_spec, IHZX_Perm1.
 	  easy.
-	- simpl. 
-	  rewrite cast_transpose_eq, 2!perm_of_zx_cast.
-	  rewrite <- perm_of_zx_compose_spec, IHZX_Perm.
-	  easy.
 Qed.
 
-Lemma perm_of_transpose_is_linv {n} {zx} (H : ZX_Perm n zx) :
+Lemma perm_of_transpose_is_linv {n m} {zx} (H : ZX_Perm n m zx) :
 	(perm_of_zx zx⊤ ∘ perm_of_zx zx)%prg = idn.
 Proof.
 	pose proof (perm_of_transpose_is_rinv (transpose_ZX_Perm H)) as Hinv.
