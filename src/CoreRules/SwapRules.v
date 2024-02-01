@@ -4,8 +4,9 @@ Require Import CoreAutomation.
 Require Import StackComposeRules.
 Require Import CastRules.
 Require Import Setoid.
-Require Import Proportional.
-Require Import PermutationRules.
+Require Import Permutations.PermutationRules.
+
+Open Scope ZX_scope.
 
 Lemma swap_compose :
 	⨉ ⟷ ⨉ ∝ n_wire 2.
