@@ -778,8 +778,8 @@ Lemma top_to_bottom_1 : forall n,
 	top_to_bottom (S n) ∝ n_compose n (bottom_to_top (S n)).
 Proof.
     intros.
-	apply prop_of_equal_perm.  
-    all: auto with zxperm_db. 
+	apply prop_of_equal_perm. 
+    all: auto with zxperm_db.
 	apply perm_of_top_to_bottom_1.
 Qed.
 	
