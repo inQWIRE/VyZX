@@ -12,11 +12,9 @@ jobs:
     strategy:
       matrix:
         coq_version:
-          - '8.14'
-          - '8.15'
           - '8.16'
           - '8.17'
-          - 'dev'
+          - '8.18'
         ocaml_version:
           - 'default'
       fail-fast: false # don't stop jobs if one fails
@@ -27,6 +25,7 @@ jobs:
           opam_file: 'coq-vyzx.opam'
           before_install: |
             startGroup "Print opam config"
+              opam update -y
               opam pin -y coq-sqir https://github.com/inQWIRE/SQIR.git;
               opam pin -y coq-voqc https://github.com/inQWIRE/SQIR.git;
               opam config list; opam repo list; opam list
