@@ -1,6 +1,7 @@
 Require Export PermutationDefinitions.
 Require Import PermutationAutomation. 
 Require Import CoreData.StrongInduction.
+Require Import List.
 
 
 Local Open Scope nat.
@@ -8,35 +9,15 @@ Local Open Scope prg.
 
 
 
-(* Section for prelude lemmas that don't directly involve permutations *)
-(* TODO: Prove these: *)
-(* 
-Lemma bdd_of_is_inj_is_surj n f :
-  (forall k, k < n -> exists k', k' < n /\ f k' = k) -> 
-  (forall k l, k < n -> l < n -> f k = f l -> k = l) ->
-  forall k, k < n -> f k < n.
-Proof.
-  Abort.
 
-Lemma surj_of_is_bdd_is_inj n f : 
-  forall k, k < n -> f k < n ->
-  (forall k l, k < n -> l < n -> f k = f l -> k = l) ->
-  (forall k, k < n -> exists k', k' < n /\ f k' = k).
-Proof.
-  Abort.
 
-Lemma inj_of_is_surj_is_bdd n f :
-  (forall k, k < n -> exists k', k' < n /\ f k' = k) -> 
-  forall k, k < n -> f k < n ->
-  (forall k l, k < n -> l < n -> f k = f l -> k = l).
-Proof.
-  Abort. 
-*)
+
 
 
 
 
 (* Section on general permutation properties *)
+(* FIXME: In QuantumLib *)
 Lemma permutation_is_surjective {n f} : permutation n f ->
   forall k, k < n -> exists k', k' < n /\ f k' = k.
 Proof.
@@ -47,12 +28,14 @@ Proof.
   intuition.
 Qed.
 
+(* FIXME: In QuantumLib *)
 Lemma compose_idn_l {T} {f: T -> nat} : (idn ∘ f = f)%prg.
 Proof.
 	unfold compose.
 	apply functional_extensionality; easy.
 Qed.
 
+(* FIXME: In QuantumLib *)
 Lemma compose_idn_r {T} {f: nat -> T} : (f ∘ idn = f)%prg.
 Proof.
 	unfold compose.
@@ -60,6 +43,399 @@ Proof.
 Qed.
 
 #[export] Hint Rewrite @compose_idn_r @compose_idn_l : perm_cleanup_db.
+
+
+
+
+
+
+(* Section on perm_inv *)
+(* FIXME: In QuantumLib *)
+Lemma perm_inv_bdd_S n f k : 
+  perm_inv (S n) f k < S n.
+Proof.
+  induction n; simpl;
+  [destruct_if_solve|]. 
+  destruct_if; [|transitivity (S n); [apply IHn|]]. 
+  all: apply Nat.lt_succ_diag_r.
+Qed.
+
+(* FIXME: In QuantumLib *)
+Lemma perm_inv_bdd n f k : k < n ->
+  perm_inv n f k < n.
+Proof.
+  induction n.
+  - easy.
+  - intros. apply perm_inv_bdd_S.
+Qed.
+
+Global Hint Resolve perm_inv_bdd_S perm_inv_bdd : perm_bdd_db.
+
+(* FIXME: In QuantumLib *)
+Lemma perm_inv_is_linv_of_inj {n f} : 
+  (forall k l, k < n -> l < n -> f k = f l -> k = l) ->
+  forall k, k < n -> 
+  perm_inv n f (f k) = k.
+Proof.
+  intros Hinj k Hk.
+  induction n.
+  - easy.
+  - simpl.
+    bdestruct (f n =? f k).
+    + apply Hinj; lia.
+    + assert (k <> n) by (intros Heq; subst; easy).
+      apply IHn; [auto|].
+      assert (k <> n) by (intros Heq; subst; easy).
+      lia.
+Qed.
+
+(* FIXME: In QuantumLib *)
+Lemma perm_inv_is_rinv_of_surj {n f} k :
+  (exists l, l < n /\ f l = k) ->
+  f (perm_inv n f k) = k.
+Proof.
+  induction n.
+  - intros []; easy.
+  - intros [l [Hl Hfl]].
+    simpl.
+    bdestruct (f n =? k); [easy|].
+    apply IHn.
+    exists l.
+    split; [|easy].
+    bdestruct (l =? n); [subst; easy|].
+    lia.
+Qed.
+
+(* FIXME: In QuantumLib *)
+Lemma perm_inv_is_linv_of_permutation n f : permutation n f ->
+  forall k, k < n -> perm_inv n f (f k) = k.
+Proof.
+  intros Hperm.
+  apply perm_inv_is_linv_of_inj, permutation_is_injective, Hperm.
+Qed.
+
+(* FIXME: In QuantumLib *)
+Lemma perm_inv_is_rinv_of_permutation n f : permutation n f ->
+  forall k, k < n -> f (perm_inv n f k) = k.
+Proof.
+  intros Hperm k Hk.
+  apply perm_inv_is_rinv_of_surj, (permutation_is_surjective Hperm _ Hk).
+Qed.
+
+(* FIXME: In QuantumLib *)
+Lemma perm_inv_is_inv_of_is_surj_is_inj_is_bdd n f :
+  (forall k, k < n -> exists k', k' < n /\ f k' = k) -> 
+  (forall k l, k < n -> l < n -> f k = f l -> k = l) ->
+  (forall k, k < n -> f k < n) ->
+  (forall k, k < n -> 
+    f k < n /\ perm_inv n f k < n /\ perm_inv n f (f k) = k /\ f (perm_inv n f k) = k).
+Proof.
+  intros Hsurj Hinj Hbdd.
+  intros k Hk; repeat split.
+  - apply Hbdd, Hk.
+  - apply perm_inv_bdd, Hk.
+  - rewrite perm_inv_is_linv_of_inj; easy.
+  - rewrite perm_inv_is_rinv_of_surj; [easy|].
+    apply Hsurj; easy.
+Qed.
+
+(* FIXME: Should these exist? *)
+Local Notation perm_surj n f := (forall k, k < n -> exists k', k' < n /\ f k' = k).
+Local Notation perm_bdd  n f := (forall k, k < n -> f k < n).
+Local Notation perm_inj  n f := (forall k l, k < n -> l < n -> f k = f l -> k = l).
+Local Notation perm_WF   n f := (forall k, n <= k -> f k = k).
+
+
+(* TODO: Move this where it belongs *)
+Lemma fswap_involutive : forall {A} (f : nat -> A) x y,
+  fswap (fswap f x y) x y = f.
+Proof.
+  intros A f x y.
+  unfold fswap.
+  apply functional_extensionality.
+  intros k.
+  bdestruct_all; subst; easy.
+Qed.
+
+Lemma fswap_injective_if_injective : forall {A} n (f:nat -> A) x y,
+  x < n -> y < n ->
+  perm_inj n f -> perm_inj n (fswap f x y).
+Proof.
+  intros A n f x y Hx Hy Hinj k l Hk Hl.
+  unfold fswap.
+  bdestruct (k =? x); bdestruct (k =? y);
+  bdestruct (l =? x); bdestruct (l =? y);
+  subst; auto using Hinj.
+  all: intros Heq;
+    epose proof (Hinj _ _ _ _ Heq); 
+    exfalso; lia.
+  Unshelve.
+  all: assumption.
+Qed.
+
+Lemma fswap_injective_iff_injective : forall {A} n (f:nat -> A) x y,
+  x < n -> y < n ->
+  perm_inj n f <-> perm_inj n (fswap f x y).
+Proof.
+  intros A n f x y Hx Hy.
+  split.
+  - apply fswap_injective_if_injective; easy.
+  - intros Hinj.
+    rewrite <- (fswap_involutive f x y).
+    apply fswap_injective_if_injective; easy.
+Qed.
+
+Lemma fswap_surjective_if_surjective : forall n f x y, 
+  x < n -> y < n -> 
+  perm_surj n f -> perm_surj n (fswap f x y).
+Proof.
+  intros n f x y Hx Hy Hsurj k Hk.
+  destruct (Hsurj k Hk) as [k' [Hk' Hfk']].
+  bdestruct (k' =? x); [|bdestruct (k' =? y)].
+  - exists y.
+    split; [assumption|].
+    subst.
+    rewrite fswap_simpl2.
+    easy.
+  - exists x.
+    split; [assumption|].
+    subst.
+    rewrite fswap_simpl1.
+    easy.
+  - exists k'.
+    split; [assumption|].
+    rewrite fswap_neq; lia.
+Qed.
+
+Lemma fswap_surjective_iff_surjective : forall n f x y,
+  x < n -> y < n ->
+  perm_surj n f <-> perm_surj n (fswap f x y).
+Proof.
+  intros n f x y Hx Hy.
+  split.
+  - apply fswap_surjective_if_surjective; easy.
+  - intros Hsurj.
+    rewrite <- (fswap_involutive f x y).
+    apply fswap_surjective_if_surjective; easy.
+Qed.
+
+Lemma fswap_bounded_if_bounded : forall n f x y,
+  x < n -> y < n ->
+  perm_bdd n f -> perm_bdd n (fswap f x y).
+Proof.
+  intros n f x y Hx Hy Hbdd k Hk.
+  unfold fswap.
+  bdestruct_all;
+  apply Hbdd; 
+  easy.
+Qed.
+
+Lemma fswap_bounded_iff_bounded : forall n f x y,
+  x < n -> y < n ->
+  perm_bdd n f <-> perm_bdd n (fswap f x y).
+Proof.
+  intros n f x y Hx Hy.
+  split.
+  - apply fswap_bounded_if_bounded; easy.
+  - intros Hbdd.
+    rewrite <- (fswap_involutive f x y).
+    apply fswap_bounded_if_bounded; easy.
+Qed.
+
+Lemma surjective_of_eq_boundary_shrink : forall n f,
+  perm_surj (S n) f -> f n = n -> perm_surj n f.
+Proof.
+  intros n f Hsurj Hfn k Hk.
+  assert (HkS : k < S n) by lia.
+  destruct (Hsurj k HkS) as [k' [Hk' Hfk']].
+  bdestruct (k' =? n).
+  - exfalso; subst; lia.
+  - exists k'.
+    split; [lia | assumption].
+Qed.
+
+Lemma surjective_of_eq_boundary_grow : forall n f,
+  perm_surj n f -> f n = n -> perm_surj (S n) f.
+Proof.
+  intros n f Hsurj Hfn k Hk.
+  bdestruct (k =? n).
+  - exists n; lia.
+  - assert (H'k : k < n) by lia.
+    destruct (Hsurj k H'k) as [k' [Hk' Hfk']].
+    exists k'; lia.
+Qed.
+
+Lemma fswap_at_boundary_surjective : forall n f n',
+  n' < S n -> perm_surj (S n) f -> f n' = n -> 
+  perm_surj n (fswap f n' n).
+Proof.
+  intros n f n' Hn' Hsurj Hfn' k Hk.
+  bdestruct (k =? f n).
+  - exists n'.
+    split.
+    + assert (Hneq: n' <> n); [|lia].
+      intros Hfalse.
+      rewrite Hfalse in Hfn'.
+      rewrite Hfn' in H.
+      lia.
+    + rewrite fswap_simpl1; easy.
+  - assert (H'k : k < S n) by lia.
+    destruct (Hsurj k H'k) as [k' [Hk' Hfk']].
+    assert (Hk'n: k' <> n) by (intros Hfalse; subst; lia).
+    assert (Hk'n': k' <> n') by (intros Hfalse; subst; lia).
+    exists k'.
+    split; [lia|].
+    rewrite fswap_neq; lia.
+Qed.
+
+Lemma injective_monotone : forall {A} n (f : nat -> A) m, 
+  m < n -> perm_inj n f -> perm_inj m f.
+Proof.
+  intros A n f m Hmn Hinj k l Hk Hl Hfkl.
+  apply Hinj; auto; lia.
+Qed.
+
+Lemma injective_and_bdd_grow_of_boundary : forall n f,
+  perm_inj n f /\ perm_bdd n f -> f n = n ->
+  perm_inj (S n) f /\ perm_bdd (S n) f.
+Proof.
+  intros n f [Hinj Hbdd] Hfn.
+  split.
+  - intros k l Hk Hl Hfkl.
+    bdestruct (k =? n).
+    + subst.
+      bdestruct (l =? n); [easy|].
+      assert (H'l : l < n) by lia.
+      specialize (Hbdd _ H'l).
+      lia.
+    + assert (H'k : k < n) by lia.
+      bdestruct (l =? n).
+      * specialize (Hbdd _ H'k). 
+        subst. lia.
+      * assert (H'l : l < n) by lia.
+        apply Hinj; easy.
+  - intros k Hk.
+    bdestruct (k <? n).
+    + specialize (Hbdd _ H). lia.
+    + replace k with n by lia.
+      lia.
+Qed.
+
+Lemma injective_and_bdd_of_surjective : forall n f,
+  perm_surj n f -> perm_inj n f /\ perm_bdd n f.
+Proof.
+  intros n.
+  induction n; [easy|].
+  intros f Hsurj.
+  assert (HnS : n < S n) by lia.
+  destruct (Hsurj n HnS) as [n' [Hn' Hfn']].
+  pose proof (fswap_at_boundary_surjective _ _ _ Hn' Hsurj Hfn') as Hswap_surj.
+  specialize (IHn (fswap f n' n) Hswap_surj).
+  rewrite (fswap_injective_iff_injective _ f n' n); [|easy|easy].
+  rewrite (fswap_bounded_iff_bounded _ f n' n); [|easy|easy].
+  apply injective_and_bdd_grow_of_boundary;
+  [| rewrite fswap_simpl2; easy].
+  easy.
+Qed.
+
+Lemma injective_and_bdd_shrink_of_boundary : forall n f,
+  perm_inj (S n) f /\ perm_bdd (S n) f -> f n = n -> 
+  perm_inj n f /\ perm_bdd n f.
+Proof.
+  intros n f [Hinj Hbdd] Hfn.
+  split.
+  - eapply injective_monotone, Hinj; lia.
+  - intros k Hk.
+    assert (H'k : k < S n) by lia.
+    specialize (Hbdd k H'k).
+    bdestruct (f k =? n).
+    + rewrite <- Hfn in H.
+      assert (HnS : n < S n) by lia.
+      specialize (Hinj _ _ H'k HnS H).
+      lia.
+    + lia.
+Qed.
+
+Lemma surjective_of_inj_and_bdd : forall n f,
+  perm_inj n f /\ perm_bdd n f -> perm_surj n f.
+Proof.
+  induction n; [easy|].
+  intros f [Hinj Hbdd].
+  rewrite (fswap_surjective_iff_surjective _ _ n (perm_inv (S n) f n));
+  [|lia|apply perm_inv_bdd_S].
+  rewrite (fswap_injective_iff_injective _ _ n (perm_inv (S n) f n)) in Hinj;
+  [|lia|apply perm_inv_bdd_S].
+  rewrite (fswap_bounded_iff_bounded _ _ n (perm_inv (S n) f n)) in Hbdd;
+  [|lia|apply perm_inv_bdd_S].
+  assert (perm_surj n (fswap f n (perm_inv (S n) f n))).
+  1 : {
+    apply IHn, injective_and_bdd_shrink_of_boundary; [easy|].
+    rewrite fswap_simpl1.
+    admit.
+  }
+  apply surjective_of_eq_boundary_grow; [easy|].
+  Admitted.
+
+
+
+
+
+
+(* Lemma perm_inv_surj_of_surj n f :
+  (forall k, k < n -> exists l, l < n /\ f l = k) ->
+  forall l, l < n -> exists k, k < n /\ perm_inv n f k = l. *)
+
+
+
+
+
+(* Section for prelude lemmas that don't directly involve permutations *)
+(* TODO: Prove these: *)
+
+
+
+
+Lemma bdd_of_is_inj_is_surj n f :
+  perm_inj n f -> perm_surj n f -> perm_bdd n f.
+Proof.
+  intros Hinj Hsurj k Hk.
+
+  Abort.
+
+Lemma surj_of_is_bdd_is_inj n f : 
+  perm_bdd n f -> perm_inj n f -> perm_surj n f.
+Proof.
+  Abort.
+
+Lemma inj_of_is_surj_is_bdd n f :
+  perm_surj n f -> perm_bdd n f -> perm_inj n f. 
+Proof.
+  Abort. 
+
+(* Lemma surj_of_is_WF_is_inj n f *)
+
+
+
+
+(* Section on perm_WF *)
+Lemma monotonic_perm_WF n m f : perm_WF n f -> n <= m ->
+  perm_WF m f.
+Proof.
+  intros HWF Hnm k Hk.
+  apply HWF; lia.
+Qed.
+
+Global Hint Resolve monotonic_perm_WF : perm_WF_db.
+
+Lemma compose_perm_WF n f g : perm_WF n f -> perm_WF n g -> 
+  perm_WF n (f ∘ g).
+Proof.
+  unfold compose.
+  intros Hf Hg k Hk.
+  rewrite Hg, Hf; easy.
+Qed.
+
+Global Hint Resolve compose_perm_WF : perm_WF_db.
 
 Lemma linv_WF_of_WF {n} {f finv}
 	(HfWF : forall k, n <= k -> f k = k) (Hinv : finv ∘ f = idn) :
@@ -134,108 +510,289 @@ Proof.
     repeat split; destruct_if_solve.
 Qed.
 
-Lemma compose_WF n f g : perm_WF n f -> perm_WF n g -> 
-  perm_WF n (f ∘ g).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(* TODO FIXME: Should this really be here? *)
+(* Section on swap_perm, swaps two elements. TODO: Do we even want this?
+	 We have swap_2_perm and fswap... Also, should swap_perm be defined in 
+	 terms of fswap? *)
+Lemma swap_perm_same a n :
+  swap_perm a a n = idn.
 Proof.
+  unfold swap_perm.
+  apply functional_extensionality; intros k.
+  destruct_if_solve.
+Qed.
+
+#[export] Hint Rewrite swap_perm_same : perm_cleanup_db.
+
+Lemma swap_perm_comm a b n :
+  swap_perm a b n = swap_perm b a n.
+Proof.
+  apply functional_extensionality; intros k.
+  unfold swap_perm.
+  destruct_if_solve.
+Qed.
+
+Lemma swap_perm_WF a b n : forall k, n <= k -> swap_perm a b n k = k.
+Proof.
+  intros.
+  unfold swap_perm. 
+  destruct_if_solve.
+Qed.
+
+Global Hint Resolve swap_perm_WF : perm_WF_db.
+
+Lemma swap_perm_bdd a b n : a < n -> b < n ->
+  forall k, k < n -> swap_perm a b n k < n.
+Proof.
+  intros Ha Hb k Hk.
+  unfold swap_perm.
+  destruct_if_solve.
+Qed.
+
+Global Hint Resolve swap_perm_bdd : perm_bdd_db.
+
+Lemma swap_perm_inv a b n : a < n -> b < n -> 
+  (swap_perm a b n) ∘ (swap_perm a b n) = idn.
+Proof.
+  intros Ha Hb.
   unfold compose.
-  intros Hf Hg k Hk.
-  rewrite Hg, Hf; easy.
+  apply functional_extensionality; intros k.
+  unfold swap_perm.
+  destruct_if_solve.
 Qed.
 
-Global Hint Resolve compose_WF : perm_WF_db.
+#[export] Hint Rewrite swap_perm_inv : perm_inv_db.
 
-
-
-
-
-(* Section on perm_inv *)
-Lemma perm_inv_bdd_S n f k : 
-  perm_inv (S n) f k < S n.
+Lemma swap_perm_2_perm a b n : a < n -> b < n ->
+  permutation n (swap_perm a b n).
 Proof.
-  induction n; simpl;
-  [destruct_if_solve|]. 
-  destruct_if; [|transitivity (S n); [apply IHn|]]. 
-  all: apply Nat.lt_succ_diag_r.
+  intros Ha Hb.
+  perm_by_inverse (swap_perm a b n).
 Qed.
 
-Lemma perm_inv_bdd n f k : k < n ->
-  perm_inv n f k < n.
+Global Hint Resolve swap_perm_2_perm : perm_db.
+
+Lemma swap_perm_S_permutation a n (Ha : S a < n) :
+  permutation n (swap_perm a (S a) n).
 Proof.
-  induction n.
-  - easy.
-  - intros. apply perm_inv_bdd_S.
+  apply swap_perm_2_perm; lia.
 Qed.
 
-Global Hint Resolve perm_inv_bdd_S perm_inv_bdd : perm_bdd_db.
+Global Hint Resolve swap_perm_S_permutation : perm_db.
 
-Lemma perm_inv_is_linv_of_inj {n f} : 
-  (forall k l, k < n -> l < n -> f k = f l -> k = l) ->
-  forall k, k < n -> 
-  perm_inv n f (f k) = k.
+Lemma compose_swap_perm a b c n : a < n -> b < n -> c < n -> 
+  b <> c -> a <> c ->
+  (swap_perm a b n ∘ swap_perm b c n ∘ swap_perm a b n) = swap_perm a c n.
 Proof.
-  intros Hinj k Hk.
-  induction n.
-  - easy.
-  - simpl.
-    bdestruct (f n =? f k).
-    + apply Hinj; lia.
-    + assert (k <> n) by (intros Heq; subst; easy).
-      apply IHn; [auto|].
-      assert (k <> n) by (intros Heq; subst; easy).
-      lia.
+  intros Ha Hb Hc Hbc Hac. 
+  apply functional_extensionality; intros k.
+  unfold compose, swap_perm.
+  destruct_if_solve.
 Qed.
 
-Lemma perm_inv_is_rinv_of_surj {n f} k :
-  (exists l, l < n /\ f l = k) ->
-  f (perm_inv n f k) = k.
+#[export] Hint Rewrite compose_swap_perm : perm_cleanup_db.
+
+
+
+
+
+(* Section on insertion_sort_list *)
+
+Lemma fswap_eq_compose_swap_perm {A} (f : nat -> A) n m o : n < o -> m < o ->
+  fswap f n m = f ∘ swap_perm n m o.
 Proof.
-  induction n.
-  - intros []; easy.
-  - intros [l [Hl Hfl]].
-    simpl.
-    bdestruct (f n =? k); [easy|].
-    apply IHn.
-    exists l.
-    split; [|easy].
-    bdestruct (l =? n); [subst; easy|].
-    lia.
+  intros Hn Hm.
+  apply functional_extensionality; intros k.
+  unfold compose, fswap, swap_perm.
+  bdestruct_all; easy.
 Qed.
 
-Lemma perm_inv_is_linv_of_permutation n f : permutation n f ->
-  forall k, k < n -> perm_inv n f (f k) = k.
+Lemma fswap_perm_inv_n_permutation f n : permutation (S n) f ->
+  permutation n (fswap f (perm_inv (S n) f n) n).
 Proof.
   intros Hperm.
-  apply perm_inv_is_linv_of_inj, permutation_is_injective, Hperm.
+  apply fswap_at_boundary_permutation.
+  - apply Hperm.
+  - apply perm_inv_bdd_S.
+  - apply perm_inv_is_rinv_of_permutation; auto.
 Qed.
 
-Lemma perm_inv_is_rinv_of_permutation n f : permutation n f ->
-  forall k, k < n -> f (perm_inv n f k) = k.
+(* Notation perm_list_of_insertion_sort_list l :=
+  (map (fun idxk => match idxk with 
+    | pair n k => swap_perm n k (S n)
+    end) (combine (seq 0 (length l)) l)). *)
+
+Fixpoint swap_list_spec l : bool :=
+  match l with 
+  | [] => true
+  | k :: ks => (k <? S (length ks)) && swap_list_spec ks
+  end.
+
+Fixpoint perm_of_swap_list l :=
+  match l with
+  | [] => idn
+  | k :: ks => let n := length ks in
+    (swap_perm k n (S n) ∘ (perm_of_swap_list ks))
+  end.
+
+Fixpoint invperm_of_swap_list l :=
+  match l with 
+  | [] => idn
+  | k :: ks => let n := length ks in
+    ((invperm_of_swap_list ks) ∘ swap_perm k n (S n))
+  end.
+
+Local Opaque perm_inv.
+Lemma perm_of_swap_list_WF l : swap_list_spec l = true ->
+  perm_WF (length l) (perm_of_swap_list l).
 Proof.
-  intros Hperm k Hk.
-  apply perm_inv_is_rinv_of_surj, (permutation_is_surjective Hperm _ Hk).
+  induction l.
+  - easy.
+  - simpl.
+    rewrite andb_true_iff.
+    intros [Ha Hl].
+    intros k Hk.
+    unfold compose.
+    rewrite IHl; [|easy|lia].
+    rewrite swap_perm_WF; easy.
 Qed.
 
-Lemma perm_inv_is_inv_of_is_surj_is_inj_is_bdd n f :
-  (forall k, k < n -> exists k', k' < n /\ f k' = k) -> 
-  (forall k l, k < n -> l < n -> f k = f l -> k = l) ->
-  (forall k, k < n -> f k < n) ->
-  (forall k, k < n -> 
-    f k < n /\ perm_inv n f k < n /\ perm_inv n f (f k) = k /\ f (perm_inv n f k) = k).
+Lemma invperm_of_swap_list_WF l : swap_list_spec l = true ->
+  perm_WF (length l) (invperm_of_swap_list l).
 Proof.
-  intros Hsurj Hinj Hbdd.
-  intros k Hk; repeat split.
-  - apply Hbdd, Hk.
-  - apply perm_inv_bdd, Hk.
-  - rewrite perm_inv_is_linv_of_inj; easy.
-  - rewrite perm_inv_is_rinv_of_surj; [easy|].
-    apply Hsurj; easy.
+  induction l.
+  - easy.
+  - simpl.
+    rewrite andb_true_iff.
+    intros [Ha Hl].
+    intros k Hk.
+    unfold compose.
+    rewrite swap_perm_WF; [|easy].
+    rewrite IHl; [easy|easy|lia].
+Qed.
+
+Global Hint Resolve perm_of_swap_list_WF invperm_of_swap_list_WF : perm_WF_db.
+
+Lemma invperm_linv_perm_of_swap_list l : swap_list_spec l = true ->
+  invperm_of_swap_list l ∘ perm_of_swap_list l = idn.
+Proof.
+  induction l.
+  - easy.
+  - simpl. 
+    rewrite andb_true_iff.
+    intros [Ha Hl].
+    rewrite Combinators.compose_assoc, 
+    <- (Combinators.compose_assoc _ _ _ _ (perm_of_swap_list _)).
+    rewrite swap_perm_inv, compose_idn_l.
+    + apply (IHl Hl).
+    + bdestructΩ (a <? S (length l)).
+    + lia.
+Qed.
+
+Lemma invperm_rinv_perm_of_swap_list l : swap_list_spec l = true ->
+  perm_of_swap_list l ∘ invperm_of_swap_list l = idn.
+Proof.
+  induction l.
+  - easy.
+  - simpl. 
+    rewrite andb_true_iff.
+    intros [Ha Hl].
+    rewrite <- Combinators.compose_assoc,
+    (Combinators.compose_assoc _ _ _ _ (invperm_of_swap_list _)).
+    rewrite (IHl Hl).
+    rewrite compose_idn_r.
+    rewrite swap_perm_inv; [easy| |lia].
+    bdestructΩ (a <? S (length l)).
+Qed.
+
+#[export] Hint Rewrite invperm_linv_perm_of_swap_list 
+  invperm_rinv_perm_of_swap_list : perm_cleanup_db.
+
+
+(* FIXME: Remove; for working reference*)
+Fixpoint insertion_sort_list n f := 
+  match n with 
+  | 0 => []
+  | S n' => let k := (perm_inv (S n') f n') in
+      k :: insertion_sort_list n' (fswap f k n')
+  end.
+
+Lemma length_insertion_sort_list n f :
+  length (insertion_sort_list n f) = n.
+Proof.
+  revert f;
+  induction n;
+  intros f.
+  - easy.
+  - simpl.
+    rewrite IHn; easy.
+Qed.
+
+Lemma insertion_sort_list_is_swap_list n f : 
+  swap_list_spec (insertion_sort_list n f) = true.
+Proof.
+  revert f;
+  induction n;
+  intros f.
+  - easy.
+  - simpl.
+    rewrite length_insertion_sort_list, IHn.
+    pose proof (perm_inv_bdd_S n f n).
+    bdestructΩ (perm_inv (S n) f n <? S n).
 Qed.
 
 
 
+Lemma perm_of_insertion_sort_list_is_rinv n f : permutation n f ->
+  forall k, k < n ->
+  (f ∘ perm_of_swap_list (insertion_sort_list n f)) k = k.
+Proof.
+  revert f;
+  induction n;
+  intros f.
+  - intros; exfalso; easy.
+  - intros Hperm k Hk.
+    simpl.
+    rewrite length_insertion_sort_list.
+    bdestruct (k =? n).
+    + unfold compose.
+      rewrite perm_of_swap_list_WF; [ |
+        apply insertion_sort_list_is_swap_list |
+        rewrite length_insertion_sort_list; lia
+      ]. 
+      unfold swap_perm.
+      bdestructΩ (S n <=? k).
+      bdestructΩ (k =? n).
+      subst.
+      bdestruct (n =? perm_inv (S n) f n).
+      1: rewrite H at 1.
+      all: rewrite perm_inv_is_rinv_of_permutation; [easy|easy|lia].
+    + rewrite <- Combinators.compose_assoc.
+      rewrite <- fswap_eq_compose_swap_perm; [|apply perm_inv_bdd_S|lia].
+      rewrite IHn; [easy| |lia].
+      apply fswap_perm_inv_n_permutation, Hperm.
+Qed.
 
 
 
+Local Transparent perm_inv.
 
 
 (* Section on stack_perms *)

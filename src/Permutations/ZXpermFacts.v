@@ -95,7 +95,15 @@ Qed.
 
 Global Hint Resolve top_to_bottom_zxperm bottom_to_top_zxperm : zxperm_db.
 
+(* FIXME: Temporary for working only *)
+Definition a_perm (n : nat) : nat -> nat :=
+  swap_perm 0 (n-1) n.
 
+Lemma a_swap_zxperm n : 
+	ZXperm n n (bottom_to_top n).
+Proof.
+	induction n; auto with zxperm_db.
+Qed.
 
 
 
@@ -328,5 +336,141 @@ Proof.
 Qed.
 
 #[export] Hint Rewrite perm_of_n_compose_n_top_to_bottom : perm_of_zx_cleanup_db.
+
+
+
+(* FIXME: This doesn't go here: *)
+(* Definition n_top_to_bottom (n m : nat) : ZX (n + m) (n + m) :=
+  n_compose n (top_to_bottom (n + m)). *)
+
+Lemma mod_add_n_r : forall m n, 
+	(m + n) mod n = m mod n.
+Proof.
+	intros m n.
+	replace (m + n) with (m + 1 * n) by lia.
+	destruct n.
+	- cbn; easy.
+	- rewrite Nat.mod_add;
+		lia.
+Qed.
+
+Lemma mod_eq_sub : forall m n,
+	m mod n = m - n * (m / n).
+Proof.
+	intros m n.
+	destruct n.
+	- cbn; lia.
+	- assert (H: S n <> 0) by easy.
+		pose proof (Nat.div_mod m (S n) H) as Heq.
+		lia.
+Qed.
+
+Lemma mod_of_scale : forall m n q, 
+	n * q <= m < n * S q -> m mod n = m - q * n.
+Proof.
+	intros m n q [Hmq HmSq].
+	rewrite mod_eq_sub.
+	replace (m/n) with q; [lia|].
+	apply Nat.le_antisymm.
+	- apply Nat.div_le_lower_bound; lia. 
+	- epose proof (Nat.div_lt_upper_bound m n (S q) _ _).
+		lia.
+		Unshelve.
+		all: lia.
+Qed.
+
+Lemma mod_n_to_2n : forall m n, 
+	n <= m < 2 * n -> m mod n = m - n.
+Proof.
+	intros.
+	epose proof (mod_of_scale m n 1 _).
+	lia.
+	Unshelve.
+	lia.
+Qed.
+
+Lemma mod_n_to_n_plus_n : forall m n, 
+	n <= m < n + n -> m mod n = m - n.
+Proof.
+	intros.
+	apply mod_n_to_2n; lia.
+Qed.
+
+Ltac fail_if_has_mods a :=
+	match a with
+	| context[_ mod _] => fail 1
+	| _ => idtac
+	end.
+
+Ltac simplify_mods_of a b :=
+	first [
+		rewrite (Nat.mod_small a b) in * by lia
+	| rewrite (mod_n_to_2n a b) in * by lia
+	].
+
+Ltac solve_simple_mod_eqns :=
+	match goal with
+	| |- context[if _ then _ else _] => fail 1 "Cannot solve equation with if"
+	| _ =>
+		repeat first [
+			lia
+		|	match goal with 
+			| |- context[?a mod ?b] => fail_if_has_mods a; fail_if_has_mods b; 
+					simplify_mods_of a b
+			| H: context[?a mod ?b] |- _ => fail_if_has_mods a; fail_if_has_mods b; 
+					simplify_mods_of a b
+			end 
+		| match goal with
+			| |- context[?a mod ?b] => (* idtac a b; *) bdestruct (a <? b);
+					[rewrite (Nat.mod_small a b) by lia 
+					| try rewrite (mod_n_to_2n a b) by lia]
+			end
+		]
+	end.
+
+Lemma hexagon_lemma_1_helper : forall {n m o o'} prf1 prf2 prf3 prf4,
+	n_top_to_bottom n m ↕ n_wire o 
+	⟷ cast (n + m + o) o' prf1 prf2 (n_wire m ↕ n_top_to_bottom n o)
+	∝ cast (n + m + o) o' prf3 prf4 (n_top_to_bottom n (m + o)).
+Proof.
+	intros. unfold n_top_to_bottom. subst.
+	apply prop_of_equal_perm.
+	all: auto with zxperm_db.
+	cleanup_perm_of_zx; auto with zxperm_db.
+	rewrite stack_perms_idn_f.
+	unfold compose, rotr.
+	apply functional_extensionality; intros k.
+	bdestruct_all; simpl in *; try lia.
+	all: solve_simple_mod_eqns.
+Qed.
+
+
+
+Lemma perm_of_a_swap n : 
+	perm_of_zx (a_swap n) = a_perm n.
+Proof.
+	destruct n; [cleanup_perm; easy|].
+	simpl.
+	cleanup_perm_of_zx.
+	unfold compose, a_perm.
+	replace (S n - 1) with n by lia.
+	unfold swap_perm.
+	apply functional_extensionality.
+	intros k.
+	bdestruct_all.
+	- rewrite stack_perms_WF; [|lia].
+		auto with perm_WF_db.
+	- rewrite stack_perms_left; [|lia].
+		unfold rotl.
+		bdestruct_all; solve_simple_mod_eqns.
+	- subst.
+		rewrite stack_perms_right; [|lia].
+		unfold rotr, rotl.
+		bdestruct_all; solve_simple_mod_eqns.
+	- rewrite stack_perms_right; [|lia].
+		unfold rotr, rotl.
+		bdestruct_all; solve_simple_mod_eqns.
+Qed.
+
 
 Local Close Scope nat.

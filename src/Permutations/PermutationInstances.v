@@ -8,7 +8,7 @@ Local Open Scope prg.
 
 
 
-Lemma idn_permutation : forall n, permutation n idn.
+Lemma idn_permutation n : permutation n idn.
 Proof. exists idn. easy. Qed.
 
 Global Hint Resolve idn_permutation : perm_db.
@@ -52,86 +52,7 @@ Global Hint Resolve swap_2_perm_permutation : perm_db.
 
 
 
-(* Section on swap_perm, swaps any two elements. TODO: Do we even want this?
-	 We have swap_2_perm and fswap... Also, should swap_perm be defined in 
-	 terms of fswap? *)
-Lemma swap_perm_same a n :
-  swap_perm a a n = idn.
-Proof.
-  unfold swap_perm.
-  apply functional_extensionality; intros k.
-  destruct_if_solve.
-Qed.
 
-#[export] Hint Rewrite swap_perm_same : perm_cleanup_db.
-
-Lemma swap_perm_comm a b n :
-  swap_perm a b n = swap_perm b a n.
-Proof.
-  apply functional_extensionality; intros k.
-  unfold swap_perm.
-  destruct_if_solve.
-Qed.
-
-Lemma swap_perm_WF a b n : forall k, n <= k -> swap_perm a b n k = k.
-Proof.
-  intros.
-  unfold swap_perm. 
-  destruct_if_solve.
-Qed.
-
-Global Hint Resolve swap_perm_WF : perm_WF_db.
-
-Lemma swap_perm_bdd a b n : a < n -> b < n ->
-  forall k, k < n -> swap_perm a b n k < n.
-Proof.
-  intros Ha Hb k Hk.
-  unfold swap_perm.
-  destruct_if_solve.
-Qed.
-
-Global Hint Resolve swap_perm_bdd : perm_bdd_db.
-
-Lemma swap_perm_inv a b n : a < n -> b < n -> 
-  (swap_perm a b n) ∘ (swap_perm a b n) = idn.
-Proof.
-  intros Ha Hb.
-  unfold compose.
-  apply functional_extensionality; intros k.
-  unfold swap_perm.
-  destruct_if_solve.
-Qed.
-
-#[export] Hint Rewrite swap_perm_inv : perm_inv_db.
-
-Lemma swap_perm_2_perm a b n : a < n -> b < n ->
-  permutation n (swap_perm a b n).
-Proof.
-  intros Ha Hb.
-  perm_by_inverse (swap_perm a b n).
-Qed.
-
-Global Hint Resolve swap_perm_2_perm : perm_db.
-
-Lemma swap_perm_S_permutation a n (Ha : S a < n) :
-  permutation n (swap_perm a (S a) n).
-Proof.
-  apply swap_perm_2_perm; lia.
-Qed.
-
-Global Hint Resolve swap_perm_S_permutation : perm_db.
-
-Lemma compose_swap_perm a b c n : a < n -> b < n -> c < n -> 
-  b <> c -> a <> c ->
-  (swap_perm a b n ∘ swap_perm b c n ∘ swap_perm a b n) = swap_perm a c n.
-Proof.
-  intros Ha Hb Hc Hbc Hac. 
-  apply functional_extensionality; intros k.
-  unfold compose, swap_perm.
-  destruct_if_solve.
-Qed.
-
-#[export] Hint Rewrite compose_swap_perm : perm_cleanup_db.
 
 
 
@@ -460,6 +381,14 @@ Proof.
 Qed.
 
 #[export] Hint Rewrite bottom_to_top_perm_eq_rotl : perm_cleanup_db.
+
+(* Section for a_perm *)
+(* TODO: Add. *)
+
+
+
+
+
 
 Local Close Scope nat.
 Local Close Scope prg.

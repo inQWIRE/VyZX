@@ -52,4 +52,5 @@ Definition top_to_bottom_perm (n : nat) : nat -> nat :=
 	fun k => if n <=? k then k else
 	         if k =? (n-1) then 0%nat else (k + 1)%nat.
 
-
+Definition a_perm (n : nat) : nat -> nat :=
+  swap_perm 0 (n-1) n.

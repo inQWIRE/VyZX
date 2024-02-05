@@ -11,6 +11,8 @@ Require Export CoreRules.CoreAutomation.
 Tactic Notation "tryeasylia" :=
   try easy; try lia.
 
+
+
 Ltac bdest_lia_replace b0 b1 :=
   replace b0 with b1 by (bdestruct b0; lia).
 

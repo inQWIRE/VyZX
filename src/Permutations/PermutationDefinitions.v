@@ -1,8 +1,10 @@
 Require Export QuantumLib.Permutations.
 Require Import CoreData.ZXCore.
 
+(* FIXME: In QuantumLib *)
 Notation idn := (fun (k : nat) => k).
 
+(* FIXME: In QuantumLib *)
 Fixpoint perm_inv n f : nat -> nat :=
   fun k => match n with
   | 0 => 0%nat
