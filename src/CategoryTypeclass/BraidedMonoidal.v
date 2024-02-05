@@ -3,7 +3,6 @@ Require Import CoreRules.
 Require Import Category.
 Require Import Monoidal.
 Require Import MonoidalRules.
-Require Import Permutation.
 Require Import PermutationRules.
 
 Local Open Scope Cat.
@@ -69,36 +68,6 @@ Proof.
     all: rewrite (Nat.add_comm n m); easy.
 Qed.
 
-Lemma S_lemma : forall {n m},
-    (S n + m)%nat = (n + S m)%nat.
-Proof. lia. Qed.
-
-Lemma n_top_to_bottom_perm : forall {n m}, 
-    ZX_Perm (n + m) (n + m) (n_top_to_bottom n m).
-Proof.
-    unfold n_top_to_bottom.
-    auto with zxperm_db.
-Qed.
-
-Lemma n_bottom_to_top_perm : forall {n m}, 
-    ZX_Perm (n + m) (n + m) (n_bottom_to_top m n).
-Proof.
-    unfold n_bottom_to_top.
-    auto with zxperm_db.
-Qed.
-
-Ltac fail_if_has_mod H :=
-  match H with
-  | context [_ Nat.modulo _] => fail 1
-  | _ => idtac
-  end.
-
-Ltac rewrite_all_small_mods :=
-  repeat match goal with
-  | [|- context[?a Nat.modulo ?b]] => 
-    fail_if_has_mod a; rewrite Nat.mod_small; [|lia]
-  end.
-
 Lemma hexagon_lemma_1_helper : forall {n m o o'} prf1 prf2 prf3 prf4,
     n_top_to_bottom n m ↕ n_wire o
     ⟷ cast (n + m + o) o' prf1 prf2 (n_wire m ↕ n_top_to_bottom n o)
@@ -107,25 +76,13 @@ Proof.
     intros. unfold n_top_to_bottom. subst.
     apply prop_of_equal_perm.
     all: auto with zxperm_db.
-    cleanup_perm_of_zx.
-    rewrite stack_permutations_idn_f.
-    unfold Basics.compose, rotr.
+    cleanup_perm_of_zx; auto with zxperm_db.
+    rewrite stack_perms_idn_f.
+    unfold compose, rotr.
     apply functional_extensionality; intros.
-    assert (forall n, ~(n < 0)%nat) by lia.
-    assert (forall n, ~(n < n)%nat) by lia.
-    bdestruct_all; simpl.
-    - rewrite Nat.mod_small; repeat lia. 
-    - rewrite Nat.mod_small. simpl in H3.
-      assert (n < 0)%nat by lia.
-      apply H in H6. contradiction. lia.
-    - repeat rewrite Nat.mod_small. all: lia.
-    - repeat rewrite Nat.mod_small. all: lia.
-    - admit.
-    - admit.
-    - easy.
-    - rewrite Nat.mod_small. simpl in H3. admit. admit.
-    - apply n_top_to_bottom_perm.
-Admitted.
+    bdestruct_all; simpl in *; try lia.
+    all: solve_simple_mod_eqns.
+Qed.
 
 Lemma hexagon_lemma_1 : forall {n m o}, 
     (zx_braiding ↕ n_wire o) ⟷ zx_associator ⟷ (n_wire m ↕ zx_braiding)
@@ -155,12 +112,14 @@ Proof.
     intros. unfold n_bottom_to_top. subst.
     apply prop_of_equal_perm.
     all: auto with zxperm_db.
-    cleanup_perm_of_zx.
-    rewrite stack_permutations_idn_f.
-    unfold Basics.compose, rotl.
+    cleanup_perm_of_zx. 
+    rewrite stack_perms_idn_f.
+    unfold compose, rotl.
     apply functional_extensionality; intros.
-    bdestruct_all; simpl.
-Admitted.
+    bdestruct_all; simpl in *; try lia.
+    all: solve_simple_mod_eqns.
+    auto with zxperm_db.
+Qed.
 
 Lemma hexagon_lemma_2 : forall {n m o},
     (zx_inv_braiding ↕ n_wire o) ⟷ zx_associator ⟷ (n_wire m ↕ zx_inv_braiding)
