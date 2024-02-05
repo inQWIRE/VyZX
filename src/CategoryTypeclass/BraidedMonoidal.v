@@ -3,6 +3,7 @@ Require Import CoreRules.
 Require Import Category.
 Require Import Monoidal.
 Require Import MonoidalRules.
+Require Import Permutation.
 Require Import PermutationRules.
 
 Local Open Scope Cat.
@@ -72,48 +73,58 @@ Lemma S_lemma : forall {n m},
     (S n + m)%nat = (n + S m)%nat.
 Proof. lia. Qed.
 
+Lemma n_top_to_bottom_perm : forall {n m}, 
+    ZX_Perm (n + m) (n + m) (n_top_to_bottom n m).
+Proof.
+    unfold n_top_to_bottom.
+    auto with zxperm_db.
+Qed.
+
+Lemma n_bottom_to_top_perm : forall {n m}, 
+    ZX_Perm (n + m) (n + m) (n_bottom_to_top m n).
+Proof.
+    unfold n_bottom_to_top.
+    auto with zxperm_db.
+Qed.
+
+Ltac fail_if_has_mod H :=
+  match H with
+  | context [_ Nat.modulo _] => fail 1
+  | _ => idtac
+  end.
+
+Ltac rewrite_all_small_mods :=
+  repeat match goal with
+  | [|- context[?a Nat.modulo ?b]] => 
+    fail_if_has_mod a; rewrite Nat.mod_small; [|lia]
+  end.
+
 Lemma hexagon_lemma_1_helper : forall {n m o o'} prf1 prf2 prf3 prf4,
     n_top_to_bottom n m ↕ n_wire o
     ⟷ cast (n + m + o) o' prf1 prf2 (n_wire m ↕ n_top_to_bottom n o)
     ∝ cast (n + m + o) o' prf3 prf4 (n_top_to_bottom n (m + o)).
 Proof.
     intros. unfold n_top_to_bottom. subst.
-    apply (cast_diagrams (n + m + o) (n + m + o) (eq_refl (n + m + o)%nat) prf1).
     apply prop_of_equal_perm.
-    
-    (* auto with zxperm_db. *)
-    (* cleanup_perm_of_zx. *)
-        
-    (* intros.
-    unfold n_top_to_bottom.
-    induction n.
-    - intros.
-      rewrite 3 n_compose_0.
-      rewrite 2 n_wire_stack.
-      cleanup_zx.
-      assert (n_wire (m + (0 + o)) ∝ n_wire (0 + (m + o))) by easy.
-      rewrite H. simpl_casts. reflexivity.
-    - intros.
-      rewrite 1 n_compose_grow_l.
-      assert (top_to_bottom (S n + m) 
-        ∝ cast (S n + m) (S n + m) S_lemma S_lemma (top_to_bottom (n + S m))) 
-        by (rewrite cast_fn_eq_dim; reflexivity).
-      rewrite H.
-      rewrite cast_n_compose.
-      rewrite <- cast_compose_mid_contract. simpl_casts.
-      rewrite 1 n_compose_grow_r.
-      rewrite stack_nwire_distribute_l.
-      assert (top_to_bottom (S n + o) 
-        ∝ cast (S n + o) (S n + o) S_lemma S_lemma (top_to_bottom (n + S o)))
-        by (rewrite cast_fn_eq_dim; reflexivity).
-      rewrite H0.
-      rewrite cast_n_compose.
-      rewrite cast_compose_mid_contract. simpl_casts.
-      rewrite <- compose_assoc.
-      rewrite cast_compose_l. simpl_casts.
-      rewrite cast_compose_l. simpl_casts.
-      rewrite stack_nwire_distribute_r.
-      rewrite (compose_assoc (top_to_bottom (n + S m) ↕ n_wire o)). *)
+    all: auto with zxperm_db.
+    cleanup_perm_of_zx.
+    rewrite stack_permutations_idn_f.
+    unfold Basics.compose, rotr.
+    apply functional_extensionality; intros.
+    assert (forall n, ~(n < 0)%nat) by lia.
+    assert (forall n, ~(n < n)%nat) by lia.
+    bdestruct_all; simpl.
+    - rewrite Nat.mod_small; repeat lia. 
+    - rewrite Nat.mod_small. simpl in H3.
+      assert (n < 0)%nat by lia.
+      apply H in H6. contradiction. lia.
+    - repeat rewrite Nat.mod_small. all: lia.
+    - repeat rewrite Nat.mod_small. all: lia.
+    - admit.
+    - admit.
+    - easy.
+    - rewrite Nat.mod_small. simpl in H3. admit. admit.
+    - apply n_top_to_bottom_perm.
 Admitted.
 
 Lemma hexagon_lemma_1 : forall {n m o}, 
@@ -132,7 +143,6 @@ Proof.
     rewrite cast_compose_l. simpl_casts.
     rewrite (cast_compose_r _ _ _ (n_wire (m + o + n))).
     cleanup_zx. simpl_casts.
-    
     rewrite hexagon_lemma_1_helper.
     reflexivity.
 Qed.
@@ -142,6 +152,14 @@ Lemma hexagon_lemma_2_helper : forall {n m o o'} prf1 prf2 prf3 prf4,
     ⟷ cast (n + m + o) o' prf1 prf2 (n_wire m ↕ n_bottom_to_top o n)
     ∝ cast (n + m + o) o' prf3 prf4 (n_bottom_to_top (m + o) n).
 Proof.
+    intros. unfold n_bottom_to_top. subst.
+    apply prop_of_equal_perm.
+    all: auto with zxperm_db.
+    cleanup_perm_of_zx.
+    rewrite stack_permutations_idn_f.
+    unfold Basics.compose, rotl.
+    apply functional_extensionality; intros.
+    bdestruct_all; simpl.
 Admitted.
 
 Lemma hexagon_lemma_2 : forall {n m o},
