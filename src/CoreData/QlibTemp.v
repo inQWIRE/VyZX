@@ -2,6 +2,32 @@ From QuantumLib Require Import Matrix.
 From QuantumLib Require Import Quantum.
 
 (* @nocheck name *)
+Lemma Mscale_inv : forall {n m} (A B : Matrix n m) c, c <> C0 -> c .* A = B <-> A = (/ c) .* B.
+Proof.
+  intros.
+  split; intro H0; [rewrite <- H0 | rewrite H0];
+  rewrite Mscale_assoc.
+  - rewrite Cinv_l; [ lma | assumption].  
+  - rewrite Cinv_r; [ lma | assumption].  
+Qed.
+
+(* @nocheck name *)
+Lemma Ropp_lt_0 : forall x : R, x < 0 -> 0 < -x.
+Proof.
+	intros.
+	rewrite <- Ropp_0.
+	apply Ropp_lt_contravar.
+	easy.
+Qed.
+
+(* @nocheck name *)
+Definition Rsqrt (x : R) :C := 
+match Rcase_abs x with
+| left a => Ci * Rsqrt {| nonneg := - x; cond_nonneg := Rlt_le 0 (-x)%R (Ropp_lt_0 x a) |}
+| right a => C1 * Rsqrt {| nonneg := x; cond_nonneg := Rge_le x R0 a |}
+end.
+
+(* @nocheck name *)
 (* *)
 Lemma INR_pi_exp : forall (r : nat),
 	Cexp (INR r * PI) = 1 \/ Cexp (INR r * PI) = -1.
@@ -100,6 +126,26 @@ Lemma braminus_transpose_ketminus :
   ⟨-∣⊤ = ∣-⟩.
 Proof. unfold braminus; lma. Qed.
 
+(* @nocheck name *)
+(* PI is captialized in Coq R *)
+Lemma Cexp_2_PI : forall a, Cexp (INR a * 2 * PI) = 1.
+Proof.
+	intros.
+	induction a.
+	- simpl.
+		rewrite 2 Rmult_0_l.
+		rewrite Cexp_0.
+		easy.
+	- rewrite S_INR.
+		rewrite 2 Rmult_plus_distr_r.
+		rewrite Rmult_1_l.
+		rewrite double.
+		rewrite <- Rplus_assoc.
+		rewrite 2 Cexp_plus_PI.
+		rewrite IHa.
+		lca.
+Qed.
+
 #[export] Hint Resolve 
   WF_braplus
   WF_braminus : wf_db.
@@ -114,3 +160,326 @@ Proof. unfold braminus; lma. Qed.
 #[export] Hint Rewrite <- Mscale_plus_distr_l : scalar_move_db.
 #[export] Hint Rewrite <- Mscale_plus_distr_r : scalar_move_db.
 
+(* @nocheck name *)
+Definition Csqrt (z : C) : C :=
+	match z with
+	| (a, b) => sqrt ((Cmod z + a) / 2) + Ci * (b / Rabs b) * sqrt((Cmod z - a) / 2)
+	end.
+
+Notation "√ z" := (Csqrt z) : C_scope.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmultplus0 : 
+	⟨+∣ × ∣0⟩ = / (√2)%R .* I 1.
+Proof.
+	unfold braplus.
+	rewrite Mscale_mult_dist_l.
+	rewrite Mmult_plus_distr_r.
+	rewrite Mmult00.
+	rewrite Mmult10.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmult0plus : 
+	⟨0∣ × ∣+⟩ = / (√2)%R .* I 1.
+Proof.
+	unfold xbasis_plus.
+	rewrite Mscale_mult_dist_r.
+	rewrite Mmult_plus_distr_l.
+	rewrite Mmult00.
+	rewrite Mmult01.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmultplus1 : 
+	⟨+∣ × ∣1⟩ = / (√2)%R .* I 1.
+Proof.
+	unfold braplus.
+	rewrite Mscale_mult_dist_l.
+	rewrite Mmult_plus_distr_r.
+	rewrite Mmult01.
+	rewrite Mmult11.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmult1plus : 
+	⟨1∣ × ∣+⟩ = / (√2)%R .* I 1.
+Proof.
+	unfold xbasis_plus.
+	rewrite Mscale_mult_dist_r.
+	rewrite Mmult_plus_distr_l.
+	rewrite Mmult10.
+	rewrite Mmult11.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmultminus0 : 
+	⟨-∣ × ∣0⟩ = / (√2)%R .* I 1.
+Proof.
+	unfold braminus.
+	rewrite Mscale_mult_dist_l.
+	rewrite Mmult_plus_distr_r.
+	rewrite Mmult00.
+	rewrite Mscale_mult_dist_l.
+	rewrite Mmult10.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmult0minus : 
+	⟨0∣ × ∣-⟩ = / (√2)%R .* I 1.
+Proof.
+	unfold xbasis_minus.
+	rewrite Mscale_mult_dist_r.
+	rewrite Mmult_plus_distr_l.
+	rewrite Mmult00.
+	rewrite Mscale_mult_dist_r.
+	rewrite Mmult01.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmultminus1 : 
+	⟨-∣ × ∣1⟩ = - / (√2)%R .* I 1.
+Proof.
+	unfold braminus.
+	rewrite Mscale_mult_dist_l.
+	rewrite Mmult_plus_distr_r.
+	rewrite Mmult01.
+	rewrite Mscale_mult_dist_l.
+	rewrite Mmult11.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmult1minus : 
+	⟨1∣ × ∣-⟩ = - / (√2)%R .* I 1.
+Proof.
+	unfold xbasis_minus.
+	rewrite Mscale_mult_dist_r.
+	rewrite Mmult_plus_distr_l.
+	rewrite Mmult10.
+	rewrite Mscale_mult_dist_r.
+	rewrite Mmult11.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmultminusminus : 
+	⟨-∣ × ∣-⟩ = I 1.
+Proof.
+	unfold braminus.
+	unfold xbasis_minus.
+	repeat rewrite Mscale_mult_dist_l.
+	repeat rewrite Mscale_mult_dist_r.
+	repeat rewrite Mmult_plus_distr_r.
+	repeat rewrite Mmult_plus_distr_l.
+	autorewrite with scalar_move_db.
+	rewrite Mmult00.
+	rewrite Mmult01.
+	rewrite Mmult10.
+	rewrite Mmult11.
+	Msimpl.
+	autorewrite with scalar_move_db.
+	solve_matrix.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmultplusminus : 
+	⟨+∣ × ∣-⟩ = Zero.
+Proof.
+	unfold xbasis_minus.
+	unfold braplus.
+	repeat rewrite Mscale_mult_dist_l.
+	repeat rewrite Mscale_mult_dist_r.
+	repeat rewrite Mmult_plus_distr_r.
+	repeat rewrite Mmult_plus_distr_l.
+	autorewrite with scalar_move_db.
+	rewrite Mmult00.
+	rewrite Mmult01.
+	rewrite Mmult10.
+	rewrite Mmult11.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmultminusplus : 
+	⟨-∣ × ∣+⟩ = Zero.
+Proof.
+	unfold xbasis_plus.
+	unfold braminus.
+	repeat rewrite Mscale_mult_dist_l.
+	repeat rewrite Mscale_mult_dist_r.
+	repeat rewrite Mmult_plus_distr_r.
+	repeat rewrite Mmult_plus_distr_l.
+	autorewrite with scalar_move_db.
+	rewrite Mmult00.
+	rewrite Mmult01.
+	rewrite Mmult10.
+	rewrite Mmult11.
+	Msimpl.
+	lma.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mmultplusplus : 
+	⟨+∣ × ∣+⟩ = I 1.
+Proof.
+	unfold xbasis_plus.
+	unfold braplus.
+	repeat rewrite Mscale_mult_dist_l.
+	repeat rewrite Mscale_mult_dist_r.
+	repeat rewrite Mmult_plus_distr_r.
+	repeat rewrite Mmult_plus_distr_l.
+	autorewrite with scalar_move_db.
+	rewrite Mmult00.
+	rewrite Mmult01.
+	rewrite Mmult10.
+	rewrite Mmult11.
+	solve_matrix.
+Qed.
+
+#[export] Hint Rewrite 
+	Mmult00 Mmult01 Mmult10 Mmult11 
+	Mmultplus0 Mmultplus1 Mmultminus0 Mmultminus1
+	Mmult0plus Mmult0minus Mmult1plus Mmult1minus
+	Mmultplusplus Mmultplusminus Mmultminusplus Mmultminusminus
+	: ketbra_mult_db.
+
+Lemma bra0transpose :
+	⟨0∣⊤ = ∣0⟩.
+Proof. solve_matrix. Qed.
+
+Lemma bra1transpose :
+	⟨1∣⊤ = ∣1⟩.
+Proof. solve_matrix. Qed.
+
+Lemma ket0transpose :
+	∣0⟩⊤ = ⟨0∣.
+Proof. solve_matrix. Qed.
+
+Lemma ket1transpose :
+	∣1⟩⊤ = ⟨1∣.
+Proof. solve_matrix. Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mplus_plus_minus : ∣+⟩ .+ ∣-⟩ = (√2)%R .* ∣0⟩.
+Proof. 
+	unfold xbasis_plus.
+	unfold xbasis_minus.
+	solve_matrix.
+	C_field.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mplus_plus_minus_opp : ∣+⟩ .+ -1 .* ∣-⟩ = (√2)%R .* ∣1⟩.
+Proof. 
+	unfold xbasis_plus.
+	unfold xbasis_minus.
+	solve_matrix.
+	C_field_simplify.
+	lca.
+	C_field.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mplus_minus_plus : ∣-⟩ .+ ∣+⟩ = (√2)%R .* ∣0⟩.
+Proof. 
+	unfold xbasis_plus.
+	unfold xbasis_minus.
+	solve_matrix.
+	C_field.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mplus_minus_opp_plus : -1 .* ∣-⟩ .+ ∣+⟩ = (√2)%R .* ∣1⟩.
+Proof.
+	unfold xbasis_plus.
+	unfold xbasis_minus.
+	solve_matrix.
+	C_field_simplify.
+	lca.
+	C_field.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mplus_0_1 : ∣0⟩ .+ ∣1⟩ = (√2)%R .* ∣+⟩.
+Proof. 
+	unfold xbasis_plus.
+	unfold xbasis_minus.
+	solve_matrix.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mplus_0_1_opp : ∣0⟩ .+ -1 .* ∣1⟩ = (√2)%R .* ∣-⟩.
+Proof. 
+	unfold xbasis_plus.
+	unfold xbasis_minus.
+	solve_matrix.
+	C_field_simplify.
+	lca.
+	C_field.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mplus_1_0 : ∣1⟩ .+ ∣0⟩ = (√2)%R .* ∣+⟩.
+Proof. 
+	unfold xbasis_plus.
+	unfold xbasis_minus.
+	solve_matrix.
+Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Mplus_1_opp_0 : -1 .* ∣1⟩ .+ ∣0⟩ = (√2)%R .* ∣-⟩.
+Proof.
+	unfold xbasis_plus.
+	unfold xbasis_minus.
+	solve_matrix.
+	C_field_simplify.
+	lca.
+	C_field.
+Qed.
+
+Lemma σz_decomposition : σz = ∣0⟩⟨0∣ .+ -1 .* ∣1⟩⟨1∣.
+Proof. solve_matrix. Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Cexp_spec : forall α, Cexp α = cos α + Ci * sin α.
+Proof. intros; lca. Qed.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma Cexp_minus : forall θ,
+	Cexp θ + Cexp (-θ) = 2 * cos θ.
+Proof.
+	intros.
+	unfold Cexp.
+	rewrite cos_neg.
+	rewrite sin_neg.
+	lca.
+Qed.

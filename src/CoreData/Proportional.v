@@ -232,18 +232,27 @@ Add Parametric Morphism (n m : nat) : (@adjoint n m)
   with signature (@proportional n m) ==> proportional as adj_mor.
 Proof. apply adjoint_compat. Qed.
 
+Lemma colorswap_is_bihadamard : forall n m (zx : ZX n m),
+  ⊙ zx ∝ (n ↑ □) ⟷ (zx ⟷ (m ↑ □)).
+Proof.
+  prop_exists_nonzero 1.
+  Msimpl.
+  simpl.
+  rewrite 2 n_stack1_n_kron.
+  simpl.
+  rewrite semantics_colorswap_comm.
+  easy.
+Qed.
+
 Lemma colorswap_compat :
   forall nIn nOut,
     forall zx0 zx1 : ZX nIn nOut, zx0 ∝ zx1 ->
     (⊙ zx0) ∝ (⊙ zx1).
 Proof.
   intros.
-  destruct H; destruct H; exists x; split; try assumption.
-  rewrite 2 semantics_colorswap_comm.
+  rewrite 2 colorswap_is_bihadamard.
   rewrite H.
-  rewrite Mscale_mult_dist_r.
-  rewrite Mscale_mult_dist_l.
-  reflexivity.
+  easy.
 Qed.
 
 Add Parametric Morphism (nIn nOut : nat) : (@color_swap nIn nOut)
@@ -252,7 +261,7 @@ Add Parametric Morphism (nIn nOut : nat) : (@color_swap nIn nOut)
 Proof. apply colorswap_compat. Qed.
 
 Theorem sem_eq_prop : forall {n m} (zx0 : ZX n m) (zx1 : ZX n m),
-  ZX_semantics zx0 = ZX_semantics zx1 -> zx0 ∝ zx1.
+  ⟦ zx0 ⟧ = ⟦ zx1 ⟧ -> zx0 ∝ zx1.
 Proof.
   intros.
   prop_exists_nonzero 1.
@@ -303,7 +312,7 @@ Proof.
 Qed.
 
 Lemma colorswap_diagrams : forall n m (zx0 zx1 : ZX n m),
-  ⊙ zx0 ∝ ⊙zx1 -> zx0 ∝ zx1.
+  ⊙ zx0 ∝ ⊙ zx1 -> zx0 ∝ zx1.
 Proof.
   intros.
   rewrite <- colorswap_involutive.
@@ -336,6 +345,31 @@ Proof.
   assumption.
 Qed.
 
+Lemma colorswap_adjoint_commute : forall n m (zx : ZX n m),
+  ⊙ (zx †) ∝ (⊙ zx) †.
+Proof.
+  intros.
+  induction zx; try easy.
+  all: simpl; rewrite IHzx1, IHzx2; easy.
+Qed.
+
+Lemma transpose_adjoint_commute : forall n m (zx : ZX n m),
+  (zx †) ⊤ ∝ (zx ⊤) †.
+Proof.
+  intros.
+  induction zx; try easy.
+  all: simpl; rewrite IHzx1, IHzx2; easy.
+Qed.
+
+Lemma colorswap_transpose_commute : forall n m (zx : ZX n m),
+  ⊙ (zx ⊤) ∝ (⊙ zx) ⊤.
+Proof.
+  intros.
+  induction zx; try easy.
+  all: simpl; rewrite IHzx1, IHzx2; easy.
+Qed.
+
+
 Lemma transpose_wire : Wire ⊤ ∝ Wire.
 Proof.
   prop_exists_nonzero 1.
@@ -362,7 +396,7 @@ Proof.
 Qed.
 
 Lemma proportional_sound : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut),
-  zx0 ∝ zx1 -> exists (zxConst : ZX 0 0), ZX_semantics zx0 = ZX_semantics (zxConst ↕ zx1).
+  zx0 ∝ zx1 -> exists (zxConst : ZX 0 0), ⟦ zx0 ⟧ = ⟦ zxConst ↕ zx1 ⟧.
 Proof.
   intros.
   simpl; unfold proportional, proportional_general in H.

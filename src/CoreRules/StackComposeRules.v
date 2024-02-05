@@ -32,7 +32,8 @@ Proof.
   easy.
 Qed.
 
-Lemma push_out_top : forall {nIn nOut nOutAppendix} (appendix : ZX 0 nOutAppendix) (zx : ZX nIn nOut), appendix ↕ zx ∝ zx ⟷ (appendix ↕ (n_wire nOut)).
+Lemma push_out_top : forall {nIn nOut nOutAppendix} (appendix : ZX 0 nOutAppendix) (zx : ZX nIn nOut), 
+  appendix ↕ zx ∝ zx ⟷ (appendix ↕ (n_wire nOut)).
 Proof.
   intros.
   rewrite <- (stack_empty_l zx) at 2.
@@ -41,10 +42,11 @@ Proof.
   easy.
 Qed.
 
-Lemma push_out_bot : forall {nIn nOut nOutAppendix} (appendix : ZX 0 nOutAppendix) (zx : ZX nIn nOut), zx ↕ appendix ∝ (cast _ _ (Nat.add_0_r _) (Nat.add_0_r _) zx) ⟷ ((n_wire nOut) ↕ appendix).
+Lemma push_out_bot : forall {nIn nOut nOutAppendix} (appendix : ZX 0 nOutAppendix) (zx : ZX nIn nOut) prfn prfm, 
+  zx ↕ appendix ∝ (cast _ _ prfn prfm zx) ⟷ ((n_wire nOut) ↕ appendix).
 Proof.
   intros.
-  rewrite (stack_empty_r_rev ($ _, _ ::: zx $)).
+  auto_cast_eqn (rewrite (stack_empty_r_rev ($ _, _ ::: zx $))).
   replace ⦰ with (n_wire 0) by easy.
   prop_exists_nonzero 1.
   simpl.
@@ -58,7 +60,8 @@ Proof.
   easy.
 Qed.
 
-Lemma pull_out_top : forall {nIn nOut nInAppendix} (appendix : ZX nInAppendix 0) (zx : ZX nIn nOut), appendix ↕ zx ∝ (appendix ↕ (n_wire nIn)) ⟷ zx.
+Lemma pull_out_top : forall {nIn nOut nInAppendix} (appendix : ZX nInAppendix 0) (zx : ZX nIn nOut), 
+  appendix ↕ zx ∝ (appendix ↕ (n_wire nIn)) ⟷ zx.
 Proof.
   intros.
   rewrite <- (stack_empty_l zx) at 2.
@@ -67,10 +70,11 @@ Proof.
   easy.
 Qed.
 
-Lemma pull_out_bot : forall {nIn nOut nInAppendix} (appendix : ZX nInAppendix 0) (zx : ZX nIn nOut), zx ↕ appendix ∝ ((n_wire nIn) ↕ appendix) ⟷ (cast _ _ (Nat.add_0_r _) (Nat.add_0_r _) zx).
+Lemma pull_out_bot : forall {nIn nOut nInAppendix} (appendix : ZX nInAppendix 0) (zx : ZX nIn nOut) prfn prfm, 
+  zx ↕ appendix ∝ ((n_wire nIn) ↕ appendix) ⟷ (cast _ _ prfn prfm zx).
 Proof.
   intros.
-  rewrite (stack_empty_r_rev ($ _, _ ::: zx $)).
+  auto_cast_eqn (rewrite (stack_empty_r_rev ($ _, _ ::: zx $))).
   replace ⦰ with (n_wire 0) by easy.
   prop_exists_nonzero 1.
   simpl.
@@ -84,27 +88,29 @@ Proof.
   easy.
 Qed.
 
-Lemma disconnected_stack_compose_l : forall {n m} (zxIn : ZX n 0) (zxOut : ZX 0 m), zxIn ↕ zxOut ∝ cast _ _ (@Nat.add_0_r _) (eq_refl) (zxIn ⟷ zxOut).
+Lemma disconnected_stack_compose_l : forall {n m} (zxIn : ZX n 0) (zxOut : ZX 0 m) prfn prfm, 
+  zxIn ↕ zxOut ∝ cast _ _ prfn prfm (zxIn ⟷ zxOut).
 Proof.
   intros.
   rewrite <- (compose_empty_l zxOut) at 1.
   rewrite <- (compose_empty_r zxIn) at 1.
   rewrite stack_compose_distr.
   rewrite stack_empty_l.
-  rewrite stack_empty_r.
-  rewrite cast_compose_l.
+  auto_cast_eqn (rewrite stack_empty_r).
+  rewrite cast_compose_l. 
   simpl_casts.
   easy.
 Qed.
 
-Lemma disconnected_stack_compose_r : forall {n m} (zxIn : ZX n 0) (zxOut : ZX 0 m), zxOut ↕ zxIn ∝ cast _ _ (eq_refl) (@Nat.add_0_r _) (zxIn ⟷ zxOut).
+Lemma disconnected_stack_compose_r : forall {n m} (zxIn : ZX n 0) (zxOut : ZX 0 m) prfn prfm, 
+  zxOut ↕ zxIn ∝ cast _ _ prfn prfm (zxIn ⟷ zxOut).
 Proof.
   intros.
   rewrite <- (compose_empty_l zxOut) at 1.
   rewrite <- (compose_empty_r zxIn) at 1.
   rewrite stack_compose_distr.
   rewrite stack_empty_l.
-  rewrite stack_empty_r.
+  auto_cast_eqn (rewrite stack_empty_r).
   rewrite cast_compose_r.
   simpl_casts.
   easy.

@@ -6,7 +6,7 @@ Verifying the ZX Calculus
 
 ## Building VyZX
 
-Tested with Coq 8.13-8.16.
+Works with Coq 8.16-8.18.
 
 First, install [QuantumLib](https://github.com/inQWIRE/QuantumLib) through opam.
 

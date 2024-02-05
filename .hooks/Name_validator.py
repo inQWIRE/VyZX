@@ -30,7 +30,7 @@ if len(args) == 1:
 curr_dir = os.path.dirname(os.path.realpath(__file__))
 src_dir = f"{curr_dir}/../src"
 
-thm_token = "Theorem|Lemma|Fact|Remark|Corollary|Proposition|Property"
+thm_token = "Theorem|Lemma|Fact|Remark|Corollary|Proposition|Property|Variable|Hypothesis"
 def_token = "Definition|Fixpoint|Inductive|Example"
 exists_thm_regex = re.compile(f".*({thm_token}|{def_token})\\s*(([a-z]|[A-Z]|_)([a-z]|[A-Z]|_|-|\\d)+)")
 def_name_ignore_regex = re.compile("\\s*\\(\\*\\s*\\@nocheck\\s+name\\s*\\*\\)")
@@ -100,11 +100,14 @@ class Violation:
       with open(file, "w") as f:
         f.write(content)
       
-  def ignore(self):
+  def ignore(self, reason : str):
     with open(self.file, "r") as f:
       lines = f.readlines()
 
-    lines.insert(self.line_no - 1, "(* @nocheck name *)\n")
+    insertion = "(* @nocheck name *)\n"
+    if len(reason.strip()) > 0:
+      insertion += f"(* {reason} *)\n"
+    lines.insert(self.line_no - 1, insertion)
 
     with open(self.file, "w") as f:
       lines = "".join(lines)
@@ -191,7 +194,8 @@ for (n, violation) in enumerate(all_violations, 1):
       violation.replace_in_all(all_files, change_to)
       break
     elif option == "i":
-      violation.ignore()
+      reason = input("Please type in the reason for ignoring (for documentation): ")
+      violation.ignore(reason)
       break
     elif option == "s":
       break
