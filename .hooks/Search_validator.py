@@ -4,6 +4,11 @@ import re
 import os
 import sys
 
+MIN_PYTHON = (3, 10)
+if sys.version_info < MIN_PYTHON:
+  print(f"Your python version is {sys.version_info.major}.{sys.version_info.minor}. {MIN_PYTHON[0]}.{MIN_PYTHON[1]} is required")
+  exit(3)
+  
 args = sys.argv[1:]
 
 usage = "./Name_validator.py [--interactive]"
