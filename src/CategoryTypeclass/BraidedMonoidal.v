@@ -68,7 +68,7 @@ Proof.
     all: rewrite (Nat.add_comm n m); easy.
 Qed.
 
-Lemma hexagon_lemma_1_helper : forall {n m o o'} prf1 prf2 prf3 prf4,
+Lemma n_top_to_bottom_split : forall {n m o o'} prf1 prf2 prf3 prf4,
     n_top_to_bottom n m ↕ n_wire o
     ⟷ cast (n + m + o) o' prf1 prf2 (n_wire m ↕ n_top_to_bottom n o)
     ∝ cast (n + m + o) o' prf3 prf4 (n_top_to_bottom n (m + o)).
@@ -100,11 +100,11 @@ Proof.
     rewrite cast_compose_l. simpl_casts.
     rewrite (cast_compose_r _ _ _ (n_wire (m + o + n))).
     cleanup_zx. simpl_casts.
-    rewrite hexagon_lemma_1_helper.
+    rewrite n_top_to_bottom_split.
     reflexivity.
 Qed.
 
-Lemma hexagon_lemma_2_helper : forall {n m o o'} prf1 prf2 prf3 prf4,
+Lemma n_bottom_to_top_split : forall {n m o o'} prf1 prf2 prf3 prf4,
     n_bottom_to_top m n ↕ n_wire o
     ⟷ cast (n + m + o) o' prf1 prf2 (n_wire m ↕ n_bottom_to_top o n)
     ∝ cast (n + m + o) o' prf3 prf4 (n_bottom_to_top (m + o) n).
@@ -137,7 +137,7 @@ Proof.
     rewrite cast_compose_l. simpl_casts.
     rewrite (cast_compose_r _ _ _ (n_wire (m + o + n))).
     cleanup_zx. simpl_casts.
-    rewrite hexagon_lemma_2_helper.
+    rewrite n_bottom_to_top_split.
     reflexivity.
 Qed.
 

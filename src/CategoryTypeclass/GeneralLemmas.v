@@ -7,9 +7,9 @@ Lemma compose_simplify_general : forall {C : Type} {Cat : Category C}
     {A B M : C} (f1 f3 : A ~> B) (f2 f4 : B ~> M),
     f1 ≃ f3 -> f2 ≃ f4 -> (f1 ∘ f2) ≃ (f3 ∘ f4).
 Proof.
-  intros.
-  rewrite H, H0.
-  reflexivity.
+    intros.
+    rewrite H, H0.
+    reflexivity.
 Qed.
 
 Lemma stack_simplify_general : forall {C : Type} 
@@ -29,6 +29,9 @@ Lemma nwire_stack_compose_topleft_general : forall {C : Type}
     ((identity topIn) ⊗ f0) ∘ (f1 ⊗ (identity botOut)) ≃ (f1 ⊗ f0).
 Proof.
     intros.
-Admitted.
+    rewrite <- bifunctor_comp.
+    rewrite left_unit; rewrite right_unit.
+    easy.
+Qed.
 
 Local Close Scope Cat.
