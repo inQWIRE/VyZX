@@ -1,6 +1,6 @@
 Require Export PermutationDefinitions.
 Require Import PermutationAutomation. 
-Require Import CoreData.StrongInduction.
+Require Import StrongInduction.
 Require Import List.
 
 

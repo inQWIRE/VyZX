@@ -1,4 +1,4 @@
-Require Import CoreData.ZXCore.
+Require Import CoreData.
 Require Import PermutationDefinitions.
 
 Open Scope ZX_scope.

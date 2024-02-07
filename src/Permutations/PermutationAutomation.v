@@ -1,4 +1,4 @@
-Require Export CoreData.ZXCore.
+Require Export ZXCore.
 Require Export PermutationDefinitions.
 Require Export QuantumLib.Permutations.
 Require Export CoreRules.CoreAutomation.
