@@ -4,9 +4,18 @@ BASEDIR=$(dirname "$0")
 
 # Stash changes that are not staged to check if the commited state if valid
 # Make sure to pop later!
-git stash --keep-index -u > /dev/null 2>/dev/null
+git stash --keep-index -u 2>/dev/null
 
-"$BASEDIR/Z_X_rules_validator.py" || (echo "Error - disallowing commit: Z_X validator failed"; git stash pop > /dev/null 2>/dev/null; exit 1)
-"$BASEDIR/Search_validator.py" || (echo "Error - disallowing commit: Search validator failed"; git stash pop > /dev/null 2>/dev/null; exit 1)
-"$BASEDIR/Name_validator.py" || (echo "Error - disallowing commit: Naming validator failed"; git stash pop > /dev/null 2>/dev/null; exit 1)
-git stash pop > /dev/null 2>/dev/null || exit 0
+unstash() {
+  git stash pop > /dev/null 2>/dev/null
+  exit $1
+}
+
+
+"$BASEDIR/Z_X_rules_validator.py" || { echo "Error - disallowing commit: Z_X validator failed"; unstash 1; }
+
+"$BASEDIR/Search_validator.py" || { echo "Error - disallowing commit: Search validator failed"; unstash 1; }
+
+"$BASEDIR/Name_validator.py" || { echo "Error - disallowing commit: Naming validator failed"; unstash 1; }
+
+unstash 0
