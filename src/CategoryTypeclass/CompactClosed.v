@@ -18,12 +18,12 @@ Class CompactClosedCategory (C : Type) `{SymmetricMonoidalCategory C} : Type := 
     counit {A : C} : A × A ★ ~> I;
 
     triangle_1 {A : C} : 
-        inv_right_unitor ∘ (identity A ⊗ unit) ∘ inv_associator 
-        ∘ (counit ⊗ identity A) ∘ left_unitor ≃ identity A;
+        inv_right_unitor ∘ (c_identity A ⊗ unit) ∘ inv_associator 
+        ∘ (counit ⊗ c_identity A) ∘ left_unitor ≃ c_identity A;
 
     triangle_2 {A : C} : 
-        inv_left_unitor ∘ (unit ⊗ identity A ★) ∘ associator 
-        ∘ (identity A ★ ⊗ counit) ∘ right_unitor ≃ identity A ★;
+        inv_left_unitor ∘ (unit ⊗ c_identity A ★) ∘ associator 
+        ∘ (c_identity A ★ ⊗ counit) ∘ right_unitor ≃ c_identity A ★;
 }.
 
 Notation "A ★" := (dual A) : Cat_scope.

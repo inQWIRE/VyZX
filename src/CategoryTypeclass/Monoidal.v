@@ -23,26 +23,26 @@ Class MonoidalCategory (C : Type) `{Category C} : Type := {
     associator {A B M : C} : (A × B) × M ~> A × (B × M);
     inv_associator {A B M : C} : A × (B × M) ~> (A × B) × M;
     associator_inv_compose {A B M : C} : associator ∘ inv_associator
-        ≃ identity ((A × B) × M);
+        ≃ c_identity ((A × B) × M);
     inv_associator_compose {A B M : C} : inv_associator ∘ associator 
-        ≃ identity (A × (B × M));
+        ≃ c_identity (A × (B × M));
 
     left_unitor {A : C} : I × A ~> A;
     inv_left_unitor {A : C} : A ~> I × A;
     left_inv_compose {A : C} : 
-        left_unitor ∘ inv_left_unitor ≃ identity (I × A);
+        left_unitor ∘ inv_left_unitor ≃ c_identity (I × A);
     inv_left_compose {A : C} : 
-        inv_left_unitor ∘ left_unitor ≃ identity A;
+        inv_left_unitor ∘ left_unitor ≃ c_identity A;
 
     right_unitor {A : C} : A × I ~> A;
     inv_right_unitor {A : C} : A ~> A × I;
     right_inv_compose {A : C} : 
-        right_unitor ∘ inv_right_unitor ≃ identity (A × I);
+        right_unitor ∘ inv_right_unitor ≃ c_identity (A × I);
     inv_right_compose {A : C} : 
-        inv_right_unitor ∘ right_unitor ≃ identity A;
+        inv_right_unitor ∘ right_unitor ≃ c_identity A;
 
     bifunctor_id {A B : C} : 
-        identity A ⊗ identity B ≃ identity (A × B);
+        c_identity A ⊗ c_identity B ≃ c_identity (A × B);
     bifunctor_comp {A B M N P Q : C} 
         {f : A ~> B} {g : B ~> M}
         {h : N ~> P} {k : P ~> Q} : 
@@ -53,16 +53,16 @@ Class MonoidalCategory (C : Type) `{Category C} : Type := {
         {f : A ~> B} {g : M ~> N} {h : P ~> Q} : 
         associator ∘ (f ⊗ (g ⊗ h)) ≃ ((f ⊗ g) ⊗ h) ∘ associator;
     left_unitor_cohere {A B : C} {f : A ~> B} : 
-        left_unitor ∘ f ≃ (identity I ⊗ f) ∘ left_unitor;
+        left_unitor ∘ f ≃ (c_identity I ⊗ f) ∘ left_unitor;
     right_unitor_cohere {A B : C} {f : A ~> B} : 
-        right_unitor ∘ f ≃ (f ⊗ identity I) ∘ right_unitor;
+        right_unitor ∘ f ≃ (f ⊗ c_identity I) ∘ right_unitor;
 
     (* Commutative diagrams *)
     triangle {A B : C} : 
-        associator ∘ (identity A ⊗ left_unitor)
-        ≃ right_unitor ⊗ identity B;
+        associator ∘ (c_identity A ⊗ left_unitor)
+        ≃ right_unitor ⊗ c_identity B;
     pentagon {A B M N : C} : 
-        (associator ⊗ identity N) ∘ associator ∘ (identity A ⊗ associator)
+        (associator ⊗ c_identity N) ∘ associator ∘ (c_identity A ⊗ associator)
         ≃ @associator (A × B) M N ∘ associator;
 }.
 

@@ -26,7 +26,7 @@ Lemma nwire_stack_compose_topleft_general : forall {C : Type}
     {Cat : Category C} {MonCat : MonoidalCategory C}
     {topIn botIn topOut botOut : C} 
     (f0 : botIn ~> botOut) (f1 : topIn ~> topOut),
-    ((identity topIn) ⊗ f0) ∘ (f1 ⊗ (identity botOut)) ≃ (f1 ⊗ f0).
+    ((c_identity topIn) ⊗ f0) ∘ (f1 ⊗ (c_identity botOut)) ≃ (f1 ⊗ f0).
 Proof.
     intros.
     rewrite <- bifunctor_comp.

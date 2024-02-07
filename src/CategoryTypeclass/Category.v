@@ -46,7 +46,7 @@ Class Category (C : Type) : Type := {
     obj_equiv_refl {A : C} :
         A ≅ A;
 
-    identity (A : C) : A ~> A;
+    c_identity (A : C) : A ~> A;
 
     compose {A B M : C} : 
         (A ~> B) -> (B ~> M) -> (A ~> M) 
@@ -56,8 +56,8 @@ Class Category (C : Type) : Type := {
         forall (h j : B ~> M), h ≃ j ->
         f ∘ h ≃ g ∘ j;
 
-    left_unit {A B : C} {f : A ~> B} : (identity A) ∘ f ≃ f;
-    right_unit {A B : C} {f : A ~> B} : f ∘ (identity B) ≃ f;
+    left_unit {A B : C} {f : A ~> B} : (c_identity A) ∘ f ≃ f;
+    right_unit {A B : C} {f : A ~> B} : f ∘ (c_identity B) ≃ f;
     assoc {A B M N : C}
         {f : A ~> B} {g : B ~> M} {h : M ~> N} : 
         (f ∘ g) ∘ h ≃ f ∘ (g ∘ h);
@@ -93,7 +93,7 @@ Notation "f ∘ g" := (compose f g) : Cat_scope. (* \circ *)
     obj_equiv_trans := @eq_trans nat;
     obj_equiv_refl := @eq_refl nat;
 
-    identity n := n_wire n;
+    c_identity n := n_wire n;
 
     compose := @Compose;
     compose_compat := @Proportional.compose_compat;

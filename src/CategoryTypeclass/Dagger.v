@@ -12,7 +12,7 @@ Class DaggerCategory (C : Type) `{Category C} : Type := {
 
     involutive {A B : C} {f : A ~> B} : f † † ≃ f;
 
-    preserves_id {A : C} : (identity A) † ≃ identity A;
+    preserves_id {A : C} : (c_identity A) † ≃ c_identity A;
 
     contravariant {A B M : C} {f : A ~> B} {g : B ~> M} :
         (f ∘ g) † ≃ g † ∘ f †;

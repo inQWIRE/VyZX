@@ -13,19 +13,19 @@ Class DaggerMonoidalCategory (C : Type)
         f † ⊗ g † ≃ (f ⊗ g) †;
 
     associator_unitary_r {A B M : C} : 
-        associator ∘ associator † ≃ identity (A × B × M);
+        associator ∘ associator † ≃ c_identity (A × B × M);
     associator_unitary_l {A B M : C} : 
-        associator † ∘ associator ≃ identity (A × (B × M));
+        associator † ∘ associator ≃ c_identity (A × (B × M));
 
     left_unitor_unitary_r {A : C} : 
-        left_unitor ∘ left_unitor † ≃ identity (I × A);
+        left_unitor ∘ left_unitor † ≃ c_identity (I × A);
     left_unitor_unitary_l {A : C} : 
-        left_unitor † ∘ left_unitor ≃ identity A;
+        left_unitor † ∘ left_unitor ≃ c_identity A;
 
     right_unitor_unitary_r {A : C} : 
-        right_unitor ∘ right_unitor † ≃ identity (A × I);
+        right_unitor ∘ right_unitor † ≃ c_identity (A × I);
     right_unitor_unitary_l {A : C} :
-        right_unitor † ∘ right_unitor ≃ identity A;
+        right_unitor † ∘ right_unitor ≃ c_identity A;
 }.
 
 Lemma zx_dagger_compat : forall {n n' m m'} 
