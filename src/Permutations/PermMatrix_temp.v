@@ -10,7 +10,10 @@ Require Import PermutationAutomation.
    correctness is a third length of just correctness of stacking.]*)
 
 Local Open Scope nat.
-  
+
+
+(* Start what's going into QuantumLib *)
+
 Lemma testbit_binlist {n : nat} {k : list bool} :
   Nat.testbit (binlist_to_nat k) n = nth n k false.
 Proof.
@@ -191,8 +194,7 @@ Lemma nat_to_funbool_mod {n1 j} {k} (n0:nat) : k < n1 ->
 Proof.
   intros Hk.
   rewrite 2!nat_to_funbool_eq.
-  bdest_lia_replace (k <=? n1 - 1) true.
-  bdest_lia_replace (k + n0 <=? n0 + n1 - 1) true.
+  bdestruct_all; try lia.
   rewrite Nat.mod_pow2_bits_low; [|lia].
   f_equal.
   lia.
@@ -203,12 +205,13 @@ Lemma nat_to_funbool_div {n0 n1 j} {k} : k < n0 ->
 Proof.
   intros Hk.
   rewrite 2!nat_to_funbool_eq.
-  bdest_lia_replace (k <=? n0 - 1) true.
-  bdest_lia_replace (k <=? n0 + n1 - 1) true.
+  bdestruct_all; try lia.
   rewrite Nat.div_pow2_bits.
   f_equal.
   lia.
 Qed.
+
+(* End what's going into QuantumLib *)
 
 Lemma div_mod_inj {a b} (c:nat) : c > 0 ->
   (a mod c) = (b mod c) /\ (a / c) = (b / c) -> a = b.

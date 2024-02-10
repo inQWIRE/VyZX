@@ -146,16 +146,6 @@ Local Notation perm_inj  n f := (forall k l, k < n -> l < n -> f k = f l -> k = 
 Local Notation perm_WF   n f := (forall k, n <= k -> f k = k).
 
 
-(* TODO: Move this where it belongs *)
-Lemma fswap_involutive : forall {A} (f : nat -> A) x y,
-  fswap (fswap f x y) x y = f.
-Proof.
-  intros A f x y.
-  unfold fswap.
-  apply functional_extensionality.
-  intros k.
-  bdestruct_all; subst; easy.
-Qed.
 
 Lemma fswap_injective_if_injective : forall {A} n (f:nat -> A) x y,
   x < n -> y < n ->
@@ -295,7 +285,7 @@ Proof.
   apply Hinj; auto; lia.
 Qed.
 
-Lemma injective_and_bdd_grow_of_boundary : forall n f,
+Lemma injective_and_bounded_grow_of_boundary : forall n f,
   perm_inj n f /\ perm_bdd n f -> f n = n ->
   perm_inj (S n) f /\ perm_bdd (S n) f.
 Proof.
@@ -321,7 +311,7 @@ Proof.
       lia.
 Qed.
 
-Lemma injective_and_bdd_of_surjective : forall n f,
+Lemma injective_and_bounded_of_surjective : forall n f,
   perm_surj n f -> perm_inj n f /\ perm_bdd n f.
 Proof.
   intros n.
@@ -333,12 +323,12 @@ Proof.
   specialize (IHn (fswap f n' n) Hswap_surj).
   rewrite (fswap_injective_iff_injective _ f n' n); [|easy|easy].
   rewrite (fswap_bounded_iff_bounded _ f n' n); [|easy|easy].
-  apply injective_and_bdd_grow_of_boundary;
+  apply injective_and_bounded_grow_of_boundary;
   [| rewrite fswap_simpl2; easy].
   easy.
 Qed.
 
-Lemma injective_and_bdd_shrink_of_boundary : forall n f,
+Lemma injective_and_bounded_shrink_of_boundary : forall n f,
   perm_inj (S n) f /\ perm_bdd (S n) f -> f n = n -> 
   perm_inj n f /\ perm_bdd n f.
 Proof.
@@ -356,64 +346,135 @@ Proof.
     + lia.
 Qed.
 
-Lemma surjective_of_inj_and_bdd : forall n f,
-  perm_inj n f /\ perm_bdd n f -> perm_surj n f.
+(* Formalization of proof sketch of pigeonhole principle
+   from https://math.stackexchange.com/a/910790 *)
+Lemma exists_bounded_decidable : forall n P,
+  (forall k, k < n -> {P k} + {~ P k}) ->
+  {exists j, j < n /\ P j} + {~ exists j, j < n /\ P j}.
 Proof.
-  induction n; [easy|].
-  intros f [Hinj Hbdd].
-  rewrite (fswap_surjective_iff_surjective _ _ n (perm_inv (S n) f n));
-  [|lia|apply perm_inv_bdd_S].
-  rewrite (fswap_injective_iff_injective _ _ n (perm_inv (S n) f n)) in Hinj;
-  [|lia|apply perm_inv_bdd_S].
-  rewrite (fswap_bounded_iff_bounded _ _ n (perm_inv (S n) f n)) in Hbdd;
-  [|lia|apply perm_inv_bdd_S].
-  assert (perm_surj n (fswap f n (perm_inv (S n) f n))).
-  1 : {
-    apply IHn, injective_and_bdd_shrink_of_boundary; [easy|].
-    rewrite fswap_simpl1.
-    admit.
+  intros n P HPdec.
+  induction n.
+  - right; intros [x [Hlt0 _]]; inversion Hlt0.
+  - destruct (HPdec n) as [HPn | HnPn]; [lia| |].
+    + left. exists n; split; [lia | assumption].
+    + destruct IHn as [Hex | Hnex].
+      * intros k Hk; apply HPdec; lia.
+      * left. 
+        destruct Hex as [j [Hjn HPj]].
+        exists j; split; [lia | assumption].
+      * right.
+        intros [j [Hjn HPj]].
+        apply Hnex.
+        bdestruct (j =? n).
+        -- exfalso; apply HnPn; subst; easy.
+        -- exists j; split; [lia | easy].
+Qed.
+
+Lemma has_preimage_decidable : forall n f, 
+  forall k, k < n ->
+  {exists j, j < n /\ f j = k} + {~exists j, j < n /\ f j = k}.
+Proof.
+  intros n f k Hk.
+  apply exists_bounded_decidable.
+  intros k' Hk'.
+  bdestruct (f k' =? k).
+  - left; easy.
+  - right; easy.
+Qed.
+
+Lemma pigeonhole_S : forall n f, 
+  (forall i, i < S n -> f i < n) ->
+  exists i j, i < S n /\ j < i /\ f i = f j.
+Proof.
+  intros n.
+  destruct n;
+    [intros f Hbdd; specialize (Hbdd 0); lia|].
+  induction n; intros f Hbdd.
+  (* Base case: *)
+  1: {
+    exists 1, 0.
+    pose (Hbdd 0).
+    pose (Hbdd 1). 
+    lia.
   }
-  apply surjective_of_eq_boundary_grow; [easy|].
-  Admitted.
+  destruct (has_preimage_decidable (S (S n)) f (f (S (S n)))) as [Hex | Hnex].
+  - apply Hbdd; lia.
+  - destruct Hex as [j [Hj Hfj]].
+    exists (S (S n)), j.
+    repeat split; lia.
+  - destruct (IHn (fun k => if f k <? f (S (S n)) then f k else f k - 1)) as
+      [i [j [Hi [Hj Hgij]]]].
+    + intros i Hi.
+      bdestruct (f i <? f (S (S n))).
+      * specialize (Hbdd (S (S n))).
+        lia.
+      * specialize (Hbdd i).
+        lia.
+    + exists i, j.
+      repeat (split; [lia|]).
+      assert (Hnex': forall k, k < S (S n) -> f k >= f (S (S n)) -> f k > f (S (S n))). 1:{
+        intros k Hk Hge.
+        bdestruct (f k =? f (S (S n))).
+        - exfalso; apply Hnex; exists k; split; lia.
+        - lia.
+      }
+      bdestruct (f i <? f (S (S n)));
+      bdestruct (f j <? f (S (S n)));
+      try easy.
+      * specialize (Hnex' j); lia.
+      * specialize (Hnex' i); lia.
+      * pose (Hnex' j).
+        pose (Hnex' i Hi H).
+        lia.
+Qed.
 
+Lemma n_has_preimage_of_injective_and_bounded : forall n f,
+  perm_inj (S n) f /\ perm_bdd (S n) f -> exists k, k < S n /\ f k = n.
+Proof. 
+  intros n f [Hinj Hbdd].
+  destruct (has_preimage_decidable (S n) f n) as [Hex | Hnex]; 
+    [lia | assumption |].
+  (* Now, contradict injectivity using pigeonhole principle *)
+  exfalso.
+  assert (Hbdd': forall j, j < S n -> f j < n). 1:{
+  - intros j Hj.
+    specialize (Hbdd j Hj).
+    bdestruct (f j =? n).
+    + exfalso; apply Hnex; exists j; easy.
+    + lia.
+  }
+  destruct (pigeonhole_S n f Hbdd') as [i [j [Hi [Hj Heq]]]].
+  absurd (i = j).
+  - lia.
+  - apply Hinj; lia.
+Qed.
 
+Lemma surjective_of_injective_and_bounded : forall n f,
+  perm_inj n f /\ perm_bdd n f -> perm_surj n f.
+Proof. 
+  induction n; [easy|].
+  intros f Hinj_bdd.
+  destruct (n_has_preimage_of_injective_and_bounded n f Hinj_bdd) as [n' [Hn' Hfn']].
+  rewrite (fswap_injective_iff_injective _ _ n n') in Hinj_bdd;
+    [|lia|lia].
+  rewrite (fswap_bounded_iff_bounded _ _ n n') in Hinj_bdd;
+    [|lia|lia].
+  rewrite (fswap_surjective_iff_surjective _ _ n n');
+    [|lia|easy].
+  intros k Hk.
+  bdestruct (k =? n).
+  - exists n.
+    split; [lia|].
+    rewrite fswap_simpl1; subst; easy.
+  - pose proof (injective_and_bounded_shrink_of_boundary n _ Hinj_bdd) as Hinj_bdd'.
+    rewrite fswap_simpl1 in Hinj_bdd'.
+    specialize (Hinj_bdd' Hfn').
+    destruct (IHn (fswap f n n') Hinj_bdd' k) as [k' [Hk' Hfk']]; [lia|].
+    exists k'.
+    split; [lia|assumption].
+Qed.
 
-
-
-
-(* Lemma perm_inv_surj_of_surj n f :
-  (forall k, k < n -> exists l, l < n /\ f l = k) ->
-  forall l, l < n -> exists k, k < n /\ perm_inv n f k = l. *)
-
-
-
-
-
-(* Section for prelude lemmas that don't directly involve permutations *)
-(* TODO: Prove these: *)
-
-
-
-
-Lemma bdd_of_is_inj_is_surj n f :
-  perm_inj n f -> perm_surj n f -> perm_bdd n f.
-Proof.
-  intros Hinj Hsurj k Hk.
-
-  Abort.
-
-Lemma surj_of_is_bdd_is_inj n f : 
-  perm_bdd n f -> perm_inj n f -> perm_surj n f.
-Proof.
-  Abort.
-
-Lemma inj_of_is_surj_is_bdd n f :
-  perm_surj n f -> perm_bdd n f -> perm_inj n f. 
-Proof.
-  Abort. 
-
-(* Lemma surj_of_is_WF_is_inj n f *)
-
+(*FIXME: ^ all up to notation has been moved into QuantumLib. *)
 
 
 
@@ -490,13 +551,6 @@ Proof.
 	  easy.
 Qed.
 
-(* FIXME: TODO: This is *really* not where this goes! But right now, it needs to. *)
-Ltac by_inverse_injective f n :=
-  apply (WF_permutation_inverse_injective f n); [
-    tryeasylia; auto with perm_db |
-    tryeasylia; auto with perm_WF_db |
-    try solve [cleanup_perm; auto] |
-    try solve [cleanup_perm; auto]]; tryeasylia.
 
 Lemma permutation_of_le_permutation_WF f m n : (m <= n)%nat -> permutation m f ->
   perm_WF m f -> permutation n f.
@@ -509,6 +563,19 @@ Proof.
   - specialize (Hfinv_m _ H).
     repeat split; destruct_if_solve.
 Qed.
+
+(* FIXME: ^ All this is now in QuantumLib*)
+
+
+(* FIXME: TODO: This is *really* not where this goes! But right now, it needs to. *)
+Ltac by_inverse_injective f n :=
+  apply (WF_permutation_inverse_injective f n); [
+    tryeasylia; auto with perm_db |
+    tryeasylia; auto with perm_WF_db |
+    try solve [cleanup_perm; auto] |
+    try solve [cleanup_perm; auto]]; tryeasylia.
+
+
 
 
 

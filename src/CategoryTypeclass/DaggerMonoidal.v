@@ -4,6 +4,8 @@ Require Import Category.
 Require Import Dagger.
 Require Import Monoidal.
 Require Import MonoidalRules.
+Require Import Permutation.
+Require Import PermutationRules.
 
 Local Open Scope Cat.
 

@@ -8,6 +8,10 @@ Require Export CoreRules.CoreAutomation.
     - Remove all these random tactics; replace with the standard ones
 *)
 
+Create HintDb WF_Perm_db.
+#[export] Hint Resolve monotonic_WF_Perm compose_WF_Perm : WF_Perm_db.
+
+
 Tactic Notation "tryeasylia" :=
   try easy; try lia.
 
