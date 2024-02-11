@@ -1,4 +1,5 @@
 Require Import ZXCore.
+Require Import CastRules.
 Require Import PermutationFacts.
 Require Import PermutationInstances.
 Require Import ZXperm.
@@ -9,28 +10,16 @@ Require Import CoreData.Proportional.
 
 Local Open Scope nat. 
 
-(* First, we need this - which feels like it goes in ZXpermFacts, which
-   suggests the file structure is bad (probably because it is). *)
-Lemma zxperm_square {n m zx} : 
-  ZXperm n m zx -> n = m.
-Proof.
-  intros H.
-  induction H; subst; easy.
-Qed.
-
-Lemma zxperm_permutation n m zx : 
-  ZXperm n m zx -> permutation n (perm_of_zx zx).
+Lemma zxperm_permutation n zx : 
+  ZXperm n zx -> permutation n (perm_of_zx zx).
 Proof. 
   intros H.
   induction H; show_permutation.
-- pose proof (zxperm_square H); pose proof (zxperm_square H0); subst.
-    simpl.
-    apply permutation_compose; easy.
 Qed.
 
-Global Hint Resolve zxperm_permutation : perm_db.
+#[export] Hint Resolve zxperm_permutation : perm_db.
 
-Global Hint Resolve PermEmpty PermWire PermSwap PermStack PermComp : zxperm_db.
+#[export] Hint Constructors ZXperm : zxperm_db.
 
 (* TODO: Decide whether this goes here (it does) or somewhere else (it doesn't) *)
 Lemma stack_perms_matrix_helper {n0 n1 i j} {f g} (Hi : i < 2 ^ (n0 + n1)) (Hj: j < 2 ^ (n0 + n1)) :
@@ -125,13 +114,13 @@ Qed.
 
 
 Lemma empty_permutation_semantics : ⟦ Empty ⟧ = zxperm_to_matrix 0 Empty.
-Proof. check_finite_matrix. Qed.
+Proof. lma'. Qed.
 
 Lemma wire_permutation_semantics : ⟦ Wire ⟧ = zxperm_to_matrix 1 Wire.
-Proof. check_finite_matrix. Qed.
+Proof. lma'. Qed.
 
 Lemma swap_2_perm_semantics : ⟦ Swap ⟧ = zxperm_to_matrix 2 Swap.
-Proof. check_finite_matrix. Qed.
+Proof. lma'. Qed.
 
 Lemma apply_if2 {T1 T2 T3 : Type} {b1 b2 : bool} {x1 x2} {x3 x4} (f : T1 -> T2 -> T3) :
   f (if b1 then x1 else x2) (if b2 then x3 else x4) = 
@@ -199,14 +188,14 @@ Proof.
   - subst; easy.
 Qed.
 
-Lemma cast_permutations_semantics {n0 m0 n1 m1} {zx : ZX n0 m0} 
-  (Hn : n1 = n0) (Hm : m1 = m0) 
+Lemma cast_permutations_semantics {n0 n1} {zx : ZX n0 n0} 
+  (Hn : n1 = n0)
   (Hzx : ⟦ zx ⟧ = zxperm_to_matrix n1 zx) :
-  ⟦ cast _ _ Hn Hm zx ⟧ = zxperm_to_matrix n1 (cast _ _ Hn Hm zx).
+  ⟦ cast _ _ Hn Hn zx ⟧ = zxperm_to_matrix n1 (cast _ _ Hn Hn zx).
 Proof. subst; easy. Qed.
 
-Lemma zxperm_permutation_semantics {n m zx} : 
-  ZXperm n m zx -> ⟦ zx ⟧ = zxperm_to_matrix n zx.
+Lemma zxperm_permutation_semantics {n zx} : 
+  ZXperm n zx -> ⟦ zx ⟧ = zxperm_to_matrix n zx.
 Proof.
   intros H.
   induction H.
@@ -214,17 +203,15 @@ Proof.
   - apply wire_permutation_semantics.
   - apply swap_2_perm_semantics.
   - eapply stack_perms_semantics; auto.
-    1,2: eapply zxperm_square; eassumption.
     all: apply zxperm_permutation; easy.
   - apply compose_permutation_semantics; auto.
-    1: eapply zxperm_square; eassumption.
     all: apply zxperm_permutation; easy. 
 Qed.
 
 (* ... which enables the main result: *)
 
-Lemma prop_of_equal_perm {n m} {zx0 zx1 : ZX n m}
-	(Hzx0 : ZXperm n m zx0) (Hzx1 : ZXperm n m zx1)
+Lemma proportional_of_equal_perm {n} {zx0 zx1 : ZX n n}
+	(Hzx0 : ZXperm n zx0) (Hzx1 : ZXperm n zx1)
 	(Hperm : perm_of_zx zx0 = perm_of_zx zx1) :
 	zx0 ∝ zx1.
 Proof.
@@ -234,4 +221,18 @@ Proof.
 		(zxperm_permutation_semantics Hzx1).
 	f_equal; easy.
 Qed.
+
+Ltac prop_perm_eq :=
+  intros;
+  simpl_casts;
+  simpl_permlike_zx;
+  __cast_prop_sides_to_square;
+  (* Goal: zx0 ∝ zx1 *)
+  apply proportional_of_equal_perm; [
+  (* New goals: *)
+    (*1: ZXperm _ zx0 *) auto with zxperm_db |
+    (*2: ZXperm _ zx1*) auto with zxperm_db |
+    (*3: perm_of_zx zx0 = perm_of_zx zx1*) cleanup_perm_of_zx; try easy; try lia
+  ].
+
 Local Close Scope nat. 

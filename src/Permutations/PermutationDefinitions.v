@@ -35,8 +35,8 @@ Definition rotr n m : nat -> nat :=
 Definition rotl n m : nat -> nat :=
 	fun k => if n <=? k then k else (k + (n - (m mod n))) mod n.
 
-(* TODO: Refactor all with perm_WF *)
-Notation perm_WF n f := (forall k:nat, (n <= k)%nat -> f k = k).
+(* TODO: Refactor all with WF_perm *)
+Notation WF_perm n f := (forall k:nat, (n <= k)%nat -> f k = k).
 
 (* TODO: Implement things for this *)
 Fixpoint insertion_sort_list n f := 

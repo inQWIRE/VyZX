@@ -5,14 +5,14 @@ Open Scope ZX_scope.
 
 (* @nocheck name *)
 (* Allowing combination of Z and X; will check before push *)
-Inductive ZXperm : forall n m, ZX n m -> Prop :=
-  | PermEmpty : ZXperm 0 0 Empty
-  | PermWire : ZXperm 1 1 Wire
-  | PermSwap : ZXperm 2 2 ⨉
-  | PermStack {n0 m0 n1 m1 zx0 zx1} : 
-      (ZXperm n0 m0 zx0) -> (ZXperm n1 m1 zx1) -> ZXperm _ _ (zx0 ↕ zx1)
-  | PermComp {n m o zx0 zx1} : 
-      (ZXperm n m zx0) -> (ZXperm m o zx1) -> ZXperm _ _ (zx0 ⟷ zx1).
+Inductive ZXperm : forall n, ZX n n -> Prop :=
+  | PermEmpty : ZXperm 0 Empty
+  | PermWire : ZXperm 1 Wire
+  | PermSwap : ZXperm 2 ⨉
+  | PermStack {n0 n1 zx0 zx1} : 
+      (ZXperm n0 zx0) -> (ZXperm n1 zx1) -> ZXperm _ (zx0 ↕ zx1)
+  | PermComp {n zx0 zx1} : 
+      (ZXperm n zx0) -> (ZXperm n zx1) -> ZXperm _ (zx0 ⟷ zx1).
 
 (*
 TODO: Bring this back here?

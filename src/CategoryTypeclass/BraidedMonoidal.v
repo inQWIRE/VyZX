@@ -35,33 +35,63 @@ Definition zx_inv_braiding {n m} :=
 Definition n_compose_bot n m := n_compose n (bottom_to_top m).
 Definition n_compose_top n m := n_compose n (top_to_bottom m).
 
+Lemma n_top_to_bottom_zxperm : forall {n m}, 
+    ZXperm (n + m) (n_top_to_bottom n m).
+Proof.
+    unfold n_top_to_bottom.
+    auto with zxperm_db.
+Qed.
+
+Lemma n_bottom_to_top_zxperm : forall {n m}, 
+    ZXperm (n + m) (n_bottom_to_top m n).
+Proof.
+    unfold n_bottom_to_top.
+    auto with zxperm_db.
+Qed.
+
+#[export] Hint Resolve n_top_to_bottom_zxperm n_bottom_to_top_zxperm : zxperm_db.
+
+Lemma perm_of_n_top_to_bottom : forall n m,
+    perm_of_zx (n_top_to_bottom n m) = rotr (n + m) n.
+Proof.
+    intros.
+    unfold n_top_to_bottom.
+    cleanup_perm_of_zx.
+    reflexivity.
+Qed.
+
+Lemma perm_of_n_bottom_to_top : forall n m,
+    perm_of_zx (n_bottom_to_top n m) = rotl (n + m) n.
+Proof.
+    intros.
+    unfold n_bottom_to_top.
+    cleanup_perm_of_zx.
+    rewrite Nat.add_comm.
+    reflexivity.
+Qed.
+
+#[export] Hint Rewrite perm_of_n_top_to_bottom perm_of_n_bottom_to_top : perm_of_zx_cleanup_db.
+
+
 Lemma zx_braiding_inv_compose : forall {n m},
     zx_braiding ⟷ zx_inv_braiding ∝ n_wire (n + m).
 Proof.
     intros.
-    unfold zx_braiding. unfold zx_inv_braiding.
-    unfold n_top_to_bottom. 
-    unfold n_bottom_to_top.
-    (* apply prop_of_equal_perm.
-    1,2: auto with zxperm_db.
-    cleanup_perm_of_zx.
-    rewrite Nat.add_comm.
-    rewrite rotr_rotl_inv.
-    easy. *)
-    rewrite cast_compose_mid.
-    simpl_casts.
-    fold (n_compose_bot n (m + n)).
-    rewrite cast_fn_eq_dim.
-    rewrite n_compose_top_compose_bottom.
-    reflexivity.
-    Unshelve. 
-    all: rewrite (Nat.add_comm n m); easy.
+    unfold zx_braiding, zx_inv_braiding.
+    prop_perm_eq.
 Qed.
 
 Lemma zx_inv_braiding_compose : forall {n m},
     zx_inv_braiding ⟷ zx_braiding ∝ n_wire (m + n).
 Proof.
-    intros. 
+    intros.
+    unfold zx_braiding, zx_inv_braiding.
+    prop_perm_eq.
+    (* intros. 
+    unfold zx_inv_braiding, zx_braiding.
+    rewrite cast_compose_mid, 2!cast_cast_eq, cast_id_eq.
+    prop_perm_eq.
+    constructor; auto with zxperm_db.
     unfold zx_braiding. unfold zx_inv_braiding.
     unfold n_top_to_bottom. 
     unfold n_bottom_to_top.
@@ -72,98 +102,26 @@ Proof.
     rewrite n_compose_bottom_compose_top.
     reflexivity.
     Unshelve. 
-    all: rewrite (Nat.add_comm n m); easy.
+    all: rewrite (Nat.add_comm n m); easy. *)
 Qed.
 
 Lemma S_lemma : forall {n m},
     (S n + m)%nat = (n + S m)%nat.
 Proof. lia. Qed.
 
-Lemma n_top_to_bottom_perm : forall {n m}, 
-    ZXperm (n + m) (n + m) (n_top_to_bottom n m).
-Proof.
-    unfold n_top_to_bottom.
-    auto with zxperm_db.
-Qed.
 
-Lemma n_bottom_to_top_perm : forall {n m}, 
-    ZXperm (n + m) (n + m) (n_bottom_to_top m n).
-Proof.
-    unfold n_bottom_to_top.
-    auto with zxperm_db.
-Qed.
 
-Ltac fail_if_has_mod H :=
-  match H with
-  | context [_ Nat.modulo _] => fail 1
-  | _ => idtac
-  end.
-
-Ltac rewrite_all_small_mods :=
-  repeat match goal with
-  | [|- context[?a Nat.modulo ?b]] => 
-    fail_if_has_mod a; rewrite Nat.mod_small; [|lia]
-  end.
 
 Lemma hexagon_lemma_1_helper : forall {n m o o'} prf1 prf2 prf3 prf4,
     n_top_to_bottom n m ↕ n_wire o
     ⟷ cast (n + m + o) o' prf1 prf2 (n_wire m ↕ n_top_to_bottom n o)
     ∝ cast (n + m + o) o' prf3 prf4 (n_top_to_bottom n (m + o)).
 Proof.
-    intros. unfold n_top_to_bottom. subst.
-    apply prop_of_equal_perm.
-    all: auto with zxperm_db.
-    cleanup_perm_of_zx.
-    rewrite stack_perms_idn_f.
-    unfold Basics.compose, rotr.
-    apply functional_extensionality; intros.
-    assert (forall n, ~(n < 0)%nat) by lia.
-    assert (forall n, ~(n < n)%nat) by lia.
-    bdestruct_all; simpl.
-    - rewrite Nat.mod_small; repeat lia. 
-    - rewrite Nat.mod_small. simpl in H3.
-      assert (n < 0)%nat by lia.
-      apply H in H6. contradiction. lia.
-    - repeat rewrite Nat.mod_small. all: lia.
-    - repeat rewrite Nat.mod_small. all: lia.
-    - admit.
-    - admit.
-    - easy.
-    - rewrite Nat.mod_small. simpl in H3. admit. admit.
-    - apply n_top_to_bottom_perm.
-Admitted.
-
-Ltac fail_if_has_mods a :=
-	match a with
-	| context[_ mod _] => fail 1
-	| _ => idtac
-	end.
-
-Ltac simplify_mods_of a b :=
-	first [
-		rewrite (Nat.mod_small a b) in * by lia
-	| rewrite (mod_n_to_2n a b) in * by lia
-	].
-
-Ltac solve_simple_mod_eqns :=
-	match goal with
-	| |- context[if _ then _ else _] => fail 1 "Cannot solve equation with if"
-	| _ =>
-		repeat first [
-			lia
-		|	match goal with 
-			| |- context[?a mod ?b] => fail_if_has_mods a; fail_if_has_mods b; 
-					simplify_mods_of a b
-			| H: context[?a mod ?b] |- _ => fail_if_has_mods a; fail_if_has_mods b; 
-					simplify_mods_of a b
-			end 
-		| match goal with
-			| |- context[?a mod ?b] => (* idtac a b; *) bdestruct (a <? b);
-					[rewrite (Nat.mod_small a b) by lia 
-					| try rewrite (mod_n_to_2n a b) by lia]
-			end
-		]
-	end.
+    intros. (* unfold n_top_to_bottom.  *)
+    prop_perm_eq.
+    unfold n_top_to_bottom.
+    solve_modular_permutation_equalities.
+Qed.
 
 Lemma hexagon_lemma_1 : forall {n m o}, 
     (zx_braiding ↕ n_wire o) ⟷ zx_associator ⟷ (n_wire m ↕ zx_braiding)
@@ -171,26 +129,9 @@ Lemma hexagon_lemma_1 : forall {n m o},
 Proof.
     intros.
     unfold zx_braiding. unfold zx_associator.
-    unfold n_top_to_bottom.
-    (* apply prop_of_equal_perm.
-    1,2: auto 10 with zxperm_db.
-    cleanup_perm_of_zx; [|auto with zxperm_db].
-    unfold rotr, stack_perms, Basics.compose.
-    apply functional_extensionality; intros k.
-    bdestruct_all; 
-    solve_simple_mod_eqns. *)
     simpl_casts.
-    rewrite cast_compose_l. simpl_casts.
-    rewrite compose_assoc.
-    rewrite cast_compose_l. simpl_casts.
-    cleanup_zx. simpl_casts.    
-    rewrite cast_compose_l. 
-    simpl_casts. cleanup_zx.
-    rewrite cast_compose_l. simpl_casts.
-    rewrite (cast_compose_r _ _ _ (n_wire (m + o + n))).
-    cleanup_zx. simpl_casts.
-    rewrite hexagon_lemma_1_helper.
-    reflexivity.
+    prop_perm_eq.
+    solve_modular_permutation_equalities.
 Qed.
 
 Lemma hexagon_lemma_2_helper : forall {n m o o'} prf1 prf2 prf3 prf4,
@@ -198,17 +139,10 @@ Lemma hexagon_lemma_2_helper : forall {n m o o'} prf1 prf2 prf3 prf4,
     ⟷ cast (n + m + o) o' prf1 prf2 (n_wire m ↕ n_bottom_to_top o n)
     ∝ cast (n + m + o) o' prf3 prf4 (n_bottom_to_top (m + o) n).
 Proof.
-    intros. unfold n_bottom_to_top. subst.
-    apply prop_of_equal_perm.
-    all: auto with zxperm_db.
-    cleanup_perm_of_zx.
-    rewrite stack_perms_idn_f.
-    unfold Basics.compose, rotl.
-    apply functional_extensionality; intros.
-    (* 2: auto with zxperm_db.
-    bdestruct_all; simpl in *; solve_simple_mod_eqns.
-Qed. *)
-Admitted.
+    intros.
+    prop_perm_eq.
+    solve_modular_permutation_equalities.
+Qed.
 
 Lemma hexagon_lemma_2 : forall {n m o},
     (zx_inv_braiding ↕ n_wire o) ⟷ zx_associator ⟷ (n_wire m ↕ zx_inv_braiding)
@@ -216,29 +150,9 @@ Lemma hexagon_lemma_2 : forall {n m o},
 Proof.
     intros.
     unfold zx_inv_braiding. unfold zx_associator.
-    unfold n_bottom_to_top.
-    (* apply prop_of_equal_perm.
-    1,2: auto 10 with zxperm_db.
-    cleanup_perm_of_zx.
-    2: auto with zxperm_db.
-    unfold rotr, rotl, stack_perms, Basics.compose.
-    apply functional_extensionality; intros k.
-    bdestruct_all; simpl in *;
-    solve_simple_mod_eqns. *)
-
-    
     simpl_casts.
-    rewrite cast_compose_l. simpl_casts.
-    rewrite compose_assoc.
-    rewrite cast_compose_l. simpl_casts.
-    cleanup_zx. simpl_casts.
-    rewrite cast_compose_l.
-    simpl_casts. cleanup_zx.
-    rewrite cast_compose_l. simpl_casts.
-    rewrite (cast_compose_r _ _ _ (n_wire (m + o + n))).
-    cleanup_zx. simpl_casts.
-    rewrite hexagon_lemma_2_helper.
-    reflexivity.
+    prop_perm_eq.
+    solve_modular_permutation_equalities.
 Qed.
 
 #[export] Instance ZXBraidedMonoidalCategory : BraidedMonoidalCategory nat := {

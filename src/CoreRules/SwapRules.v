@@ -779,7 +779,7 @@ Lemma top_to_bottom_1 : forall n,
 	top_to_bottom (S n) ∝ n_compose n (bottom_to_top (S n)).
 Proof.
     intros.
-	apply prop_of_equal_perm. 
+	apply proportional_of_equal_perm. 
     all: auto with zxperm_db.
 	apply perm_of_top_to_bottom_1.
 Qed.
@@ -788,7 +788,7 @@ Lemma n_compose_n_top_to_bottom : forall n,
 	n_compose n (top_to_bottom n) ∝ n_wire n.
 Proof.
 	intros.
-	apply prop_of_equal_perm; auto with zxperm_db.
+	apply proportional_of_equal_perm; auto with zxperm_db.
 	cleanup_perm_of_zx.
     easy.
 Qed.
