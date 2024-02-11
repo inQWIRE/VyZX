@@ -56,7 +56,7 @@ Proof.
 	induction H; simpl; constructor; easy.
 Qed.
 
-#[export] Hint Resolve transpose_zxperm : zxperm_db.
+#[export] Hint Resolve adjoint_zxperm : zxperm_db.
 
 (* Section on core ZXperms *)
 Lemma n_wire_zxperm {n} : 
