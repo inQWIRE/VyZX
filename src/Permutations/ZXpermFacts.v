@@ -95,6 +95,22 @@ Qed.
 
 #[export] Hint Resolve top_to_bottom_zxperm bottom_to_top_zxperm : zxperm_db.
 
+Lemma n_top_to_bottom_zxperm : forall n m,
+    ZXperm _ (n_top_to_bottom n m).
+Proof.
+    unfold n_top_to_bottom.
+    auto with zxperm_db.
+Qed.
+
+Lemma n_bottom_to_top_zxperm : forall n m,
+    ZXperm _ (n_bottom_to_top n m).
+Proof.
+    unfold n_bottom_to_top.
+    auto with zxperm_db.
+Qed.
+
+#[export] Hint Resolve n_top_to_bottom_zxperm n_bottom_to_top_zxperm : zxperm_db.
+
 Lemma a_swap_zxperm n : 
 	ZXperm n (a_swap n).
 Proof.
@@ -313,14 +329,32 @@ Proof.
 	rewrite Nat.mod_small; [f_equal|]; lia.
 Qed.
 
-Lemma perm_of_n_compose_n_top_to_bottom n :
+Lemma perm_of_n_compose_top_to_bottom_n n :
 	perm_of_zx (n_compose n (top_to_bottom n)) = perm_of_zx (n_wire n).
 Proof.
 	cleanup_perm_of_zx.
 	easy.
 Qed.
 
-#[export] Hint Rewrite perm_of_n_compose_n_top_to_bottom : perm_of_zx_cleanup_db.
+#[export] Hint Rewrite perm_of_n_compose_top_to_bottom_n : perm_of_zx_cleanup_db.
+
+Lemma perm_of_n_top_to_bottom : forall n m,
+    perm_of_zx (n_top_to_bottom n m) = rotr (n + m) n.
+Proof.
+    intros.
+    unfold n_top_to_bottom.
+    cleanup_perm_of_zx; easy.
+Qed.
+
+Lemma perm_of_n_bottom_to_top : forall n m,
+    perm_of_zx (n_bottom_to_top n m) = rotl (m + n) n.
+Proof.
+    intros.
+    unfold n_bottom_to_top.
+    cleanup_perm_of_zx; easy.
+Qed.
+
+#[export] Hint Rewrite perm_of_n_top_to_bottom perm_of_n_bottom_to_top : perm_of_zx_cleanup_db.
 
 Lemma perm_of_a_swap n : 
 	perm_of_zx (a_swap n) = swap_perm 0 (n - 1) n.

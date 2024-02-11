@@ -134,6 +134,7 @@ Tactic Notation "cleanup_perm" :=
   autorewrite with perm_inv_db perm_cleanup_db.
 
 Tactic Notation "cleanup_perm_of_zx" :=
+  autounfold with zxperm_db;
   autorewrite with perm_of_zx_cleanup_db perm_inv_db perm_cleanup_db.
 
 Lemma compose_id_of_compose_idn {f g : nat -> nat} 
@@ -406,7 +407,7 @@ Ltac simpl_permlike_zx :=
     rewrite
       (cast_cast_eq _ _ _ _ _ _ zx0), (cast_cast_eq _ _ _ _ _ _ zx1),
       (cast_id_eq _ _ _ _ zx0)
-end; repeat simpl_casts_eq).
+end; repeat simpl_casts_eq) || (repeat simpl_casts_eq).
 
 
 
@@ -442,6 +443,34 @@ Proof.
 Qed.
 
 #[export] Hint Resolve perm_of_cast_compose_each_square : zxperm_db.
+
+(* I don't know if these actually ever help: *)
+Lemma perm_of_cast_compose_each_square_l : forall n m c d
+  (zx0 : ZX n n) (zx1 : ZX m m) prfb1 prfc1 prfd1 prfd2,
+  ZXperm n zx0 -> ZXperm m zx1 ->
+  ZXperm d (cast d d prfd1 prfd2 
+  (zx0 ⟷ cast n c prfb1 prfc1 zx1)).
+Proof.
+  intros.
+  subst.
+  auto with zxperm_db.
+Qed.
+
+Lemma perm_of_cast_compose_each_square_r : forall n m a d
+  (zx0 : ZX n n) (zx1 : ZX m m) prfa0 prfm0 prfd1 prfd2,
+  ZXperm n zx0 -> ZXperm m zx1 ->
+  ZXperm d (cast d d prfd1 prfd2 
+  (cast a m prfa0 prfm0 zx0 ⟷ zx1)).
+Proof.
+  intros.
+  subst.
+  auto with zxperm_db.
+Qed.
+
+
+(* #[export] Hint Resolve perm_of_cast_compose_each_square_l
+    perm_of_cast_compose_each_square_r : zxperm_db. *)
+
 
 (* This can't be here because proportional_of_eq_perm is defined later, but keeping 
    for reference. (This is put in ZXpermSemantics, right after proportional_of_eq_perm.) *)

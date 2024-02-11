@@ -222,8 +222,11 @@ Proof.
 	f_equal; easy.
 Qed.
 
+(* TODO: split intro prop_perm_eq and prop_perm_eqΩ *)
+
 Ltac prop_perm_eq :=
   intros;
+  autounfold with zxperm_db;
   simpl_casts;
   simpl_permlike_zx;
   __cast_prop_sides_to_square;
