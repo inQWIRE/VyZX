@@ -14,7 +14,6 @@ Create HintDb perm_bdd_db.
 Create HintDb perm_inv_db.
 Create HintDb WF_perm_db.
 
-<<<<<<< Updated upstream
 (* Create HintDb perm_cleanup_db.
 Create HintDb perm_of_zx_cleanup_db. *)
 
@@ -37,14 +36,6 @@ Ltac replace_bool_lia b0 b1 :=
     replace b0 with b1 by (bdestruct b1; lia || (destruct b0 eqn:?; lia)) |
     replace b0 with b1 by (bdestruct b0; bdestruct b1; lia)
   ].
-=======
-
-
-
-
-Ltac bdest_lia_replace b0 b1 :=
-  replace b0 with b1 by (bdestruct b0; lia).
->>>>>>> Stashed changes
 
 Ltac show_permutation :=
   repeat first [
