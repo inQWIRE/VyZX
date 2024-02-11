@@ -7,6 +7,8 @@ Require Export ZXperm.
 (* TODOs: 
     - Declare databases
     - Remove all these random tactics; replace with the standard ones
+      + partially done! Should check
+    - Add cleanup_zx_eq for strict equality
 *)
 
 Create HintDb perm_db.

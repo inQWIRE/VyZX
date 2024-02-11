@@ -34,6 +34,14 @@ Qed.
 
 #[export] Hint Resolve cast_stack_zxperm : zxperm_db.
 
+Lemma conjugate_zxperm {n} {zx} (H : ZXperm n zx) :
+  ZXperm n (zx ⊼).
+Proof.
+	induction H; simpl; constructor; easy.
+Qed.
+
+#[export] Hint Resolve conjugate_zxperm : zxperm_db.
+
 Lemma transpose_zxperm {n} {zx} (H : ZXperm n zx) :
 	ZXperm n (zx ⊤).
 Proof.
@@ -42,7 +50,13 @@ Qed.
 
 #[export] Hint Resolve transpose_zxperm : zxperm_db.
 
+Lemma adjoint_zxperm {n} {zx} (H : ZXperm n zx) :
+	ZXperm n (zx †).
+Proof.
+	induction H; simpl; constructor; easy.
+Qed.
 
+#[export] Hint Resolve transpose_zxperm : zxperm_db.
 
 (* Section on core ZXperms *)
 Lemma n_wire_zxperm {n} : 
@@ -213,6 +227,26 @@ Qed.
 #[export] Hint Rewrite 
   @perm_of_transpose_is_rinv 
   @perm_of_transpose_is_linv using (auto with zxperm_db) : perm_of_zx_cleanup_db.
+
+Lemma perm_of_conjugate {n m} {zx : ZX n m} :
+	perm_of_zx (zx ⊼) = perm_of_zx zx.
+Proof.
+	induction zx; simpl; try easy.
+	- rewrite IHzx1, IHzx2; easy.
+	- rewrite IHzx1, IHzx2; easy.
+Qed.
+
+#[export] Hint Rewrite @perm_of_conjugate : perm_of_zx_cleanup_db.
+
+Lemma perm_of_adjoint {n} {zx} (H : ZXperm n zx) :
+	perm_of_zx (zx †) = perm_of_zx (zx ⊤).
+Proof.
+	unfold adjoint.
+	induction H; simpl; try easy;
+	rewrite IHZXperm1, IHZXperm2; easy.
+Qed.
+
+#[export] Hint Rewrite @perm_of_adjoint : perm_of_zx_cleanup_db.
 
 
 

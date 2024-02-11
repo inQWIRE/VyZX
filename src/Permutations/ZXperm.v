@@ -14,12 +14,7 @@ Inductive ZXperm : forall n, ZX n n -> Prop :=
   | PermComp {n zx0 zx1} : 
       (ZXperm n zx0) -> (ZXperm n zx1) -> ZXperm _ (zx0 ⟷ zx1).
 
-(*
-TODO: Bring this back here?
-Definition stack_perms (n0 n1 : nat) (f g : nat -> nat) : nat -> nat :=
-  fun n => if (n <? n0) then f n else 
-           if (n <? n0 + n1) then (g (n - n0) + n0)%nat else n.
-*)
+
 
 Fixpoint perm_of_zx {n m} (zx : ZX n m) : (nat -> nat) :=
   let idn := (fun x : nat => x) in
