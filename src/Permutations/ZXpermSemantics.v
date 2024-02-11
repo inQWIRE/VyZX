@@ -230,8 +230,8 @@ Ltac prop_perm_eq :=
   (* Goal: zx0 ∝ zx1 *)
   apply proportional_of_equal_perm; [
   (* New goals: *)
-    (*1: ZXperm _ zx0 *) auto with zxperm_db |
-    (*2: ZXperm _ zx1*) auto with zxperm_db |
+    (*1: ZXperm _ zx0 *) auto 10 with zxperm_db |
+    (*2: ZXperm _ zx1*) auto 10 with zxperm_db |
     (*3: perm_of_zx zx0 = perm_of_zx zx1*) cleanup_perm_of_zx; try easy; try lia
   ].
 

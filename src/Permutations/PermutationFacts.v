@@ -69,7 +69,7 @@ Proof.
   - intros. apply perm_inv_bdd_S.
 Qed.
 
-Global Hint Resolve perm_inv_bdd_S perm_inv_bdd : perm_bdd_db.
+#[export] Hint Resolve perm_inv_bdd_S perm_inv_bdd : perm_bdd_db.
 
 (* FIXME: In QuantumLib *)
 Lemma perm_inv_is_linv_of_inj {n f} : 
@@ -497,7 +497,7 @@ Proof.
   apply HWF; lia.
 Qed.
 
-Global Hint Resolve monotonic_WF_perm : WF_perm_db.
+#[export] Hint Resolve monotonic_WF_perm : WF_perm_db.
 
 Lemma compose_WF_perm n f g : WF_perm n f -> WF_perm n g -> 
   WF_perm n (f ∘ g).
@@ -507,7 +507,7 @@ Proof.
   rewrite Hg, Hf; easy.
 Qed.
 
-Global Hint Resolve compose_WF_perm : WF_perm_db.
+#[export] Hint Resolve compose_WF_perm : WF_perm_db.
 
 
 Lemma linv_WF_of_WF {n} {f finv}
@@ -636,7 +636,7 @@ Proof.
   bdestructΩ'.
 Qed.
 
-Global Hint Resolve swap_WF_perm : WF_perm_db.
+#[export] Hint Resolve swap_WF_perm : WF_perm_db.
 
 Lemma swap_perm_bdd a b n : a < n -> b < n ->
   forall k, k < n -> swap_perm a b n k < n.
@@ -646,7 +646,7 @@ Proof.
   bdestructΩ'.
 Qed.
 
-Global Hint Resolve swap_perm_bdd : perm_bdd_db.
+#[export] Hint Resolve swap_perm_bdd : perm_bdd_db.
 
 Lemma swap_perm_inv a b n : a < n -> b < n -> 
   (swap_perm a b n) ∘ (swap_perm a b n) = idn.
@@ -667,7 +667,7 @@ Proof.
   perm_by_inverse (swap_perm a b n).
 Qed.
 
-Global Hint Resolve swap_perm_2_perm : perm_db.
+#[export] Hint Resolve swap_perm_2_perm : perm_db.
 
 Lemma swap_perm_S_permutation a n (Ha : S a < n) :
   permutation n (swap_perm a (S a) n).
@@ -675,7 +675,7 @@ Proof.
   apply swap_perm_2_perm; lia.
 Qed.
 
-Global Hint Resolve swap_perm_S_permutation : perm_db.
+#[export] Hint Resolve swap_perm_S_permutation : perm_db.
 
 Lemma compose_swap_perm a b c n : a < n -> b < n -> c < n -> 
   b <> c -> a <> c ->
@@ -768,7 +768,7 @@ Proof.
     rewrite IHl; [easy|easy|lia].
 Qed.
 
-Global Hint Resolve perm_of_swap_list_WF invperm_of_swap_list_WF : WF_perm_db.
+#[export] Hint Resolve perm_of_swap_list_WF invperm_of_swap_list_WF : WF_perm_db.
 
 Lemma invperm_linv_perm_of_swap_list l : swap_list_spec l = true ->
   invperm_of_swap_list l ∘ perm_of_swap_list l = idn.
@@ -989,7 +989,7 @@ Lemma rotl_WF {n m} :
 	forall k, n <= k -> (rotl n m) k = k.
 Proof. intros. unfold rotl. bdestruct_one; lia. Qed.
 
-Global Hint Resolve rotr_WF rotl_WF : WF_perm_db.
+#[export] Hint Resolve rotr_WF rotl_WF : WF_perm_db.
 
 Lemma rotr_bdd {n m} : 
 	forall k, k < n -> (rotr n m) k < n.
@@ -1005,7 +1005,7 @@ Proof.
 	apply Nat.mod_upper_bound; lia.
 Qed.
 
-Global Hint Resolve rotr_bdd rotl_bdd : perm_bdd_db.
+#[export] Hint Resolve rotr_bdd rotl_bdd : perm_bdd_db.
 
 Lemma rotr_rotl_inv n m :
 	((rotr n m) ∘ (rotl n m) = idn)%prg.
@@ -1063,7 +1063,7 @@ Proof.
 	perm_by_inverse (rotr n m).
 Qed.
 
-Global Hint Resolve rotr_perm rotl_perm : perm_db.
+#[export] Hint Resolve rotr_perm rotl_perm : perm_db.
 
 
 (* This is the start of the actual section *)
