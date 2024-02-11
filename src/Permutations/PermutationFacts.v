@@ -55,18 +55,8 @@ Lemma perm_inv_bdd_S n f k :
   perm_inv (S n) f k < S n.
 Proof.
   induction n; simpl;
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
   [bdestructΩ'|]. 
   bdestruct_one; [|transitivity (S n); [apply IHn|]]. 
-=======
-  [destruct_if_solve|]. 
-  destruct_if; [|transitivity (S n); [apply IHn|]]. 
->>>>>>> Stashed changes
-=======
-  [destruct_if_solve|]. 
-  destruct_if; [|transitivity (S n); [apply IHn|]]. 
->>>>>>> Stashed changes
   all: apply Nat.lt_succ_diag_r.
 Qed.
 
@@ -149,8 +139,6 @@ Proof.
     apply Hsurj; easy.
 Qed.
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 
 Local Notation perm_surj n f := (forall k, k < n -> exists k', k' < n /\ f k' = k).
 Local Notation perm_bdd  n f := (forall k, k < n -> f k < n).
@@ -159,21 +147,7 @@ Local Notation perm_inj  n f := (forall k l, k < n -> l < n -> f k = f l -> k = 
 
 
 (* FIXME: In QuantumLib *)
-=======
-=======
->>>>>>> Stashed changes
-(* FIXME: Should these exist? *)
-Local Notation perm_surj n f := (forall k, k < n -> exists k', k' < n /\ f k' = k).
-Local Notation perm_bdd  n f := (forall k, k < n -> f k < n).
-Local Notation perm_inj  n f := (forall k l, k < n -> l < n -> f k = f l -> k = l).
-Local Notation perm_WF   n f := (forall k, n <= k -> f k = k).
 
-
-(* TODO: Move this where it belongs *)
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 Lemma fswap_involutive : forall {A} (f : nat -> A) x y,
   fswap (fswap f x y) x y = f.
 Proof.
@@ -184,14 +158,6 @@ Proof.
   bdestruct_all; subst; easy.
 Qed.
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-
-
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 Lemma fswap_injective_if_injective : forall {A} n (f:nat -> A) x y,
   x < n -> y < n ->
   perm_inj n f -> perm_inj n (fswap f x y).
@@ -330,15 +296,7 @@ Proof.
   apply Hinj; auto; lia.
 Qed.
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 Lemma injective_and_bounded_grow_of_boundary : forall n f,
-=======
-Lemma injective_and_bdd_grow_of_boundary : forall n f,
->>>>>>> Stashed changes
-=======
-Lemma injective_and_bdd_grow_of_boundary : forall n f,
->>>>>>> Stashed changes
   perm_inj n f /\ perm_bdd n f -> f n = n ->
   perm_inj (S n) f /\ perm_bdd (S n) f.
 Proof.
@@ -364,15 +322,7 @@ Proof.
       lia.
 Qed.
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 Lemma injective_and_bounded_of_surjective : forall n f,
-=======
-Lemma injective_and_bdd_of_surjective : forall n f,
->>>>>>> Stashed changes
-=======
-Lemma injective_and_bdd_of_surjective : forall n f,
->>>>>>> Stashed changes
   perm_surj n f -> perm_inj n f /\ perm_bdd n f.
 Proof.
   intros n.
@@ -384,28 +334,12 @@ Proof.
   specialize (IHn (fswap f n' n) Hswap_surj).
   rewrite (fswap_injective_iff_injective _ f n' n); [|easy|easy].
   rewrite (fswap_bounded_iff_bounded _ f n' n); [|easy|easy].
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
   apply injective_and_bounded_grow_of_boundary;
-=======
-  apply injective_and_bdd_grow_of_boundary;
->>>>>>> Stashed changes
-=======
-  apply injective_and_bdd_grow_of_boundary;
->>>>>>> Stashed changes
   [| rewrite fswap_simpl2; easy].
   easy.
 Qed.
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 Lemma injective_and_bounded_shrink_of_boundary : forall n f,
-=======
-Lemma injective_and_bdd_shrink_of_boundary : forall n f,
->>>>>>> Stashed changes
-=======
-Lemma injective_and_bdd_shrink_of_boundary : forall n f,
->>>>>>> Stashed changes
   perm_inj (S n) f /\ perm_bdd (S n) f -> f n = n -> 
   perm_inj n f /\ perm_bdd n f.
 Proof.
@@ -423,8 +357,6 @@ Proof.
     + lia.
 Qed.
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 (* Formalization of proof sketch of pigeonhole principle
    from https://math.stackexchange.com/a/910790 *)
 Lemma exists_bounded_decidable : forall n P,
@@ -560,114 +492,23 @@ Qed.
 (* Section on WF_perm *)
 Lemma monotonic_WF_perm n m f : WF_perm n f -> n <= m ->
   WF_perm m f.
-=======
-=======
->>>>>>> Stashed changes
-Lemma surjective_of_inj_and_bdd : forall n f,
-  perm_inj n f /\ perm_bdd n f -> perm_surj n f.
-Proof.
-  induction n; [easy|].
-  intros f [Hinj Hbdd].
-  rewrite (fswap_surjective_iff_surjective _ _ n (perm_inv (S n) f n));
-  [|lia|apply perm_inv_bdd_S].
-  rewrite (fswap_injective_iff_injective _ _ n (perm_inv (S n) f n)) in Hinj;
-  [|lia|apply perm_inv_bdd_S].
-  rewrite (fswap_bounded_iff_bounded _ _ n (perm_inv (S n) f n)) in Hbdd;
-  [|lia|apply perm_inv_bdd_S].
-  assert (perm_surj n (fswap f n (perm_inv (S n) f n))).
-  1 : {
-    apply IHn, injective_and_bdd_shrink_of_boundary; [easy|].
-    rewrite fswap_simpl1.
-    admit.
-  }
-  apply surjective_of_eq_boundary_grow; [easy|].
-  Admitted.
-
-
-
-
-
-
-(* Lemma perm_inv_surj_of_surj n f :
-  (forall k, k < n -> exists l, l < n /\ f l = k) ->
-  forall l, l < n -> exists k, k < n /\ perm_inv n f k = l. *)
-
-
-
-
-
-(* Section for prelude lemmas that don't directly involve permutations *)
-(* TODO: Prove these: *)
-
-
-
-
-Lemma bdd_of_is_inj_is_surj n f :
-  perm_inj n f -> perm_surj n f -> perm_bdd n f.
-Proof.
-  intros Hinj Hsurj k Hk.
-
-  Abort.
-
-Lemma surj_of_is_bdd_is_inj n f : 
-  perm_bdd n f -> perm_inj n f -> perm_surj n f.
-Proof.
-  Abort.
-
-Lemma inj_of_is_surj_is_bdd n f :
-  perm_surj n f -> perm_bdd n f -> perm_inj n f. 
-Proof.
-  Abort. 
-
-(* Lemma surj_of_is_WF_is_inj n f *)
-
-
-
-
-(* Section on perm_WF *)
-Lemma monotonic_perm_WF n m f : perm_WF n f -> n <= m ->
-  perm_WF m f.
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 Proof.
   intros HWF Hnm k Hk.
   apply HWF; lia.
 Qed.
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 Global Hint Resolve monotonic_WF_perm : WF_perm_db.
 
 Lemma compose_WF_perm n f g : WF_perm n f -> WF_perm n g -> 
   WF_perm n (f ∘ g).
-=======
-=======
->>>>>>> Stashed changes
-Global Hint Resolve monotonic_perm_WF : perm_WF_db.
-
-Lemma compose_perm_WF n f g : perm_WF n f -> perm_WF n g -> 
-  perm_WF n (f ∘ g).
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 Proof.
   unfold compose.
   intros Hf Hg k Hk.
   rewrite Hg, Hf; easy.
 Qed.
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 Global Hint Resolve compose_WF_perm : WF_perm_db.
-=======
-Global Hint Resolve compose_perm_WF : perm_WF_db.
->>>>>>> Stashed changes
-=======
-Global Hint Resolve compose_perm_WF : perm_WF_db.
->>>>>>> Stashed changes
+
 
 Lemma linv_WF_of_WF {n} {f finv}
 	(HfWF : forall k, n <= k -> f k = k) (Hinv : finv ∘ f = idn) :
@@ -735,7 +576,6 @@ Proof.
     bdestructΩ'.
 Qed.
 
-<<<<<<< Updated upstream
 (* FIXME: ^ All this is now in QuantumLib*)
 
 
@@ -806,104 +646,16 @@ Proof.
   bdestructΩ'.
 Qed.
 
-<<<<<<< Updated upstream
 Global Hint Resolve swap_perm_bdd : perm_bdd_db.
 
 Lemma swap_perm_inv a b n : a < n -> b < n -> 
   (swap_perm a b n) ∘ (swap_perm a b n) = idn.
 Proof.
-=======
-=======
->>>>>>> Stashed changes
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(* TODO FIXME: Should this really be here? *)
-(* Section on swap_perm, swaps two elements. TODO: Do we even want this?
-	 We have swap_2_perm and fswap... Also, should swap_perm be defined in 
-	 terms of fswap? *)
-Lemma swap_perm_same a n :
-  swap_perm a a n = idn.
-Proof.
-  unfold swap_perm.
-  apply functional_extensionality; intros k.
-  destruct_if_solve.
-Qed.
-
-#[export] Hint Rewrite swap_perm_same : perm_cleanup_db.
-
-Lemma swap_perm_comm a b n :
-  swap_perm a b n = swap_perm b a n.
-Proof.
-  apply functional_extensionality; intros k.
-  unfold swap_perm.
-  destruct_if_solve.
-Qed.
-
-Lemma swap_perm_WF a b n : forall k, n <= k -> swap_perm a b n k = k.
-Proof.
-  intros.
-  unfold swap_perm. 
-  destruct_if_solve.
-Qed.
-
-Global Hint Resolve swap_perm_WF : perm_WF_db.
-
-Lemma swap_perm_bdd a b n : a < n -> b < n ->
-  forall k, k < n -> swap_perm a b n k < n.
-<<<<<<< Updated upstream
-Proof.
-  intros Ha Hb k Hk.
-  unfold swap_perm.
-  destruct_if_solve.
-Qed.
-
-Global Hint Resolve swap_perm_bdd : perm_bdd_db.
-
-Lemma swap_perm_inv a b n : a < n -> b < n -> 
-  (swap_perm a b n) ∘ (swap_perm a b n) = idn.
-Proof.
->>>>>>> Stashed changes
-=======
-Proof.
-  intros Ha Hb k Hk.
-  unfold swap_perm.
-  destruct_if_solve.
-Qed.
-
-Global Hint Resolve swap_perm_bdd : perm_bdd_db.
-
-Lemma swap_perm_inv a b n : a < n -> b < n -> 
-  (swap_perm a b n) ∘ (swap_perm a b n) = idn.
-Proof.
->>>>>>> Stashed changes
   intros Ha Hb.
   unfold compose.
   apply functional_extensionality; intros k.
   unfold swap_perm.
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
   bdestructΩ'.
-=======
-  destruct_if_solve.
->>>>>>> Stashed changes
-=======
-  destruct_if_solve.
->>>>>>> Stashed changes
 Qed.
 
 #[export] Hint Rewrite swap_perm_inv : perm_inv_db.
@@ -932,15 +684,7 @@ Proof.
   intros Ha Hb Hc Hbc Hac. 
   apply functional_extensionality; intros k.
   unfold compose, swap_perm.
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
   bdestructΩ'.
-=======
-  destruct_if_solve.
->>>>>>> Stashed changes
-=======
-  destruct_if_solve.
->>>>>>> Stashed changes
 Qed.
 
 #[export] Hint Rewrite compose_swap_perm : perm_cleanup_db.
@@ -958,7 +702,6 @@ Proof.
   apply functional_extensionality; intros k.
   unfold compose, fswap, swap_perm.
   bdestruct_all; easy.
-<<<<<<< Updated upstream
 Qed.
 
 Lemma fswap_perm_inv_n_permutation f n : permutation (S n) f ->
@@ -998,11 +741,7 @@ Fixpoint invperm_of_swap_list l :=
 
 Local Opaque perm_inv.
 Lemma perm_of_swap_list_WF l : swap_list_spec l = true ->
-<<<<<<< Updated upstream
   WF_perm (length l) (perm_of_swap_list l).
-=======
-  perm_WF (length l) (perm_of_swap_list l).
->>>>>>> Stashed changes
 Proof.
   induction l.
   - easy.
@@ -1012,61 +751,11 @@ Proof.
     intros k Hk.
     unfold compose.
     rewrite IHl; [|easy|lia].
-<<<<<<< Updated upstream
     rewrite swap_WF_perm; easy.
 Qed.
 
 Lemma invperm_of_swap_list_WF l : swap_list_spec l = true ->
   WF_perm (length l) (invperm_of_swap_list l).
-=======
-    rewrite swap_perm_WF; easy.
-Qed.
-
-Lemma invperm_of_swap_list_WF l : swap_list_spec l = true ->
-  perm_WF (length l) (invperm_of_swap_list l).
->>>>>>> Stashed changes
-=======
-Qed.
-
-Lemma fswap_perm_inv_n_permutation f n : permutation (S n) f ->
-  permutation n (fswap f (perm_inv (S n) f n) n).
-Proof.
-  intros Hperm.
-  apply fswap_at_boundary_permutation.
-  - apply Hperm.
-  - apply perm_inv_bdd_S.
-  - apply perm_inv_is_rinv_of_permutation; auto.
-Qed.
-
-(* Notation perm_list_of_insertion_sort_list l :=
-  (map (fun idxk => match idxk with 
-    | pair n k => swap_perm n k (S n)
-    end) (combine (seq 0 (length l)) l)). *)
-
-Fixpoint swap_list_spec l : bool :=
-  match l with 
-  | [] => true
-  | k :: ks => (k <? S (length ks)) && swap_list_spec ks
-  end.
-
-Fixpoint perm_of_swap_list l :=
-  match l with
-  | [] => idn
-  | k :: ks => let n := length ks in
-    (swap_perm k n (S n) ∘ (perm_of_swap_list ks))
-  end.
-
-Fixpoint invperm_of_swap_list l :=
-  match l with 
-  | [] => idn
-  | k :: ks => let n := length ks in
-    ((invperm_of_swap_list ks) ∘ swap_perm k n (S n))
-  end.
-
-Local Opaque perm_inv.
-Lemma perm_of_swap_list_WF l : swap_list_spec l = true ->
-  perm_WF (length l) (perm_of_swap_list l).
->>>>>>> Stashed changes
 Proof.
   induction l.
   - easy.
@@ -1075,20 +764,11 @@ Proof.
     intros [Ha Hl].
     intros k Hk.
     unfold compose.
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
     rewrite swap_WF_perm; [|easy].
     rewrite IHl; [easy|easy|lia].
 Qed.
 
 Global Hint Resolve perm_of_swap_list_WF invperm_of_swap_list_WF : WF_perm_db.
-=======
-    rewrite swap_perm_WF; [|easy].
-    rewrite IHl; [easy|easy|lia].
-Qed.
-
-Global Hint Resolve perm_of_swap_list_WF invperm_of_swap_list_WF : perm_WF_db.
->>>>>>> Stashed changes
 
 Lemma invperm_linv_perm_of_swap_list l : swap_list_spec l = true ->
   invperm_of_swap_list l ∘ perm_of_swap_list l = idn.
@@ -1098,81 +778,6 @@ Proof.
   - simpl. 
     rewrite andb_true_iff.
     intros [Ha Hl].
-    rewrite Combinators.compose_assoc, 
-    <- (Combinators.compose_assoc _ _ _ _ (perm_of_swap_list _)).
-    rewrite swap_perm_inv, compose_idn_l.
-    + apply (IHl Hl).
-    + bdestructΩ (a <? S (length l)).
-    + lia.
-Qed.
-
-Lemma invperm_rinv_perm_of_swap_list l : swap_list_spec l = true ->
-  perm_of_swap_list l ∘ invperm_of_swap_list l = idn.
-=======
-    rewrite IHl; [|easy|lia].
-    rewrite swap_perm_WF; easy.
-Qed.
-
-Lemma invperm_of_swap_list_WF l : swap_list_spec l = true ->
-  perm_WF (length l) (invperm_of_swap_list l).
-Proof.
-  induction l.
-  - easy.
-  - simpl.
-    rewrite andb_true_iff.
-    intros [Ha Hl].
-    intros k Hk.
-    unfold compose.
-    rewrite swap_perm_WF; [|easy].
-    rewrite IHl; [easy|easy|lia].
-Qed.
-
-Global Hint Resolve perm_of_swap_list_WF invperm_of_swap_list_WF : perm_WF_db.
-
-Lemma invperm_linv_perm_of_swap_list l : swap_list_spec l = true ->
-  invperm_of_swap_list l ∘ perm_of_swap_list l = idn.
->>>>>>> Stashed changes
-Proof.
-  induction l.
-  - easy.
-  - simpl. 
-    rewrite andb_true_iff.
-    intros [Ha Hl].
-<<<<<<< Updated upstream
-    rewrite <- Combinators.compose_assoc,
-    (Combinators.compose_assoc _ _ _ _ (invperm_of_swap_list _)).
-    rewrite (IHl Hl).
-    rewrite compose_idn_r.
-    rewrite swap_perm_inv; [easy| |lia].
-    bdestructΩ (a <? S (length l)).
-Qed.
-
-#[export] Hint Rewrite invperm_linv_perm_of_swap_list 
-  invperm_rinv_perm_of_swap_list : perm_cleanup_db.
-
-
-(* FIXME: Remove; for working reference*)
-Fixpoint insertion_sort_list n f := 
-  match n with 
-  | 0 => []
-  | S n' => let k := (perm_inv (S n') f n') in
-      k :: insertion_sort_list n' (fswap f k n')
-  end.
-
-Lemma length_insertion_sort_list n f :
-  length (insertion_sort_list n f) = n.
-Proof.
-  revert f;
-  induction n;
-  intros f.
-  - easy.
-  - simpl.
-    rewrite IHn; easy.
-Qed.
-
-Lemma insertion_sort_list_is_swap_list n f : 
-  swap_list_spec (insertion_sort_list n f) = true.
-=======
     rewrite Combinators.compose_assoc, 
     <- (Combinators.compose_assoc _ _ _ _ (perm_of_swap_list _)).
     rewrite swap_perm_inv, compose_idn_l.
@@ -1211,15 +816,12 @@ Fixpoint insertion_sort_list n f :=
 
 Lemma length_insertion_sort_list n f :
   length (insertion_sort_list n f) = n.
->>>>>>> Stashed changes
 Proof.
   revert f;
   induction n;
   intros f.
   - easy.
   - simpl.
-<<<<<<< Updated upstream
-=======
     rewrite IHn; easy.
 Qed.
 
@@ -1231,7 +833,6 @@ Proof.
   intros f.
   - easy.
   - simpl.
->>>>>>> Stashed changes
     rewrite length_insertion_sort_list, IHn.
     pose proof (perm_inv_bdd_S n f n).
     bdestructΩ (perm_inv (S n) f n <? S n).
