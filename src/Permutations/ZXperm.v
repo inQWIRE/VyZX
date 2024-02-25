@@ -49,3 +49,30 @@ Definition top_to_bottom_perm (n : nat) : nat -> nat :=
 
 Definition a_perm (n : nat) : nat -> nat :=
   swap_perm 0 (n-1) n.
+
+Lemma zx_to_bot_helper : forall a n, 
+  n = (n - a + Init.Nat.min a n)%nat.
+Proof. intros a n; lia. Qed.
+
+Definition zx_to_bot (a n : nat) : ZX n n :=
+  cast _ _ (zx_to_bot_helper (n-a) n) (zx_to_bot_helper (n-a) n) 
+  ((n_wire (n - (n-a))) ↕ a_swap (min (n-a) n)).
+
+Lemma zx_to_bot'_helper a n (H : (a < n)%nat) :
+  n = (a + (n - a))%nat.
+Proof. lia. Qed.
+
+Definition zx_to_bot' (a n : nat) (H : (a < n)%nat) : ZX n n :=
+  cast _ _ (zx_to_bot'_helper a n H) (zx_to_bot'_helper a n H)
+  (n_wire a ↕ a_swap (n-a)).
+
+Fixpoint zx_of_swap_list (l : list nat) : ZX (length l) (length l) :=
+	match l with 
+	| [] as l => cast _ _ eq_refl eq_refl ⦰
+	| a::l' => 
+		zx_to_bot a (1+length l')
+		⟷ (@cast (1+length l') (1+length l') (length l' + 1) (length l' + 1) 
+			  (Nat.add_comm _ _) (Nat.add_comm _ _) (zx_of_swap_list l' ↕ —))
+	end.
+
+Definition zx_of_perm n f := zx_of_swap_list (insertion_sort_list n (perm_inv n f)).

@@ -246,7 +246,7 @@ Proof.
 	rewrite IHZXperm1, IHZXperm2; easy.
 Qed.
 
-#[export] Hint Rewrite @perm_of_adjoint : perm_of_zx_cleanup_db.
+#[export] Hint Rewrite @perm_of_adjoint using (auto with zxperm_db) : perm_of_zx_cleanup_db.
 
 
 
@@ -350,10 +350,6 @@ Qed.
   perm_of_kcompose_top_to_bot_eq_rotr
   perm_of_kcompose_bot_to_top_eq_rotl : perm_of_zx_cleanup_db.
 
-(* We can prove the rest (and really, whatever we want) easily. 
-   The main results are secitoned here so they don't overlap 
-   with the (same) proofs in SwapRules.v *)
-
 Lemma perm_of_top_to_bottom_1 n :
 	perm_of_zx (top_to_bottom (S n)) = perm_of_zx (n_compose n (bottom_to_top (S n))).
 Proof.
@@ -390,6 +386,8 @@ Qed.
 
 #[export] Hint Rewrite perm_of_n_top_to_bottom perm_of_n_bottom_to_top : perm_of_zx_cleanup_db.
 
+(* Section on constructing ZX diagrams of arbitrary permutations *)
+
 Lemma perm_of_a_swap n : 
 	perm_of_zx (a_swap n) = swap_perm 0 (n - 1) n.
 Proof.
@@ -399,5 +397,97 @@ Proof.
 Qed.
 
 #[export] Hint Rewrite perm_of_a_swap : perm_of_zx_cleanup_db.
+
+Lemma zx_to_bot_zxperm a n :
+	ZXperm n (zx_to_bot a n).
+Proof.
+	unfold zx_to_bot.
+	auto with zxperm_db.
+Qed.
+
+Lemma zx_to_bot'_zxperm a n H :
+	ZXperm n (zx_to_bot' a n H).
+Proof.
+	unfold zx_to_bot'.
+	auto with zxperm_db.
+Qed.
+
+#[export] Hint Resolve zx_to_bot_zxperm zx_to_bot'_zxperm : zxperm_db.
+
+Lemma perm_of_zx_to_bot a n :
+	perm_of_zx (zx_to_bot a n) = swap_perm (min a n) (min a n + (n - a - 1)) n.
+Proof.
+	unfold zx_to_bot.
+	cleanup_perm_of_zx.
+	solve_modular_permutation_equalities.
+Qed.
+
+Lemma perm_of_zx_to_bot' a n H :
+	perm_of_zx (zx_to_bot' a n H) = swap_perm a (n - 1) n.
+Proof.
+	unfold zx_to_bot'.
+	cleanup_perm_of_zx.
+	solve_modular_permutation_equalities.
+Qed.
+
+#[export] Hint Rewrite perm_of_zx_to_bot' : perm_of_zx_cleanup_db.
+
+Lemma perm_of_zx_to_bot_eq_zx_to_bot' a n (H: a < n) :
+	perm_of_zx (zx_to_bot a n) = perm_of_zx (zx_to_bot' a n H).
+Proof.
+	cleanup_perm_of_zx; rewrite perm_of_zx_to_bot.
+	solve_modular_permutation_equalities.
+Qed.
+
+(* #[export] Hint Rewrite perm_of_zx_to_bot_eq_zx_to_bot' : perm_of_zx_cleanup_db. *)
+
+Lemma zx_to_bot_propto_zx_to_bot' {a n} H : 
+	zx_to_bot a n ∝ zx_to_bot' a n H.
+Proof.
+	prop_perm_eq.
+	rewrite (perm_of_zx_to_bot_eq_zx_to_bot' _ _ H).
+	cleanup_perm_of_zx.
+	easy.
+Qed.
+
+Lemma zx_of_swap_list_zxperm l :
+	ZXperm (length l) (zx_of_swap_list l).
+Proof.
+	induction l; simpl; auto with zxperm_db.
+Qed.
+
+#[export] Hint Resolve zx_of_swap_list_zxperm : zxperm_db.
+
+Lemma perm_of_zx_of_swap_list l : swap_list_spec l = true ->
+	perm_of_zx (zx_of_swap_list l) = perm_of_swap_list l.
+Proof.
+	induction l.
+	- easy.
+	- simpl swap_list_spec.
+		rewrite andb_true_iff, Nat.ltb_lt.
+		intros [Ha Hspec].
+		specialize (IHl Hspec).
+		simpl.
+		f_equal.
+		+ rewrite (perm_of_zx_to_bot_eq_zx_to_bot' _ _ Ha).
+			cleanup_perm_of_zx.
+			f_equal; lia.
+		+ cleanup_perm_of_zx.
+			apply IHl.
+Qed.
+
+#[export] Hint Rewrite perm_of_zx_of_swap_list : perm_of_zx_cleanup_db.
+
+Definition zx_of_perm n f := zx_of_swap_list (insertion_sort_list n (perm_inv n f)).
+
+Lemma perm_of_zx_of_perm_eq n f : permutation n f ->
+	forall k, k < n -> perm_of_zx (zx_of_perm n f) k = f k.
+Proof.
+	intros Hperm.
+	unfold zx_of_perm.
+	rewrite perm_of_zx_of_swap_list by (apply insertion_sort_list_is_swap_list).
+	intros k Hk.
+	rewrite <- perm_of_insertion_sort_list_of_perm_inv_eq; easy.
+Qed.
 
 Local Close Scope nat.

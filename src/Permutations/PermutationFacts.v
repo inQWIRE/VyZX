@@ -140,6 +140,23 @@ Proof.
 Qed.
 
 
+Lemma perm_inv_permutation n f : permutation n f ->
+  permutation n (perm_inv n f).
+Proof.
+  intros Hperm.
+  exists f.
+  intros k Hk; repeat split.
+  - apply perm_inv_bdd, Hk.
+  - destruct Hperm as [? H]; apply H, Hk.
+  - rewrite perm_inv_is_rinv_of_permutation; easy.
+  - rewrite perm_inv_is_linv_of_permutation; easy.
+Qed.
+
+#[export] Hint Resolve perm_inv_permutation : perm_db.
+  
+
+
+
 Local Notation perm_surj n f := (forall k, k < n -> exists k', k' < n /\ f k' = k).
 Local Notation perm_bdd  n f := (forall k, k < n -> f k < n).
 Local Notation perm_inj  n f := (forall k l, k < n -> l < n -> f k = f l -> k = l).
@@ -488,6 +505,86 @@ Qed.
 (*FIXME: ^ all up to notation has been moved into QuantumLib. *)
 
 
+(* TODO: Put (?) in QuantumLib: *)
+Lemma permutation_is_bounded n f : permutation n f ->
+  perm_bdd n f.
+Proof.
+  intros [finv Hfinv] k Hk.
+  destruct (Hfinv k Hk); easy.
+Qed.
+
+Local Notation perm_eq n f g := (forall k, k < n -> f k = g k).
+
+Lemma eq_of_WF_perm_eq n f g : WF_perm n f -> WF_perm n g ->
+  perm_eq n f g -> f = g.
+Proof.
+  intros HfWF HgWF Heq.
+  apply functional_extensionality; intros k.
+  bdestruct (k <? n).
+  - apply Heq, H.
+  - rewrite HfWF, HgWF; easy.
+Qed.
+
+Lemma permutation_linv_iff_rinv_of_bounded n f finv :
+  permutation n f -> perm_bdd n finv -> 
+  perm_eq n (f ∘ finv) idn <-> perm_eq n (finv ∘ f) idn.
+Proof.
+  intros Hperm Hbdd.
+  split; unfold compose.
+  - intros Hrinv.
+    intros k Hk.
+    apply (permutation_is_injective n f Hperm); try easy.
+    + apply Hbdd, permutation_is_bounded, Hk.
+      apply Hperm.
+    + rewrite Hrinv; [easy|].
+      apply (permutation_is_bounded n f Hperm _ Hk).
+  - intros Hlinv k Hk.
+    destruct Hperm as [fi Hf].
+    destruct (Hf k Hk) as [Hfk [Hfik [Hfifk Hffik]]].
+    rewrite <- Hffik.
+    rewrite Hlinv; easy.
+Qed.
+
+(* Local Notation perm_eq n f g := (forall k, k < n -> f k = g k). *)
+Local Notation is_perm_rinv n f finv := (perm_eq n (f ∘ finv) idn).
+Local Notation is_perm_linv n f finv := (perm_eq n (finv ∘ f) idn).
+Local Notation is_perm_inv n f finv := 
+  (perm_eq n (f ∘ finv) idn /\ perm_eq n (finv ∘ f) idn).
+
+Lemma perm_linv_injective_of_surjective n f finv finv' : 
+  perm_surj n f -> is_perm_linv n f finv -> is_perm_linv n f finv' ->
+  perm_eq n finv finv'.
+Proof.
+  intros Hsurj Hfinv Hfinv' k Hk.
+  destruct (Hsurj k Hk) as [k' [Hk' Hfk']].
+  rewrite <- Hfk'.
+  unfold compose in *.
+  rewrite Hfinv, Hfinv'; easy.
+Qed.
+
+Lemma perm_bounded_rinv_injective_of_injective n f finv finv' : 
+  perm_inj n f -> perm_bdd n finv -> perm_bdd n finv' ->
+  is_perm_rinv n f finv -> is_perm_rinv n f finv' ->
+  perm_eq n finv finv'.
+Proof.
+  intros Hinj Hbdd Hbdd' Hfinv Hfinv' k Hk.
+  apply Hinj; auto.
+  unfold compose in *.
+  rewrite Hfinv, Hfinv'; easy.
+Qed.
+
+Lemma permutation_inverse_injective n f finv finv' : permutation n f ->
+  is_perm_inv n f finv -> is_perm_inv n f finv' ->
+  perm_eq n finv finv'.
+Proof.
+  intros Hperm Hfinv Hfinv'.
+  eapply perm_linv_injective_of_surjective.
+  + apply permutation_is_surjective, Hperm.
+  + destruct (Hfinv); auto.
+  + destruct (Hfinv'); auto.
+Qed.
+
+
 
 (* Section on WF_perm *)
 Lemma monotonic_WF_perm n m f : WF_perm n f -> n <= m ->
@@ -719,27 +816,9 @@ Qed.
     | pair n k => swap_perm n k (S n)
     end) (combine (seq 0 (length l)) l)). *)
 
-Fixpoint swap_list_spec l : bool :=
-  match l with 
-  | [] => true
-  | k :: ks => (k <? S (length ks)) && swap_list_spec ks
-  end.
 
-Fixpoint perm_of_swap_list l :=
-  match l with
-  | [] => idn
-  | k :: ks => let n := length ks in
-    (swap_perm k n (S n) ∘ (perm_of_swap_list ks))
-  end.
 
-Fixpoint invperm_of_swap_list l :=
-  match l with 
-  | [] => idn
-  | k :: ks => let n := length ks in
-    ((invperm_of_swap_list ks) ∘ swap_perm k n (S n))
-  end.
 
-Local Opaque perm_inv.
 Lemma perm_of_swap_list_WF l : swap_list_spec l = true ->
   WF_perm (length l) (perm_of_swap_list l).
 Proof.
@@ -769,6 +848,43 @@ Proof.
 Qed.
 
 #[export] Hint Resolve perm_of_swap_list_WF invperm_of_swap_list_WF : WF_perm_db.
+
+Lemma perm_of_swap_list_bounded l : swap_list_spec l = true ->
+  perm_bdd (length l) (perm_of_swap_list l).
+Proof. 
+  induction l; [easy|].
+  simpl.
+  rewrite andb_true_iff.
+  intros [Ha Hl].
+  intros k Hk.
+  unfold compose.
+  rewrite Nat.ltb_lt in Ha.
+  apply swap_perm_bdd; try lia.
+  bdestruct (k =? length l).
+  - subst; rewrite perm_of_swap_list_WF; try easy; lia.
+  - transitivity (length l); [|lia].
+    apply IHl; [easy | lia].
+Qed.
+
+Lemma invperm_of_swap_list_bounded l : swap_list_spec l = true ->
+  perm_bdd (length l) (invperm_of_swap_list l).
+Proof.
+  induction l; [easy|].
+  simpl.
+  rewrite andb_true_iff.
+  intros [Ha Hl].
+  rewrite Nat.ltb_lt in Ha.
+  intros k Hk.
+  unfold compose.
+  bdestruct (swap_perm a (length l) (S (length l)) k =? length l).
+  - rewrite H, invperm_of_swap_list_WF; [lia|easy|easy].
+  - transitivity (length l); [|lia]. 
+    apply IHl; [easy|].
+    pose proof (swap_perm_bdd a (length l) (S (length l)) Ha (ltac:(lia)) k Hk).
+    lia.
+Qed.
+
+#[export] Hint Resolve perm_of_swap_list_bounded invperm_of_swap_list_bounded : perm_bdd_db.
 
 Lemma invperm_linv_perm_of_swap_list l : swap_list_spec l = true ->
   invperm_of_swap_list l ∘ perm_of_swap_list l = idn.
@@ -806,13 +922,13 @@ Qed.
   invperm_rinv_perm_of_swap_list : perm_cleanup_db.
 
 
-(* FIXME: Remove; for working reference*)
-Fixpoint insertion_sort_list n f := 
+(* FIX ME: Remove; for working reference*)
+(* Fixpoint insertion_sort_list n f := 
   match n with 
   | 0 => []
   | S n' => let k := (perm_inv (S n') f n') in
       k :: insertion_sort_list n' (fswap f k n')
-  end.
+  end. *)
 
 Lemma length_insertion_sort_list n f :
   length (insertion_sort_list n f) = n.
@@ -825,6 +941,7 @@ Proof.
     rewrite IHn; easy.
 Qed.
 
+Local Opaque perm_inv. 
 Lemma insertion_sort_list_is_swap_list n f : 
   swap_list_spec (insertion_sort_list n f) = true.
 Proof.
@@ -837,8 +954,6 @@ Proof.
     pose proof (perm_inv_bdd_S n f n).
     bdestructΩ (perm_inv (S n) f n <? S n).
 Qed.
-
-
 
 Lemma perm_of_insertion_sort_list_is_rinv n f : permutation n f ->
   forall k, k < n ->
@@ -869,7 +984,273 @@ Proof.
       rewrite IHn; [easy| |lia].
       apply fswap_perm_inv_n_permutation, Hperm.
 Qed.
+Local Transparent perm_inv. 
 
+Lemma perm_of_insertion_sort_list_WF n f : 
+  WF_perm n (perm_of_swap_list (insertion_sort_list n f)).
+Proof.
+  intros k.
+  rewrite <- (length_insertion_sort_list n f) at 1.
+  revert k.
+  apply perm_of_swap_list_WF.
+  apply insertion_sort_list_is_swap_list.
+Qed.
+
+Lemma invperm_of_insertion_sort_list_WF n f : 
+  WF_perm n (invperm_of_swap_list (insertion_sort_list n f)).
+Proof.
+  intros k.
+  rewrite <- (length_insertion_sort_list n f) at 1.
+  revert k.
+  apply invperm_of_swap_list_WF.
+  apply insertion_sort_list_is_swap_list.
+Qed.
+
+#[export] Hint Resolve perm_of_insertion_sort_list_WF invperm_of_swap_list_WF : WF_perm_db.
+
+Lemma perm_of_insertion_sort_list_perm_eq_perm_inv n f : permutation n f ->
+  perm_eq n (perm_of_swap_list (insertion_sort_list n f)) (perm_inv n f).
+Proof.
+  intros Hperm.
+  apply (perm_bounded_rinv_injective_of_injective n f).
+  - apply permutation_is_injective, Hperm.
+  - pose proof (perm_of_swap_list_bounded (insertion_sort_list n f)
+      (insertion_sort_list_is_swap_list n f)) as H.
+    rewrite (length_insertion_sort_list n f) in H.
+    exact H.
+  - auto with perm_bdd_db.
+  - apply perm_of_insertion_sort_list_is_rinv, Hperm.
+  - apply perm_inv_is_rinv_of_permutation, Hperm.
+Qed.
+
+Lemma perm_of_insertion_sort_list_eq_make_WF_perm_inv n f : permutation n f ->
+  (perm_of_swap_list (insertion_sort_list n f)) = fun k => if n <=?k then k else perm_inv n f k.
+Proof.
+  intros Hperm.
+  apply functional_extensionality; intros k.
+  bdestruct (n <=? k).
+  - rewrite perm_of_insertion_sort_list_WF; easy.
+  - rewrite perm_of_insertion_sort_list_perm_eq_perm_inv; easy.
+Qed.
+
+Lemma perm_eq_linv_injective n f finv finv' : permutation n f ->
+  is_perm_linv n f finv -> is_perm_linv n f finv' ->
+  perm_eq n finv finv'.
+Proof.
+  intros Hperm Hfinv Hfinv' k Hk.
+  destruct (permutation_is_surjective Hperm k Hk) as [k' [Hk' Hfk']].
+  unfold compose in *.
+  specialize (Hfinv k' Hk').
+  specialize (Hfinv' k' Hk').
+  rewrite Hfk' in *.
+  rewrite Hfinv, Hfinv'.
+  easy.
+Qed.
+
+Lemma perm_inv_eq_inv n f finv : 
+  (forall x : nat, x < n -> f x < n /\ finv x < n /\ finv (f x) = x /\ f (finv x) = x)
+  -> perm_eq n (perm_inv n f) finv.
+Proof.
+  intros Hfinv.
+  assert (Hperm: permutation n f) by (exists finv; easy).
+  apply (perm_eq_linv_injective n f); [easy| | ]; 
+    unfold compose; intros k Hk.
+  - rewrite perm_inv_is_linv_of_permutation; easy.
+  - apply Hfinv, Hk.
+Qed.
+
+Lemma perm_inv_is_inv n f : permutation n f ->
+  forall k : nat, k < n -> perm_inv n f k < n /\ f k < n 
+    /\ f (perm_inv n f k) = k /\ perm_inv n f (f k) = k.
+Proof.
+  intros Hperm k Hk.
+  repeat split.
+  - apply perm_inv_bdd, Hk.
+  - destruct Hperm as [? H]; apply H, Hk.
+  - rewrite perm_inv_is_rinv_of_permutation; easy.
+  - rewrite perm_inv_is_linv_of_permutation; easy.
+Qed.
+
+Lemma perm_inv_perm_inv n f : permutation n f ->
+  perm_eq n (perm_inv n (perm_inv n f)) f.
+Proof.
+  intros Hperm k Hk.
+  unfold compose.
+  rewrite (perm_inv_eq_inv n (perm_inv n f) f); try easy.
+  apply perm_inv_is_inv, Hperm.
+Qed.
+
+Lemma perm_inv_eq_of_perm_eq' n m f g : perm_eq n f g -> m <= n ->
+  perm_eq n (perm_inv m f) (perm_inv m g).
+Proof.
+  intros Heq Hm.
+  induction m; [trivial|].
+  intros k Hk.
+  simpl.
+  rewrite Heq by lia.
+  rewrite IHm by lia.
+  easy.
+Qed.
+
+Lemma perm_inv_eq_of_perm_eq n f g : perm_eq n f g ->
+  perm_eq n (perm_inv n f) (perm_inv n g).
+Proof.
+  intros Heq.
+  apply perm_inv_eq_of_perm_eq'; easy.
+Qed.
+
+Lemma perm_inv_of_insertion_sort_list_eq n f : permutation n f ->
+  perm_eq n f (perm_inv n (perm_of_swap_list (insertion_sort_list n f))).
+Proof.
+  intros Hperm k Hk.
+  rewrite (perm_of_insertion_sort_list_eq_make_WF_perm_inv n f) by easy.
+  rewrite (perm_inv_eq_of_perm_eq n _ (perm_inv n f)); [
+    | intros; bdestructΩ' | easy].
+  rewrite perm_inv_perm_inv; easy.
+Qed.
+
+Lemma perm_of_insertion_sort_list_of_perm_inv_eq n f : permutation n f ->
+  perm_eq n f (perm_of_swap_list (insertion_sort_list n (perm_inv n f))).
+Proof.
+  intros Hperm.
+  rewrite perm_of_insertion_sort_list_eq_make_WF_perm_inv by (auto with perm_db).
+  intros; bdestructΩ'.
+  rewrite perm_inv_perm_inv; easy.
+Qed.
+
+
+Lemma insertion_sort_list_S n f : 
+  insertion_sort_list (S n) f = 
+  (perm_inv (S n) f n) :: (insertion_sort_list n (fswap f (perm_inv (S n) f n) n)).
+Proof. easy. Qed.
+
+Lemma perm_of_swap_list_cons a l :
+  perm_of_swap_list (a :: l) = swap_perm a (length l) (S (length l)) ∘ perm_of_swap_list l.
+Proof. easy. Qed.
+
+Lemma invperm_of_swap_list_cons a l :
+  invperm_of_swap_list (a :: l) = invperm_of_swap_list l ∘ swap_perm a (length l) (S (length l)).
+Proof. easy. Qed.
+
+Lemma perm_of_insertion_sort_list_S n f : 
+  perm_of_swap_list (insertion_sort_list (S n) f) =
+  swap_perm (perm_inv (S n) f n) n (S n) ∘ 
+    perm_of_swap_list (insertion_sort_list n (fswap f (perm_inv (S n) f n) n)).
+Proof. 
+  rewrite insertion_sort_list_S, perm_of_swap_list_cons.
+  rewrite length_insertion_sort_list.
+  easy.
+Qed.
+
+Lemma invperm_of_insertion_sort_list_S n f : 
+  invperm_of_swap_list (insertion_sort_list (S n) f) =
+  invperm_of_swap_list (insertion_sort_list n (fswap f (perm_inv (S n) f n) n))
+  ∘ swap_perm (perm_inv (S n) f n) n (S n).
+Proof. 
+  rewrite insertion_sort_list_S, invperm_of_swap_list_cons.
+  rewrite length_insertion_sort_list.
+  easy.
+Qed.
+
+Lemma perm_of_swap_list_permutation l : swap_list_spec l = true ->
+  permutation (length l) (perm_of_swap_list l).
+Proof.
+  intros Hsw.
+  induction l;
+  [ simpl; exists idn; easy |].
+  simpl.
+  apply permutation_compose.
+  - apply swap_perm_2_perm; [|lia].
+    simpl in Hsw.
+    bdestruct (a <? S (length l)); easy.
+  - eapply permutation_of_le_permutation_WF.
+    2: apply IHl.
+    1: lia.
+    2: apply perm_of_swap_list_WF.
+    all: simpl in Hsw;
+    rewrite andb_true_iff in Hsw; easy.
+Qed.
+
+Lemma invperm_of_swap_list_permutation l : swap_list_spec l = true ->
+  permutation (length l) (invperm_of_swap_list l).
+Proof.
+  intros Hsw.
+  induction l;
+  [ simpl; exists idn; easy |].
+  simpl.
+  apply permutation_compose.
+  - eapply permutation_of_le_permutation_WF.
+    2: apply IHl.
+    1: lia.
+    2: apply invperm_of_swap_list_WF.
+    all: simpl in Hsw;
+    rewrite andb_true_iff in Hsw; easy.
+  - apply swap_perm_2_perm; [|lia].
+    simpl in Hsw.
+    bdestruct (a <? S (length l)); easy.
+Qed.
+
+Lemma perm_of_insertion_sort_list_permutation n f: 
+  permutation n (perm_of_swap_list (insertion_sort_list n f)).
+Proof.
+  rewrite <- (length_insertion_sort_list n f) at 1.
+  apply perm_of_swap_list_permutation.
+  apply insertion_sort_list_is_swap_list.
+Qed.
+
+Lemma invperm_of_insertion_sort_list_permutation n f: 
+  permutation n (invperm_of_swap_list (insertion_sort_list n f)).
+Proof.
+  rewrite <- (length_insertion_sort_list n f) at 1.
+  apply invperm_of_swap_list_permutation.
+  apply insertion_sort_list_is_swap_list.
+Qed.
+
+#[export] Hint Resolve perm_of_insertion_sort_list_permutation
+    invperm_of_insertion_sort_list_permutation : perm_db.
+
+Lemma invperm_of_insertion_sort_list_eq n f : permutation n f ->
+  perm_eq n f (invperm_of_swap_list (insertion_sort_list n f)).
+Proof.
+  intros Hperm.
+  apply (perm_eq_linv_injective n (perm_of_swap_list (insertion_sort_list n f))).
+  - auto with perm_db.
+  - intros k Hk.
+    rewrite perm_of_insertion_sort_list_is_rinv; easy.
+  - intros k Hk.
+    rewrite invperm_linv_perm_of_swap_list; [easy|].
+    apply insertion_sort_list_is_swap_list.
+Qed.
+  
+
+
+Lemma permutation_grow_l n f : permutation (S n) f ->
+  exists g k, k < S n /\ perm_eq (S n) f (swap_perm k n (S n) ∘ g) /\ permutation n g.
+Proof.
+  intros Hperm.
+  eexists.
+  exists (f n).
+  split; [apply permutation_is_bounded; [easy | lia] | split].
+  pose proof (perm_of_insertion_sort_list_of_perm_inv_eq _ _ Hperm) as H.
+  rewrite perm_of_insertion_sort_list_S in H.
+  rewrite perm_inv_perm_inv in H by (easy || lia).
+  exact H.
+  auto with perm_db.
+Qed.
+
+Lemma permutation_grow_r n f : permutation (S n) f ->
+  exists g k, k < S n /\ perm_eq (S n) f (g ∘ swap_perm k n (S n)) /\ permutation n g.
+Proof.
+  intros Hperm.
+  eexists.
+  exists (perm_inv (S n) f n).
+  split; [apply permutation_is_bounded; [auto with perm_db | lia] | split].
+  pose proof (invperm_of_insertion_sort_list_eq _ _ Hperm) as H.
+  rewrite invperm_of_insertion_sort_list_S in H.
+  exact H.
+  auto with perm_db.
+Qed.
+  
 
 
 Local Transparent perm_inv.

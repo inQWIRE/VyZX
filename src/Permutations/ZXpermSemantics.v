@@ -224,6 +224,19 @@ Qed.
 
 (* TODO: split intro prop_perm_eq and prop_perm_eqΩ *)
 
+Ltac prop_perm_eq_nosimpl :=
+  intros;
+  simpl_casts;
+  simpl_permlike_zx;
+  __cast_prop_sides_to_square;
+  (* Goal: zx0 ∝ zx1 *)
+  apply proportional_of_equal_perm; [
+  (* New goals: *)
+    (*1: ZXperm _ zx0 *) auto 10 with zxperm_db |
+    (*2: ZXperm _ zx1*) auto 10 with zxperm_db |
+    (*3: perm_of_zx zx0 = perm_of_zx zx1*) 
+  ].
+
 Ltac prop_perm_eq :=
   intros;
   autounfold with zxperm_db;

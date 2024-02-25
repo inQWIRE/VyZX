@@ -391,7 +391,7 @@ Ltac simpl_permlike_zx :=
   | |- context[?zx ⟷ cast ?m' ?o' ?prfm ?prfo (n_wire ?o)] =>
     rewrite (@CastRules.cast_compose_r _ _ _ _ _ prfm prfo zx _);
     rewrite (@ComposeRules.nwire_removal_r o)
-  | |- context[cast ?n' ?m' ?prfn ?prfm (n_wire ?n) ⟷ ?zx] => idtac "match";
+  | |- context[cast ?n' ?m' ?prfn ?prfm (n_wire ?n) ⟷ ?zx] =>
     rewrite (@CastRules.cast_compose_l _ _ _ _ _ prfn prfm _ zx);
     rewrite (@ComposeRules.nwire_removal_l n)
   | |- context[@cast ?n' ?m' ?n ?m ?prfn ?prfm ?zx ⟷ cast ?m' ?o' ?prfom ?prfo (n_wire ?o)] =>
@@ -404,7 +404,7 @@ Ltac simpl_permlike_zx :=
     try rewrite (cast_id_eq _ _ _ _ (zx ⟷ _))
   | |- context[cast ?n1 ?m _ _ ?zx0 ⟷ cast ?m ?o1 _ _ ?zx1] =>
     rewrite <- (cast_compose_eq _ n1 m _ o1 zx0 zx1)
-  | |- context[ @cast ?n1 ?m1 ?n0 ?m0 ?prfn0 ?prfm0 ?zx0 ⟷ cast ?m1 ?o1 ?prfm1 ?prfo1 ?zx1 ] => idtac "match";
+  | |- context[ @cast ?n1 ?m1 ?n0 ?m0 ?prfn0 ?prfm0 ?zx0 ⟷ cast ?m1 ?o1 ?prfm1 ?prfo1 ?zx1 ] => 
     rewrite (CastRules.cast_compose_mid m0 (eq_sym prfm0) (eq_sym prfm0) (cast n1 m1 prfn0 prfm0 zx0) (cast m1 o1 prfm1 prfo1 zx1));
     rewrite
       (cast_cast_eq _ _ _ _ _ _ zx0), (cast_cast_eq _ _ _ _ _ _ zx1),
