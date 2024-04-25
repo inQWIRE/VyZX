@@ -1223,6 +1223,32 @@ Proof.
 Qed.
   
 
+Lemma permutation_grow_l' n f : permutation (S n) f -> 
+  perm_eq (S n) f (swap_perm (f n) n (S n) ∘ 
+  perm_of_swap_list (insertion_sort_list n (fswap (perm_inv (S n) f) (f n) n))).
+Proof.
+  intros Hperm k Hk.
+  rewrite (perm_of_insertion_sort_list_of_perm_inv_eq _ _ Hperm) at 1 by auto.
+Local Opaque perm_inv.
+  simpl.
+Local Transparent perm_inv.
+  rewrite length_insertion_sort_list, perm_inv_perm_inv by auto.
+  easy.
+Qed.
+
+Lemma permutation_grow_r' n f : permutation (S n) f -> 
+  perm_eq (S n) f ( 
+  invperm_of_swap_list (insertion_sort_list n (fswap f (perm_inv (S n) f n) n))
+  ∘ swap_perm (perm_inv (S n) f n) n (S n)).
+Proof.
+  intros Hperm k Hk.
+  rewrite (invperm_of_insertion_sort_list_eq _ _ Hperm) at 1 by auto.
+Local Opaque perm_inv.
+  simpl.
+Local Transparent perm_inv.
+  rewrite length_insertion_sort_list by auto.
+  easy.
+Qed.
 
 Lemma permutation_grow_l n f : permutation (S n) f ->
   exists g k, k < S n /\ perm_eq (S n) f (swap_perm k n (S n) ∘ g) /\ permutation n g.

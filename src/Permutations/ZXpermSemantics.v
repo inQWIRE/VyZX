@@ -222,6 +222,49 @@ Proof.
 	f_equal; easy.
 Qed.
 
+Lemma perm_mat_permeq {n} (f g : nat -> nat) 
+  (Heq : forall k, k < n -> f k = g k) :
+  perm_mat n f = perm_mat n g.
+Proof.
+  apply mat_equiv_eq; auto with wf_db.
+  intros i j Hi Hj.
+  unfold perm_mat.
+  rewrite Heq; easy.
+Qed.
+
+Lemma qubit_perm_to_nat_perm_permeq {n} (f g : nat -> nat) 
+  (Heq : forall k, k < n -> f k = g k) :
+  forall k, k < 2^n -> 
+  qubit_perm_to_nat_perm n f k = qubit_perm_to_nat_perm n g k.
+Proof.
+  intros k Hk.
+  unfold qubit_perm_to_nat_perm.
+  apply funbool_to_nat_eq.
+  intros x Hx.
+  unfold Basics.compose.
+  rewrite Heq; easy.
+Qed.
+
+Lemma perm_to_matrix_permeq {n} (f g : nat -> nat) 
+  (Heq : forall k, k < n -> f k = g k) :
+  perm_to_matrix n f = perm_to_matrix n g.
+Proof.
+  induction n; [easy|].
+  apply perm_mat_permeq, qubit_perm_to_nat_perm_permeq, Heq.
+Qed.
+
+Lemma proportional_of_permeq {n} {zx0 zx1 : ZX n n}
+	(Hzx0 : ZXperm n zx0) (Hzx1 : ZXperm n zx1)
+	(Hperm : forall k, k < n -> perm_of_zx zx0 k = perm_of_zx zx1 k) :
+	zx0 ∝ zx1.
+Proof.
+	prop_exists_nonzero (RtoC 1).
+	rewrite Mscale_1_l.
+	rewrite (zxperm_permutation_semantics Hzx0),
+		(zxperm_permutation_semantics Hzx1).
+  apply perm_to_matrix_permeq, Hperm.
+Qed.
+
 (* TODO: split intro prop_perm_eq and prop_perm_eqΩ *)
 
 Ltac prop_perm_eq_nosimpl :=
@@ -250,5 +293,22 @@ Ltac prop_perm_eq :=
     (*2: ZXperm _ zx1*) auto 10 with zxperm_db |
     (*3: perm_of_zx zx0 = perm_of_zx zx1*) cleanup_perm_of_zx; try easy; try lia
   ].
+
+(* TODO: switch all over to this: *)
+Ltac by_perm_eq :=
+  intros;
+  autounfold with zxperm_db;
+  simpl_casts;
+  simpl_permlike_zx;
+  __cast_prop_sides_to_square;
+  (* Goal: zx0 ∝ zx1 *)
+  apply proportional_of_permeq; [
+  (* New goals: *)
+    (*1: ZXperm _ zx0 *) auto 10 with zxperm_db |
+    (*2: ZXperm _ zx1*) auto 10 with zxperm_db |
+    (*3: forall k, k < n -> perm_of_zx zx0 k = perm_of_zx zx1 k *) 
+    cleanup_perm_of_zx; try easy; try lia
+  ].
+
 
 Local Close Scope nat. 
