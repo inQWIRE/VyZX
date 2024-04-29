@@ -8,10 +8,8 @@ Local Open Scope prg.
 
 
 
-Lemma idn_permutation n : permutation n idn.
-Proof. exists idn. easy. Qed.
 
-Global Hint Resolve idn_permutation : perm_db.
+
 
 
 
