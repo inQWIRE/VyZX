@@ -667,6 +667,7 @@ Record zxgraph := mk_zxgraph {
   nodeids : list nat;
   nodevals : list zxnode;
   edges : list edge;
+  num_ids : nat;
 }.
 
 Local Open Scope nat_scope.
@@ -696,7 +697,8 @@ Definition permute_graph (f : nat -> nat) (G : zxgraph) : zxgraph :=
     outputs := G.(outputs);
     nodeids := G.(nodeids);
     nodevals := permute_list f G.(nodevals);
-    edges := permute_edges f G.(edges)
+    edges := permute_edges f G.(edges);
+    num_ids := G.(num_ids)
   |}.
 
 Definition is_isomorphism (f : nat -> nat) (G H : zxgraph) :=
@@ -739,12 +741,6 @@ Definition natpair_eq_dec (e e' : nat * nat) :
     Hneq2 (proj2 (proj1 (pair_equal_spec _ _ _ _) Heq)))
   end
   end.
-(* Definition eqb_edge (e e' : edge) : bool :=
-  match e, e' with
-  | (e1, e2), (e1', e2') => 
-    ((e1 =? e1') && (e2 =? e2'))
-    || ((e1 =? e2') && (e2 =? e1'))
-  end. *)
 
 Definition pairswap {A B} (p : A * B) : B * A :=
   let (pa, pb) := p in (pb, pa).
@@ -1248,27 +1244,85 @@ Qed.
 
 End no_simpl_sub.
 
+Definition inputs_of_right_truncate (G : zxgraph) (v : nat) : list nat :=
+  filter (fun k => ¬ v =? k) G.(inputs).
 
-Lemma degree_renumber_edges_remove_self_record (es : list edge) (old new : nat) 
-  (Hnew : forall n, 0 < edgelist_degree n es -> n < new) :
-  let (es', used) := renumber_edges_remove_self_record es old new in  
-  forall n, edgelist_degree 
+Definition star_no_self (edges : list edge) (vtx : nat) : list edge :=
+  filter (fun e => pair_degree vtx e =? 1) edges.
 
+Definition neighborhood_no_self (edges : list edge) (vtx : nat) : list nat :=
+  map (fun e : edge => match e with 
+  | (e1, e2) => if vtx =? e1 then e2 else e1
+  end) (star_no_self edges vtx).
 
-Fixpoint new_verts_in_edgelist (verts : list nat) (es : list edges) : list nat :=
-  match es with
-  | [] => []
-  | (e1, e2) :: es' => 
-    (if in_dec Nat.eq_dec e1 verts then [] else [e1])
-    ++ (if in_dec Nat.eq_dec e2 verts)
+(* Arguments neighborhood_no_self !_ _ /. *)
 
-Definition inputs_of_truncate (G : zxgraph) (v : nat) : list nat :=
-  list_diff Nat.eq_dec G.(inputs) (neighborhood G.(edges) v).
+Lemma neighborhood_no_self_not_In (edges : list edge) (vtx : nat) : 
+  ~ In vtx (neighborhood_no_self edges vtx).
+Proof.
+  unfold neighborhood_no_self.
+  induction edges as [|[a1 a2] es IHes]; [easy|].
+  simpl.
+  bdestruct (vtx =? a1); 
+  bdestruct (vtx =? a2); 
+  try apply IHes;
+  simpl;
+  bdestruct_all;
+  (intros [Heq | Hind];
+  [congruence | apply IHes, Hind]).
+Qed.
 
-Definition outputs_of_truncate (G : zxgraph) (v : nat) : list nat :=
-  renumber_idxs
+Definition outputs_of_right_truncate (G : zxgraph) (v : nat) : list nat :=
+  neighborhood_no_self G.(edges) v 
+  ++ filter (fun k => ¬ v =? k) G.(outputs).
 
-Definition truncate_vtx (G : zxgraph) (v : nat) : zxgraph 
+Definition edges_of_right_truncate (G : zxgraph) (v : nat) : list edge :=
+  filter (fun e => pair_degree v e =? 0) G.(edges).
+
+Fixpoint filter_key {A B} (f : A -> bool) (l : list A) (l' : list B) 
+  : list (A*B) :=
+  match l, l' with
+  | [], _ => []
+  | _, [] => []
+  | a :: ls, b :: ls' =>
+    (if f a then [(a,b)] else []) ++ filter_key f ls ls'
+  end.
+
+Definition nodeidsvals_of_right_truncate (G : zxgraph) (v : nat) 
+  : list (nat * zxnode) :=
+  filter_key (fun k => ¬ v =? k) G.(nodeids) G.(nodevals).
+
+Lemma len_filter_key {A B} (f : A -> bool) (l : list A) (l' : list B) :
+  length (fst (split (filter_key f l l'))) 
+  = length (snd (split (filter_key f l l'))).
+Proof.
+  rewrite split_length_r, split_length_l; easy.
+Qed.
+
+Definition nodeids_of_right_truncate (G : zxgraph) (v : nat) : list nat :=
+  fst (split (nodeidsvals_of_right_truncate G v)).
+
+Definition nodes_of_right_truncate (G : zxgraph) (v : nat) : list zxnode :=
+  snd (split (nodeidsvals_of_right_truncate G v)).
+
+Notation input_degree G v :=
+  (count_occ Nat.eq_dec G.(inputs) v).
+
+Notation output_degree G v :=
+  (count_occ Nat.eq_dec G.(outputs) v).
+
+Definition num_ids_of_right_truncate (G : zxgraph) (v : nat) :=
+  G.(num_ids) + input_degree G v.
+
+Definition right_truncate (G : zxgraph) (v : nat) : zxgraph :=
+  {|
+    inputs := inputs_of_right_truncate G v;
+    outputs := outputs_of_right_truncate G v;
+    nodeids := nodeids_of_right_truncate G v;
+    nodevals := nodes_of_right_truncate G v;
+    edges := edges_of_right_truncate G v;
+    num_ids := num_ids_of_right_truncate G v;
+  |}.
 
 
 
@@ -1280,14 +1334,16 @@ Module WFzxgraph.
 Import PermToZX GraphToDiagram.
 
 Definition WFzxgraph (G : zxgraph) : Prop :=
-  let allids := G.(inputs) ++ G.(nodeids) ++ G.(outputs) in
   length G.(nodeids) = length G.(nodevals) 
-  /\ NoDup allids
+  /\ NoDup G.(nodeids)
   /\ Forall 
-    (fun e : edge => let (e1, e2) := e in 
-      In e1 allids /\ In e2 allids) G.(edges)
+    (fun e => 
+    match e with
+    | (e1, e2) => 
+      In e1 G.(nodeids) /\ In e2 G.(nodeids)
+    end) G.(edges)
   /\ Forall 
-    (fun a : nat => edgelist_degree a G.(edges) = S O)
+    (fun k => In k G.(nodeids))
     (G.(inputs) ++ G.(outputs)).
 
 Section WFzxgraph_dec.
@@ -1325,14 +1381,13 @@ Qed.
 
 
 Definition WFzxgraphb (G : zxgraph) : bool :=
-  let allids := G.(inputs) ++ G.(nodeids) ++ G.(outputs) in
   (length G.(nodeids) =? length G.(nodevals) )
-  && NoDupb eqb allids
+  && NoDupb eqb G.(nodeids)
   && forallb 
     (fun e : edge => let (e1, e2) := e in 
-      Inb eqb e1 allids && Inb eqb e2 allids) G.(edges)
+      Inb eqb e1 G.(nodeids) && Inb eqb e2 G.(nodeids)) G.(edges)
   && forallb
-    (fun a : nat => edgelist_degree a G.(edges) =? S O)
+    (fun a : nat => Inb eqb a G.(nodeids))
     (G.(inputs) ++ G.(outputs)).
 
 Lemma forall_iff {A} (P Q : A -> Prop) :
@@ -1373,7 +1428,7 @@ Proof.
   apply forall_iff; [intros []|intros]; 
   apply imp_iff_compat_l.
   - now rewrite andb_true_iff, 2!(Inb_In beq_reflect).
-  - now rewrite Nat.eqb_eq.
+  - now rewrite (Inb_In beq_reflect). 
 Qed.
 
 Lemma WFzxgraphP (G : zxgraph) : 
@@ -1392,7 +1447,7 @@ Section WFzxgraph_results.
 
 Context (G : zxgraph) (HG : WFzxgraph G).
 
-Lemma NoDup_allids : NoDup (G.(inputs) ++ G.(nodeids) ++ G.(outputs)).
+Lemma NoDup_nodeids : NoDup (G.(nodeids)).
 Proof. apply HG. Qed.
 
 Lemma length_nodeids_nodevals : length G.(nodeids) = length G.(nodevals).
@@ -1400,243 +1455,1012 @@ Proof. apply HG. Qed.
 
 Lemma edge_members_in : Forall 
   (fun e : edge => let (e1, e2) := e in 
-  In e1 (G.(inputs) ++ G.(nodeids) ++ G.(outputs)) 
-  /\ In e2 (G.(inputs) ++ G.(nodeids) ++ G.(outputs))) G.(edges).
+  In e1 (G.(nodeids)) 
+  /\ In e2 (G.(nodeids))) G.(edges).
 Proof. apply HG. Qed.
-
-
-
-Lemma inputs_NoDup : NoDup G.(inputs).
-Proof.
-  eapply NoDup_app_l.
-  exact NoDup_allids.
-Qed.
-
-Lemma outputs_NoDup : NoDup G.(outputs).
-Proof.
-  eapply NoDup_app_r, NoDup_app_r.
-  exact NoDup_allids.
-Qed.
-
-Lemma nodeids_NoDup : NoDup G.(nodeids).
-Proof.
-  eapply NoDup_app_l, NoDup_app_r.
-  exact NoDup_allids.
-Qed.
-
-
-
-
 
 
 End WFzxgraph_results.
 
-End WFzxgraph.
-
-(* TODO: Complete, and maybe make nicer?
-
-Definition WF_zxgraph : zxgraph -> Prop := 
-  fun g => 
-     (g.(inputs) = iota (length g.(inputs)) 0)
-  /\ (g.(nodeids) = iota (length g.(nodeids)) (length g.(inputs)))
-  /\ (g.(outputs) = iota (length g.(outputs))
-    (length g.(inputs) + (length g.(nodeids)))). *)
-
-
-
-
-
-
-(* Translate graphical adjacency list ZX data type with connection information into semantically equivalent ZX diagram *)
-
-(*  This entire section has the goal of constructing any general 
-    ZX swap structure that can swap between any two qubit permutations.
-    The ZX swap only swaps adjacent wires, so a bubblesort is needed.
-*)
-
-Definition indexed_list (A : Type) : Type := list (A * nat).
-
-(*  Provides indices for an existing list invreverse order
-    so the element closest to nil is index 0
-    [1, 2, 3] -> [(1, 2), (2, 1), (3, 0)]*)
-Definition create_indexed_list {A : Type} (l : list A) : indexed_list A :=
-  combine l (rev (seq 0 (length l))).
-
-Definition indexed_list_to_list {A : Type} (il : indexed_list A) : list A :=
-  map (fun l' => fst l') il.
-
-(* Correctness/WF proof *)
-Fixpoint indexed_list_correct_aux {A : Type} (il : indexed_list A) (i : nat) : Prop :=
-  match il with
-  | (_, n) :: ils => n = i /\ (indexed_list_correct_aux ils (pred i))
-  | [] => True
-  end.
-
-Definition indexed_list_correct {A : Type} (il : indexed_list A) : Prop :=
-  indexed_list_correct_aux il (pred (length il)).
-
-Lemma rev_seq_S : 
-  forall (len : nat) (start : nat), rev (seq start (S len)) = [(add start len)] ++ rev (seq start len).
+Lemma length_nodeids_nodes_right_truncate (G : zxgraph) (v : nat) : 
+  length (nodeids_of_right_truncate G v) = length (nodes_of_right_truncate G v).
 Proof.
-    intros; rewrite seq_S; rewrite rev_app_distr; auto.
+  apply len_filter_key.
 Qed.
 
-Lemma create_indexed_list_WF : 
-  forall (A : Type) (l : list A), indexed_list_correct (create_indexed_list l).
+Lemma fst_split_app {A B} (l l' : list (A*B)) : 
+  fst (split (l ++ l')) = fst(split l) ++ fst(split l').
 Proof.
-    intros. induction l; unfold create_indexed_list, indexed_list_correct in *; simpl.
-    - auto.
-    - simpl. destruct (length l) eqn:E. simpl; split; auto.
-    apply length_zero_iff_nil in E; subst; auto.
-    rewrite rev_seq_S; simpl; split; rewrite combine_length in *; rewrite app_length in *; 
-    rewrite rev_length in *; rewrite seq_length in *; simpl in *;
-    rewrite E in *; rewrite PeanoNat.Nat.add_1_r in *; rewrite PeanoNat.Nat.min_id in *; simpl in *; auto.
+  induction l as [|[a b] l IHl]; [easy|].
+  simpl.
+  rewrite (surjective_pairing (split (l ++ l'))).
+  rewrite (surjective_pairing (split l)).
+  rewrite IHl.
+  easy.
 Qed.
 
-(* Again, this is general as this should really be bounded by the length
-  of the list it is referring to, it should only contain indices that
-  can represent a swap in list l -> [0, length l) *)
-Definition swap_list : Type := list nat.
-
-(* Attribute this properly *)
-(* I grabbed this from here: https://codeberg.org/mathprocessing/coq-examples/src/branch/master/sorts/bubblesort.v
-    There is a verified version here which could replace this:
-    https://github.com/holmuk/Sorticoq/blob/master/src/BubbleSort.v *)
-Fixpoint bubblesort_pass (l : indexed_list nat) (sl : swap_list) : (indexed_list nat * swap_list * bool) :=
-  match l with
-  | [] => ([], sl, false)
-  | x :: xs =>
-      match bubblesort_pass xs sl with
-      | ([], sl', b) => ([x], sl', b)
-      | (x' :: xs', sl', b) =>
-          if Nat.ltb (fst x') (fst x) 
-            then (((fst x'), (snd x)) :: ((fst x), (snd x')) :: xs', ((snd x') :: sl'), true)
-            else (x :: x' :: xs', sl', b)
-      end
-  end.
-
-Fixpoint bubblesort_aux (gas : nat) (l : indexed_list nat) (sl : swap_list) : indexed_list nat * swap_list :=
-  match gas with
-  | O => (l, sl)
-  | S gas' => 
-    match bubblesort_pass l sl with
-      | (x :: xs, sl', true) => 
-        match (bubblesort_aux gas' xs sl) with
-        |(xs', sl'') => ((x :: xs'), (rev sl') ++ sl'')
-        end
-      | _ => (l, sl)
-      end
-  end.
-
-(* Needs proof of correctness *)
-Definition bubblesort (l : list nat) : indexed_list nat * swap_list :=
-  bubblesort_aux (pred (length l)) (create_indexed_list l) [].
-
-Definition generate_swap_list (l : list nat) : swap_list := 
-  snd (bubblesort l).
-
-(* Could be tested more *)
-(* The correct swapping procedure. Given index i, swaps the ith and i + 1th index. *)
-(* 0 <= i < len(il), with index conventions as above *)
-Fixpoint swap_adjacent_in_ind_list (il : indexed_list nat) (i : nat) : indexed_list nat :=
-  match il with
-  | [] => []
-  | (x, i') :: xs => 
-    match xs with
-    | [] => [(x, i')]
-    | (x', i'') :: xs' => 
-      if (i =? i'') then 
-        (x', i') :: (x, i'') :: xs'
-      else
-        (x, i') :: swap_adjacent_in_ind_list xs i
-    end
-  end.
-
-(*  Constructing the swap structure *)
-(*  From a swap index, the idea is to create a stack of wires with a 
-    swap at the correct index. The convention used is imagining the 
-    wire permutation indicies increasing from bottom to top in a stack.
-    [(wire_1, 2), (wire_2, 1), (wire_3), 0] --> [wire_1, 2]
-                                                [wire_2, 1]
-                                                [wire_3, 0]
-    A swap index of 1 would swap wire_1 and wire_2 above. 
-    A swap index of 0 would swap wire_2 and wire_3 above. 
-*)                                              
-Lemma build_swap_at_index_aux_aux : 
-  forall i len, le 2 len -> le (plus 2 i) len -> 
-    len = plus (sub len (plus 2 i)) (plus 2 i).
+Lemma In_fst_filter_key {A B} (f : A -> bool) (l : list A) (l' : list B)
+  (a : A) : 
+  In a (fst (split (filter_key f l l'))) -> 
+  In a l.
 Proof.
+  revert l';
+  induction l as [|a' l IHl]; [easy|];
+  intros l'.
+  simpl.
+  destruct l' as [|b l']; [easy|].
+  rewrite fst_split_app.
+  destruct (f a'); [|intros H; right; eapply IHl, H].
+  simpl.
+  intros [Heq | Hin]; 
+  [left; easy | right; eapply IHl, Hin].
+Qed.
+
+Lemma NoDup_filter_key {A B} (f : A -> bool) (l : list A) (l' : list B) 
+  (Hl : NoDup l) :
+  NoDup (fst (split (filter_key f l l'))).
+Proof.
+  revert l';
+  induction l as [|a l IHl];
+  intros l'; [constructor|].
+  simpl.
+  destruct l' as [|b l']; [constructor|].
+  rewrite NoDup_cons_iff in Hl.
+  destruct (f a); [|apply IHl, Hl].
+  rewrite fst_split_app.
+  simpl.
+  apply NoDup_cons.
+  - intros Hin; apply Hl, (In_fst_filter_key _ _ _ _ Hin).
+  - apply IHl, Hl.
+Qed.
+
+Lemma NoDup_nodeids_right_truncate (G : zxgraph) (v : nat) (HG : WFzxgraph G) :
+  NoDup (nodeids_of_right_truncate G v).
+Proof.
+  apply NoDup_filter_key, HG.
+Qed.
+
+Lemma fst_filter_key_length_le {A B} (f : A -> bool) (l : list A) (l' : list B) 
+  (Hlen : (length l <= length l')%nat) :
+  fst (split (filter_key f l l')) =
+  filter f l.
+Proof.
+  revert l' Hlen;
+  induction l as [|a l IHl]; [easy|];
+  intros l' Hlen.
+  simpl.
+  destruct l' as [|b l']; [easy|].
+  rewrite fst_split_app, IHl by (simpl in *; lia).
+  destruct (f a); easy.
+Qed.
+
+Lemma in_fst_filter_key {A B} (f : A -> bool) (l : list A) (l' : list B) 
+  (a : A) (Hin : In a l) (Hlen : length l = length l') :
+  f a = true -> In a (fst (split (filter_key f l l'))).
+Proof.
+  rewrite fst_filter_key_length_le by lia.
+  rewrite filter_In; easy.
+Qed.
+
+Lemma forall_in_nodeids_edges_right_truncate 
+  (G : zxgraph) (v : nat) (HG : WFzxgraph G) : 
+  Forall
+  (fun e : edge =>
+    match e with
+    | (e1, e2) =>
+        In e1 (nodeids_of_right_truncate G v) 
+        /\ In e2 (nodeids_of_right_truncate G v)
+    end)
+  (edges_of_right_truncate G v).
+Proof.
+  destruct G as [inputs outputs nodeids nodevals edges num_ids].
+  pose proof (length_nodeids_nodevals _ HG) as Hlen.
+  pose proof (edge_members_in _ HG) as Hmem.
+  simpl in Hmem, Hlen.
+  clear HG.
+  unfold nodeids_of_right_truncate, 
+  nodeidsvals_of_right_truncate, edges_of_right_truncate.
+  simpl.
+  induction edges as [|[e1 e2] es IHes]; [constructor|].
+  rewrite Forall_cons_iff in Hmem.
+  simpl.
+  bdestruct (v =? e1);
+  bdestruct (v =? e2);
+  try (apply IHes, Hmem).
+  apply Forall_cons;
+  [|apply IHes, Hmem].
+  split; apply in_fst_filter_key; 
+  try apply Hlen;
+  try apply Hmem;
+  bdestruct_all; easy.
+Qed.
+
+Lemma nodeids_of_right_truncate_eq (G : zxgraph) (v : nat) (HG : WFzxgraph G) : 
+  nodeids_of_right_truncate G v = 
+  filter (fun k => ¬ v =? k) G.(nodeids).
+Proof.
+  apply fst_filter_key_length_le.
+  destruct HG; lia.
+Qed.
+
+Lemma forall_in_nodeids_inputs_outputs 
+  (G : zxgraph) (v : nat) (HG : WFzxgraph G) : 
+  Forall (fun k : nat => In k (nodeids_of_right_truncate G v))
+  (inputs_of_right_truncate G v ++ outputs_of_right_truncate G v).
+Proof.
+  destruct G as [inputs outputs nodeids nodevals edges num_ids].
+  rewrite nodeids_of_right_truncate_eq by easy.
+  unfold inputs_of_right_truncate, outputs_of_right_truncate.
+  simpl.
+  destruct HG as [_ [_ [Hmem Hin]]].
+  simpl in Hin, Hmem.
+  rewrite 2!Forall_app in *.
+  rewrite 3!Forall_forall in *.
+  destruct Hin as [Hin_in Hin_out].
+  setoid_rewrite filter_In.
+  split; [|split].
+  1,3: intros x []; split; [auto|easy].
+  induction edges as [|[e1 e2] es IHes]; [easy|].
+  assert (Hind_es : (forall x : edge, In x es ->
+    let (e1, e2) := x in In e1 nodeids /\ In e2 nodeids)) by
+      (intros; apply Hmem; right; easy).
+  specialize (IHes Hind_es).
+  clear Hind_es.
+  intros w.
+  unfold neighborhood_no_self.
+  simpl.
+  rewrite if_dist.
+  simpl.
+  bdestruct (v =? e1); 
+  bdestruct (v =? e2); simpl; subst; try apply IHes;
+  specialize (Hmem (e1, e2) ltac:(left; easy));
+  simpl in Hmem;
+  (intros [Heq | Hin]; 
+  [subst; split; [apply Hmem|bdestruct_all; easy]|]);
+  apply IHes, Hin.
+Qed.
+
+Lemma WF_right_truncate (G : zxgraph) (v : nat) (HG : WFzxgraph G) :
+  WFzxgraph (right_truncate G v).
+Proof.
+  unfold right_truncate, WFzxgraph.
+  simpl; repeat split.
+  - apply length_nodeids_nodes_right_truncate.
+  - apply NoDup_nodeids_right_truncate, HG.
+  - apply forall_in_nodeids_edges_right_truncate, HG.
+  - apply forall_in_nodeids_inputs_outputs, HG.
+Qed.
+
+
+Section GraphTranslation.
+
+
+
+Lemma nodeidsvals_of_right_truncate_not_In (G : zxgraph) 
+  (vid : nat) (Hnin : ~ In vid G.(nodeids)) : 
+  nodeidsvals_of_right_truncate G vid = combine G.(nodeids) G.(nodevals).
+Proof.
+  destruct G as [inputs outputs nodeids nodevals edges num_ids].
+  simpl in *.
+  revert nodevals;
+  induction nodeids as [|n ns IHns]; [easy|];
+  intros nodevals.
+  specialize (IHns (fun Hin => Hnin (or_intror Hin))).
+  unfold nodeidsvals_of_right_truncate.
+  simpl.
+  destruct nodevals as [|v nvs]; [easy|].
+  simpl in Hnin.
+  bdestruct (vid =? n); [lia|].
+  simpl.
+  rewrite <- IHns.
+  easy.
+Qed.
+
+
+(* Lemma nodeidsvals_of_right_truncate_hd {inputs outputs nodeids 
+  nodevals edges num_ids}
+  (vid : nat) (vnode : zxnode) :
+  NoDup (vid :: nodeids) ->
+  length nodeids = length nodevals ->
+  let Gbase := {|
+    inputs := inputs;
+    outputs := outputs;
+    nodeids := vid::nodeids;
+    nodevals := vnode::nodevals;
+    edges := edges;
+    num_ids := num_ids;
+  |} in
+  nodeidsvals_of_right_truncate Gbase vid = combine nodeids nodevals.
+Proof.
+  unfold nodeidsvals_of_right_truncate.
+
+  revert nodevals; 
+  induction nodeids as [| n ns IHns'];
+  intros nodevals Hdup Hlength.
+  - simpl.
+    unfold nodeidsvals_of_right_truncate.
+    simpl.
+    bdestruct_all; easy.
+  - assert (Hnodup : NoDup (vid :: ns)). 1:{
+      rewrite 2!NoDup_cons_iff in *.
+      split; try apply Hdup.
+      intros Hf.
+      apply (proj1 Hdup).
+      right; easy.
+    }
+    pose proof (fun nodevals => IHns' nodevals Hnodup) as IHns.
+    simpl in IHns.
+    unfold nodeidsvals_of_right_truncate in IHns.
+    simpl in IHns.
+    bdestruct (vid =? vid); [|easy].
+    simpl in IHns.
+    specialize (IHns )
+    rewrite NoDup_cons_iff in Hdup.
+
+    Search (NoDup (_ :: _ :: _)).
+  [easy|]. *)
+
+
+
+Lemma nodeidsvals_of_right_truncate_hd 
+  {inputs outputs nodeids nodevals edges num_ids}
+  (vid : nat) (vnode : zxnode) : 
+  let Gbase := {|
+    inputs := inputs;
+    outputs := outputs;
+    nodeids := vid::nodeids;
+    nodevals := vnode::nodevals;
+    edges := edges;
+    num_ids := num_ids;
+  |}
+  in
+  NoDup (vid :: nodeids) ->
+  nodeidsvals_of_right_truncate Gbase vid = combine nodeids nodevals.
+Proof.
+  simpl.
+  intros Hdup.
+  unfold nodeidsvals_of_right_truncate.
+  simpl.
+  bdestruct_all.
+  simpl.
+  set (Gfree := {|
+    inputs := inputs;
+    outputs := outputs;
+    nodeids := nodeids;
+    nodevals := nodevals;
+    edges := edges;
+    num_ids := num_ids;
+  |}).
+  rewrite NoDup_cons_iff in Hdup.
+  apply (nodeidsvals_of_right_truncate_not_In Gfree vid).
+  apply Hdup.
+Qed.
+
+Lemma right_truncate_hd {inputs outputs nodeids nodevals edges num_ids}
+  (vid : nat) (vnode : zxnode) : 
+  let Gbase := {|
+    inputs := inputs;
+    outputs := outputs;
+    nodeids := vid::nodeids;
+    nodevals := vnode::nodevals;
+    edges := edges;
+    num_ids := num_ids;
+  |}
+  in
+  NoDup (vid :: nodeids) ->
+  length nodeids = length nodevals ->
+  right_truncate Gbase vid = {|
+    inputs := inputs_of_right_truncate Gbase vid;
+    outputs := outputs_of_right_truncate Gbase vid;
+    nodeids := nodeids;
+    nodevals := nodevals;
+    edges := edges_of_right_truncate Gbase vid;
+    num_ids := num_ids_of_right_truncate Gbase vid;
+  |}.
+Proof.
+  simpl.
+  intros Hdup Hlen.
+  unfold right_truncate.
+  f_equal;
+  unfold nodeids_of_right_truncate, nodes_of_right_truncate;
+  rewrite (nodeidsvals_of_right_truncate_hd vid vnode Hdup);
+  rewrite (combine_split _ _ Hlen); easy.
+Qed.
+
+
+Local Open Scope nat_scope.
+
+Definition graph_in_size (G : zxgraph) : nat :=
+  G.(num_ids) + length G.(inputs).
+
+Definition graph_out_size (G : zxgraph) : nat :=
+  G.(num_ids) + length G.(outputs).
+
+Definition nwire_cast {n n' : nat} (H : n = n') : ZX n n' :=
+  cast n n' H eq_refl (n_wire n').
+
+Lemma right_truncate_cast_pf_one (G : zxgraph) (v : nat) : 
+  graph_in_size G = graph_in_size (right_truncate G v).
+Proof.
+  destruct G as [inputs outputs nodeids nodevals edges num_ids].
+  simpl.
+  unfold right_truncate, graph_in_size, num_ids_of_right_truncate.
+  simpl.
+  rewrite <- Nat.add_assoc.
+  f_equal.
+  unfold inputs_of_right_truncate.
+  simpl.
+  induction inputs as [|a inputs IHinp]; [easy|].
+  simpl; rewrite IHinp.
+  destruct (Nat.eq_dec a v);
+  bdestruct (v =? a); try congruence;
+  try easy; simpl.
   lia.
 Qed.
 
-(* This could be rewritten as below ones *)
-Fixpoint build_swap_at_index (i len : nat) : ZX len len.
+
+Fixpoint kth_occ (l : list nat) (k : nat) (v : nat) : nat :=
+  match l with 
+  | [] => 0
+  | x :: ls =>
+    match Nat.eq_dec x v with
+    | left Heq => 
+        match k with
+        | 0 => 0
+        | S k' => S (kth_occ ls k' v)
+        end
+    | right Hneq =>
+        S (kth_occ ls k v)
+    end
+  end.
+
+Lemma filter_of_map {A B} (f : B -> bool) (g : A -> B) (l : list A) :
+  filter f (map g l) = map g (filter (fun a => f (g a)) l).
 Proof.
-  destruct (le_lt_dec (plus 2 i) len); destruct (le_lt_dec 2 len).
-  - eapply cast. 
-    + eapply (build_swap_at_index_aux_aux i len).
-      * exact l0.
-      * exact l.
-    + eapply (build_swap_at_index_aux_aux i len).
-      * exact l0.
-      * exact l.
-    + eapply (pad_top (sub len (plus 2 i)) (pad_bot i Swap)).
-  - exact (n_wire len).
-  - exact (n_wire len).
-  - exact (n_wire len).
-Defined.
+  induction l; [easy|].
+  simpl.
+  rewrite IHl.
+  destruct (f (g a)); easy.
+Qed.
 
-Lemma _eq_nat_eq : forall n m : nat, eq_nat n m -> n = m.
+Lemma kth_occ_eq (l : list nat) (k : nat) (v : nat) :
+  kth_occ l k v =
+  nth 
+    k 
+    (filter 
+      (fun idx => nth idx l (S v) =? v) 
+      (seq 0 (length l))) 
+    (length l).
 Proof.
-  induction n; simpl; intro m; destruct m; simpl.
-  - reflexivity.
-  - contradiction.
-  - contradiction.
-  - intros; apply f_equal; exact (IHn m H).
-Defined.
+  revert k;
+  induction l; [destruct k; easy|].
+  intros k.
+  simpl.
+  destruct (Nat.eq_dec a v) as [Heq | Hneq];
+  bdestruct_all.
+  - rewrite <- seq_shift, filter_of_map.
+    destruct k; [easy|].
+    simpl.
+    rewrite map_nth.
+    f_equal.
+    apply IHl.
+  - rewrite <- seq_shift, filter_of_map, map_nth.
+    f_equal.
+    apply IHl.
+Qed.
 
-(* Putting it all together, to find the sequence of arbitrary swaps between
-    two arbitrary permutations, two bubble sorts are done for each and the
-    second is reversed, which creates a path between the permutations *)
+(* Lemma kth_occ_0 (l : list nat) (v : nat) : 
+  kth_occ l 0 v  *)
 
-(* Preserves left-right order (head-first list order) of swap list *)
-Definition arbitrary_swap_from_swaplist (sl : swap_list) (len : nat) : ZX len len :=
-  fold_left (fun cur_zx r => cur_zx ⟷ (build_swap_at_index r len))
-            sl (n_wire len).
-
-Definition create_arbitrary_swap_old (l l' : list nat) : ZX (length l) (length l).
+(* Lemma nth_kth_occ (l : list nat) (k : nat) (v : nat) :
+  nth (kth_occ l k v) l v = v.
 Proof.
-  destruct (eq_nat_decide (length l) (length l')).
-  - eapply Compose.
-      + eapply (arbitrary_swap_from_swaplist (generate_swap_list l) (length l)).
-      + eapply cast.
-        * eapply _eq_nat_eq; exact e.
-        * eapply _eq_nat_eq; exact e.
-        * eapply (arbitrary_swap_from_swaplist (rev (generate_swap_list l')) (length l')).
-  - (* Dummy case *)
-    exact (n_wire (length l)).
-Defined.
+  rewrite kth_occ_eq.
+  revert k;
+  induction l; [destruct k; easy|].
+  intros k.
+  simpl.
+  bdestruct_all.
+  - destruct k; [easy|].
+    simpl.
 
-Definition create_arbitrary_swap (l l' : list nat) :=
-  PermToZX.zx_between_lists_casted l l'.
+  induction k.
+  - induction l.
+  match k with 
+  match count_occ  *)
 
-Local Hint Unfold 
-  create_arbitrary_swap
-  arbitrary_swap_from_swaplist
-  pad_bot
-  pad_top
-  : bubblesort_swap_eval_db.
+Definition bring_to_front_perm (l : list nat) (v : nat) : nat -> nat :=
+  fun k =>
+    match Nat.eq_dec k v with
+    | left Heq => 
+      count_occ Nat.eq_dec (firstn k l) v
+    | right Hneq =>
+      count_occ Nat.eq_dec (skipn k l) v + k
+    end.
 
-Ltac eval_bubblsort_swap :=
-try (
-  repeat(
-  autounfold with bubblesort_swap_eval_db;
-  simpl);
-  simpl_casts;
-  cleanup_zx;
-  simpl_casts;
-  simpl)
-.
+Fixpoint nth_neq (idx : nat) (l : list nat) (v : nat) (def : nat) : nat :=
+  match l with
+  | [] => def
+  | x :: ls => 
+    match Nat.eq_dec x v with
+    | left Heq => nth_neq idx ls v def
+    | right Hneq => match idx with
+      | 0 => x
+      | S idx' => nth_neq idx' ls v def
+      end
+    end
+  end.
+
+Definition bring_to_front_invperm (l : list nat) (v : nat) : nat -> nat :=
+  let n := count_occ Nat.eq_dec l v in 
+  fun k =>
+    match bool_dec (k <? n) true with
+    | left Heq =>
+        kth_occ l k v
+    | right Hneq =>
+        nth_neq (k - n) l v k
+    end.
+
+Lemma count_occ_eq_S_In {A} (eq_dec : forall a b : A, {a=b}+{a<>b})
+  (l : list A) (a : A) (m : nat) (Hl : count_occ eq_dec l a = S m) :
+  In a l.
+Proof.
+  induction l as [|b l IHl]; [easy|].
+  simpl in Hl.
+  destruct (eq_dec b a).
+  - left; easy.
+  - right; apply (IHl Hl).
+Qed.
+
+(* TODO: We can even do this as a function if we want *)
+Lemma in_split_nat (x : nat) (l : list nat) (Ha : In x l) :
+  exists l1 l2, l = l1 ++ x :: l2 /\ ~ In x l1.
+Proof.
+  induction l; [easy|].
+  simpl in Ha.
+  destruct (Nat.eq_dec a x).
+  exists [], l. 
+  split; subst; easy.
+  destruct Ha as [Heq | Hin]; [easy|].
+  destruct (IHl Hin) as [l1 [l2 [Heq Hnin]]].
+  exists (a::l1), l2.
+  split; [simpl; f_equal; easy|].
+  intros []; easy.
+Qed.
+
+
+
+Lemma count_occ_eq_S_split (x : nat) (l : list nat) 
+  (m : nat) (Hl : count_occ Nat.eq_dec l x = S m) :
+  exists l1 l2, l = l1 ++ x :: l2 /\ count_occ Nat.eq_dec l2 x = m.
+Proof.
+  induction l as [|a l IHl]; [easy|].
+  destruct (count_occ_eq_S_In _ _ _ _ Hl) as [Heq | Hin].
+  - exists [], l.
+    split; [subst; easy|simpl in *].
+    destruct (Nat.eq_dec a x); lia.
+  - destruct (Nat.eq_dec a x) as [Heq | Hneq].
+    + exists [], l.
+      split; [subst; easy|simpl in *].
+      destruct (Nat.eq_dec a x); lia.
+    + destruct (in_split_nat _ _ Hin) as [l1 [l2 [Heq Hnin]]].
+      exists (a :: l1), l2.
+      split; [subst; easy|].
+      subst l.
+      simpl in Hl.
+      destruct (Nat.eq_dec a x); [easy|].
+      rewrite count_occ_app in Hl.
+      rewrite (proj1 (count_occ_not_In _ _ _) Hnin) in Hl.
+      simpl in Hl.
+      destruct (Nat.eq_dec x x); lia.
+Qed.
+
+Lemma kth_occ_app_not_In (l l' : list nat) (k v : nat) (Hl : ~ In v l) : 
+  kth_occ (l ++ l') k v = length l + kth_occ l' k v.
+Proof.
+  induction l; [easy|].
+  simpl in *.
+  destruct (Nat.eq_dec a v); [lia|].
+  rewrite (IHl (fun Hin => Hl (or_intror Hin))).
+  easy.
+Qed.
+
+
+(* 
+TODO: this is false; needs some condition like 
+  0 < count_occ Nat.eq_dec (firstn k l) v; or more likely 
+  nth k l = v? Something to that effect.
+Lemma kth_occ_count_occ_firstn (l : list nat) (k : nat) (v : nat) :
+  count_occ Nat.eq_dec (firstn k l) v <
+    count_occ Nat.eq_dec l v ->
+  (kth_occ l (count_occ Nat.eq_dec (firstn k l) v) v) = k.
+Proof.
+  remember (count_occ Nat.eq_dec l v) as m.
+  revert l k Heqm.
+  induction m; [easy|].
+  intros l k Hl Hlt.
+  destruct (count_occ_eq_S_split _ _ _ (eq_sym Hl)) as [l1 [l2 [Hleq Hnin]]].
+  subst l.
+  assert (Hnin1 : ~ In v l1). 1:{
+    rewrite (count_occ_not_In Nat.eq_dec).
+    rewrite count_occ_app in Hl; 
+    simpl in Hl.
+    destruct (Nat.eq_dec v v); lia.
+  }
+  rewrite kth_occ_app_not_In by easy.
+
+  (* CHECK HERE *)
+
+  induction l as [|a l IHl]; [easy|].
+  destruct k.
+  - simpl in *.
+    destruct (Nat.eq_dec a v); [easy|].
+
+
+
+
+  revert k; induction l; [easy|].
+  intros k. 
+  destruct k.
+  - simpl.
+    destruct (Nat.eq_dec a v); [easy|].
+    destruct l; [easy|].
+    simpl.
+  simpl. [easy|]. *)
+
+Lemma bring_to_front_perm_linv (l : list nat) (v : nat) :
+  forall k, k < length l ->
+  bring_to_front_invperm l v (bring_to_front_perm l v k) = k.
+Proof.
+  induction l; [easy|].
+  simpl.
+  intros k Hk.
+  unfold bring_to_front_invperm, bring_to_front_perm.
+  destruct (Nat.eq_dec k v) as [Heq | Hneq].
+  - simpl.
+    destruct (Nat.eq_dec a v).
+    + bdestruct_all; simpl.
+      destruct k; [easy|simpl].
+      destruct (Nat.eq_dec a v); [|easy].
+Admitted.
+
+Lemma bring_to_front_perm_rinv (l : list nat) (v : nat) :
+  forall k, k < length l ->
+  bring_to_front_perm l v (bring_to_front_invperm l v k) = k.
+Proof.
+  induction l; [easy|].
+  simpl.
+  intros k Hk.
+  unfold bring_to_front_invperm, bring_to_front_perm.
+Admitted.
+
+
+Fixpoint add_k_self_loops_to_spider {n m} (k : nat) 
+  (cur : ZX (k + n) (k + m)) : ZX n m := 
+  match k as k' return (ZX (k' + n) (k' + m) -> ZX n m) with
+  | O => fun cur => cur
+  | S k' => 
+    fun cur => add_k_self_loops_to_spider k' 
+      (⊂ ↕ (n_wire (k' + n)) ⟷ (— ↕ cur) ⟷ (⊃ ↕ (n_wire (k' + m))))
+  end cur.
+
+Definition vtx_in_size (G : zxgraph) (v : nat) : nat :=
+  G.(num_ids)
+  + ((input_degree G v
+  + length (neighborhood_no_self G.(edges) v))
+  + length (filter (fun k => ¬ v =? k) G.(outputs))).
+  (* + length (outputs_of_right_truncate G v). *)
+
+Definition vtx_out_size (G : zxgraph) (v : nat) : nat :=
+  G.(num_ids)
+  + (output_degree G v
+  + length (filter (fun k => ¬ v =? k) G.(outputs))).
+
+Definition ZX_of_zxnode (zx : zxnode) (m n : nat) : ZX m n :=
+  if node_typ zx 
+  then X_Spider m n (node_rot zx) 
+  else Z_Spider m n (node_rot zx).
+
+(* Lemma diagram_of_vtx_pf_one  *)
+
+Definition diagram_of_vtx (G : zxgraph) (v : nat) : 
+  option (ZX (vtx_in_size G v) (vtx_out_size G v)) :=
+  option_map 
+  (fun zx => n_wire (G.(num_ids)) 
+    ↕ (ZX_of_zxnode zx _ _
+    ↕ n_wire _)) (get_zxnode_by_id G v).
+
+Definition diagram_of_vtx_permed_pf_one (G : zxgraph) (v : nat) :=
+  (eq_sym (PermutationFacts.length_insertion_sort_list
+    (output_degree G v + length (filter (fun k : nat => ¬ v =? k) (outputs G)))
+    (PermutationDefinitions.perm_inv
+    (output_degree G v + length (filter (fun k : nat => ¬ v =? k) (outputs G)))
+        (bring_to_front_invperm (outputs_of_right_truncate G v) v)))).
+
+Definition diagram_of_vtx_permed_pf_two (G : zxgraph) (v : nat) :=
+  (PermutationFacts.length_insertion_sort_list
+    (output_degree G v + length (filter (fun k : nat => ¬ v =? k) (outputs G)))
+    (PermutationDefinitions.perm_inv
+    (output_degree G v + length (filter (fun k : nat => ¬ v =? k) (outputs G)))
+      (bring_to_front_invperm (outputs_of_right_truncate G v) v))).
+
+Definition diagram_of_vtx_permed (G : zxgraph) (v : nat) : 
+  option (ZX (vtx_in_size G v) (vtx_out_size G v)) :=
+  option_map 
+  (fun zx => n_wire (G.(num_ids)) 
+    ↕ (ZX_of_zxnode zx _ (output_degree G v)
+    ↕ n_wire _
+      ⟷ nwire_cast (diagram_of_vtx_permed_pf_one G v)
+      ⟷ ZXperm.zx_of_perm 
+          (output_degree G v + length (filter (fun k => ¬ v =? k) G.(outputs)))
+          (bring_to_front_invperm (outputs_of_right_truncate G v) v)
+      ⟷ nwire_cast (diagram_of_vtx_permed_pf_two G v))) 
+  (get_zxnode_by_id G v).
+
+
+Lemma right_truncate_cast_pf_two (G : zxgraph) (v : nat) : 
+  graph_out_size (right_truncate G v) = vtx_in_size G v.
+Proof.
+  destruct G as [inputs outputs nodeids nodevals edges num_ids].
+  simpl.
+  unfold right_truncate, graph_out_size, 
+    vtx_in_size, outputs_of_right_truncate, num_ids_of_right_truncate.
+  simpl.
+  rewrite app_length.
+  lia.
+Qed.
+
+Lemma right_truncate_cast_pf_three (G : zxgraph) (v : nat) : 
+  vtx_out_size G v = graph_out_size G.
+Proof.
+  destruct G as [inputs outputs nodeids nodevals edges num_ids].
+  unfold graph_out_size, vtx_out_size.
+  simpl.
+  f_equal.
+  induction outputs; [easy|].
+  simpl.
+  destruct (Nat.eq_dec a v);
+  bdestruct_all; simpl; lia.
+Qed.
+
+
+
+Program Fixpoint Graph_to_ZX (nodeids : list nat) 
+  (inputs : list nat) (outputs : list nat)
+  (nodevals : list zxnode) (edges : list edge) (num_ids : nat) : 
+  let G := {|  
+    inputs := inputs;
+    outputs := outputs;
+    nodeids := nodeids;
+    nodevals := nodevals;
+    edges := edges;
+    num_ids := num_ids;
+  |} in
+  option (ZX (graph_in_size G) (graph_out_size G)) := 
+  let G := {|  
+    inputs := inputs;
+    outputs := outputs;
+    nodeids := nodeids;
+    nodevals := nodevals;
+    edges := edges;
+    num_ids := num_ids;
+  |} in
+  match nodeids, nodevals with
+  | [], _ 
+  | _, [] => match Nat.eq_dec (graph_in_size G) (graph_out_size G) with
+    | left Heq => Some (nwire_cast Heq)
+    | right Hneq => None
+    end
+  | vtx :: nodeids', zx :: nodevals' => 
+    match (diagram_of_vtx G vtx) with
+    | Some vtx_zx => 
+      (option_map 
+        (fun graph_zx =>
+        nwire_cast (right_truncate_cast_pf_one G vtx) ⟷
+        graph_zx ⟷
+        nwire_cast (right_truncate_cast_pf_two G vtx) ⟷
+        vtx_zx ⟷
+        nwire_cast (right_truncate_cast_pf_three G vtx))
+        (Graph_to_ZX 
+          nodeids'
+          (inputs_of_right_truncate G vtx)
+          (outputs_of_right_truncate G vtx)
+          nodevals'
+          (edges_of_right_truncate G vtx)
+          (num_ids_of_right_truncate G vtx)))
+    | None => None
+    end
+  end.
+
+Lemma inputs_of_empty_nodeids (G : zxgraph) (HG : WFzxgraph G) 
+  (Hnode : G.(nodeids) = []) : G.(inputs) = [].
+Proof.
+  destruct HG as [? [? [ ? H]]].
+  destruct (inputs G); [easy|].
+  inversion H; subst.
+  rewrite Hnode in *.
+  easy.
+Qed.
+
+Lemma outputs_of_empty_nodeids (G : zxgraph) (HG : WFzxgraph G) 
+  (Hnode : G.(nodeids) = []) : G.(outputs) = [].
+Proof.
+  destruct HG as [? [? [ ? H]]].
+  destruct (outputs G); [easy|].
+  rewrite Forall_app in H.
+  destruct H as [_ H].
+  inversion H; subst.
+  rewrite Hnode in *.
+  easy.
+Qed.
+
+Lemma graph_in_size_eq_graph_out_size (G : zxgraph) (HG : WFzxgraph G) 
+  (Hnode : G.(nodeids) = []) :
+  graph_in_size G = graph_out_size G.
+Proof.
+  unfold graph_in_size, graph_out_size.
+  now rewrite (inputs_of_empty_nodeids _ HG Hnode),
+    (outputs_of_empty_nodeids _ HG Hnode).
+Qed.
+
+Lemma nat_eq_dec_eq {m n : nat} (H : m = n) : 
+  Nat.eq_dec m n = left H.
+Proof.
+  destruct (Nat.eq_dec m n); [|easy].
+  f_equal.
+  apply UIP_nat.
+Qed.
+
+Lemma diagram_of_vtx_hd inputs outputs ns nvs edges num_ids n v :
+  exists zx, 
+  diagram_of_vtx {|
+      inputs := inputs;
+      outputs := outputs;
+      nodeids := n :: ns;
+      nodevals := v :: nvs;
+      edges := edges;
+      num_ids := num_ids
+    |} n = Some zx.
+Proof.
+  unfold diagram_of_vtx, get_zxnode_by_id.
+  simpl.
+  rewrite Nat.eqb_refl.
+  eexists; easy.
+Qed.
+
+Lemma Graph_to_ZX_WFzxgraph (nodeids : list nat) 
+  (inputs : list nat) (outputs : list nat)
+  (nodevals : list zxnode) (edges : list edge) (num_ids : nat) : 
+  WFzxgraph {|
+    inputs := inputs;
+    outputs := outputs;
+    nodeids := nodeids;
+    nodevals := nodevals;
+    edges := edges;
+    num_ids := num_ids;
+  |} -> 
+  exists zx, 
+  Graph_to_ZX nodeids inputs outputs nodevals edges num_ids = Some zx.
+Proof.
+  revert inputs outputs nodevals edges num_ids;
+  induction nodeids as [|v ns IHns]; [simpl|].
+  - intros * HG.
+    rewrite (nat_eq_dec_eq (graph_in_size_eq_graph_out_size _ HG eq_refl)).
+    eexists; reflexivity.
+  - intros inputs outputs nodevals edges num_ids HG.
+    destruct nodevals as [|n nvs]; [destruct HG; easy|].
+    simpl.
+    destruct (diagram_of_vtx_hd inputs outputs ns nvs edges num_ids v n)
+      as [vtx_zx Hvtx_zx].
+    rewrite Hvtx_zx.
+    pose proof (WF_right_truncate _ v HG) as HWF.
+    rewrite (right_truncate_hd v n 
+      ltac:(apply HG)) in HWF.
+    2: {
+      destruct HG as [H ?]; simpl in H; injection H;
+      exact (fun x => x).
+    }
+    destruct (IHns _ _ _ _ _ HWF) as [zx Hzx].
+    rewrite Hzx.
+    simpl.
+    eexists; reflexivity.
+Qed.
+
+Lemma ZXperm_le_1 {n} (zx : ZX n n) (Hzx : ZXperm.ZXperm n zx) 
+  (Hn : n <= 1) : zx ∝ n_wire n.
+Proof.
+  induction Hzx; try (now cleanup_zx).
+  - now rewrite <- wire_to_n_wire.
+  - specialize (IHHzx1 ltac:(lia)).
+    specialize (IHHzx2 ltac:(lia)).
+    rewrite IHHzx1, IHHzx2.
+    now rewrite n_wire_stack.
+  - specialize (IHHzx1 ltac:(lia)).
+    specialize (IHHzx2 ltac:(lia)).
+    rewrite IHHzx1, IHHzx2.
+    now rewrite nwire_removal_l.
+Qed.
+
+Lemma ZXperm_0 (zx : ZX 0 0) (Hzx : ZXperm.ZXperm 0 zx) : zx ∝ ⦰.
+Proof.
+  now rewrite ZXperm_le_1 by (easy + lia).
+Qed.
+
+
+Lemma X_spider_ZXperm_absorption_l {n} (zx : ZX n n) 
+  (Hzx : ZXperm.ZXperm n zx) (m : nat) (r : R) :
+  zx ⟷ X n m r ∝ X n m r.
+Proof.
+  revert m r;
+  induction Hzx; intros m r.
+  - cleanup_zx; easy.
+  - cleanup_zx; easy.
+  - apply X_self_swap_absorbtion_left_base.
+  - rewrite X_add_l_base_rot, <- compose_assoc, <- stack_compose_distr at 1.
+    rewrite IHHzx1, IHHzx2.
+    now rewrite <- X_add_l_base_rot. 
+  - now rewrite compose_assoc, IHHzx2, IHHzx1.
+Qed.
+
+Lemma X_spider_ZXperm_absorption_r {m} (zx : ZX m m) 
+  (Hzx : ZXperm.ZXperm m zx) (n : nat) (r : R) :
+  X n m r ⟷ zx ∝ X n m r.
+Proof.
+  revert n r;
+  induction Hzx; intros n' r.
+  - cleanup_zx; easy.
+  - cleanup_zx; easy.
+  - now rewrite X_self_swap_absorbtion_right_base.
+  - rewrite X_add_r_base_rot, compose_assoc at 1.
+    rewrite <- (stack_compose_distr (X 1 n0 0) zx0 (X 1 n1 0) zx1).
+    rewrite IHHzx1, IHHzx2.
+    now rewrite <- X_add_r_base_rot. 
+  - now rewrite <- compose_assoc, IHHzx1, IHHzx2.
+Qed.
+
+Lemma color_swap_ZXperm {n} (zx : ZX n n) (Hzx : ZXperm.ZXperm n zx) : 
+  color_swap zx = zx.
+Proof.
+  induction Hzx; simpl; f_equal; easy.
+Qed.
+
+Lemma Z_spider_ZXperm_absorption_l {n} (zx : ZX n n) 
+  (Hzx : ZXperm.ZXperm n zx) (m : nat) (r : R) :
+  zx ⟷ Z n m r ∝ Z n m r.
+Proof.
+  rewrite <- (color_swap_ZXperm zx) by easy.
+  apply colorswap_diagrams; simpl.
+  rewrite colorswap_involutive.
+  apply (X_spider_ZXperm_absorption_l zx Hzx m r).
+Qed.
+
+Lemma Z_spider_ZXperm_absorption_r {m} (zx : ZX m m) 
+  (Hzx : ZXperm.ZXperm m zx) (n : nat) (r : R) :
+  Z n m r ⟷ zx ∝ Z n m r.
+Proof.
+  rewrite <- (color_swap_ZXperm zx) by easy.
+  apply colorswap_diagrams; simpl.
+  rewrite colorswap_involutive.
+  apply (X_spider_ZXperm_absorption_r zx Hzx n r).
+Qed.
+
+
+End GraphTranslation.
+
+End WFzxgraph.
+
+
+Module DecidablePermutation.
+
+
+Local Open Scope nat_scope.
+
+Fixpoint for_all_nat_lt (f : nat -> bool) (k : nat) := 
+  match k with
+  | 0 => true
+  | S k' => f k' && for_all_nat_lt f k'
+  end.
+
+Lemma forall_nat_lt_S (P : forall k : nat, Prop) (n : nat) : 
+  (forall k, k < S n -> P k) <-> P n /\ (forall k, k < n -> P k).
+Proof.
+  split.
+  - intros Hall.
+    split; intros; apply Hall; lia.
+  - intros [Hn Hall].
+    intros k Hk.
+    bdestruct (k=?n); [subst; easy | apply Hall; lia].
+Qed.
+
+Lemma for_all_nat_ltE {f : nat -> bool} {P : forall k : nat, Prop} 
+  (ref : forall k, reflect (P k) (f k)) : 
+  forall n, (forall k, k < n -> P k) <-> (for_all_nat_lt f n = true).
+Proof.
+  induction n.
+  - easy.
+  - rewrite forall_nat_lt_S.
+    simpl.
+    rewrite andb_true_iff.
+    apply WFzxgraph.and_iff_compat; [|easy].
+    apply reflect_iff; easy.
+Qed.
+
+Lemma for_all_nat_ltP {f : nat -> bool} {P : forall k : nat, Prop} 
+  (ref : forall k, reflect (P k) (f k)) : 
+  forall n, reflect (forall k, k < n -> P k) (for_all_nat_lt f n).
+Proof.
+  intros n.
+  apply iff_reflect, for_all_nat_ltE.
+  easy.
+Qed.
+
+Fixpoint Forall_nat_lt (P : forall k : nat, Prop) (n : nat) :=
+  match n with
+  | 0 => True
+  | S n' => P n' /\ Forall_nat_lt P n'
+  end.
+
+Lemma Forall_nat_ltE (P : forall k : nat, Prop) (n : nat) : 
+  Forall_nat_lt P n <-> forall k, k < n -> P k.
+Proof.
+  induction n; [easy|].
+  simpl.
+  rewrite IHn, forall_nat_lt_S.
+  easy.
+Qed.
+
+Import PermutationDefinitions PermutationAutomation PermutationFacts.
+
+Local Open Scope nat_scope.
+
+Definition perm_inv_is_inv_pred (f : nat -> nat) (n : nat) : Prop :=
+  forall k, k < n ->
+    f k < n /\ perm_inv n f k < n /\ 
+    perm_inv n f (f k) = k /\ f (perm_inv n f k) = k.
+
+Definition is_permutation (f : nat -> nat) (n : nat) :=
+  for_all_nat_lt 
+    (fun k => 
+      (f k <? n) && (perm_inv n f k <? n)
+      && (perm_inv n f (f k) =? k)
+      && (f (perm_inv n f k) =? k)) n.
+
+Lemma permutation_iff_perm_inv_is_inv (f : nat -> nat) (n : nat) : 
+  permutation n f <-> perm_inv_is_inv_pred f n.
+Proof.
+  split.
+  - intros Hperm.
+    intros k Hk.
+    repeat split.
+    + destruct Hperm as [g Hg];
+      apply (Hg k Hk).
+    + apply perm_inv_bdd; easy.
+    + apply perm_inv_is_linv_of_permutation; easy.
+    + apply perm_inv_is_rinv_of_permutation; easy.
+  - intros Hperminv.
+    exists (perm_inv n f); easy.
+Qed.
+
+Lemma is_permutation_E (f : nat -> nat) (n : nat) : 
+  perm_inv_is_inv_pred f n <-> is_permutation f n = true.
+Proof.
+  unfold perm_inv_is_inv_pred, is_permutation.
+  apply for_all_nat_ltE.
+  intros k.
+  apply iff_reflect.
+  rewrite 3!andb_true_iff.
+  rewrite 2!Nat.ltb_lt, 2!Nat.eqb_eq, 2!and_assoc.
+  easy.
+Qed.
+
+Lemma permutation_dec (f : nat -> nat) (n : nat) : 
+  permutation n f <-> is_permutation f n = true.
+Proof.
+  rewrite permutation_iff_perm_inv_is_inv.
+  apply is_permutation_E.
+Qed.
+
+End DecidablePermutation.
 
 
 
@@ -1884,703 +2708,3 @@ Proof.
         try replace -> (func_remove_nwire zx2); lia.
 Qed.
 
-
-
-
-
-Ltac eval_create_arbitrary_swap :=
-  unfold create_arbitrary_swap, 
-    PermToZX.zx_between_lists_casted, 
-    PermToZX.zx_between_lists,
-    ZXperm.zx_of_perm;
-  simpl;
-  unfold ZXperm.zx_to_bot, a_swap, bottom_to_top;
-  simpl.
-
-Ltac remove_wires := 
-  rewrite ?wire_removal_l, ?wire_removal_r;
-  rewrite wire_to_n_wire;
-  repeat rewrite ?n_wire_stack, 
-  ?nwire_removal_l, ?nwire_removal_r.
-
-Local Definition stack_empty_r' {n m} (zx : ZX n m) :=
-  stack_empty_r zx (Nat.add_0_r n) (Nat.add_0_r m).
-
-Ltac eval_create_arbitrary_swap' :=
-  eval_create_arbitrary_swap;
-  rewrite ?stack_empty_l, ?stack_empty_r';
-  rewrite ?PermutationAutomation.cast_id_eq.
-  (* cleanup_zx; *)
-  (* simpl_casts; *)
-  (* remove_wires. *)
-
-(* Paste these examples into the ZX visualizer once simplified, equivs are clearly not true just to make a prop *)
-Example bubblesort_test0 : (create_arbitrary_swap [1%nat;2%nat;3%nat] [3%nat;2%nat;1%nat]) ∝ n_wire 3.
-Proof.
-  eval_create_arbitrary_swap'.
-  remove_wires.
-Abort.
-
-Example bubblesort_test1 : (create_arbitrary_swap [] []) ∝ n_wire 0.
-Proof.
-  eval_create_arbitrary_swap'.
-  easy.
-Qed.
-
-Example bubblesort_test2 : (create_arbitrary_swap [1%nat] [1%nat]) ∝ n_wire 1.
-Proof.
-  eval_create_arbitrary_swap'.
-  remove_wires.
-  easy.
-Qed.
-
-Example bubblesort_test3 : (create_arbitrary_swap [1%nat;7%nat;9%nat;3%nat] [3%nat;1%nat;9%nat;7%nat]) ∝ n_wire 4.
-Proof.
-  eval_create_arbitrary_swap'.
-  remove_wires.
-Abort.
-
-
-
-(* Semantic proof section here *)
-
-
-(* Full translation *)
-
-(* ZX Digraph input type *)
-
-Inductive zx_color : Type :=
-  | X_typ
-  | Z_typ
-.
-
-Record zx_node := mk_node
-{ id_no : nat;
-  color : zx_color;
-  angle : R 
-}.
-
-Definition dummy_node := (mk_node 0%nat X_typ R0). 
-
-Inductive zx_output_node : nat -> Type :=
-  | Outp (n : nat) : zx_output_node n.
-
-(* Inputs, outputs, and nodes are all disjoint, with unique nat assignments *)
-(* Mapping corresponds to nodes exactly with id_no information lining up *)
-(* EDGE RULES HERE *)
-Record zx_graph := mk_graph
-{ mapping : list zx_node;
-  inputs : list nat;
-  outputs : list nat;
-  nodes : list nat;
-  edges : list (nat * nat)
-}.
-
-
-Definition get_zx_node_by_id_old (G : zx_graph) (n : nat) : zx_node :=
-  match (find (fun node => (id_no node) =? n) (mapping G)) with
-  | Some x => x
-  | _ => dummy_node (* Could change this*)
-  end.
-
-Definition get_zx_node_by_id (G : zx_graph) (n : nat) : option zx_node :=
-  (find (fun node => (id_no node) =? n) (mapping G)).
-  
-Definition inb_zx_edge_list (l : list (nat * nat)) (e : nat * nat) : bool :=
-  match e with
-  | (e1, e2) => 
-    match (find 
-      (fun e' => ((fst e' =? e1) && (snd e' =? e2)) 
-              || ((snd e' =? e1) && (fst e' =? e2))) l) with
-    | Some _ => true
-    | _ => false
-    end
-  end.
-
-
-Definition inb_zx_node_list (l : list nat) (x : nat) : bool :=
-  if (in_dec Nat.eq_dec x l) then true else false.
-
-Fixpoint remove_one {A} (eq_dec : (forall x y : A, {x = y}+{x <> y})) 
-  (x : A) (l : list A) : list A := 
-  match l with
-      | [] => []
-      | x'::xs => if (eq_dec x x') then xs else x'::(remove_one eq_dec x xs)
-  end.
-
-Definition flatten_list_of_pairs {A} (l : list (A * A)) : list A :=
-  fold_right 
-    (fun e es => match e with (e1, e2) => e1::e2::es end)
-    []
-    l. 
-
-Definition join_list_partition {A} (l : list A * list A) : list A :=
-  fst l ++ snd l.
-
-(*  Given two lists, lsplit (list to be split), and lpool, returns 
-    a pair of lists, the left list is elements of lsplit that are in lpool
-    , and the right is those that are not. This accounts for duplicates,
-    so its like subtracting lpool from lsplit *)
-Fixpoint largest_subset_and_rest_split (lsplit lpool : list nat) 
-    : list nat * list nat  :=
-  match lsplit with
-  | [] => ([], [])
-  | x::xs => 
-    if (inb_zx_node_list lpool x) then 
-      match (largest_subset_and_rest_split xs 
-              (remove_one Nat.eq_dec x lpool)) with
-      | (l1, l2) => (x :: l1, l2)
-      end
-    else
-      match (largest_subset_and_rest_split xs lpool) with
-      | (l1, l2) => (l1, x::l2)
-      end
-  end.
-
-(* Test more? *)
-(* Compute (largest_subset_and_rest_split [1%nat; 2%nat; 3%nat; 4%nat; 4%nat] [4%nat; 5%nat; 4%nat; 3%nat]). *)
-
-
-Definition get_connections (G : zx_graph) (node : nat) : list (nat * nat) :=
-  filter (fun n => orb (node =? (fst n)) (node =? (snd n))) (edges G).
-
-Definition get_neighbors (G : zx_graph) (node : nat) : list nat :=
-  map (fun n => if ((fst n) =? node) then (snd n) else fst n) (get_connections G node).
-
-
-Definition partition_self_edges (G : zx_graph) : list (nat * nat) * list (nat * nat) :=
-  partition (fun n => ((fst n) =? (snd n))) (edges G).
-
-
-Definition get_self_edges (G : zx_graph) : list (nat * nat) :=
-  fst (partition_self_edges G).
-
-
-Definition removed_self_edges (G : zx_graph) : list (nat * nat) :=
-  snd (partition_self_edges G).
-
-Definition get_edges_within_boundary_state (G : zx_graph) (b_state : list nat) : list (nat * nat) :=
-  filter (fun e => match e with (e1, e2) => 
-    (inb_zx_node_list b_state e1) && (inb_zx_node_list b_state e2) end) (edges G).
-
-Definition get_input_state_loops_unflattened (G : zx_graph) : list nat * list nat :=
-    (largest_subset_and_rest_split
-      (inputs G)
-      (flatten_list_of_pairs (get_edges_within_boundary_state G (inputs G)))).
-
-Definition get_output_state_loops_unflattened (G : zx_graph) : list nat * list nat :=
-    (largest_subset_and_rest_split
-      (outputs G)
-      (flatten_list_of_pairs (get_edges_within_boundary_state G (outputs G)))).
-
-Definition get_input_state_cleaned (G : zx_graph) : list nat :=
-  snd
-    (largest_subset_and_rest_split
-      (inputs G)
-      (flatten_list_of_pairs (get_edges_within_boundary_state G (inputs G)))).
-
-Definition get_output_state_cleaned (G : zx_graph) : list nat :=
-  snd
-    (largest_subset_and_rest_split
-      (outputs G)
-      (flatten_list_of_pairs (get_edges_within_boundary_state G (outputs G)))).
-
-Definition get_input_state_loops_ordered (G : zx_graph) : list nat :=
-  let es := (get_edges_within_boundary_state G (inputs G)) in
-    (flatten_list_of_pairs es) ++ (get_input_state_cleaned G).
-
-Definition get_output_state_loops_ordered (G : zx_graph) : list nat :=
-  let es := (get_edges_within_boundary_state G (outputs G)) in
-  (flatten_list_of_pairs es) ++ (get_output_state_cleaned G).
-
-(* Check on pair order here *)
-Definition distribute_inputs_outputs (G : zx_graph) (cur_state : list nat) (cur_node : nat) : list nat * list nat :=
-  largest_subset_and_rest_split (get_neighbors G cur_node) cur_state.
-
-Definition get_cur_inputs (G : zx_graph) (cur_state : list nat) (cur_node : nat) : list nat :=
-  fst (distribute_inputs_outputs G cur_state cur_node).
-
-Definition get_cur_outputs (G : zx_graph) (cur_state : list nat) (cur_node : nat) : list nat :=
-  snd (distribute_inputs_outputs G cur_state cur_node).
-
-Definition split_cur_state (G : zx_graph) (cur_state : list nat) (cur_node : nat) : list nat * list nat :=
-  largest_subset_and_rest_split cur_state (get_cur_inputs G cur_state cur_node).
-
-Definition get_goal_ordering (G : zx_graph) (cur_state : list nat) (cur_node : nat) : list nat :=
-  join_list_partition (split_cur_state G cur_state cur_node).
-
-Definition get_cur_inputs_in_state (G : zx_graph) (cur_state : list nat) (cur_node : nat) : list nat :=
-  fst (split_cur_state G cur_state cur_node).
-
-Definition get_rest_cur_state (G : zx_graph) (cur_state : list nat) (cur_node : nat) : list nat :=
-  snd (split_cur_state G cur_state cur_node).
-
-Definition get_new_state (G : zx_graph) (cur_state : list nat) (cur_node : nat) : list nat :=
-  (repeat cur_node (length (get_cur_outputs G cur_state cur_node))) ++ 
-  (get_rest_cur_state G cur_state cur_node).
-
-
-Lemma largest_subset_and_rest_split_length : 
-  forall lsplit lpool l1 l2,
-  largest_subset_and_rest_split lsplit lpool = (l1, l2) ->
-  length lsplit = ((length l1) + (length l2))%nat.
-Proof.
-  induction lsplit; intros.
-    - inversion H; easy.
-    - simpl; simpl in H; destruct (inb_zx_node_list lpool a).
-      + destruct (largest_subset_and_rest_split lsplit (remove_one Nat.eq_dec a lpool)) eqn: E; inversion H;
-        simpl; f_equal; eapply (IHlsplit (remove_one Nat.eq_dec a lpool) l l2); subst; exact E.
-      + destruct (largest_subset_and_rest_split lsplit lpool) eqn:E; inversion H; simpl; subst;
-        rewrite Nat.add_comm; simpl; f_equal; rewrite Nat.add_comm; eapply IHlsplit; exact E.
-Defined.
-
-Lemma build_node_structure_aux : forall G (cur_state : list nat) cur_node, 
-  length cur_state = ((length (get_cur_inputs_in_state G cur_state cur_node)) + (length (get_rest_cur_state G cur_state cur_node)))%nat.
-Proof.
-  intros; unfold get_rest_cur_state, get_cur_inputs_in_state, split_cur_state.
-  destruct (largest_subset_and_rest_split cur_state (get_cur_inputs G cur_state cur_node)) eqn:E.
-  eapply largest_subset_and_rest_split_length; simpl; exact E.
-Qed.
-
-(* Check that this swap is correct *)
-Definition build_swap_structure (G : zx_graph) (cur_state : list nat) (cur_node : nat) : ZX (length cur_state) (length cur_state) :=
-  create_arbitrary_swap cur_state (get_goal_ordering G cur_state cur_node).
-
-Definition zx_node_id_to_spider_aux_old (G : zx_graph) (id_no n m : nat) : ZX n m :=
-  let node := (get_zx_node_by_id_old G id_no) in 
-    match color node with 
-    | X_typ => X_Spider n m (angle node)
-    | _ => Z_Spider n m (angle node)
-    end.
-
-Definition zx_node_id_to_spider_aux (G : zx_graph) (id_no n m : nat) 
-  : option (ZX n m) :=
-  option_map (fun node =>
-    match color node with 
-    | X_typ => X_Spider n m (angle node)
-    | _ => Z_Spider n m (angle node)
-    end) (get_zx_node_by_id G id_no).
-
-
-Fixpoint add_k_self_loops_to_spider {n m} (k : nat) 
-  (cur : ZX (k + n) (k + m)) : ZX n m := 
-  match k as k' return (ZX (k' + n) (k' + m) -> ZX n m) with
-  | O => fun cur => cur
-  | S k' => 
-    fun cur => add_k_self_loops_to_spider k' 
-      (⊂ ↕ (n_wire (k' + n)) ⟷ (— ↕ cur) ⟷ (⊃ ↕ (n_wire (k' + m))))
-  end cur.
-(* Proof.
-  destruct k.
-  - exact cur.
-  - apply add_k_self_loops_to_spider with (k := k); eapply Compose.
-    + exact (pad_bot (k + n) ⊂).
-    + eapply Compose. assert (H : forall i, (2 + i = 1 + S (i))%nat). reflexivity.
-      * eapply cast.
-        { specialize H with (k + n)%nat; exact H. }
-        { specialize H with (k + m)%nat; exact H. }
-        { eapply Stack. eapply Wire. exact cur. }
-      *  exact (pad_bot (k + m) ⊃).
-Defined. *)
-
-Definition get_self_edges_by_id (G : zx_graph) 
-  (self_edges : list (nat * nat)) (id_no : nat) : list (nat * nat) :=
-  filter (fun e => (fst e =? id_no)) self_edges.
-
-(* Need to consider box edges? *)
-Definition zx_node_id_to_spider (G : zx_graph) 
-  (self_edges : list (nat * nat)) (id_no n m : nat) : option (ZX n m) :=
-  let k := (length (get_self_edges_by_id G self_edges id_no)) in
-  option_map (fun node => add_k_self_loops_to_spider k node)
-      (zx_node_id_to_spider_aux G id_no (k + n) (k + m))%nat.
-
-
-Definition build_node_structure (G : zx_graph) 
-  (self_edges : list (nat * nat)) (cur_state : list nat) (cur_node : nat) : 
-  option (ZX (length cur_state) ((length (get_cur_outputs G cur_state cur_node)) 
-    + (length (get_rest_cur_state G cur_state cur_node)))) :=
-  option_map (fun zx => 
-    cast _ _ (build_node_structure_aux G cur_state cur_node) eq_refl
-    (pad_bot (length (get_rest_cur_state G cur_state cur_node)) zx))
-    (zx_node_id_to_spider G self_edges cur_node 
-      (length (get_cur_inputs_in_state G cur_state cur_node))
-      (length (get_cur_outputs G cur_state cur_node))).
-(* Proof.
-  intros; eapply cast.
-  - exact (build_node_structure_aux G cur_state cur_node).
-  - reflexivity.
-  - exact (pad_bot 
-    (length (get_rest_cur_state G cur_state cur_node))
-    (zx_node_id_to_spider G self_edges cur_node 
-      (length (get_cur_inputs_in_state G cur_state cur_node))
-      (length (get_cur_outputs G cur_state cur_node)))).
-Defined. *)
-
-Definition one_node_translate (G : zx_graph) 
-  (self_edges : list (nat * nat)) (cur_state : list nat) (cur_node : nat) : 
-  option
-  (ZX (length cur_state) ((length (get_cur_outputs G cur_state cur_node)) 
-    + (length (get_rest_cur_state G cur_state cur_node)))) :=
-  option_map (fun zx => (build_swap_structure G cur_state cur_node) ⟷ zx)
-    (build_node_structure G self_edges cur_state cur_node). 
-
-
-(* Dummys could be replaced *)
-Definition dummy_spider (n m : nat) : ZX n m := X_Spider n m R0.
-
-Lemma build_n_capcup_pf (n : nat) : 
-  ((S (n + (S n)) = (2 + (Nat.double n)))%nat).
-Proof.
-  unfold Nat.double.
-  lia.
-Qed.
-
-Fixpoint build_n_capcup (n : nat) (cup : bool) : 
-  ZX (if cup then Nat.double n else 0) (if cup then 0 else Nat.double n) :=
-  match n as n' return 
-    ZX (if cup then Nat.double n' else 0) (if cup then 0 else Nat.double n')
-    with
-  | O => match cup as b return 
-    ZX (if b then Nat.double 0 else 0) (if b then 0 else Nat.double 0)
-    with
-    | true => Empty
-    | false => Empty
-    end
-  | S n' => match cup as b return 
-    ZX  (if b then Nat.double (S n') else 0) (if b then 0 else Nat.double (S n'))
-    with
-    | true => cast _ _ (build_n_capcup_pf n') eq_refl 
-                (⊃ ↕ (build_n_capcup n' true))
-    | false => cast _ _ eq_refl (build_n_capcup_pf n') 
-                (⊂ ↕ (build_n_capcup n' false))
-    end
-  end.
-(* Proof.
-  assert (Htemp : forall n, ((S (n + (S n)) = (2 + (Nat.double n)))%nat)). 
-  intros; unfold Nat.double in *; lia.
-  induction n; destruct cup eqn:Ec; unfold Nat.double in *.
-  - exact Empty.
-  - exact Empty. 
-  - simpl; eapply cast.
-    + exact (Htemp n).
-    + exact (eq_sym (Nat.add_0_r (0%nat))).
-    + eapply Stack.
-      * eapply Cup.
-      * exact (build_n_capcup n true).
-  - simpl; eapply cast.
-    + exact (eq_sym (Nat.add_0_r (0%nat))).
-    + exact (Htemp n).
-    + eapply Stack.
-      * eapply Cap.
-      * exact (build_n_capcup n false).
-Defined. *)
-
-Lemma remove_loops_from_output_aux_aux : forall G (loops outps : list nat), 
-  (get_output_state_loops_unflattened G) = (loops, outps) -> 
-  (length (outputs G)) = ((length loops) + (length outps))%nat.
-Proof.
-  intros. 
-  unfold get_output_state_loops_unflattened in H. 
-  apply (largest_subset_and_rest_split_length) with (lpool :=  (flatten_list_of_pairs
-  (get_edges_within_boundary_state G (outputs G)))); exact H.
-Qed.
-
-Definition remove_loops_from_output_aux (G : zx_graph) (n m halfn : nat) 
-  (Heven : n = (Nat.double halfn)%nat) : 
-  ZX m (n + m) :=
-  (cast _ _ eq_refl Heven (build_n_capcup halfn false)) ↕ n_wire m.
-(* Proof.
-  eapply cast.
-    - assert (H :  m = (0 + m)%nat). reflexivity. exact H.
-    - reflexivity.
-    - eapply Stack.
-      * eapply cast.
-        { reflexivity. }
-        { exact Heven. }
-        { exact (build_n_capcup halfn false). }
-      * exact (n_wire m).
-Defined. *)
-
-Lemma even_explicit_div2 : forall n m, 
-  Nat.even n = true -> m = div2 n -> n = (Nat.double m)%nat.
-Proof.
-  intros; apply Nat.even_spec in H; subst; eapply Nat.Even_double; easy.
-Qed.
-
-Lemma length_get_output_state_loops_eq_length_outputs (G : zx_graph) :
-  length (get_output_state_loops_ordered G) = length (outputs G).
-Proof.
-  unfold get_output_state_loops_ordered.
-  unfold get_output_state_cleaned.
-  destruct G as [mapp inpts outpts nods edgs].
-  simpl.
-  unfold get_output_state_cleaned.
-  simpl.
-  induction outpts.
-  - simpl.
-    unfold get_edges_within_boundary_state.
-    simpl.
-    induction edgs; [easy|];
-    simpl;
-    destruct a;
-    easy.
-  - simpl.
-    unfold get_edges_within_boundary_state in *.
-    simpl in *.
-    destruct (inb_zx_node_list
-    (flatten_list_of_pairs
-       (filter
-          (fun e : nat * nat =>
-           let (e1, e2) := e in
-           inb_zx_node_list (a :: outpts) e1 &&
-           inb_zx_node_list (a :: outpts) e2) edgs))
-    a) eqn:E.
-    + destruct (largest_subset_and_rest_split outpts
-    (remove_one Nat.eq_dec a
-       (flatten_list_of_pairs
-          (filter
-             (fun e : nat * nat =>
-              let (e1, e2) := e in
-              inb_zx_node_list (a :: outpts) e1 &&
-              inb_zx_node_list (a :: outpts) e2)
-             edgs)))) eqn:Els.
-
-    
-  match goal with 
-  |- context[get_edges_within_boundary_state ?G ?o] => 
-    generalize (get_edges_within_boundary_state G o)
-  end.
-  (* TODO: add WF to make this true*)
-
-  generalize (outputs G).
-  intros l.
-  induction l.
-  - cbn.
-
-Definition remove_loops_from_output (G : zx_graph) : 
-  option (ZX (length (get_output_state_cleaned G)) (length (outputs G))).
-(* refine (
-  let (loops, outps) := get_output_state_loops_unflattened G in
-  match bool_dec (Nat.even (length loops)) true with
-  | left Eeven =>
-    Compose 
-      (cast _ _ 
-        _
-        (remove_loops_from_output_aux_aux G loops outps eq_refl)
-        (remove_loops_from_output_aux G (length loops) (length outps) halfn
-              (even_explicit_div2 (length loops) halfn Eeven Heqhalfn)))
-      ()
-  | right Eeven 
-). *)
-Proof.
-  destruct (get_output_state_loops_unflattened G) as [loops outps] eqn:Eoutps; 
-  destruct (Nat.even (length loops)) eqn:Eeven;
-    remember (div2 (length loops)) as halfn.
-  - eapply Some.
-    eapply Compose.
-    +  eapply cast.
-      * unfold get_output_state_cleaned; unfold get_output_state_loops_unflattened in Eoutps;
-        destruct (largest_subset_and_rest_split (outputs G)
-          (flatten_list_of_pairs
-          (get_edges_within_boundary_state G (outputs G)))); 
-          simpl; inversion Eoutps; reflexivity.
-      * apply remove_loops_from_output_aux_aux; exact Eoutps.
-      * exact (remove_loops_from_output_aux G (length loops) (length outps) halfn
-              (even_explicit_div2 (length loops) halfn Eeven Heqhalfn)).
-    + destruct (eq_nat_decide (length (get_output_state_loops_ordered G)) (length (outputs G))) as [L|R]. 
-      apply _eq_nat_eq in L; eapply cast.
-      * exact (eq_sym L).
-      * exact (eq_sym L).
-      * exact (create_arbitrary_swap (get_output_state_loops_ordered G) (outputs G)).
-      * (* Another dummy case*) apply dummy_spider.
-  - (* dummy case, there would always be an even number here *)
-    apply dummy_spider.
-Defined.
-
-Definition gtb_last_fence_post (G : zx_graph) (cur_state : list nat) : ZX (length cur_state) (length (outputs G)).
-Proof.
-  eapply Compose.
-  - exact (create_arbitrary_swap cur_state (get_output_state_cleaned G)).
-  - destruct (eq_nat_decide (length cur_state) (length (get_output_state_cleaned G))) as [L | R].
-    + eapply cast.
-      * exact (_eq_nat_eq (length cur_state) (length (get_output_state_cleaned G)) L).
-      * reflexivity.
-      * exact (remove_loops_from_output G).
-    (* Dummy output below *)
-    + apply dummy_spider.
-Defined.
-
-(* Remove rewrites? *)
-Lemma graph_to_block_structure_aux_aux : 
-  forall G cur_state cur_node, (length (get_new_state G cur_state cur_node) = (length (get_cur_outputs G cur_state cur_node) + length (get_rest_cur_state G cur_state cur_node)))%nat.
-Proof.
-  intros; unfold get_new_state.
-  rewrite app_length; rewrite repeat_length; easy.
-Qed.
-
-Fixpoint graph_to_block_structure_aux (G : zx_graph) (node_order : list nat) (cur_state : list nat) (self_edges : list (nat * nat)) : 
-  ZX (length cur_state) (length (outputs G)).
-Proof.
-  destruct node_order as [| cur_node ns] eqn:E.
-  - exact (gtb_last_fence_post G cur_state).
-  - eapply Compose.
-    + exact (one_node_translate G self_edges cur_state cur_node).
-    + eapply cast.
-      * exact (eq_sym (graph_to_block_structure_aux_aux G cur_state cur_node)). 
-      * reflexivity.
-      * exact (graph_to_block_structure_aux G ns (get_new_state G cur_state cur_node) self_edges).
-Defined.
-
-Lemma remove_loops_from_input_aux_aux : forall G (loops inpts : list nat), 
-  (get_input_state_loops_unflattened G) = (loops, inpts) -> 
-  (length (inputs G)) = ((length loops) + (length inpts))%nat.
-Proof.
-  intros. 
-  unfold get_input_state_loops_unflattened in H. 
-  apply (largest_subset_and_rest_split_length) with (lpool := (flatten_list_of_pairs
-  (get_edges_within_boundary_state G (inputs G)))); exact H.
-Defined.
-
-Definition remove_loops_from_input_aux (G : zx_graph) (n m halfn : nat) (Heven : n = (Nat.double halfn)%nat) : 
-  ZX (n + m) m.
-Proof.
-  eapply cast.
-    - reflexivity.
-    - assert (H :  m = (0 + m)%nat). reflexivity. exact H.
-    - eapply Stack.
-      * eapply cast.
-        { exact Heven. }
-        { reflexivity. }
-        { exact (build_n_capcup halfn true). }
-      * exact (n_wire m).
-Defined.
-
-Definition remove_loops_from_input (G : zx_graph) : ZX (length (inputs G)) (length (get_input_state_cleaned G)) .
-Proof.
-  destruct (get_input_state_loops_unflattened G) as [loops inpts] eqn:Einpts; 
-  destruct (Nat.even (length loops)) eqn:Eeven; remember (div2 (length loops)) as halfn.
-  - eapply Compose.
-    + exact (create_arbitrary_swap (inputs G) (get_input_state_loops_ordered G)).
-    + eapply cast.
-      * apply remove_loops_from_input_aux_aux; exact Einpts.
-      * unfold get_input_state_cleaned; unfold get_input_state_loops_unflattened in Einpts;
-        destruct (largest_subset_and_rest_split (inputs G)
-          (flatten_list_of_pairs
-          (get_edges_within_boundary_state G (inputs G)))); 
-          simpl; inversion Einpts; reflexivity.
-      * exact (remove_loops_from_input_aux G (length loops) (length inpts) halfn
-              (even_explicit_div2 (length loops) halfn Eeven Heqhalfn)).
-  - (* dummy case, there would always be an even number here *)
-    apply dummy_spider.
-Defined.
-
-(* Translation function *)
-Definition graph_to_block_structure (G : zx_graph) : ZX (length (inputs G)) (length (outputs G)) :=
-  let G' := mk_graph (mapping G) (inputs G) (outputs G) (nodes G) (removed_self_edges G) in
-    (remove_loops_from_input G') ⟷
-    graph_to_block_structure_aux G' (nodes G') (get_input_state_cleaned G') (get_self_edges G).
-
-Local Hint Unfold 
-  graph_to_block_structure 
-  remove_loops_from_input
-  remove_loops_from_input_aux
-  graph_to_block_structure_aux 
-  get_edges_within_boundary_state
-  get_input_state_loops_unflattened
-  get_input_state_cleaned
-  get_input_state_loops_ordered
-  gtb_last_fence_post
-  get_output_state_loops_unflattened
-  get_output_state_cleaned
-  get_output_state_loops_ordered
-  build_n_capcup
-  Nat.double
-  one_node_translate
-  build_node_structure
-  build_swap_structure
-  zx_node_id_to_spider
-  get_self_edges_by_id
-  add_k_self_loops_to_spider
-  zx_node_id_to_spider_aux
-  get_new_state
-  get_rest_cur_state
-  get_cur_inputs_in_state
-  get_goal_ordering
-  split_cur_state
-  get_cur_outputs
-  get_cur_inputs
-  distribute_inputs_outputs
-  removed_self_edges
-  get_self_edges
-  partition_self_edges
-  get_neighbors
-  get_connections
-  remove_loops_from_output
-  remove_loops_from_output_aux
-  inb_zx_node_list
-  : graph_translate_eval_db.
-
-Ltac eval_graph_translation :=
-  try (
-    repeat(
-    autounfold with graph_translate_eval_db;
-    simpl);
-    simpl_casts;
-    cleanup_zx;
-    simpl)
-  .
-(* Need to update tactic, include bubble_sort evaluation tactic *)
-
-Definition node0 := mk_node 9%nat X_typ R0.
-Definition node1 := mk_node 4%nat X_typ R1.
-Definition node2 := mk_node 5%nat X_typ PI.
-Definition node4 := mk_node 4%nat X_typ R0.
-Definition node5 := mk_node 5%nat X_typ R0.
-Definition node6 := mk_node 6%nat X_typ R0.
-Definition node7 := mk_node 7%nat Z_typ R0.
-Definition node8 := mk_node 8%nat Z_typ R0.
-Definition node9 := mk_node 9%nat Z_typ R0.
-
-
-
-(* inputs and outputs are just nat ids as well *)
-Definition test0 := mk_graph
-  [node0] 
-  [0%nat]
-  [1%nat]
-  [4%nat]
-  [(0%nat, 4%nat); (4%nat, 4%nat); (4%nat, 4%nat); (4%nat, 1%nat)].
-
-Definition test1 := mk_graph
-  [node1; node2] 
-  [1%nat; 0%nat]
-  [2%nat; 3%nat]
-  [4%nat; 5%nat]
-  [(0%nat, 4%nat); (1%nat, 5%nat); (4%nat, 3%nat); (5%nat, 2%nat)].
-
-(* Compute (get_zx_node_by_id test1 5%nat). *)
-
-Definition test2 := mk_graph
-  [node4; node5; node6; node7; node8; node9]
-  [0%nat; 1%nat]
-  [2%nat; 3%nat]
-  [4%nat; 5%nat; 6%nat; 7%nat; 8%nat; 9%nat]
-  [(0%nat, 7%nat); (7%nat, 4%nat); (7%nat, 5%nat); (4%nat, 0%nat); (4%nat, 8%nat);
-   (5%nat, 8%nat); (5%nat, 9%nat); (6%nat, 8%nat); (6%nat, 9%nat); (6%nat, 2%nat);
-   (9%nat, 3%nat)].
-
-Definition test3 := mk_graph
-  [node8]
-  [0%nat; 1%nat; 2%nat; 3%nat]
-  [4%nat; 5%nat; 6%nat; 7%nat]
-  [8%nat]
-  [(0%nat, 2%nat); (4%nat, 7%nat); (1%nat, 6%nat); (3%nat, 8%nat); (8%nat, 5%nat)].
-
-(* Need to account for even predicate in simplifying *)
-
-(* Compute ((graph_to_block_structure test3)). *)
-
-Example see_if_algo_works1 : 
-  (graph_to_block_structure test1) ∝ n_wire _.
-Proof.
-Abort.
