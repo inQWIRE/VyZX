@@ -11,11 +11,6 @@ Require Export ZXperm.
     - Add cleanup_zx_eq for strict equality
 *)
 
-Create HintDb perm_db.
-Create HintDb perm_bdd_db.
-Create HintDb perm_inv_db.
-Create HintDb WF_perm_db.
-
 (* Create HintDb perm_cleanup_db.
 Create HintDb perm_of_zx_cleanup_db. *)
 
@@ -31,14 +26,6 @@ Create HintDb zxperm_db.
   try easy; try lia. *)
 
 
-
-Ltac replace_bool_lia b0 b1 :=
-  first [
-    replace b0 with b1 by (bdestruct b0; lia || (destruct b1 eqn:?; lia)) |
-    replace b0 with b1 by (bdestruct b1; lia || (destruct b0 eqn:?; lia)) |
-    replace b0 with b1 by (bdestruct b0; bdestruct b1; lia)
-  ].
-
 Ltac show_permutation :=
   repeat first [
     split
@@ -49,111 +36,9 @@ Ltac show_permutation :=
   | lia
   ].
 
-
-
-Ltac bdestruct_one :=
-  let fail_if_iffy H :=
-    match H with
-    | context[if _ then _ else _] => fail 1
-    | _ => idtac
-    end
-  in
-  match goal with
-  | |- context [ ?a <? ?b ] => fail_if_iffy a; fail_if_iffy b; bdestruct (a <? b)
-  | |- context [ ?a <=? ?b ] => fail_if_iffy a; fail_if_iffy b; bdestruct (a <=? b)
-  | |- context [ ?a =? ?b ] => fail_if_iffy a; fail_if_iffy b; bdestruct (a =? b)
-  | |- context[if ?b then _ else _]
-      => fail_if_iffy b; destruct b eqn:?
-  end.
-
-
-Ltac bdestructΩ' :=
-  let tryeasylia := try easy; try lia in 
-  repeat (bdestruct_one; subst; tryeasylia);
-  tryeasylia.
-
-(* From: http://adam.chlipala.net/cpdt/html/Match.html
-
-Ltac notHyp P :=
-  match goal with
-    | [ _ : P |- _ ] => fail 1
-    | _ =>
-      match P with
-        | ?P1 /\ ?P2 => first [ notHyp P1 | notHyp P2 | fail 2 ]
-        | _ => idtac
-      end
-  end.
-
-(* Also from above source *)
-Ltac extend pf :=
-  let t := type of pf in
-    notHyp t; generalize pf; intro. *)
-
-(* Ltac add_mod_bound a n :=
-  let Han := fresh "Han" in assert(Han : a mod n < n)
-    by solve [apply Nat.mod_upper_bound; tryeasylia]; extend (Han). *)
-
-(* Ltac bdestructΩ'_mods :=
-  repeat (bdestruct_one; subst; tryeasylia);
-  repeat match goal with
-    | [ _ : context[?a mod ?n] |- _] => add_mod_bound a n
-    | [ |- context[?a mod ?n]] => add_mod_bound a n
-    end;
-  tryeasylia. *)
-
-
-
 Ltac apply_f H k :=
   unfold compose in H;
   apply (f_equal (fun x => x k)) in H.
-
-
-Lemma is_inv_iff_inv_is n f finv :
-  (forall k, k < n -> finv k < n /\ f k < n /\ f (finv k) = k /\ finv (f k) = k)%nat
-  <-> (forall k, k < n -> f k < n /\ finv k < n /\ finv (f k) = k /\ f (finv k) = k)%nat.
-Proof.
-  split; intros H k Hk; specialize (H k Hk); easy.
-Qed.
-
-
-#[export] Hint Rewrite is_inv_iff_inv_is : perm_inv_db.
-
-(* Tactic Notation "cleanup_perm_inv" := 
-  auto_cast_eqn (autorewrite with perm_inv_db).
-
-Tactic Notation "cleanup_perm" :=
-  auto_cast_eqn (autorewrite with perm_inv_db perm_cleanup_db).
-
-Tactic Notation "cleanup_perm_of_zx" :=
-  auto_cast_eqn (autorewrite with perm_of_zx_cleanup_db perm_inv_db perm_cleanup_db). *)
-
-
-
-Tactic Notation "cleanup_perm_inv" := 
-  autorewrite with perm_inv_db.
-
-Tactic Notation "cleanup_perm" :=
-  autorewrite with perm_inv_db perm_cleanup_db.
-
-Tactic Notation "cleanup_perm_of_zx" :=
-  autounfold with zxperm_db;
-  autorewrite with perm_of_zx_cleanup_db perm_inv_db perm_cleanup_db.
-
-Lemma compose_id_of_compose_idn {f g : nat -> nat} 
-  (H : (f ∘ g)%prg = (fun n => n)) {k : nat} : f (g k) = k.
-Proof.
-  apply (f_equal_inv k) in H.
-  easy.
-Qed.
-
-Ltac perm_by_inverse finv :=
-  let tryeasylia := try easy; try lia in 
-  exists finv;
-  intros k Hk; repeat split;
-  only 3,4 : (try apply compose_id_of_compose_idn; cleanup_perm; tryeasylia) 
-            || cleanup_perm; tryeasylia;
-  only 1,2 : auto with perm_bdd_db; tryeasylia.
-
 
 
 
@@ -170,115 +55,13 @@ Ltac solve_stack_perm_strong n0 n1 :=
   apply functional_extensionality; intros k;
   bdestruct (k <? n0)%nat; [tryeasylia | ]; try bdestruct (k <? n0 + n1);
   bdestructΩ'.
-(* ^ REPLACED BY: solve_stack_perm; bdestructΩ' *)
-
-
-(* TODO: Figure out order of operations on where to put this vs its lemma *)
-(* Ltac perm_eq_by_WF_inv_inj f n :=
-  apply (WF_permutation_inverse_injective f n); [
-    tryeasylia; auto with perm_db |
-    tryeasylia; auto with WF_perm_db |
-    try solve [cleanup_perm; auto] |
-    try solve [cleanup_perm; auto]]; tryeasylia. *)
 
 
 
 
 
 
-Lemma mod_add_n_r : forall m n, 
-	(m + n) mod n = m mod n.
-Proof.
-	intros m n.
-	replace (m + n)%nat with (m + 1 * n)%nat by lia.
-	destruct n.
-	- cbn; easy.
-	- rewrite Nat.mod_add;
-		lia.
-Qed.
 
-Lemma mod_eq_sub : forall m n,
-	m mod n = (m - n * (m / n))%nat.
-Proof.
-	intros m n.
-	destruct n.
-	- cbn; lia.
-	- assert (H: (S n <> 0)%nat) by easy.
-		pose proof (Nat.div_mod m (S n) H) as Heq.
-		lia.
-Qed.
-
-Lemma mod_of_scale : forall m n q, 
-	(n * q <= m < n * S q)%nat -> m mod n = (m - q * n)%nat.
-Proof.
-	intros m n q [Hmq HmSq].
-	rewrite mod_eq_sub.
-	replace (m/n)%nat with q; [lia|].
-	apply Nat.le_antisymm.
-	- apply Nat.div_le_lower_bound; lia. 
-	- epose proof (Nat.div_lt_upper_bound m n (S q) _ _).
-		lia.
-		Unshelve.
-		all: lia.
-Qed.
-
-Lemma mod_n_to_2n : forall m n, 
-	(n <= m < 2 * n)%nat -> m mod n = (m - n)%nat.
-Proof.
-	intros.
-	epose proof (mod_of_scale m n 1 _).
-	lia.
-	Unshelve.
-	lia.
-Qed.
-
-Lemma mod_n_to_n_plus_n : forall m n, 
-	(n <= m < n + n)%nat -> m mod n = (m - n)%nat.
-Proof.
-	intros.
-	apply mod_n_to_2n; lia.
-Qed.
-
-Ltac simplify_mods_of a b :=
-	first [
-		rewrite (Nat.mod_small a b) in * by lia
-	| rewrite (mod_n_to_2n a b) in * by lia
-	].
-
-Ltac solve_simple_mod_eqns :=
-  let __fail_if_has_mods a :=
-    match a with
-    | context[_ mod _] => fail 1
-    | _ => idtac
-    end
-  in
-	match goal with
-	| |- context[if _ then _ else _] => fail 1 "Cannot solve equation with if"
-	| _ =>
-		repeat first [
-      easy
-	  |	lia
-		|	match goal with 
-			| |- context[?a mod ?b] => __fail_if_has_mods a; __fail_if_has_mods b; 
-					simplify_mods_of a b
-			| H: context[?a mod ?b] |- _ => __fail_if_has_mods a; __fail_if_has_mods b; 
-					simplify_mods_of a b
-			end 
-		| match goal with
-			| |- context[?a mod ?b] => (* idtac a b; *) bdestruct (a <? b);
-					[rewrite (Nat.mod_small a b) by lia 
-					| try rewrite (mod_n_to_2n a b) by lia]
-			end
-		]
-	end.
-
-Ltac solve_modular_permutation_equalities :=
-  first [cleanup_perm_of_zx | cleanup_perm_inv | cleanup_perm];
-  unfold Basics.compose, rotr, rotl, stack_perms, swap_perm,
-  (* TODO: remove *) swap_2_perm;
-  apply functional_extensionality; let k := fresh "k" in intros k;
-  bdestructΩ';
-  solve_simple_mod_eqns.
 
 
 
