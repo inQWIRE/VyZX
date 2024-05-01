@@ -646,31 +646,33 @@ End ToZX.
 
 End PermToZX.
 
-Module GraphToDiagram.
+Module GraphToDiagram_prelim.
 
-Import PermToZX.
+Export PermToZX.
 
-(* Local Notation zxnode := (nat * bool * R)%type.
-Local Notation node_id A := (@fst nat bool (@fst _ R A)).
-Local Notation node_typ A := (@snd nat bool (@fst _ R A)).
-Local Notation node_rot A := (@snd (nat * bool) R A). *)
 Notation edge := (prod nat nat).
+
+Notation count_nat := (count_occ Nat.eq_dec).
+
+Lemma nat_eq_dec_eq {m n : nat} (H : m = n) : 
+  Nat.eq_dec m n = left H.
+Proof.
+  destruct (Nat.eq_dec m n); [|easy].
+  f_equal.
+  apply UIP_nat.
+Qed.
 
 Record zxnode := mk_zxnode {
   node_typ : bool;
   node_rot : R;
 }.
 
-Record zxgraph := mk_zxgraph {
-  inputs : list nat;
-  outputs : list nat;
-  nodeids : list nat;
-  nodevals : list zxnode;
-  edges : list edge;
-  num_ids : nat;
-}.
+Definition ZX_of_zxnode (zx : zxnode) (m n : nat) : ZX m n :=
+  if node_typ zx 
+  then X_Spider m n (node_rot zx) 
+  else Z_Spider m n (node_rot zx).
 
-Local Open Scope nat_scope.
+Open Scope nat_scope.
 
 
 Definition pair_degree (n : nat) (e : edge) :=
@@ -690,25 +692,6 @@ Definition permute_list {A} (f : nat -> nat) (l : list A) : list A :=
 
 Definition permute_edges (f : nat -> nat) (l : list edge) : list edge :=
   map (fun ab => (f (fst ab), f (snd ab))) l.
-
-Definition permute_graph (f : nat -> nat) (G : zxgraph) : zxgraph :=
-  {|
-    inputs := G.(inputs);
-    outputs := G.(outputs);
-    nodeids := G.(nodeids);
-    nodevals := permute_list f G.(nodevals);
-    edges := permute_edges f G.(edges);
-    num_ids := G.(num_ids)
-  |}.
-
-Definition is_isomorphism (f : nat -> nat) (G H : zxgraph) :=
-  permute_graph f G = H.
-
-Definition get_zxnode_by_id (G : zxgraph) (n : nat) : option zxnode :=
-  match (index_of_err (eqb n) G.(nodeids)) with
-  | Some n' => nth_error G.(nodevals) n'
-  | None => None
-  end.
 
 Definition eqb_natpair (e e' : nat * nat) : bool :=
   match e, e' with
@@ -806,6 +789,52 @@ Definition inb_node_list (a : nat) (nodes : list nat) :=
   Inb eqb a nodes.
 
 Section deceq_list.
+
+Fixpoint filter_key {A B} (f : A -> bool) (l : list A) (l' : list B) 
+  : list (A*B) :=
+  match l, l' with
+  | [], _ => []
+  | _, [] => []
+  | a :: ls, b :: ls' =>
+    (if f a then [(a,b)] else []) ++ filter_key f ls ls'
+  end.
+
+Lemma len_filter_key {A B} (f : A -> bool) (l : list A) (l' : list B) :
+  length (fst (split (filter_key f l l'))) 
+  = length (snd (split (filter_key f l l'))).
+Proof.
+  rewrite split_length_r, split_length_l; easy.
+Qed.
+
+Fixpoint NoDupb {A} (eqbA : A -> A -> bool) (l : list A) : bool :=
+  match l with
+  | [] => true
+  | x :: ls => negb (Inb eqbA x ls) && NoDupb eqbA ls
+  end.
+
+Lemma NoDupP {A} {eqbA : A -> A -> bool} 
+  (eqb_eqA : forall a b : A, reflect (a = b) (eqbA a b)) :
+  forall (l : list A), 
+  reflect (NoDup l) (NoDupb eqbA l).
+Proof.
+  intros l.
+  apply iff_reflect.
+  induction l; [split; easy+constructor|].
+  simpl.
+  rewrite NoDup_cons_iff.
+  rewrite (Inb_In eqb_eqA).
+  rewrite andb_true_iff, negb_true_iff, IHl.
+  apply and_iff_compat_r.
+  destruct (Inb eqbA a l); easy.
+Qed.
+
+Lemma NoDup_Nodupb {A} {eqbA : A -> A -> bool} 
+  (eqb_eqA : forall a b : A, reflect (a = b) (eqbA a b)) :
+  forall (l : list A), 
+  NoDup l <-> NoDupb eqbA l = true.
+Proof.
+  now intros; apply reflect_iff, NoDupP.
+Qed.
 
 Context {A : Type} (eq_dec : (forall x y : A, {x = y}+{x <> y})).
 
@@ -1244,8 +1273,12 @@ Qed.
 
 End no_simpl_sub.
 
-Definition inputs_of_right_truncate (G : zxgraph) (v : nat) : list nat :=
-  filter (fun k => ¬ v =? k) G.(inputs).
+Definition get_zxnode_by_id (nodeids : list nat)
+  (nodevals : list zxnode) (n : nat) : option zxnode :=
+  match (index_of_err (eqb n) nodeids) with
+  | Some n' => nth_error nodevals n'
+  | None => None
+  end.
 
 Definition star_no_self (edges : list edge) (vtx : nat) : list edge :=
   filter (fun e => pair_degree vtx e =? 1) edges.
@@ -1254,8 +1287,6 @@ Definition neighborhood_no_self (edges : list edge) (vtx : nat) : list nat :=
   map (fun e : edge => match e with 
   | (e1, e2) => if vtx =? e1 then e2 else e1
   end) (star_no_self edges vtx).
-
-(* Arguments neighborhood_no_self !_ _ /. *)
 
 Lemma neighborhood_no_self_not_In (edges : list edge) (vtx : nat) : 
   ~ In vtx (neighborhood_no_self edges vtx).
@@ -1272,198 +1303,37 @@ Proof.
   [congruence | apply IHes, Hind]).
 Qed.
 
-Definition outputs_of_right_truncate (G : zxgraph) (v : nat) : list nat :=
-  neighborhood_no_self G.(edges) v 
-  ++ filter (fun k => ¬ v =? k) G.(outputs).
+Definition inputs_of_right_truncate (inputs : list nat) (v : nat) : list nat :=
+  filter (fun k => ¬ v =? k) inputs.
 
-Definition edges_of_right_truncate (G : zxgraph) (v : nat) : list edge :=
-  filter (fun e => pair_degree v e =? 0) G.(edges).
+Definition outputs_of_right_truncate (edges : list edge) (outputs : list nat)
+  (v : nat) : list nat :=
+  neighborhood_no_self edges v 
+  ++ filter (fun k => ¬ v =? k) outputs.
 
-Fixpoint filter_key {A B} (f : A -> bool) (l : list A) (l' : list B) 
-  : list (A*B) :=
-  match l, l' with
-  | [], _ => []
-  | _, [] => []
-  | a :: ls, b :: ls' =>
-    (if f a then [(a,b)] else []) ++ filter_key f ls ls'
-  end.
+Definition edges_of_right_truncate (edges : list edge) (v : nat) : list edge :=
+  filter (fun e => pair_degree v e =? 0) edges.
 
-Definition nodeidsvals_of_right_truncate (G : zxgraph) (v : nat) 
-  : list (nat * zxnode) :=
-  filter_key (fun k => ¬ v =? k) G.(nodeids) G.(nodevals).
+Definition nodeidsvals_of_right_truncate (nodeids : list nat)
+  (nodevals : list zxnode) (v : nat) : list (nat * zxnode) :=
+  filter_key (fun k => ¬ v =? k) nodeids nodevals.
 
-Lemma len_filter_key {A B} (f : A -> bool) (l : list A) (l' : list B) :
-  length (fst (split (filter_key f l l'))) 
-  = length (snd (split (filter_key f l l'))).
-Proof.
-  rewrite split_length_r, split_length_l; easy.
-Qed.
+Definition nodeids_of_right_truncate (nodeids : list nat)
+  (nodevals : list zxnode) (v : nat) : list nat :=
+  fst (split (nodeidsvals_of_right_truncate nodeids nodevals v)).
 
-Definition nodeids_of_right_truncate (G : zxgraph) (v : nat) : list nat :=
-  fst (split (nodeidsvals_of_right_truncate G v)).
+Definition nodevals_of_right_truncate (nodeids : list nat)
+  (nodevals : list zxnode) (v : nat) : list zxnode :=
+  snd (split (nodeidsvals_of_right_truncate nodeids nodevals v)).
 
-Definition nodes_of_right_truncate (G : zxgraph) (v : nat) : list zxnode :=
-  snd (split (nodeidsvals_of_right_truncate G v)).
-
-Notation input_degree G v :=
-  (count_occ Nat.eq_dec G.(inputs) v).
-
-Notation output_degree G v :=
-  (count_occ Nat.eq_dec G.(outputs) v).
-
-Definition num_ids_of_right_truncate (G : zxgraph) (v : nat) :=
-  G.(num_ids) + input_degree G v.
-
-Definition right_truncate (G : zxgraph) (v : nat) : zxgraph :=
-  {|
-    inputs := inputs_of_right_truncate G v;
-    outputs := outputs_of_right_truncate G v;
-    nodeids := nodeids_of_right_truncate G v;
-    nodevals := nodes_of_right_truncate G v;
-    edges := edges_of_right_truncate G v;
-    num_ids := num_ids_of_right_truncate G v;
-  |}.
+Definition num_ids_of_right_truncate (num_ids : nat) 
+  (inputs : list nat) (v : nat) :=
+  num_ids + count_occ Nat.eq_dec inputs v.
 
 
-
-End GraphToDiagram.
-
-
-Module WFzxgraph.
-
-Import PermToZX GraphToDiagram.
-
-Definition WFzxgraph (G : zxgraph) : Prop :=
-  length G.(nodeids) = length G.(nodevals) 
-  /\ NoDup G.(nodeids)
-  /\ Forall 
-    (fun e => 
-    match e with
-    | (e1, e2) => 
-      In e1 G.(nodeids) /\ In e2 G.(nodeids)
-    end) G.(edges)
-  /\ Forall 
-    (fun k => In k G.(nodeids))
-    (G.(inputs) ++ G.(outputs)).
-
-Section WFzxgraph_dec.
-
-Fixpoint NoDupb {A} (eqbA : A -> A -> bool) (l : list A) : bool :=
-  match l with
-  | [] => true
-  | x :: ls => negb (Inb eqbA x ls) && NoDupb eqbA ls
-  end.
-
-Lemma NoDupP {A} {eqbA : A -> A -> bool} 
-  (eqb_eqA : forall a b : A, reflect (a = b) (eqbA a b)) :
-  forall (l : list A), 
-  reflect (NoDup l) (NoDupb eqbA l).
-Proof.
-  intros l.
-  apply iff_reflect.
-  induction l; [split; easy+constructor|].
-  simpl.
-  rewrite NoDup_cons_iff.
-  rewrite (Inb_In eqb_eqA).
-  rewrite andb_true_iff, negb_true_iff, IHl.
-  apply and_iff_compat_r.
-  destruct (Inb eqbA a l); easy.
-Qed.
-
-Lemma NoDup_Nodupb {A} {eqbA : A -> A -> bool} 
-  (eqb_eqA : forall a b : A, reflect (a = b) (eqbA a b)) :
-  forall (l : list A), 
-  NoDup l <-> NoDupb eqbA l = true.
-Proof.
-  now intros; apply reflect_iff, NoDupP.
-Qed.
-
-
-
-Definition WFzxgraphb (G : zxgraph) : bool :=
-  (length G.(nodeids) =? length G.(nodevals) )
-  && NoDupb eqb G.(nodeids)
-  && forallb 
-    (fun e : edge => let (e1, e2) := e in 
-      Inb eqb e1 G.(nodeids) && Inb eqb e2 G.(nodeids)) G.(edges)
-  && forallb
-    (fun a : nat => Inb eqb a G.(nodeids))
-    (G.(inputs) ++ G.(outputs)).
-
-Lemma forall_iff {A} (P Q : A -> Prop) :
-  (forall a, (P a <-> Q a)) ->
-  ((forall a, P a) <-> (forall a, Q a)).
-Proof.
-  intros Hiff.
-  now setoid_rewrite Hiff.
-Qed.
-
-Lemma and_iff_compat (P P' Q Q' : Prop) : 
-  (P <-> P') -> (Q <-> Q') ->
-  (P /\ Q <-> P' /\ Q').
-Proof.
-  now intros Hl Hr; rewrite Hl, Hr.
-Qed.
-
-Lemma or_iff_compat (P P' Q Q' : Prop) : 
-  (P <-> P') -> (Q <-> Q') ->
-  (P \/ Q <-> P' \/ Q').
-Proof.
-  now intros Hl Hr; rewrite Hl, Hr.
-Qed.
-
-Lemma WFzxgraph_WFzxgraphb (G : zxgraph) : 
-  WFzxgraph G <-> WFzxgraphb G = true.
-Proof.
-  destruct G.
-  unfold WFzxgraph, WFzxgraphb.
-  simpl.
-  rewrite 3!andb_true_iff, Nat.eqb_eq.
-  rewrite !and_assoc.
-  apply and_iff_compat_l.
-  rewrite (NoDup_Nodupb beq_reflect).
-  apply and_iff_compat_l.
-  rewrite 2!forallb_forall, 2!Forall_forall.
-  apply and_iff_compat; 
-  apply forall_iff; [intros []|intros]; 
-  apply imp_iff_compat_l.
-  - now rewrite andb_true_iff, 2!(Inb_In beq_reflect).
-  - now rewrite (Inb_In beq_reflect). 
-Qed.
-
-Lemma WFzxgraphP (G : zxgraph) : 
-  reflect (WFzxgraph G) (WFzxgraphb G).
-Proof.
-  apply iff_reflect, WFzxgraph_WFzxgraphb.
-Qed.
-
-
-
-End WFzxgraph_dec.
-
-
-
-Section WFzxgraph_results.
-
-Context (G : zxgraph) (HG : WFzxgraph G).
-
-Lemma NoDup_nodeids : NoDup (G.(nodeids)).
-Proof. apply HG. Qed.
-
-Lemma length_nodeids_nodevals : length G.(nodeids) = length G.(nodevals).
-Proof. apply HG. Qed.
-
-Lemma edge_members_in : Forall 
-  (fun e : edge => let (e1, e2) := e in 
-  In e1 (G.(nodeids)) 
-  /\ In e2 (G.(nodeids))) G.(edges).
-Proof. apply HG. Qed.
-
-
-End WFzxgraph_results.
-
-Lemma length_nodeids_nodes_right_truncate (G : zxgraph) (v : nat) : 
-  length (nodeids_of_right_truncate G v) = length (nodes_of_right_truncate G v).
+Lemma length_nodeids_nodes_right_truncate nodeids nodevals (v : nat) : 
+  length (nodeids_of_right_truncate nodeids nodevals v) 
+  = length (nodevals_of_right_truncate nodeids nodevals v).
 Proof.
   apply len_filter_key.
 Qed.
@@ -1514,10 +1384,10 @@ Proof.
   - apply IHl, Hl.
 Qed.
 
-Lemma NoDup_nodeids_right_truncate (G : zxgraph) (v : nat) (HG : WFzxgraph G) :
-  NoDup (nodeids_of_right_truncate G v).
+Lemma NoDup_nodeids_right_truncate nodeids nodevals (v : nat) (H : NoDup nodeids) :
+  NoDup (nodeids_of_right_truncate nodeids nodevals v).
 Proof.
-  apply NoDup_filter_key, HG.
+  apply NoDup_filter_key, H.
 Qed.
 
 Lemma fst_filter_key_length_le {A B} (f : A -> bool) (l : list A) (l' : list B) 
@@ -1542,22 +1412,21 @@ Proof.
   rewrite filter_In; easy.
 Qed.
 
-Lemma forall_in_nodeids_edges_right_truncate 
-  (G : zxgraph) (v : nat) (HG : WFzxgraph G) : 
+Lemma forall_in_nodeids_edges_right_truncate edges nodeids nodevals
+  (v : nat) (Hlen : length nodeids = length nodevals) 
+  (Hmem : Forall (fun e => 
+    match e with
+    | (e1, e2) => In e1 nodeids /\ In e2 nodeids
+    end) edges): 
   Forall
   (fun e : edge =>
     match e with
     | (e1, e2) =>
-        In e1 (nodeids_of_right_truncate G v) 
-        /\ In e2 (nodeids_of_right_truncate G v)
+        In e1 (nodeids_of_right_truncate nodeids nodevals v) 
+        /\ In e2 (nodeids_of_right_truncate nodeids nodevals v)
     end)
-  (edges_of_right_truncate G v).
+  (edges_of_right_truncate edges v).
 Proof.
-  destruct G as [inputs outputs nodeids nodevals edges num_ids].
-  pose proof (length_nodeids_nodevals _ HG) as Hlen.
-  pose proof (edge_members_in _ HG) as Hmem.
-  simpl in Hmem, Hlen.
-  clear HG.
   unfold nodeids_of_right_truncate, 
   nodeidsvals_of_right_truncate, edges_of_right_truncate.
   simpl.
@@ -1575,25 +1444,29 @@ Proof.
   bdestruct_all; easy.
 Qed.
 
-Lemma nodeids_of_right_truncate_eq (G : zxgraph) (v : nat) (HG : WFzxgraph G) : 
-  nodeids_of_right_truncate G v = 
-  filter (fun k => ¬ v =? k) G.(nodeids).
+Lemma nodeids_of_right_truncate_eq nodeids nodevals (v : nat)
+  (Hlen : length nodeids = length nodevals) : 
+  nodeids_of_right_truncate nodeids nodevals v = 
+  filter (fun k => ¬ v =? k) nodeids.
 Proof.
   apply fst_filter_key_length_le.
-  destruct HG; lia.
+  lia.
 Qed.
 
-Lemma forall_in_nodeids_inputs_outputs 
-  (G : zxgraph) (v : nat) (HG : WFzxgraph G) : 
-  Forall (fun k : nat => In k (nodeids_of_right_truncate G v))
-  (inputs_of_right_truncate G v ++ outputs_of_right_truncate G v).
+Lemma forall_in_nodeids_inputs_outputs inputs outputs nodeids nodevals edges
+  (v : nat) (Hlen : length nodeids = length nodevals) 
+  (Hmem : Forall (fun e => 
+    match e with
+    | (e1, e2) => In e1 nodeids /\ In e2 nodeids
+    end) edges)
+  (Hin : Forall (fun k : nat => In k nodeids) (inputs ++ outputs)) : 
+  Forall (fun k : nat => In k (nodeids_of_right_truncate nodeids nodevals v))
+  (inputs_of_right_truncate inputs v 
+  ++ outputs_of_right_truncate edges outputs v).
 Proof.
-  destruct G as [inputs outputs nodeids nodevals edges num_ids].
   rewrite nodeids_of_right_truncate_eq by easy.
   unfold inputs_of_right_truncate, outputs_of_right_truncate.
   simpl.
-  destruct HG as [_ [_ [Hmem Hin]]].
-  simpl in Hin, Hmem.
   rewrite 2!Forall_app in *.
   rewrite 3!Forall_forall in *.
   destruct Hin as [Hin_in Hin_out].
@@ -1620,28 +1493,10 @@ Proof.
   apply IHes, Hin.
 Qed.
 
-Lemma WF_right_truncate (G : zxgraph) (v : nat) (HG : WFzxgraph G) :
-  WFzxgraph (right_truncate G v).
+Lemma nodeidsvals_of_right_truncate_not_In nodeids nodevals
+  (vid : nat) (Hnin : ~ In vid nodeids) : 
+  nodeidsvals_of_right_truncate nodeids nodevals vid = combine nodeids nodevals.
 Proof.
-  unfold right_truncate, WFzxgraph.
-  simpl; repeat split.
-  - apply length_nodeids_nodes_right_truncate.
-  - apply NoDup_nodeids_right_truncate, HG.
-  - apply forall_in_nodeids_edges_right_truncate, HG.
-  - apply forall_in_nodeids_inputs_outputs, HG.
-Qed.
-
-
-Section GraphTranslation.
-
-
-
-Lemma nodeidsvals_of_right_truncate_not_In (G : zxgraph) 
-  (vid : nat) (Hnin : ~ In vid G.(nodeids)) : 
-  nodeidsvals_of_right_truncate G vid = combine G.(nodeids) G.(nodevals).
-Proof.
-  destruct G as [inputs outputs nodeids nodevals edges num_ids].
-  simpl in *.
   revert nodevals;
   induction nodeids as [|n ns IHns]; [easy|];
   intros nodevals.
@@ -1656,147 +1511,23 @@ Proof.
   easy.
 Qed.
 
-
-(* Lemma nodeidsvals_of_right_truncate_hd {inputs outputs nodeids 
-  nodevals edges num_ids}
-  (vid : nat) (vnode : zxnode) :
-  NoDup (vid :: nodeids) ->
-  length nodeids = length nodevals ->
-  let Gbase := {|
-    inputs := inputs;
-    outputs := outputs;
-    nodeids := vid::nodeids;
-    nodevals := vnode::nodevals;
-    edges := edges;
-    num_ids := num_ids;
-  |} in
-  nodeidsvals_of_right_truncate Gbase vid = combine nodeids nodevals.
-Proof.
-  unfold nodeidsvals_of_right_truncate.
-
-  revert nodevals; 
-  induction nodeids as [| n ns IHns'];
-  intros nodevals Hdup Hlength.
-  - simpl.
-    unfold nodeidsvals_of_right_truncate.
-    simpl.
-    bdestruct_all; easy.
-  - assert (Hnodup : NoDup (vid :: ns)). 1:{
-      rewrite 2!NoDup_cons_iff in *.
-      split; try apply Hdup.
-      intros Hf.
-      apply (proj1 Hdup).
-      right; easy.
-    }
-    pose proof (fun nodevals => IHns' nodevals Hnodup) as IHns.
-    simpl in IHns.
-    unfold nodeidsvals_of_right_truncate in IHns.
-    simpl in IHns.
-    bdestruct (vid =? vid); [|easy].
-    simpl in IHns.
-    specialize (IHns )
-    rewrite NoDup_cons_iff in Hdup.
-
-    Search (NoDup (_ :: _ :: _)).
-  [easy|]. *)
-
-
-
-Lemma nodeidsvals_of_right_truncate_hd 
-  {inputs outputs nodeids nodevals edges num_ids}
+Lemma nodeidsvals_of_right_truncate_hd nodeids nodevals 
   (vid : nat) (vnode : zxnode) : 
-  let Gbase := {|
-    inputs := inputs;
-    outputs := outputs;
-    nodeids := vid::nodeids;
-    nodevals := vnode::nodevals;
-    edges := edges;
-    num_ids := num_ids;
-  |}
-  in
   NoDup (vid :: nodeids) ->
-  nodeidsvals_of_right_truncate Gbase vid = combine nodeids nodevals.
+  nodeidsvals_of_right_truncate (vid::nodeids) (vnode::nodevals) vid 
+  = combine nodeids nodevals.
 Proof.
-  simpl.
   intros Hdup.
   unfold nodeidsvals_of_right_truncate.
   simpl.
   bdestruct_all.
   simpl.
-  set (Gfree := {|
-    inputs := inputs;
-    outputs := outputs;
-    nodeids := nodeids;
-    nodevals := nodevals;
-    edges := edges;
-    num_ids := num_ids;
-  |}).
   rewrite NoDup_cons_iff in Hdup.
-  apply (nodeidsvals_of_right_truncate_not_In Gfree vid).
-  apply Hdup.
+  apply nodeidsvals_of_right_truncate_not_In, Hdup.
 Qed.
-
-Lemma right_truncate_hd {inputs outputs nodeids nodevals edges num_ids}
-  (vid : nat) (vnode : zxnode) : 
-  let Gbase := {|
-    inputs := inputs;
-    outputs := outputs;
-    nodeids := vid::nodeids;
-    nodevals := vnode::nodevals;
-    edges := edges;
-    num_ids := num_ids;
-  |}
-  in
-  NoDup (vid :: nodeids) ->
-  length nodeids = length nodevals ->
-  right_truncate Gbase vid = {|
-    inputs := inputs_of_right_truncate Gbase vid;
-    outputs := outputs_of_right_truncate Gbase vid;
-    nodeids := nodeids;
-    nodevals := nodevals;
-    edges := edges_of_right_truncate Gbase vid;
-    num_ids := num_ids_of_right_truncate Gbase vid;
-  |}.
-Proof.
-  simpl.
-  intros Hdup Hlen.
-  unfold right_truncate.
-  f_equal;
-  unfold nodeids_of_right_truncate, nodes_of_right_truncate;
-  rewrite (nodeidsvals_of_right_truncate_hd vid vnode Hdup);
-  rewrite (combine_split _ _ Hlen); easy.
-Qed.
-
-
-Local Open Scope nat_scope.
-
-Definition graph_in_size (G : zxgraph) : nat :=
-  G.(num_ids) + length G.(inputs).
-
-Definition graph_out_size (G : zxgraph) : nat :=
-  G.(num_ids) + length G.(outputs).
 
 Definition nwire_cast {n n' : nat} (H : n = n') : ZX n n' :=
   cast n n' H eq_refl (n_wire n').
-
-Lemma right_truncate_cast_pf_one (G : zxgraph) (v : nat) : 
-  graph_in_size G = graph_in_size (right_truncate G v).
-Proof.
-  destruct G as [inputs outputs nodeids nodevals edges num_ids].
-  simpl.
-  unfold right_truncate, graph_in_size, num_ids_of_right_truncate.
-  simpl.
-  rewrite <- Nat.add_assoc.
-  f_equal.
-  unfold inputs_of_right_truncate.
-  simpl.
-  induction inputs as [|a inputs IHinp]; [easy|].
-  simpl; rewrite IHinp.
-  destruct (Nat.eq_dec a v);
-  bdestruct (v =? a); try congruence;
-  try easy; simpl.
-  lia.
-Qed.
 
 
 Fixpoint kth_occ (l : list nat) (k : nat) (v : nat) : nat :=
@@ -2044,78 +1775,358 @@ Fixpoint add_k_self_loops_to_spider {n m} (k : nat)
       (⊂ ↕ (n_wire (k' + n)) ⟷ (— ↕ cur) ⟷ (⊃ ↕ (n_wire (k' + m))))
   end cur.
 
-Definition vtx_in_size (G : zxgraph) (v : nat) : nat :=
-  G.(num_ids)
-  + ((input_degree G v
-  + length (neighborhood_no_self G.(edges) v))
-  + length (filter (fun k => ¬ v =? k) G.(outputs))).
+End GraphToDiagram_prelim.
+
+
+Module GraphToDiagram.
+
+Export GraphToDiagram_prelim.
+
+(* Local Notation zxnode := (nat * bool * R)%type.
+Local Notation node_id A := (@fst nat bool (@fst _ R A)).
+Local Notation node_typ A := (@snd nat bool (@fst _ R A)).
+Local Notation node_rot A := (@snd (nat * bool) R A). *)
+
+
+
+Record zxgraph := mk_zxgraph {
+  inputs : list nat;
+  outputs : list nat;
+  nodeids : list nat;
+  nodevals : list zxnode;
+  edges : list edge;
+  num_ids : nat;
+}.
+
+Notation input_degree G v :=
+  (count_occ Nat.eq_dec G.(inputs) v).
+
+Notation output_degree G v :=
+  (count_occ Nat.eq_dec G.(outputs) v).
+
+Definition permute_graph (f : nat -> nat) (G : zxgraph) : zxgraph :=
+  {|
+    inputs := G.(inputs);
+    outputs := G.(outputs);
+    nodeids := G.(nodeids);
+    nodevals := permute_list f G.(nodevals);
+    edges := permute_edges f G.(edges);
+    num_ids := G.(num_ids)
+  |}.
+
+Definition is_isomorphism (f : nat -> nat) (G H : zxgraph) :=
+  permute_graph f G = H.
+
+
+
+
+Definition right_truncate (G : zxgraph) (v : nat) : zxgraph :=
+  {|
+    inputs := inputs_of_right_truncate G.(inputs) v;
+    outputs := outputs_of_right_truncate G.(edges) G.(outputs) v;
+    nodeids := nodeids_of_right_truncate G.(nodeids) G.(nodevals) v;
+    nodevals := nodevals_of_right_truncate G.(nodeids) G.(nodevals) v;
+    edges := edges_of_right_truncate G.(edges) v;
+    num_ids := num_ids_of_right_truncate G.(num_ids) G.(inputs) v;
+  |}.
+
+
+
+End GraphToDiagram.
+
+
+Module WFzxgraph.
+
+Import PermToZX GraphToDiagram.
+
+Definition WFzxgraph (G : zxgraph) : Prop :=
+  length G.(nodeids) = length G.(nodevals) 
+  /\ NoDup G.(nodeids)
+  /\ Forall 
+    (fun e => 
+    match e with
+    | (e1, e2) => 
+      In e1 G.(nodeids) /\ In e2 G.(nodeids)
+    end) G.(edges)
+  /\ Forall 
+    (fun k => In k G.(nodeids))
+    (G.(inputs) ++ G.(outputs)).
+
+Section WFzxgraph_dec.
+
+
+
+
+Definition WFzxgraphb (G : zxgraph) : bool :=
+  (length G.(nodeids) =? length G.(nodevals) )
+  && NoDupb eqb G.(nodeids)
+  && forallb 
+    (fun e : edge => let (e1, e2) := e in 
+      Inb eqb e1 G.(nodeids) && Inb eqb e2 G.(nodeids)) G.(edges)
+  && forallb
+    (fun a : nat => Inb eqb a G.(nodeids))
+    (G.(inputs) ++ G.(outputs)).
+
+Lemma forall_iff {A} (P Q : A -> Prop) :
+  (forall a, (P a <-> Q a)) ->
+  ((forall a, P a) <-> (forall a, Q a)).
+Proof.
+  intros Hiff.
+  now setoid_rewrite Hiff.
+Qed.
+
+Lemma and_iff_compat (P P' Q Q' : Prop) : 
+  (P <-> P') -> (Q <-> Q') ->
+  (P /\ Q <-> P' /\ Q').
+Proof.
+  now intros Hl Hr; rewrite Hl, Hr.
+Qed.
+
+Lemma or_iff_compat (P P' Q Q' : Prop) : 
+  (P <-> P') -> (Q <-> Q') ->
+  (P \/ Q <-> P' \/ Q').
+Proof.
+  now intros Hl Hr; rewrite Hl, Hr.
+Qed.
+
+Lemma WFzxgraph_WFzxgraphb (G : zxgraph) : 
+  WFzxgraph G <-> WFzxgraphb G = true.
+Proof.
+  destruct G.
+  unfold WFzxgraph, WFzxgraphb.
+  simpl.
+  rewrite 3!andb_true_iff, Nat.eqb_eq.
+  rewrite !and_assoc.
+  apply and_iff_compat_l.
+  rewrite (NoDup_Nodupb beq_reflect).
+  apply and_iff_compat_l.
+  rewrite 2!forallb_forall, 2!Forall_forall.
+  apply and_iff_compat; 
+  apply forall_iff; [intros []|intros]; 
+  apply imp_iff_compat_l.
+  - now rewrite andb_true_iff, 2!(Inb_In beq_reflect).
+  - now rewrite (Inb_In beq_reflect). 
+Qed.
+
+Lemma WFzxgraphP (G : zxgraph) : 
+  reflect (WFzxgraph G) (WFzxgraphb G).
+Proof.
+  apply iff_reflect, WFzxgraph_WFzxgraphb.
+Qed.
+
+
+
+End WFzxgraph_dec.
+
+
+
+Section WFzxgraph_results.
+
+Context (G : zxgraph) (HG : WFzxgraph G).
+
+Lemma NoDup_nodeids : NoDup (G.(nodeids)).
+Proof. apply HG. Qed.
+
+Lemma length_nodeids_nodevals : length G.(nodeids) = length G.(nodevals).
+Proof. apply HG. Qed.
+
+Lemma edge_members_in : Forall 
+  (fun e : edge => let (e1, e2) := e in 
+  In e1 (G.(nodeids)) 
+  /\ In e2 (G.(nodeids))) G.(edges).
+Proof. apply HG. Qed.
+
+
+End WFzxgraph_results.
+
+
+
+
+Lemma WF_right_truncate (G : zxgraph) (v : nat) (HG : WFzxgraph G) :
+  WFzxgraph (right_truncate G v).
+Proof.
+  unfold right_truncate, WFzxgraph.
+  simpl; repeat split.
+  - apply length_nodeids_nodes_right_truncate.
+  - apply NoDup_nodeids_right_truncate, HG.
+  - apply forall_in_nodeids_edges_right_truncate; apply HG.
+  - apply forall_in_nodeids_inputs_outputs; apply HG.
+Qed.
+
+
+Section GraphTranslation.
+
+
+
+
+
+
+(* Lemma nodeidsvals_of_right_truncate_hd {inputs outputs nodeids 
+  nodevals edges num_ids}
+  (vid : nat) (vnode : zxnode) :
+  NoDup (vid :: nodeids) ->
+  length nodeids = length nodevals ->
+  let Gbase := {|
+    inputs := inputs;
+    outputs := outputs;
+    nodeids := vid::nodeids;
+    nodevals := vnode::nodevals;
+    edges := edges;
+    num_ids := num_ids;
+  |} in
+  nodeidsvals_of_right_truncate Gbase vid = combine nodeids nodevals.
+Proof.
+  unfold nodeidsvals_of_right_truncate.
+
+  revert nodevals; 
+  induction nodeids as [| n ns IHns'];
+  intros nodevals Hdup Hlength.
+  - simpl.
+    unfold nodeidsvals_of_right_truncate.
+    simpl.
+    bdestruct_all; easy.
+  - assert (Hnodup : NoDup (vid :: ns)). 1:{
+      rewrite 2!NoDup_cons_iff in *.
+      split; try apply Hdup.
+      intros Hf.
+      apply (proj1 Hdup).
+      right; easy.
+    }
+    pose proof (fun nodevals => IHns' nodevals Hnodup) as IHns.
+    simpl in IHns.
+    unfold nodeidsvals_of_right_truncate in IHns.
+    simpl in IHns.
+    bdestruct (vid =? vid); [|easy].
+    simpl in IHns.
+    specialize (IHns )
+    rewrite NoDup_cons_iff in Hdup.
+
+    Search (NoDup (_ :: _ :: _)).
+  [easy|]. *)
+
+
+
+Lemma right_truncate_hd {inputs outputs nodeids nodevals edges num_ids}
+  (vid : nat) (vnode : zxnode) : 
+  NoDup (vid :: nodeids) ->
+  length nodeids = length nodevals ->
+  right_truncate {|
+    inputs := inputs;
+    outputs := outputs;
+    nodeids := vid::nodeids;
+    nodevals := vnode::nodevals;
+    edges := edges;
+    num_ids := num_ids;
+  |} vid = {|
+    inputs := inputs_of_right_truncate inputs vid;
+    outputs := outputs_of_right_truncate edges outputs vid;
+    nodeids := nodeids;
+    nodevals := nodevals;
+    edges := edges_of_right_truncate edges vid;
+    num_ids := num_ids_of_right_truncate num_ids inputs vid;
+  |}.
+Proof.
+  intros Hdup Hlen.
+  unfold right_truncate.
+  f_equal;
+  unfold nodeids_of_right_truncate, nodevals_of_right_truncate;
+  simpl;
+  rewrite (nodeidsvals_of_right_truncate_hd nodeids nodevals vid vnode Hdup);
+  rewrite (combine_split _ _ Hlen); easy.
+Qed.
+
+
+Local Open Scope nat_scope.
+
+Definition graph_in_size (inputs : list nat) num_ids : nat :=
+  num_ids + length inputs.
+
+Definition graph_out_size (outputs : list nat) num_ids : nat :=
+  num_ids + length outputs.
+
+Definition vtx_in_size inputs outputs edges num_ids (v : nat) : nat :=
+  num_ids
+  + ((count_nat inputs v
+  + length (neighborhood_no_self edges v))
+  + length (filter (fun k => ¬ v =? k) outputs)).
   (* + length (outputs_of_right_truncate G v). *)
 
-Definition vtx_out_size (G : zxgraph) (v : nat) : nat :=
-  G.(num_ids)
-  + (output_degree G v
-  + length (filter (fun k => ¬ v =? k) G.(outputs))).
-
-Definition ZX_of_zxnode (zx : zxnode) (m n : nat) : ZX m n :=
-  if node_typ zx 
-  then X_Spider m n (node_rot zx) 
-  else Z_Spider m n (node_rot zx).
+Definition vtx_out_size outputs num_ids (v : nat) : nat :=
+  num_ids
+  + (count_nat outputs v
+  + length (filter (fun k => ¬ v =? k) outputs)).
 
 (* Lemma diagram_of_vtx_pf_one  *)
 
-Definition diagram_of_vtx (G : zxgraph) (v : nat) : 
-  option (ZX (vtx_in_size G v) (vtx_out_size G v)) :=
+Definition diagram_of_vtx inputs outputs nodeids nodevals edges
+  num_ids (v : nat) : 
+  option (ZX 
+    (vtx_in_size inputs outputs edges num_ids v) 
+    (vtx_out_size outputs num_ids v)) :=
   option_map 
-  (fun zx => n_wire (G.(num_ids)) 
+  (fun zx => n_wire num_ids 
     ↕ (ZX_of_zxnode zx _ _
-    ↕ n_wire _)) (get_zxnode_by_id G v).
+    ↕ n_wire _)) (get_zxnode_by_id nodeids nodevals v).
 
-Definition diagram_of_vtx_permed_pf_one (G : zxgraph) (v : nat) :=
-  (eq_sym (PermutationFacts.length_insertion_sort_list
-    (output_degree G v + length (filter (fun k : nat => ¬ v =? k) (outputs G)))
-    (PermutationDefinitions.perm_inv
-    (output_degree G v + length (filter (fun k : nat => ¬ v =? k) (outputs G)))
-        (bring_to_front_invperm (outputs_of_right_truncate G v) v)))).
+Definition zx_of_perm_casted_pf (n : nat) (f : nat -> nat) : 
+  n = length (PermutationDefinitions.insertion_sort_list n 
+  (PermutationDefinitions.perm_inv n f)) :=
+  eq_sym (PermutationFacts.length_insertion_sort_list n
+  (PermutationDefinitions.perm_inv n f)).
 
-Definition diagram_of_vtx_permed_pf_two (G : zxgraph) (v : nat) :=
-  (PermutationFacts.length_insertion_sort_list
-    (output_degree G v + length (filter (fun k : nat => ¬ v =? k) (outputs G)))
-    (PermutationDefinitions.perm_inv
-    (output_degree G v + length (filter (fun k : nat => ¬ v =? k) (outputs G)))
-      (bring_to_front_invperm (outputs_of_right_truncate G v) v))).
+Definition zx_of_perm_casted (n : nat) (f : nat -> nat) : ZX n n :=
+  cast n n (zx_of_perm_casted_pf n f) (zx_of_perm_casted_pf n f)
+  (ZXperm.zx_of_perm n f).
 
-Definition diagram_of_vtx_permed (G : zxgraph) (v : nat) : 
-  option (ZX (vtx_in_size G v) (vtx_out_size G v)) :=
+Definition diagram_of_vtx_permed inputs outputs nodeids 
+  nodevals edges num_ids (v : nat) : 
+  option (ZX 
+    (vtx_in_size inputs outputs edges num_ids v) 
+    (vtx_out_size outputs num_ids v)) :=
   option_map 
-  (fun zx => n_wire (G.(num_ids)) 
-    ↕ (ZX_of_zxnode zx _ (output_degree G v)
+  (fun zx => n_wire num_ids
+    ↕ (ZX_of_zxnode zx _ (count_occ Nat.eq_dec outputs v)
     ↕ n_wire _
-      ⟷ nwire_cast (diagram_of_vtx_permed_pf_one G v)
-      ⟷ ZXperm.zx_of_perm 
-          (output_degree G v + length (filter (fun k => ¬ v =? k) G.(outputs)))
-          (bring_to_front_invperm (outputs_of_right_truncate G v) v)
-      ⟷ nwire_cast (diagram_of_vtx_permed_pf_two G v))) 
-  (get_zxnode_by_id G v).
+      ⟷ zx_of_perm_casted _
+        (bring_to_front_invperm 
+          (outputs_of_right_truncate edges outputs v) v))) 
+  (get_zxnode_by_id nodeids nodevals v).
 
-
-Lemma right_truncate_cast_pf_two (G : zxgraph) (v : nat) : 
-  graph_out_size (right_truncate G v) = vtx_in_size G v.
+Lemma right_truncate_cast_pf_one inputs num_ids (v : nat) : 
+  graph_in_size inputs num_ids = 
+  graph_in_size 
+    (inputs_of_right_truncate inputs v)
+    (num_ids_of_right_truncate num_ids inputs v).
 Proof.
-  destruct G as [inputs outputs nodeids nodevals edges num_ids].
+  unfold right_truncate, graph_in_size, num_ids_of_right_truncate.
+  rewrite <- Nat.add_assoc.
+  f_equal.
+  unfold inputs_of_right_truncate.
   simpl.
+  induction inputs as [|a inputs IHinp]; [easy|].
+  simpl; rewrite IHinp.
+  destruct (Nat.eq_dec a v);
+  bdestruct (v =? a); try congruence;
+  try easy; simpl.
+  lia.
+Qed.
+
+Lemma right_truncate_cast_pf_two inputs outputs edges num_ids (v : nat) : 
+  graph_out_size 
+    (outputs_of_right_truncate edges outputs v)
+    (num_ids_of_right_truncate num_ids inputs v) = 
+    vtx_in_size inputs outputs edges num_ids v.
+Proof.
   unfold right_truncate, graph_out_size, 
     vtx_in_size, outputs_of_right_truncate, num_ids_of_right_truncate.
-  simpl.
   rewrite app_length.
   lia.
 Qed.
 
-Lemma right_truncate_cast_pf_three (G : zxgraph) (v : nat) : 
-  vtx_out_size G v = graph_out_size G.
+Lemma right_truncate_cast_pf_three outputs num_ids (v : nat) : 
+  vtx_out_size outputs num_ids v = graph_out_size outputs num_ids.
 Proof.
-  destruct G as [inputs outputs nodeids nodevals edges num_ids].
   unfold graph_out_size, vtx_out_size.
-  simpl.
   f_equal.
   induction outputs; [easy|].
   simpl.
@@ -2125,52 +2136,68 @@ Qed.
 
 
 
-Program Fixpoint Graph_to_ZX (nodeids : list nat) 
+Fixpoint GraphAttrs_to_ZX (nodeids : list nat) 
   (inputs : list nat) (outputs : list nat)
   (nodevals : list zxnode) (edges : list edge) (num_ids : nat) : 
-  let G := {|  
+  (* let G := {|  
     inputs := inputs;
     outputs := outputs;
     nodeids := nodeids;
     nodevals := nodevals;
     edges := edges;
     num_ids := num_ids;
-  |} in
-  option (ZX (graph_in_size G) (graph_out_size G)) := 
-  let G := {|  
+  |} in *)
+  option 
+  (ZX (graph_in_size inputs num_ids) 
+      (graph_out_size outputs num_ids)) := 
+  (* let G := {|  
     inputs := inputs;
     outputs := outputs;
     nodeids := nodeids;
     nodevals := nodevals;
     edges := edges;
     num_ids := num_ids;
-  |} in
+  |} in *)
   match nodeids, nodevals with
   | [], _ 
-  | _, [] => match Nat.eq_dec (graph_in_size G) (graph_out_size G) with
+  | _, [] => 
+    match Nat.eq_dec 
+      (graph_in_size inputs num_ids) 
+      (graph_out_size outputs num_ids) with
     | left Heq => Some (nwire_cast Heq)
     | right Hneq => None
     end
   | vtx :: nodeids', zx :: nodevals' => 
-    match (diagram_of_vtx G vtx) with
+    match (diagram_of_vtx inputs outputs 
+      nodeids nodevals edges num_ids vtx) with
     | Some vtx_zx => 
       (option_map 
         (fun graph_zx =>
-        nwire_cast (right_truncate_cast_pf_one G vtx) ⟷
+        
+        (n_wire num_ids ↕ 
+        zx_of_perm_casted 
+          (length inputs)
+          (bring_to_front_perm inputs vtx)) ⟷
+        nwire_cast (right_truncate_cast_pf_one inputs num_ids vtx) ⟷
         graph_zx ⟷
-        nwire_cast (right_truncate_cast_pf_two G vtx) ⟷
+        nwire_cast (right_truncate_cast_pf_two inputs 
+          outputs edges num_ids vtx) ⟷
         vtx_zx ⟷
-        nwire_cast (right_truncate_cast_pf_three G vtx))
-        (Graph_to_ZX 
+        nwire_cast (right_truncate_cast_pf_three outputs num_ids vtx))
+        (GraphAttrs_to_ZX 
           nodeids'
-          (inputs_of_right_truncate G vtx)
-          (outputs_of_right_truncate G vtx)
+          (inputs_of_right_truncate inputs vtx)
+          (outputs_of_right_truncate edges outputs vtx)
           nodevals'
-          (edges_of_right_truncate G vtx)
-          (num_ids_of_right_truncate G vtx)))
+          (edges_of_right_truncate edges vtx)
+          (num_ids_of_right_truncate num_ids inputs vtx)))
     | None => None
     end
   end.
+
+Definition Graph_to_ZX (G : zxgraph) :=
+  GraphAttrs_to_ZX G.(nodeids) G.(inputs) G.(outputs) 
+    G.(nodevals) G.(edges) G.(num_ids).
 
 Lemma inputs_of_empty_nodeids (G : zxgraph) (HG : WFzxgraph G) 
   (Hnode : G.(nodeids) = []) : G.(inputs) = [].
@@ -2196,31 +2223,17 @@ Qed.
 
 Lemma graph_in_size_eq_graph_out_size (G : zxgraph) (HG : WFzxgraph G) 
   (Hnode : G.(nodeids) = []) :
-  graph_in_size G = graph_out_size G.
+  graph_in_size G.(inputs) G.(num_ids) = graph_out_size G.(outputs) G.(num_ids).
 Proof.
   unfold graph_in_size, graph_out_size.
   now rewrite (inputs_of_empty_nodeids _ HG Hnode),
     (outputs_of_empty_nodeids _ HG Hnode).
 Qed.
 
-Lemma nat_eq_dec_eq {m n : nat} (H : m = n) : 
-  Nat.eq_dec m n = left H.
-Proof.
-  destruct (Nat.eq_dec m n); [|easy].
-  f_equal.
-  apply UIP_nat.
-Qed.
-
 Lemma diagram_of_vtx_hd inputs outputs ns nvs edges num_ids n v :
   exists zx, 
-  diagram_of_vtx {|
-      inputs := inputs;
-      outputs := outputs;
-      nodeids := n :: ns;
-      nodevals := v :: nvs;
-      edges := edges;
-      num_ids := num_ids
-    |} n = Some zx.
+  diagram_of_vtx inputs outputs (n::ns)
+    (v::nvs) edges num_ids n = Some zx.
 Proof.
   unfold diagram_of_vtx, get_zxnode_by_id.
   simpl.
@@ -2228,7 +2241,7 @@ Proof.
   eexists; easy.
 Qed.
 
-Lemma Graph_to_ZX_WFzxgraph (nodeids : list nat) 
+Lemma GraphAttrs_to_ZX_WFzxgraph (nodeids : list nat) 
   (inputs : list nat) (outputs : list nat)
   (nodevals : list zxnode) (edges : list edge) (num_ids : nat) : 
   WFzxgraph {|
@@ -2240,12 +2253,15 @@ Lemma Graph_to_ZX_WFzxgraph (nodeids : list nat)
     num_ids := num_ids;
   |} -> 
   exists zx, 
-  Graph_to_ZX nodeids inputs outputs nodevals edges num_ids = Some zx.
+  GraphAttrs_to_ZX nodeids inputs outputs 
+    nodevals edges num_ids = Some zx.
 Proof.
   revert inputs outputs nodevals edges num_ids;
   induction nodeids as [|v ns IHns]; [simpl|].
   - intros * HG.
-    rewrite (nat_eq_dec_eq (graph_in_size_eq_graph_out_size _ HG eq_refl)).
+    pose proof (nat_eq_dec_eq 
+      (graph_in_size_eq_graph_out_size _ HG eq_refl)) as p;
+      simpl in p; rewrite p; clear p.
     eexists; reflexivity.
   - intros inputs outputs nodevals edges num_ids HG.
     destruct nodevals as [|n nvs]; [destruct HG; easy|].
@@ -2266,6 +2282,18 @@ Proof.
     eexists; reflexivity.
 Qed.
 
+Lemma Graph_to_ZX_WFzxgraph (G : zxgraph) (HG : WFzxgraph G) : 
+  exists zx, 
+  Graph_to_ZX G = Some zx.
+Proof.
+  apply GraphAttrs_to_ZX_WFzxgraph, HG.
+Qed.
+
+
+
+
+Section ZXperm_temp.
+
 Lemma ZXperm_le_1 {n} (zx : ZX n n) (Hzx : ZXperm.ZXperm n zx) 
   (Hn : n <= 1) : zx ∝ n_wire n.
 Proof.
@@ -2285,7 +2313,6 @@ Lemma ZXperm_0 (zx : ZX 0 0) (Hzx : ZXperm.ZXperm 0 zx) : zx ∝ ⦰.
 Proof.
   now rewrite ZXperm_le_1 by (easy + lia).
 Qed.
-
 
 Lemma X_spider_ZXperm_absorption_l {n} (zx : ZX n n) 
   (Hzx : ZXperm.ZXperm n zx) (m : nat) (r : R) :
@@ -2344,6 +2371,7 @@ Proof.
   apply (X_spider_ZXperm_absorption_r zx Hzx n r).
 Qed.
 
+End ZXperm_temp.
 
 End GraphTranslation.
 
