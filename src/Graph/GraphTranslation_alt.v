@@ -1600,15 +1600,6 @@ Proof.
   match k with 
   match count_occ  *)
 
-Definition bring_to_front_perm (l : list nat) (v : nat) : nat -> nat :=
-  fun k =>
-    match Nat.eq_dec k v with
-    | left Heq => 
-      count_occ Nat.eq_dec (firstn k l) v
-    | right Hneq =>
-      count_occ Nat.eq_dec (skipn k l) v + k
-    end.
-
 Fixpoint nth_neq (idx : nat) (l : list nat) (v : nat) (def : nat) : nat :=
   match l with
   | [] => def
@@ -1623,14 +1614,253 @@ Fixpoint nth_neq (idx : nat) (l : list nat) (v : nat) (def : nat) : nat :=
   end.
 
 Definition bring_to_front_invperm (l : list nat) (v : nat) : nat -> nat :=
-  let n := count_occ Nat.eq_dec l v in 
   fun k =>
-    match bool_dec (k <? n) true with
-    | left Heq =>
-        kth_occ l k v
+    if k <? count_occ Nat.eq_dec l v
+    then kth_occ l k v
+    else nth_neq k l v k.
+
+Definition bring_to_front_perm (l : list nat) (v : nat) : nat -> nat :=
+  fun k =>
+  if k <? length l then
+    match Nat.eq_dec (nth k l (S v)) v with
+    | left Heq => 
+      count_occ Nat.eq_dec (firstn k l) v
     | right Hneq =>
-        nth_neq (k - n) l v k
-    end.
+      count_occ Nat.eq_dec (skipn k l) v + k
+    end
+  else k.
+
+Lemma bring_to_front_perm_WF (l : list nat) (v : nat) :
+  forall k, length l <= k -> 
+  bring_to_front_perm l v k = k.
+Proof.
+  intros; unfold bring_to_front_perm; bdestruct_all; lia.
+Qed.
+
+Lemma bring_to_front_perm_0 (l : list nat) (v a : nat) : 
+  bring_to_front_perm (a :: l) v 0 = 
+  if Nat.eq_dec a v then 0 else count_nat l v.
+Proof.
+  unfold bring_to_front_perm.
+  simpl. 
+  destruct (Nat.eq_dec a v); lia.
+Qed.
+
+Lemma bring_to_front_perm_hd (l : list nat) (v a k : nat) : 
+  bring_to_front_perm (a :: l) v (S k) = 
+  if k <? length l then
+  (if (Nat.eq_dec a v) 
+  then S (bring_to_front_perm l v k)
+  else 
+    if (Nat.eq_dec (nth k l (S v)) v) 
+    then bring_to_front_perm l v k
+    else S (bring_to_front_perm l v k)
+  )
+  else (S k).
+Proof.
+  unfold bring_to_front_perm.
+  simpl.
+  destruct (Nat.eq_dec a v);
+  destruct (Nat.eq_dec (nth k l (S v)) v); 
+  bdestruct_all; easy.
+Qed.
+
+Lemma bring_to_front_perm_hd' (l : list nat) (v a k : nat) : 
+  bring_to_front_perm (a :: l) v (S k) = 
+  if k <? length l then
+  (if (¬ a =? v) && (nth k l (S v) =? v) 
+    then bring_to_front_perm l v k
+    else S (bring_to_front_perm l v k))
+  else (S k).
+Proof.
+  rewrite bring_to_front_perm_hd.
+  destruct (Nat.eq_dec a v), (Nat.eq_dec (nth k l (S v)) v);
+  bdestruct_all; simpl; lia.
+Qed.
+
+Lemma bring_to_front_not_In (l : list nat) (v : nat) (Hv : ~ In v l) :
+  forall k, bring_to_front_perm l v k = k.
+Proof.
+  induction l; [easy|].
+  intros k.
+  simpl in Hv.
+  specialize (IHl (fun k => Hv (or_intror k))).
+  destruct k.
+  - rewrite bring_to_front_perm_0.
+    destruct (Nat.eq_dec a v); [easy|].
+    apply count_occ_not_In.
+    auto. 
+  - rewrite bring_to_front_perm_hd.
+    destruct (Nat.eq_dec a v); [lia|].
+    bdestruct (k <? length l); [|easy].
+    rewrite IHl.
+    destruct (Nat.eq_dec (nth k l (S v)) v); [|easy].
+    exfalso. 
+    apply Hv; right.
+    replace <- v.
+    apply nth_In; easy.
+Qed.
+
+Lemma nth_eq_lt_length {l : list nat} {k : nat} {v : nat} :
+  nth k l (S v) = v ->
+  k < length l.
+Proof.
+  revert k;
+  induction l; intros k.
+  - destruct k; 
+    simpl; lia.
+  - destruct k.
+    + simpl; lia.
+    + simpl.
+      intros H.
+      specialize (IHl k H).
+      lia.
+Qed.
+
+Lemma bring_to_front_perm_nth_eq_v (l : list nat) (v k : nat)
+  (Hk : nth k l (S v) = v) :
+  bring_to_front_perm l v k < count_nat l v.
+Proof.
+  revert k Hk.
+  induction l; [destruct k; simpl; lia|].
+  destruct k.
+  - rewrite bring_to_front_perm_0.
+    simpl.
+    intros Heq.
+    rewrite (nat_eq_dec_eq Heq); lia.
+  - simpl. 
+    intros Heq.
+    specialize (IHl k Heq).
+    rewrite bring_to_front_perm_hd.
+    pose proof (nth_eq_lt_length Heq).
+    bdestruct (k <? length l); [|lia].
+    rewrite (nat_eq_dec_eq Heq).
+    destruct (Nat.eq_dec a v); lia.
+Qed.
+
+Lemma bring_to_front_perm_nth_neq {l : list nat} {v k : nat} :
+  nth k l (S v) <> v -> 
+  count_nat l v <= bring_to_front_perm l v k.
+Proof.
+  revert k; 
+  induction l; 
+  intros k; [simpl; lia|].
+  destruct k.
+  - rewrite bring_to_front_perm_0.
+    simpl.
+    intros.
+    destruct (Nat.eq_dec a v); easy.
+  - simpl.
+    rewrite bring_to_front_perm_hd.
+    intros Hk.
+    specialize (IHl k Hk).
+    destruct (Nat.eq_dec (nth k l (S v)) v); [easy|].
+    pose proof (count_occ_bound Nat.eq_dec v l).
+    destruct (Nat.eq_dec a v); bdestruct_all; lia.
+Qed.
+
+Lemma bring_to_front_perm_bounded (l : list nat) (v : nat) : 
+  forall k, k < length l -> 
+  bring_to_front_perm l v k < length l.
+Proof.
+  induction l; [easy|].
+  simpl.
+  intros k.
+  destruct k.
+  - intros _.
+    rewrite bring_to_front_perm_0.
+    pose proof (count_occ_bound Nat.eq_dec v l).
+    destruct (Nat.eq_dec a v); lia.
+  - intros Hlt.
+    rewrite bring_to_front_perm_hd'.
+    specialize (IHl k ltac:(lia)).
+    bdestruct_all; simpl; lia.
+Qed.
+
+Lemma bring_to_front_perm_aux (l : list nat) (v : nat) : 
+  forall k j, 
+  bring_to_front_perm l v k = bring_to_front_perm l v j ->
+  j <? length l = (k <? length l).
+Proof.
+  intros k j Heq.
+  bdestruct (j <? length l); bdestruct (k <? length l); try easy;
+  epose proof (bring_to_front_perm_WF _ v _ ltac:(eassumption));
+  epose proof (bring_to_front_perm_bounded _ v _ ltac:(eassumption));
+  lia.
+Qed.
+
+Lemma ltb_S (n m : nat) : 
+  (S n <? S m) = (n <? m).
+Proof.
+  bdestruct_all; lia.
+Qed.
+
+Lemma bring_to_front_perm_inj (l : list nat) (v : nat) : 
+  forall k j, bring_to_front_perm l v k = bring_to_front_perm l v j ->
+  k = j.
+Proof.
+  induction l.
+  - intros k j.
+    rewrite 2! bring_to_front_perm_WF by (simpl; lia); easy.
+  - intros k j Heq.
+    pose proof (bring_to_front_perm_aux _ _ _ _ Heq) as Hlt.
+    revert j Heq Hlt.
+    destruct k.
+    intros j.
+    destruct j.
+    + easy.
+    + rewrite bring_to_front_perm_0.
+      rewrite bring_to_front_perm_hd.
+      destruct (Nat.eq_dec a v); [bdestruct_all; easy|].
+      bdestruct_all; simpl in *; try lia.
+      destruct (Nat.eq_dec (nth j l (S v)) v).
+      * pose proof (bring_to_front_perm_nth_eq_v _ _ _ e).
+        lia.
+      * pose proof (bring_to_front_perm_nth_neq n0).
+        lia.
+    + intros j.
+      destruct j.
+      * rewrite bring_to_front_perm_0.
+        rewrite bring_to_front_perm_hd.
+        destruct (Nat.eq_dec a v); [bdestruct_all; easy|].
+        bdestruct_all; simpl in *; try lia.
+        destruct (Nat.eq_dec (nth k l (S v)) v).
+        --pose proof (bring_to_front_perm_nth_eq_v _ _ _ e).
+          lia.
+        --pose proof (bring_to_front_perm_nth_neq n0).
+          lia.
+      * intros H' H; revert H'.
+        simpl in H.
+        rewrite 2!ltb_S in H.
+        rewrite 2!bring_to_front_perm_hd'.
+        rewrite H.
+        bdestruct (k <? length l); [|easy].
+        bdestruct_all; simpl; auto with arith.
+        --pose proof (bring_to_front_perm_nth_eq_v l v k ltac:(easy)).
+          pose proof (bring_to_front_perm_nth_neq ltac:(eassumption)).
+          lia.
+        --pose proof (bring_to_front_perm_nth_eq_v l v j ltac:(easy)).
+          pose proof (bring_to_front_perm_nth_neq ltac:(eassumption)).
+          lia.
+Qed.
+
+(* FIXME: This is in the new quantumlib version; just need to 
+  remove this Admitted lemma once that's out *)
+Lemma permutation_iff_surjective : forall n f, 
+  permutation n f <-> 
+  (forall k, k < n -> exists k', k' < n /\ f k' = k).
+Admitted.
+
+Lemma bring_to_front_perm_permutation (l : list nat) (v : nat) : 
+  permutation (length l) (bring_to_front_perm l v).
+Proof.
+  apply permutation_iff_surjective.
+  apply PermutationFacts.surjective_of_injective_and_bounded.
+  split.
+  - intros ? ? ? ?. 
+    apply bring_to_front_perm_inj.
+  - apply bring_to_front_perm_bounded.
+Qed.
 
 Lemma count_occ_eq_S_In {A} (eq_dec : forall a b : A, {a=b}+{a<>b})
   (l : list A) (a : A) (m : nat) (Hl : count_occ eq_dec l a = S m) :
@@ -1696,11 +1926,170 @@ Proof.
   easy.
 Qed.
 
+Lemma kth_occ_count_occ_firstn (l : list nat) (k : nat) (v : nat) :
+  nth k l (S v) = v ->
+  (kth_occ l (count_occ Nat.eq_dec (firstn k l) v) v) = k.
+Proof.
+  revert k;
+  induction l.
+  - destruct k; simpl; easy + lia.
+  - destruct k as [|k].
+    + simpl.
+      intros Heq.
+      rewrite (nat_eq_dec_eq Heq).
+      easy.
+    + simpl.
+      destruct (Nat.eq_dec a v) as [Heq | Hneq];
+      intros H;
+      rewrite (IHl _ H);
+      easy.
+Qed.
 
-(* 
-TODO: this is false; needs some condition like 
-  0 < count_occ Nat.eq_dec (firstn k l) v; or more likely 
-  nth k l = v? Something to that effect.
+(* Lemma nth_neq_count_occ_firstn (l : list nat) (k : nat) (v : nat) :
+  nth k l (S v) = v ->
+  nth_neq (count_nat (firstn k l) v - count_nat l v) l v
+    (count_nat (firstn k (a :: l)) v) = k *)
+
+Lemma nth_neq_not_In (idx : nat) (l : list nat) (v def : nat) :
+  ~ In v l ->
+  nth_neq idx l v def = nth idx l def.
+Proof.
+  revert idx;
+  induction l; [destruct idx; easy|]; intros idx.
+  simpl.
+  intros Hnin.
+  destruct (Nat.eq_dec a v); [lia|].
+  destruct idx; [easy|].
+  apply IHl.
+  intros H; apply Hnin; right; easy.
+Qed.
+
+
+
+Lemma nth_neq_ge_length (l : list nat) (v def idx : nat) :
+  length l <= idx ->
+  nth_neq idx l v def = def.
+Proof.
+  revert idx;
+  induction l; [easy|]. 
+  intros idx.
+  destruct idx; [easy|].
+  simpl.
+  intros H.
+  destruct (Nat.eq_dec a v); 
+  apply IHl; lia.
+Qed.
+
+Lemma kth_occ_ge_length (l : list nat) (k v : nat) : 
+  length l <= k -> 
+  kth_occ l k v = length l.
+Proof.
+  revert k;
+  induction l; [easy|].
+  intros k Hk.
+  destruct k; [easy|].
+  simpl in *.
+  destruct (Nat.eq_dec a v);
+  rewrite IHl; lia.
+Qed.
+
+
+Lemma bring_to_front_invperm_WF (l : list nat) (v : nat) :
+  forall k, length l <= k -> 
+  bring_to_front_invperm l v k = k.
+Proof.
+  intros k Hk; unfold bring_to_front_invperm.
+  pose proof (count_occ_bound Nat.eq_dec v l).
+  bdestruct_all.
+  apply nth_neq_ge_length; easy.
+Qed.
+
+Lemma count_nat_firstn_le (l : list nat) (k v : nat) :
+  count_nat (firstn k l) v <= count_nat l v.
+Proof.
+  revert k;
+  induction l; [destruct k; easy|].
+  intros k.
+  destruct k.
+  - simpl.
+    destruct (Nat.eq_dec a v); lia.
+  - simpl.
+    destruct (Nat.eq_dec a v); specialize (IHl k); lia.
+Qed.
+
+
+
+(* Lemma count_nat_skipn_plus_gt (l : list nat) (k v : nat) :
+  k < length l -> 
+  nth k l (S v) <> v ->
+  count_nat l v < count_nat (skipn k l) v + k.
+Proof.
+  revert k;
+  induction l; [easy|];
+  intros k.
+  destruct k.
+  - simpl. *)
+
+Lemma bring_to_front_perm_linv' (l : list nat) (v : nat) :
+  forall k, k < length l ->
+  bring_to_front_invperm l v (bring_to_front_perm l v k) = k.
+Proof.
+  induction l; [easy|].
+  simpl.
+  intros k Hk.
+  unfold bring_to_front_invperm, bring_to_front_perm.
+  destruct (Nat.eq_dec (nth k (a :: l) (S v)) v) as [Heq | Hneq].
+  - simpl.
+    destruct (Nat.eq_dec a v).
+    + bdestruct_all; simpl.
+      * destruct k; [easy|simpl].
+        destruct (Nat.eq_dec a v); [|easy].
+        now rewrite (kth_occ_count_occ_firstn l k v Heq).
+      * simpl.
+        destruct k; [easy|].
+        simpl in *.
+        rewrite (nat_eq_dec_eq e) in *.
+        pose proof (count_nat_firstn_le l k v).
+        pose proof (IHl k ltac:(lia)) as Hind.
+        unfold bring_to_front_invperm, bring_to_front_perm in Hind.
+        revert Hind.
+        rewrite (nat_eq_dec_eq Heq).
+        bdestruct (k <? length l); [|lia].
+        bdestruct_all.
+        intros Hind.
+        rewrite <- Hind at 3.
+        
+
+        lia.
+    + pose proof (count_nat_firstn_le (a::l) k v).
+      simpl in H.
+      destruct (Nat.eq_dec a v); try lia.
+      bdestruct_all.
+      destruct k.
+      easy.
+      simpl in *.
+      destruct (Nat.eq_dec a v); [easy|].
+      f_equal.
+      rewrite kth_occ_count_occ_firstn; easy.
+  - bdestruct (k <? length (a :: l)); [|simpl in *; lia].
+    destruct k.
+    simpl in *.
+    destruct (Nat.eq_dec a v); [easy|].
+    rewrite 
+    bdestruct_all.
+    destruct k.
+    simpl in *.
+    destruct (Nat.eq_dec a v); try easy.
+
+    simpl in *.
+
+
+        simpl in *.
+        easy.
+        rewrite nth_neq_not_In.
+        unfold nth_neq
+Admitted.
+
 Lemma kth_occ_count_occ_firstn (l : list nat) (k : nat) (v : nat) :
   count_occ Nat.eq_dec (firstn k l) v <
     count_occ Nat.eq_dec l v ->
@@ -1739,21 +2128,7 @@ Proof.
     simpl.
   simpl. [easy|]. *)
 
-Lemma bring_to_front_perm_linv (l : list nat) (v : nat) :
-  forall k, k < length l ->
-  bring_to_front_invperm l v (bring_to_front_perm l v k) = k.
-Proof.
-  induction l; [easy|].
-  simpl.
-  intros k Hk.
-  unfold bring_to_front_invperm, bring_to_front_perm.
-  destruct (Nat.eq_dec k v) as [Heq | Hneq].
-  - simpl.
-    destruct (Nat.eq_dec a v).
-    + bdestruct_all; simpl.
-      destruct k; [easy|simpl].
-      destruct (Nat.eq_dec a v); [|easy].
-Admitted.
+
 
 Lemma bring_to_front_perm_rinv (l : list nat) (v : nat) :
   forall k, k < length l ->
@@ -1774,6 +2149,30 @@ Fixpoint add_k_self_loops_to_spider {n m} (k : nat)
     fun cur => add_k_self_loops_to_spider k' 
       (⊂ ↕ (n_wire (k' + n)) ⟷ (— ↕ cur) ⟷ (⊃ ↕ (n_wire (k' + m))))
   end cur.
+
+
+Lemma forall_iff {A} (P Q : A -> Prop) :
+  (forall a, (P a <-> Q a)) ->
+  ((forall a, P a) <-> (forall a, Q a)).
+Proof.
+  intros Hiff.
+  now setoid_rewrite Hiff.
+Qed.
+
+Lemma and_iff_compat (P P' Q Q' : Prop) : 
+  (P <-> P') -> (Q <-> Q') ->
+  (P /\ Q <-> P' /\ Q').
+Proof.
+  now intros Hl Hr; rewrite Hl, Hr.
+Qed.
+
+Lemma or_iff_compat (P P' Q Q' : Prop) : 
+  (P <-> P') -> (Q <-> Q') ->
+  (P \/ Q <-> P' \/ Q').
+Proof.
+  now intros Hl Hr; rewrite Hl, Hr.
+Qed.
+
 
 End GraphToDiagram_prelim.
 
@@ -2289,93 +2688,12 @@ Proof.
   apply GraphAttrs_to_ZX_WFzxgraph, HG.
 Qed.
 
-
-
-
-Section ZXperm_temp.
-
-Lemma ZXperm_le_1 {n} (zx : ZX n n) (Hzx : ZXperm.ZXperm n zx) 
-  (Hn : n <= 1) : zx ∝ n_wire n.
-Proof.
-  induction Hzx; try (now cleanup_zx).
-  - now rewrite <- wire_to_n_wire.
-  - specialize (IHHzx1 ltac:(lia)).
-    specialize (IHHzx2 ltac:(lia)).
-    rewrite IHHzx1, IHHzx2.
-    now rewrite n_wire_stack.
-  - specialize (IHHzx1 ltac:(lia)).
-    specialize (IHHzx2 ltac:(lia)).
-    rewrite IHHzx1, IHHzx2.
-    now rewrite nwire_removal_l.
-Qed.
-
-Lemma ZXperm_0 (zx : ZX 0 0) (Hzx : ZXperm.ZXperm 0 zx) : zx ∝ ⦰.
-Proof.
-  now rewrite ZXperm_le_1 by (easy + lia).
-Qed.
-
-Lemma X_spider_ZXperm_absorption_l {n} (zx : ZX n n) 
-  (Hzx : ZXperm.ZXperm n zx) (m : nat) (r : R) :
-  zx ⟷ X n m r ∝ X n m r.
-Proof.
-  revert m r;
-  induction Hzx; intros m r.
-  - cleanup_zx; easy.
-  - cleanup_zx; easy.
-  - apply X_self_swap_absorbtion_left_base.
-  - rewrite X_add_l_base_rot, <- compose_assoc, <- stack_compose_distr at 1.
-    rewrite IHHzx1, IHHzx2.
-    now rewrite <- X_add_l_base_rot. 
-  - now rewrite compose_assoc, IHHzx2, IHHzx1.
-Qed.
-
-Lemma X_spider_ZXperm_absorption_r {m} (zx : ZX m m) 
-  (Hzx : ZXperm.ZXperm m zx) (n : nat) (r : R) :
-  X n m r ⟷ zx ∝ X n m r.
-Proof.
-  revert n r;
-  induction Hzx; intros n' r.
-  - cleanup_zx; easy.
-  - cleanup_zx; easy.
-  - now rewrite X_self_swap_absorbtion_right_base.
-  - rewrite X_add_r_base_rot, compose_assoc at 1.
-    rewrite <- (stack_compose_distr (X 1 n0 0) zx0 (X 1 n1 0) zx1).
-    rewrite IHHzx1, IHHzx2.
-    now rewrite <- X_add_r_base_rot. 
-  - now rewrite <- compose_assoc, IHHzx1, IHHzx2.
-Qed.
-
-Lemma color_swap_ZXperm {n} (zx : ZX n n) (Hzx : ZXperm.ZXperm n zx) : 
-  color_swap zx = zx.
-Proof.
-  induction Hzx; simpl; f_equal; easy.
-Qed.
-
-Lemma Z_spider_ZXperm_absorption_l {n} (zx : ZX n n) 
-  (Hzx : ZXperm.ZXperm n zx) (m : nat) (r : R) :
-  zx ⟷ Z n m r ∝ Z n m r.
-Proof.
-  rewrite <- (color_swap_ZXperm zx) by easy.
-  apply colorswap_diagrams; simpl.
-  rewrite colorswap_involutive.
-  apply (X_spider_ZXperm_absorption_l zx Hzx m r).
-Qed.
-
-Lemma Z_spider_ZXperm_absorption_r {m} (zx : ZX m m) 
-  (Hzx : ZXperm.ZXperm m zx) (n : nat) (r : R) :
-  Z n m r ⟷ zx ∝ Z n m r.
-Proof.
-  rewrite <- (color_swap_ZXperm zx) by easy.
-  apply colorswap_diagrams; simpl.
-  rewrite colorswap_involutive.
-  apply (X_spider_ZXperm_absorption_r zx Hzx n r).
-Qed.
-
-End ZXperm_temp.
-
 End GraphTranslation.
 
 End WFzxgraph.
+
+
+
 
 
 Module DecidablePermutation.
@@ -2469,7 +2787,7 @@ Proof.
     exists (perm_inv n f); easy.
 Qed.
 
-Lemma is_permutation_E (f : nat -> nat) (n : nat) : 
+Lemma is_permutationE (f : nat -> nat) (n : nat) : 
   perm_inv_is_inv_pred f n <-> is_permutation f n = true.
 Proof.
   unfold perm_inv_is_inv_pred, is_permutation.
@@ -2481,14 +2799,657 @@ Proof.
   easy.
 Qed.
 
-Lemma permutation_dec (f : nat -> nat) (n : nat) : 
+Lemma permutation_iff_is_permutation (f : nat -> nat) (n : nat) : 
   permutation n f <-> is_permutation f n = true.
 Proof.
   rewrite permutation_iff_perm_inv_is_inv.
-  apply is_permutation_E.
+  apply is_permutationE.
 Qed.
 
+Lemma permutationP (f : nat -> nat) (n : nat) :
+  reflect (permutation n f) (is_permutation f n).
+Proof.
+  apply iff_reflect, permutation_iff_is_permutation.
+Qed.
+
+Definition permutation_dec (f : nat -> nat) (n : nat) :
+  {permutation n f} + {~ permutation n f} :=
+  reflect_dec _ _ (permutationP f n).
+
 End DecidablePermutation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Module GraphToDiagram_perm.
+
+Export GraphToDiagram_prelim.
+
+(* Local Notation zxnode := (nat * bool * R)%type.
+Local Notation node_id A := (@fst nat bool (@fst _ R A)).
+Local Notation node_typ A := (@snd nat bool (@fst _ R A)).
+Local Notation node_rot A := (@snd (nat * bool) R A). *)
+
+
+
+Record zxgraph := mk_zxgraph {
+  inputs : list nat;
+  outputs : list nat;
+  nodeids : list nat;
+  nodevals : list zxnode;
+  edges : list edge;
+  num_ids : nat;
+  left_perm : nat -> nat;
+  right_perm : nat -> nat;
+}.
+
+Notation input_degree G v :=
+  (count_occ Nat.eq_dec G.(inputs) v).
+
+Notation output_degree G v :=
+  (count_occ Nat.eq_dec G.(outputs) v).
+
+
+
+
+Definition right_truncate (G : zxgraph) (v : nat) : zxgraph :=
+  {|
+    inputs := inputs_of_right_truncate G.(inputs) v;
+    outputs := outputs_of_right_truncate G.(edges) G.(outputs) v;
+    nodeids := nodeids_of_right_truncate G.(nodeids) G.(nodevals) v;
+    nodevals := nodevals_of_right_truncate G.(nodeids) G.(nodevals) v;
+    edges := edges_of_right_truncate G.(edges) v;
+    num_ids := num_ids_of_right_truncate G.(num_ids) G.(inputs) v;
+    left_perm := G.(left_perm);
+    right_perm := bring_to_front_perm G.(outputs) v;
+  |}.
+
+
+
+End GraphToDiagram_perm.
+
+
+Module WFzxgraph_perm.
+
+Import PermToZX GraphToDiagram_perm.
+
+Definition WFzxgraph (G : zxgraph) : Prop :=
+  length G.(nodeids) = length G.(nodevals) 
+  /\ NoDup G.(nodeids)
+  /\ Forall 
+    (fun e => 
+    match e with
+    | (e1, e2) => 
+      In e1 G.(nodeids) /\ In e2 G.(nodeids)
+    end) G.(edges)
+  /\ Forall 
+    (fun k => In k G.(nodeids))
+    (G.(inputs) ++ G.(outputs))
+  /\ permutation (G.(num_ids) + length G.(inputs)) G.(left_perm)
+  /\ permutation (G.(num_ids) + length G.(outputs)) G.(right_perm).
+
+Section WFzxgraph_dec.
+
+Import DecidablePermutation.
+
+Definition WFzxgraphb (G : zxgraph) : bool :=
+  (length G.(nodeids) =? length G.(nodevals) )
+  && NoDupb eqb G.(nodeids)
+  && forallb 
+    (fun e : edge => let (e1, e2) := e in 
+      Inb eqb e1 G.(nodeids) && Inb eqb e2 G.(nodeids)) G.(edges)
+  && forallb
+    (fun a : nat => Inb eqb a G.(nodeids))
+    (G.(inputs) ++ G.(outputs))
+  && is_permutation G.(left_perm) (G.(num_ids) + length G.(inputs))
+  && is_permutation G.(right_perm) (G.(num_ids) + length G.(outputs)).
+
+Lemma WFzxgraph_WFzxgraphb (G : zxgraph) : 
+  WFzxgraph G <-> WFzxgraphb G = true.
+Proof.
+  destruct G.
+  unfold WFzxgraph, WFzxgraphb.
+  simpl.
+  rewrite 5!andb_true_iff, Nat.eqb_eq.
+  rewrite !and_assoc.
+  apply and_iff_compat_l.
+  rewrite (NoDup_Nodupb beq_reflect).
+  apply and_iff_compat_l.
+  rewrite <- !and_assoc.
+  rewrite <- 2!permutation_iff_is_permutation.
+  do 2 apply and_iff_compat_r.
+  rewrite 2!forallb_forall, 2!Forall_forall.
+  apply and_iff_compat; 
+  apply forall_iff; [intros []|intros]; 
+  apply imp_iff_compat_l.
+  - now rewrite andb_true_iff, 2!(Inb_In beq_reflect).
+  - now rewrite (Inb_In beq_reflect). 
+Qed.
+
+Lemma WFzxgraphP (G : zxgraph) : 
+  reflect (WFzxgraph G) (WFzxgraphb G).
+Proof.
+  apply iff_reflect, WFzxgraph_WFzxgraphb.
+Qed.
+
+
+
+End WFzxgraph_dec.
+
+
+
+Section WFzxgraph_results.
+
+Context (G : zxgraph) (HG : WFzxgraph G).
+
+Lemma NoDup_nodeids : NoDup (G.(nodeids)).
+Proof. apply HG. Qed.
+
+Lemma length_nodeids_nodevals : length G.(nodeids) = length G.(nodevals).
+Proof. apply HG. Qed.
+
+Lemma edge_members_in : Forall 
+  (fun e : edge => let (e1, e2) := e in 
+  In e1 (G.(nodeids)) 
+  /\ In e2 (G.(nodeids))) G.(edges).
+Proof. apply HG. Qed.
+
+Lemma left_perm_permutation : 
+  permutation (G.(num_ids) + length G.(inputs)) G.(left_perm).
+Proof.  apply HG. Qed.
+
+Lemma right_perm_permutation : 
+  permutation (G.(num_ids) + length G.(outputs)) G.(right_perm).
+Proof.  apply HG. Qed.
+
+End WFzxgraph_results.
+
+
+
+
+Lemma WF_right_truncate (G : zxgraph) (v : nat) (HG : WFzxgraph G) :
+  WFzxgraph (right_truncate G v).
+Proof.
+  unfold right_truncate, WFzxgraph.
+  simpl; repeat split.
+  - apply length_nodeids_nodes_right_truncate.
+  - apply NoDup_nodeids_right_truncate, HG.
+  - apply forall_in_nodeids_edges_right_truncate; apply HG.
+  - apply forall_in_nodeids_inputs_outputs; apply HG.
+Qed.
+
+
+Section GraphTranslation.
+
+
+
+
+
+
+(* Lemma nodeidsvals_of_right_truncate_hd {inputs outputs nodeids 
+  nodevals edges num_ids}
+  (vid : nat) (vnode : zxnode) :
+  NoDup (vid :: nodeids) ->
+  length nodeids = length nodevals ->
+  let Gbase := {|
+    inputs := inputs;
+    outputs := outputs;
+    nodeids := vid::nodeids;
+    nodevals := vnode::nodevals;
+    edges := edges;
+    num_ids := num_ids;
+  |} in
+  nodeidsvals_of_right_truncate Gbase vid = combine nodeids nodevals.
+Proof.
+  unfold nodeidsvals_of_right_truncate.
+
+  revert nodevals; 
+  induction nodeids as [| n ns IHns'];
+  intros nodevals Hdup Hlength.
+  - simpl.
+    unfold nodeidsvals_of_right_truncate.
+    simpl.
+    bdestruct_all; easy.
+  - assert (Hnodup : NoDup (vid :: ns)). 1:{
+      rewrite 2!NoDup_cons_iff in *.
+      split; try apply Hdup.
+      intros Hf.
+      apply (proj1 Hdup).
+      right; easy.
+    }
+    pose proof (fun nodevals => IHns' nodevals Hnodup) as IHns.
+    simpl in IHns.
+    unfold nodeidsvals_of_right_truncate in IHns.
+    simpl in IHns.
+    bdestruct (vid =? vid); [|easy].
+    simpl in IHns.
+    specialize (IHns )
+    rewrite NoDup_cons_iff in Hdup.
+
+    Search (NoDup (_ :: _ :: _)).
+  [easy|]. *)
+
+
+
+Lemma right_truncate_hd {inputs outputs nodeids nodevals edges num_ids}
+  (vid : nat) (vnode : zxnode) : 
+  NoDup (vid :: nodeids) ->
+  length nodeids = length nodevals ->
+  right_truncate {|
+    inputs := inputs;
+    outputs := outputs;
+    nodeids := vid::nodeids;
+    nodevals := vnode::nodevals;
+    edges := edges;
+    num_ids := num_ids;
+  |} vid = {|
+    inputs := inputs_of_right_truncate inputs vid;
+    outputs := outputs_of_right_truncate edges outputs vid;
+    nodeids := nodeids;
+    nodevals := nodevals;
+    edges := edges_of_right_truncate edges vid;
+    num_ids := num_ids_of_right_truncate num_ids inputs vid;
+  |}.
+Proof.
+  intros Hdup Hlen.
+  unfold right_truncate.
+  f_equal;
+  unfold nodeids_of_right_truncate, nodevals_of_right_truncate;
+  simpl;
+  rewrite (nodeidsvals_of_right_truncate_hd nodeids nodevals vid vnode Hdup);
+  rewrite (combine_split _ _ Hlen); easy.
+Qed.
+
+
+Local Open Scope nat_scope.
+
+Definition graph_in_size (inputs : list nat) num_ids : nat :=
+  num_ids + length inputs.
+
+Definition graph_out_size (outputs : list nat) num_ids : nat :=
+  num_ids + length outputs.
+
+Definition vtx_in_size inputs outputs edges num_ids (v : nat) : nat :=
+  num_ids
+  + ((count_nat inputs v
+  + length (neighborhood_no_self edges v))
+  + length (filter (fun k => ¬ v =? k) outputs)).
+  (* + length (outputs_of_right_truncate G v). *)
+
+Definition vtx_out_size outputs num_ids (v : nat) : nat :=
+  num_ids
+  + (count_nat outputs v
+  + length (filter (fun k => ¬ v =? k) outputs)).
+
+(* Lemma diagram_of_vtx_pf_one  *)
+
+Definition diagram_of_vtx inputs outputs nodeids nodevals edges
+  num_ids (v : nat) : 
+  option (ZX 
+    (vtx_in_size inputs outputs edges num_ids v) 
+    (vtx_out_size outputs num_ids v)) :=
+  option_map 
+  (fun zx => n_wire num_ids 
+    ↕ (ZX_of_zxnode zx _ _
+    ↕ n_wire _)) (get_zxnode_by_id nodeids nodevals v).
+
+Definition zx_of_perm_casted_pf (n : nat) (f : nat -> nat) : 
+  n = length (PermutationDefinitions.insertion_sort_list n 
+  (PermutationDefinitions.perm_inv n f)) :=
+  eq_sym (PermutationFacts.length_insertion_sort_list n
+  (PermutationDefinitions.perm_inv n f)).
+
+Definition zx_of_perm_casted (n : nat) (f : nat -> nat) : ZX n n :=
+  cast n n (zx_of_perm_casted_pf n f) (zx_of_perm_casted_pf n f)
+  (ZXperm.zx_of_perm n f).
+
+Definition diagram_of_vtx_permed inputs outputs nodeids 
+  nodevals edges num_ids (v : nat) : 
+  option (ZX 
+    (vtx_in_size inputs outputs edges num_ids v) 
+    (vtx_out_size outputs num_ids v)) :=
+  option_map 
+  (fun zx => n_wire num_ids
+    ↕ (ZX_of_zxnode zx _ (count_occ Nat.eq_dec outputs v)
+    ↕ n_wire _
+      ⟷ zx_of_perm_casted _
+        (bring_to_front_invperm 
+          (outputs_of_right_truncate edges outputs v) v))) 
+  (get_zxnode_by_id nodeids nodevals v).
+
+Lemma right_truncate_cast_pf_one inputs num_ids (v : nat) : 
+  graph_in_size inputs num_ids = 
+  graph_in_size 
+    (inputs_of_right_truncate inputs v)
+    (num_ids_of_right_truncate num_ids inputs v).
+Proof.
+  unfold right_truncate, graph_in_size, num_ids_of_right_truncate.
+  rewrite <- Nat.add_assoc.
+  f_equal.
+  unfold inputs_of_right_truncate.
+  simpl.
+  induction inputs as [|a inputs IHinp]; [easy|].
+  simpl; rewrite IHinp.
+  destruct (Nat.eq_dec a v);
+  bdestruct (v =? a); try congruence;
+  try easy; simpl.
+  lia.
+Qed.
+
+Lemma right_truncate_cast_pf_two inputs outputs edges num_ids (v : nat) : 
+  graph_out_size 
+    (outputs_of_right_truncate edges outputs v)
+    (num_ids_of_right_truncate num_ids inputs v) = 
+    vtx_in_size inputs outputs edges num_ids v.
+Proof.
+  unfold right_truncate, graph_out_size, 
+    vtx_in_size, outputs_of_right_truncate, num_ids_of_right_truncate.
+  rewrite app_length.
+  lia.
+Qed.
+
+Lemma right_truncate_cast_pf_three outputs num_ids (v : nat) : 
+  vtx_out_size outputs num_ids v = graph_out_size outputs num_ids.
+Proof.
+  unfold graph_out_size, vtx_out_size.
+  f_equal.
+  induction outputs; [easy|].
+  simpl.
+  destruct (Nat.eq_dec a v);
+  bdestruct_all; simpl; lia.
+Qed.
+
+
+
+Fixpoint GraphAttrs_to_ZX (nodeids : list nat) 
+  (inputs : list nat) (outputs : list nat)
+  (nodevals : list zxnode) (edges : list edge) (num_ids : nat) : 
+  (* let G := {|  
+    inputs := inputs;
+    outputs := outputs;
+    nodeids := nodeids;
+    nodevals := nodevals;
+    edges := edges;
+    num_ids := num_ids;
+  |} in *)
+  option 
+  (ZX (graph_in_size inputs num_ids) 
+      (graph_out_size outputs num_ids)) := 
+  (* let G := {|  
+    inputs := inputs;
+    outputs := outputs;
+    nodeids := nodeids;
+    nodevals := nodevals;
+    edges := edges;
+    num_ids := num_ids;
+  |} in *)
+  match nodeids, nodevals with
+  | [], _ 
+  | _, [] => 
+    match Nat.eq_dec 
+      (graph_in_size inputs num_ids) 
+      (graph_out_size outputs num_ids) with
+    | left Heq => Some (nwire_cast Heq)
+    | right Hneq => None
+    end
+  | vtx :: nodeids', zx :: nodevals' => 
+    match (diagram_of_vtx inputs outputs 
+      nodeids nodevals edges num_ids vtx) with
+    | Some vtx_zx => 
+      (option_map 
+        (fun graph_zx =>
+        
+        (n_wire num_ids ↕ 
+        zx_of_perm_casted 
+          (length inputs)
+          (bring_to_front_perm inputs vtx)) ⟷
+        nwire_cast (right_truncate_cast_pf_one inputs num_ids vtx) ⟷
+        graph_zx ⟷
+        nwire_cast (right_truncate_cast_pf_two inputs 
+          outputs edges num_ids vtx) ⟷
+        vtx_zx ⟷
+        nwire_cast (right_truncate_cast_pf_three outputs num_ids vtx))
+        (GraphAttrs_to_ZX 
+          nodeids'
+          (inputs_of_right_truncate inputs vtx)
+          (outputs_of_right_truncate edges outputs vtx)
+          nodevals'
+          (edges_of_right_truncate edges vtx)
+          (num_ids_of_right_truncate num_ids inputs vtx)))
+    | None => None
+    end
+  end.
+
+Definition Graph_to_ZX (G : zxgraph) :=
+  GraphAttrs_to_ZX G.(nodeids) G.(inputs) G.(outputs) 
+    G.(nodevals) G.(edges) G.(num_ids).
+
+Lemma inputs_of_empty_nodeids (G : zxgraph) (HG : WFzxgraph G) 
+  (Hnode : G.(nodeids) = []) : G.(inputs) = [].
+Proof.
+  destruct HG as [? [? [ ? H]]].
+  destruct (inputs G); [easy|].
+  inversion H; subst.
+  rewrite Hnode in *.
+  easy.
+Qed.
+
+Lemma outputs_of_empty_nodeids (G : zxgraph) (HG : WFzxgraph G) 
+  (Hnode : G.(nodeids) = []) : G.(outputs) = [].
+Proof.
+  destruct HG as [? [? [ ? H]]].
+  destruct (outputs G); [easy|].
+  rewrite Forall_app in H.
+  destruct H as [_ H].
+  inversion H; subst.
+  rewrite Hnode in *.
+  easy.
+Qed.
+
+Lemma graph_in_size_eq_graph_out_size (G : zxgraph) (HG : WFzxgraph G) 
+  (Hnode : G.(nodeids) = []) :
+  graph_in_size G.(inputs) G.(num_ids) = graph_out_size G.(outputs) G.(num_ids).
+Proof.
+  unfold graph_in_size, graph_out_size.
+  now rewrite (inputs_of_empty_nodeids _ HG Hnode),
+    (outputs_of_empty_nodeids _ HG Hnode).
+Qed.
+
+Lemma diagram_of_vtx_hd inputs outputs ns nvs edges num_ids n v :
+  exists zx, 
+  diagram_of_vtx inputs outputs (n::ns)
+    (v::nvs) edges num_ids n = Some zx.
+Proof.
+  unfold diagram_of_vtx, get_zxnode_by_id.
+  simpl.
+  rewrite Nat.eqb_refl.
+  eexists; easy.
+Qed.
+
+Lemma GraphAttrs_to_ZX_WFzxgraph (nodeids : list nat) 
+  (inputs : list nat) (outputs : list nat)
+  (nodevals : list zxnode) (edges : list edge) (num_ids : nat) : 
+  WFzxgraph {|
+    inputs := inputs;
+    outputs := outputs;
+    nodeids := nodeids;
+    nodevals := nodevals;
+    edges := edges;
+    num_ids := num_ids;
+  |} -> 
+  exists zx, 
+  GraphAttrs_to_ZX nodeids inputs outputs 
+    nodevals edges num_ids = Some zx.
+Proof.
+  revert inputs outputs nodevals edges num_ids;
+  induction nodeids as [|v ns IHns]; [simpl|].
+  - intros * HG.
+    pose proof (nat_eq_dec_eq 
+      (graph_in_size_eq_graph_out_size _ HG eq_refl)) as p;
+      simpl in p; rewrite p; clear p.
+    eexists; reflexivity.
+  - intros inputs outputs nodevals edges num_ids HG.
+    destruct nodevals as [|n nvs]; [destruct HG; easy|].
+    simpl.
+    destruct (diagram_of_vtx_hd inputs outputs ns nvs edges num_ids v n)
+      as [vtx_zx Hvtx_zx].
+    rewrite Hvtx_zx.
+    pose proof (WF_right_truncate _ v HG) as HWF.
+    rewrite (right_truncate_hd v n 
+      ltac:(apply HG)) in HWF.
+    2: {
+      destruct HG as [H ?]; simpl in H; injection H;
+      exact (fun x => x).
+    }
+    destruct (IHns _ _ _ _ _ HWF) as [zx Hzx].
+    rewrite Hzx.
+    simpl.
+    eexists; reflexivity.
+Qed.
+
+Lemma Graph_to_ZX_WFzxgraph (G : zxgraph) (HG : WFzxgraph G) : 
+  exists zx, 
+  Graph_to_ZX G = Some zx.
+Proof.
+  apply GraphAttrs_to_ZX_WFzxgraph, HG.
+Qed.
+
+End GraphTranslation.
+
+End WFzxgraph.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Section ZXperm_temp.
+
+Lemma ZXperm_le_1 {n} (zx : ZX n n) (Hzx : ZXperm.ZXperm n zx) 
+  (Hn : n <= 1) : zx ∝ n_wire n.
+Proof.
+  induction Hzx; try (now cleanup_zx).
+  - now rewrite <- wire_to_n_wire.
+  - specialize (IHHzx1 ltac:(lia)).
+    specialize (IHHzx2 ltac:(lia)).
+    rewrite IHHzx1, IHHzx2.
+    now rewrite n_wire_stack.
+  - specialize (IHHzx1 ltac:(lia)).
+    specialize (IHHzx2 ltac:(lia)).
+    rewrite IHHzx1, IHHzx2.
+    now rewrite nwire_removal_l.
+Qed.
+
+Lemma ZXperm_0 (zx : ZX 0 0) (Hzx : ZXperm.ZXperm 0 zx) : zx ∝ ⦰.
+Proof.
+  now rewrite ZXperm_le_1 by (easy + lia).
+Qed.
+
+Lemma X_spider_ZXperm_absorption_l {n} (zx : ZX n n) 
+  (Hzx : ZXperm.ZXperm n zx) (m : nat) (r : R) :
+  zx ⟷ X n m r ∝ X n m r.
+Proof.
+  revert m r;
+  induction Hzx; intros m r.
+  - cleanup_zx; easy.
+  - cleanup_zx; easy.
+  - apply X_self_swap_absorbtion_left_base.
+  - rewrite X_add_l_base_rot, <- compose_assoc, <- stack_compose_distr at 1.
+    rewrite IHHzx1, IHHzx2.
+    now rewrite <- X_add_l_base_rot. 
+  - now rewrite compose_assoc, IHHzx2, IHHzx1.
+Qed.
+
+Lemma X_spider_ZXperm_absorption_r {m} (zx : ZX m m) 
+  (Hzx : ZXperm.ZXperm m zx) (n : nat) (r : R) :
+  X n m r ⟷ zx ∝ X n m r.
+Proof.
+  revert n r;
+  induction Hzx; intros n' r.
+  - cleanup_zx; easy.
+  - cleanup_zx; easy.
+  - now rewrite X_self_swap_absorbtion_right_base.
+  - rewrite X_add_r_base_rot, compose_assoc at 1.
+    rewrite <- (stack_compose_distr (X 1 n0 0) zx0 (X 1 n1 0) zx1).
+    rewrite IHHzx1, IHHzx2.
+    now rewrite <- X_add_r_base_rot. 
+  - now rewrite <- compose_assoc, IHHzx1, IHHzx2.
+Qed.
+
+Lemma color_swap_ZXperm {n} (zx : ZX n n) (Hzx : ZXperm.ZXperm n zx) : 
+  color_swap zx = zx.
+Proof.
+  induction Hzx; simpl; f_equal; easy.
+Qed.
+
+Lemma Z_spider_ZXperm_absorption_l {n} (zx : ZX n n) 
+  (Hzx : ZXperm.ZXperm n zx) (m : nat) (r : R) :
+  zx ⟷ Z n m r ∝ Z n m r.
+Proof.
+  rewrite <- (color_swap_ZXperm zx) by easy.
+  apply colorswap_diagrams; simpl.
+  rewrite colorswap_involutive.
+  apply (X_spider_ZXperm_absorption_l zx Hzx m r).
+Qed.
+
+Lemma Z_spider_ZXperm_absorption_r {m} (zx : ZX m m) 
+  (Hzx : ZXperm.ZXperm m zx) (n : nat) (r : R) :
+  Z n m r ⟷ zx ∝ Z n m r.
+Proof.
+  rewrite <- (color_swap_ZXperm zx) by easy.
+  apply colorswap_diagrams; simpl.
+  rewrite colorswap_involutive.
+  apply (X_spider_ZXperm_absorption_r zx Hzx n r).
+Qed.
+
+End ZXperm_temp.
+
+
 
 
 
