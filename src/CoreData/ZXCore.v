@@ -16,8 +16,8 @@ Open Scope ZX_scope.
 
 Inductive ZX : nat -> nat -> Type :=
   | Empty : ZX 0 0
-  | Cap  : ZX 0 2
-  | Cup  : ZX 2 0
+  | Cup  : ZX 0 2
+  | Cap  : ZX 2 0
   | Swap : ZX 2 2
   | Wire : ZX 1 1
   | Box  : ZX 1 1
@@ -37,8 +37,8 @@ Defined.
 
 (* Notations for the ZX diagrams *)
 Notation "⦰" := Empty : ZX_scope. (* \revemptyset *)
-Notation "⊂" := Cap : ZX_scope. (* \subset *)
-Notation "⊃" := Cup : ZX_scope. (* \supset *)
+Notation "⊂" := Cup : ZX_scope. (* \subset *)
+Notation "⊃" := Cap : ZX_scope. (* \supset *)
 Notation "⨉" := Swap : ZX_scope. (* \bigtimes *)
 Notation "—" := Wire : ZX_scope. (* \emdash *)
 Notation "□" := Box : ZX_scope. (* \square *)

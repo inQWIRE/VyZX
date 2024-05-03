@@ -211,7 +211,7 @@ Proof.
 Qed.
 
 Lemma Z_wrap_over_top_right_base : forall n α,
-  (— ↕ Z n 2 α) ⟷ (Cup ↕ —) ∝ Z (S n) 1 α.
+  (— ↕ Z n 2 α) ⟷ (Cap ↕ —) ∝ Z (S n) 1 α.
 Proof.
   intros.
   prop_exists_nonzero 1.
@@ -326,7 +326,7 @@ Proof.
 Qed.
 
 Lemma Z_wrap_over_top_right_0 : forall n α,
-  (— ↕ Z n 1 α) ⟷ Cup ∝ Z (S n) 0 α.
+  (— ↕ Z n 1 α) ⟷ Cap ∝ Z (S n) 0 α.
 Proof.
   intros.
   prop_exists_nonzero 1.
@@ -451,7 +451,7 @@ Proof.
 Qed.
 
 Lemma Z_wrap_over_top_left_0 : forall n α,
-  Cap ⟷ (— ↕ Z 1 n α) ∝ Z 0 (S n) α.
+  Cup ⟷ (— ↕ Z 1 n α) ∝ Z 0 (S n) α.
 Proof.
   intros.
   apply transpose_diagrams.

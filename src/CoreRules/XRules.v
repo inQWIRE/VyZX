@@ -49,11 +49,11 @@ Lemma X_appendix_rot_r : forall n m α β,
 Proof. intros. colorswap_of Z_appendix_rot_r. Qed.
 
 Lemma X_wrap_over_top_left : forall n m α,
-	X (S n) m α ∝ (Wire ↕ X n (S m) α) ⟷  (Cup ↕ n_wire m).
+	X (S n) m α ∝ (Wire ↕ X n (S m) α) ⟷  (Cap ↕ n_wire m).
 Proof. intros. colorswap_of Z_wrap_over_top_left. Qed.
 
 Lemma X_wrap_over_top_right : forall n m α,
-	X n (S m) α ∝ (Cap ↕ n_wire n) ⟷ (Wire ↕ X (S n) m α).
+	X n (S m) α ∝ (Cup ↕ n_wire n) ⟷ (Wire ↕ X (S n) m α).
 Proof. intros. colorswap_of Z_wrap_over_top_right. Qed.
 
 Lemma X_add_r : forall {n} m o {α β γ},

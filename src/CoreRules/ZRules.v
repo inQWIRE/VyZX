@@ -129,7 +129,7 @@ Proof.
 Qed.
 
 Lemma Z_wrap_over_top_left : forall n m α,
-	Z (S n) m α ∝ (Wire ↕ Z n (S m) α) ⟷  (Cup ↕ n_wire m).
+	Z (S n) m α ∝ (Wire ↕ Z n (S m) α) ⟷  (Cap ↕ n_wire m).
 Proof.
 	induction m.
 	- intros.
@@ -188,7 +188,7 @@ all: lia.
 Qed.
 
 Lemma Z_wrap_over_top_right : forall n m α,
-	Z n (S m) α ∝ (Cap ↕ n_wire n) ⟷ (Wire ↕ Z (S n) m α).
+	Z n (S m) α ∝ (Cup ↕ n_wire n) ⟷ (Wire ↕ Z (S n) m α).
 Proof. 
 	intros. apply transpose_diagrams. simpl. 
 	rewrite nstack1_transpose. rewrite transpose_wire.
