@@ -2019,127 +2019,6 @@ Qed.
 
 
 
-(* Lemma count_nat_skipn_plus_gt (l : list nat) (k v : nat) :
-  k < length l -> 
-  nth k l (S v) <> v ->
-  count_nat l v < count_nat (skipn k l) v + k.
-Proof.
-  revert k;
-  induction l; [easy|];
-  intros k.
-  destruct k.
-  - simpl. *)
-
-Lemma bring_to_front_perm_linv' (l : list nat) (v : nat) :
-  forall k, k < length l ->
-  bring_to_front_invperm l v (bring_to_front_perm l v k) = k.
-Proof.
-  induction l; [easy|].
-  simpl.
-  intros k Hk.
-  unfold bring_to_front_invperm, bring_to_front_perm.
-  destruct (Nat.eq_dec (nth k (a :: l) (S v)) v) as [Heq | Hneq].
-  - simpl.
-    destruct (Nat.eq_dec a v).
-    + bdestruct_all; simpl.
-      * destruct k; [easy|simpl].
-        destruct (Nat.eq_dec a v); [|easy].
-        now rewrite (kth_occ_count_occ_firstn l k v Heq).
-      * simpl.
-        destruct k; [easy|].
-        simpl in *.
-        rewrite (nat_eq_dec_eq e) in *.
-        pose proof (count_nat_firstn_le l k v).
-        pose proof (IHl k ltac:(lia)) as Hind.
-        unfold bring_to_front_invperm, bring_to_front_perm in Hind.
-        revert Hind.
-        rewrite (nat_eq_dec_eq Heq).
-        bdestruct (k <? length l); [|lia].
-        bdestruct_all.
-        intros Hind.
-        rewrite <- Hind at 3.
-        
-
-        lia.
-    + pose proof (count_nat_firstn_le (a::l) k v).
-      simpl in H.
-      destruct (Nat.eq_dec a v); try lia.
-      bdestruct_all.
-      destruct k.
-      easy.
-      simpl in *.
-      destruct (Nat.eq_dec a v); [easy|].
-      f_equal.
-      rewrite kth_occ_count_occ_firstn; easy.
-  - bdestruct (k <? length (a :: l)); [|simpl in *; lia].
-    destruct k.
-    simpl in *.
-    destruct (Nat.eq_dec a v); [easy|].
-    rewrite 
-    bdestruct_all.
-    destruct k.
-    simpl in *.
-    destruct (Nat.eq_dec a v); try easy.
-
-    simpl in *.
-
-
-        simpl in *.
-        easy.
-        rewrite nth_neq_not_In.
-        unfold nth_neq
-Admitted.
-
-Lemma kth_occ_count_occ_firstn (l : list nat) (k : nat) (v : nat) :
-  count_occ Nat.eq_dec (firstn k l) v <
-    count_occ Nat.eq_dec l v ->
-  (kth_occ l (count_occ Nat.eq_dec (firstn k l) v) v) = k.
-Proof.
-  remember (count_occ Nat.eq_dec l v) as m.
-  revert l k Heqm.
-  induction m; [easy|].
-  intros l k Hl Hlt.
-  destruct (count_occ_eq_S_split _ _ _ (eq_sym Hl)) as [l1 [l2 [Hleq Hnin]]].
-  subst l.
-  assert (Hnin1 : ~ In v l1). 1:{
-    rewrite (count_occ_not_In Nat.eq_dec).
-    rewrite count_occ_app in Hl; 
-    simpl in Hl.
-    destruct (Nat.eq_dec v v); lia.
-  }
-  rewrite kth_occ_app_not_In by easy.
-
-  (* CHECK HERE *)
-
-  induction l as [|a l IHl]; [easy|].
-  destruct k.
-  - simpl in *.
-    destruct (Nat.eq_dec a v); [easy|].
-
-
-
-
-  revert k; induction l; [easy|].
-  intros k. 
-  destruct k.
-  - simpl.
-    destruct (Nat.eq_dec a v); [easy|].
-    destruct l; [easy|].
-    simpl.
-  simpl. [easy|]. *)
-
-
-
-Lemma bring_to_front_perm_rinv (l : list nat) (v : nat) :
-  forall k, k < length l ->
-  bring_to_front_perm l v (bring_to_front_invperm l v k) = k.
-Proof.
-  induction l; [easy|].
-  simpl.
-  intros k Hk.
-  unfold bring_to_front_invperm, bring_to_front_perm.
-Admitted.
-
 
 Fixpoint add_k_self_loops_to_spider {n m} (k : nat) 
   (cur : ZX (k + n) (k + m)) : ZX n m := 
@@ -2877,7 +2756,7 @@ Notation input_degree G v :=
 Notation output_degree G v :=
   (count_occ Nat.eq_dec G.(outputs) v).
 
-
+Import PermutationDefinitions.
 
 
 Definition right_truncate (G : zxgraph) (v : nat) : zxgraph :=
@@ -2889,8 +2768,32 @@ Definition right_truncate (G : zxgraph) (v : nat) : zxgraph :=
     edges := edges_of_right_truncate G.(edges) v;
     num_ids := num_ids_of_right_truncate G.(num_ids) G.(inputs) v;
     left_perm := G.(left_perm);
-    right_perm := bring_to_front_perm G.(outputs) v;
+    right_perm := 
+      stack_perms G.(num_ids) (length G.(outputs))
+      idn (bring_to_front_perm G.(outputs) v);
   |}.
+
+
+(* 
+
+
+    |   (n_wire num_ids)    |
+    l                       r
+    e   ∧              ∧    i
+    f   i              o    g
+    t   n              u    h
+        p              t    t
+    p   u              p    p
+    e   t              u    e
+    r   s              t    r
+    m   ∨              s    m
+    |                  ∨    |
+
+
+*)
+
+
+
 
 
 
@@ -2899,7 +2802,8 @@ End GraphToDiagram_perm.
 
 Module WFzxgraph_perm.
 
-Import PermToZX GraphToDiagram_perm.
+Import PermToZX GraphToDiagram_perm 
+  PermutationDefinitions PermutationFacts.
 
 Definition WFzxgraph (G : zxgraph) : Prop :=
   length G.(nodeids) = length G.(nodevals) 
@@ -2992,158 +2896,11 @@ Proof.  apply HG. Qed.
 
 End WFzxgraph_results.
 
-
-
-
-Lemma WF_right_truncate (G : zxgraph) (v : nat) (HG : WFzxgraph G) :
-  WFzxgraph (right_truncate G v).
-Proof.
-  unfold right_truncate, WFzxgraph.
-  simpl; repeat split.
-  - apply length_nodeids_nodes_right_truncate.
-  - apply NoDup_nodeids_right_truncate, HG.
-  - apply forall_in_nodeids_edges_right_truncate; apply HG.
-  - apply forall_in_nodeids_inputs_outputs; apply HG.
-Qed.
-
-
-Section GraphTranslation.
-
-
-
-
-
-
-(* Lemma nodeidsvals_of_right_truncate_hd {inputs outputs nodeids 
-  nodevals edges num_ids}
-  (vid : nat) (vnode : zxnode) :
-  NoDup (vid :: nodeids) ->
-  length nodeids = length nodevals ->
-  let Gbase := {|
-    inputs := inputs;
-    outputs := outputs;
-    nodeids := vid::nodeids;
-    nodevals := vnode::nodevals;
-    edges := edges;
-    num_ids := num_ids;
-  |} in
-  nodeidsvals_of_right_truncate Gbase vid = combine nodeids nodevals.
-Proof.
-  unfold nodeidsvals_of_right_truncate.
-
-  revert nodevals; 
-  induction nodeids as [| n ns IHns'];
-  intros nodevals Hdup Hlength.
-  - simpl.
-    unfold nodeidsvals_of_right_truncate.
-    simpl.
-    bdestruct_all; easy.
-  - assert (Hnodup : NoDup (vid :: ns)). 1:{
-      rewrite 2!NoDup_cons_iff in *.
-      split; try apply Hdup.
-      intros Hf.
-      apply (proj1 Hdup).
-      right; easy.
-    }
-    pose proof (fun nodevals => IHns' nodevals Hnodup) as IHns.
-    simpl in IHns.
-    unfold nodeidsvals_of_right_truncate in IHns.
-    simpl in IHns.
-    bdestruct (vid =? vid); [|easy].
-    simpl in IHns.
-    specialize (IHns )
-    rewrite NoDup_cons_iff in Hdup.
-
-    Search (NoDup (_ :: _ :: _)).
-  [easy|]. *)
-
-
-
-Lemma right_truncate_hd {inputs outputs nodeids nodevals edges num_ids}
-  (vid : nat) (vnode : zxnode) : 
-  NoDup (vid :: nodeids) ->
-  length nodeids = length nodevals ->
-  right_truncate {|
-    inputs := inputs;
-    outputs := outputs;
-    nodeids := vid::nodeids;
-    nodevals := vnode::nodevals;
-    edges := edges;
-    num_ids := num_ids;
-  |} vid = {|
-    inputs := inputs_of_right_truncate inputs vid;
-    outputs := outputs_of_right_truncate edges outputs vid;
-    nodeids := nodeids;
-    nodevals := nodevals;
-    edges := edges_of_right_truncate edges vid;
-    num_ids := num_ids_of_right_truncate num_ids inputs vid;
-  |}.
-Proof.
-  intros Hdup Hlen.
-  unfold right_truncate.
-  f_equal;
-  unfold nodeids_of_right_truncate, nodevals_of_right_truncate;
-  simpl;
-  rewrite (nodeidsvals_of_right_truncate_hd nodeids nodevals vid vnode Hdup);
-  rewrite (combine_split _ _ Hlen); easy.
-Qed.
-
-
-Local Open Scope nat_scope.
-
 Definition graph_in_size (inputs : list nat) num_ids : nat :=
   num_ids + length inputs.
 
 Definition graph_out_size (outputs : list nat) num_ids : nat :=
   num_ids + length outputs.
-
-Definition vtx_in_size inputs outputs edges num_ids (v : nat) : nat :=
-  num_ids
-  + ((count_nat inputs v
-  + length (neighborhood_no_self edges v))
-  + length (filter (fun k => ¬ v =? k) outputs)).
-  (* + length (outputs_of_right_truncate G v). *)
-
-Definition vtx_out_size outputs num_ids (v : nat) : nat :=
-  num_ids
-  + (count_nat outputs v
-  + length (filter (fun k => ¬ v =? k) outputs)).
-
-(* Lemma diagram_of_vtx_pf_one  *)
-
-Definition diagram_of_vtx inputs outputs nodeids nodevals edges
-  num_ids (v : nat) : 
-  option (ZX 
-    (vtx_in_size inputs outputs edges num_ids v) 
-    (vtx_out_size outputs num_ids v)) :=
-  option_map 
-  (fun zx => n_wire num_ids 
-    ↕ (ZX_of_zxnode zx _ _
-    ↕ n_wire _)) (get_zxnode_by_id nodeids nodevals v).
-
-Definition zx_of_perm_casted_pf (n : nat) (f : nat -> nat) : 
-  n = length (PermutationDefinitions.insertion_sort_list n 
-  (PermutationDefinitions.perm_inv n f)) :=
-  eq_sym (PermutationFacts.length_insertion_sort_list n
-  (PermutationDefinitions.perm_inv n f)).
-
-Definition zx_of_perm_casted (n : nat) (f : nat -> nat) : ZX n n :=
-  cast n n (zx_of_perm_casted_pf n f) (zx_of_perm_casted_pf n f)
-  (ZXperm.zx_of_perm n f).
-
-Definition diagram_of_vtx_permed inputs outputs nodeids 
-  nodevals edges num_ids (v : nat) : 
-  option (ZX 
-    (vtx_in_size inputs outputs edges num_ids v) 
-    (vtx_out_size outputs num_ids v)) :=
-  option_map 
-  (fun zx => n_wire num_ids
-    ↕ (ZX_of_zxnode zx _ (count_occ Nat.eq_dec outputs v)
-    ↕ n_wire _
-      ⟷ zx_of_perm_casted _
-        (bring_to_front_invperm 
-          (outputs_of_right_truncate edges outputs v) v))) 
-  (get_zxnode_by_id nodeids nodevals v).
 
 Lemma right_truncate_cast_pf_one inputs num_ids (v : nat) : 
   graph_in_size inputs num_ids = 
@@ -3163,6 +2920,69 @@ Proof.
   try easy; simpl.
   lia.
 Qed.
+
+Lemma WF_right_truncate (G : zxgraph) (v : nat) (HG : WFzxgraph G) :
+  WFzxgraph (right_truncate G v).
+Proof.
+  unfold right_truncate, WFzxgraph.
+  simpl; repeat split.
+  - apply length_nodeids_nodes_right_truncate.
+  - apply NoDup_nodeids_right_truncate, HG.
+  - apply forall_in_nodeids_edges_right_truncate; apply HG.
+  - apply forall_in_nodeids_inputs_outputs; apply HG.
+  - pose proof (right_truncate_cast_pf_one G.(inputs) G.(num_ids) v) as H.
+    unfold graph_in_size in H.
+    rewrite <- H.
+    apply HG.
+  - 
+Qed.
+
+
+Section GraphTranslation.
+
+
+Local Open Scope nat_scope.
+
+Definition vtx_in_size inputs outputs edges num_ids (v : nat) : nat :=
+  num_ids
+  + ((count_nat inputs v
+  + length (neighborhood_no_self edges v))
+  + length (filter (fun k => ¬ v =? k) outputs)).
+
+Definition vtx_out_size outputs num_ids (v : nat) : nat :=
+  num_ids
+  + (count_nat outputs v
+  + length (filter (fun k => ¬ v =? k) outputs)).
+
+
+
+Definition zx_of_perm_casted_pf (n : nat) (f : nat -> nat) : 
+  n = length (PermutationDefinitions.insertion_sort_list n 
+  (PermutationDefinitions.perm_inv n f)) :=
+  eq_sym (PermutationFacts.length_insertion_sort_list n
+  (PermutationDefinitions.perm_inv n f)).
+
+Definition zx_of_perm_casted (n : nat) (f : nat -> nat) : ZX n n :=
+  cast n n (zx_of_perm_casted_pf n f) (zx_of_perm_casted_pf n f)
+  (ZXperm.zx_of_perm n f).
+
+Definition diagram_of_vtx_permed inputs outputs nodeids 
+  nodevals edges num_ids right_perm (v : nat) : 
+  option (ZX 
+    (vtx_in_size inputs outputs edges num_ids v) 
+    (vtx_out_size outputs num_ids v)) :=
+  option_map 
+  (fun zx => n_wire num_ids
+    ↕ (ZX_of_zxnode zx _ (count_occ Nat.eq_dec outputs v)
+    ↕ n_wire _
+      ⟷ zx_of_perm_casted _
+        ((right_perm ∘
+        (perm_inv (length (outputs_of_right_truncate edges outputs v)) 
+          (bring_to_front_perm 
+          (outputs_of_right_truncate edges outputs v) v)))%prg) 
+  (get_zxnode_by_id nodeids nodevals v).
+
+
 
 Lemma right_truncate_cast_pf_two inputs outputs edges num_ids (v : nat) : 
   graph_out_size 
