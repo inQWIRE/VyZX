@@ -46,7 +46,7 @@ Local Open Scope ucom.
 Local Open Scope matrix_scope.
 Ltac solve_uc_well_typed :=
   match goal with
-  | [ |- uc_well_typed (useq ?c ?c2) ] => apply WT_seq; uc_well_typed
+  | [ |- uc_well_typed (useq ?c ?c2) ] => apply WT_seq; solve_uc_well_typed
   | [ |- uc_well_typed (@SQIR.H ?dim ?n) ] => apply uc_well_typed_H
   | [ |- uc_well_typed (@SQIR.X ?dim ?n) ] => apply uc_well_typed_X
   | [ |- uc_well_typed (@SQIR.Y ?dim ?n) ] => apply uc_well_typed_Y
