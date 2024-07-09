@@ -11,10 +11,15 @@ Require Import Ingest.
 
 Local Open Scope ZX_scope.
 
+Definition scalar_equiv_ucom {dim} (l o : ucom RzQGateSet.U dim) := (RzQToBaseUCom l) ≡ (RzQToBaseUCom o) by uc_eval. 
+Notation "l '≡u' o" := (scalar_equiv_ucom l o) (at level 70).
+
 Lemma prop_implies_scalar_equiv_rz_q {dim} : forall (l o : ucom RzQGateSet.U dim),
   uc_well_typed l -> uc_well_typed o ->
-  (ingest l) ∝ (ingest o) -> exists (c : C), (c .* (uc_eval (RzQToBaseUCom l)) = uc_eval (RzQToBaseUCom o) /\ c <> 0)%M.
+  ingest l ∝ ingest o -> l ≡u o.
 Proof.
+  unfold scalar_equiv_ucom.
+  unfold proportional_general.
   intros l o WTl WTo [c [semeq cnz]].
   unfold uc_equiv.
   destruct (ingest_correct l); [auto | ].
@@ -23,23 +28,22 @@ Proof.
   destruct H0.
   rewrite <- H in semeq.
   rewrite <- H0 in semeq.
-  exists  (x / (c * x0))%C.
+  exists  ((c * x0) / x)%C.
   split.
   - unfold Cdiv.
-    rewrite (Cmult_comm x).
+    rewrite (Cmult_comm (c * x0)).
     rewrite <- Mscale_assoc.
-    rewrite semeq.
+    rewrite <- Mscale_assoc.
+    rewrite <- semeq.
     repeat rewrite Mscale_assoc.
-    replace (/ (c * x0) * c * x0)%C with (C1).
+    replace (/ x * x)%C with (C1).
     lma.
-    rewrite <- Cmult_assoc.
     rewrite Cmult_comm.
     rewrite Cinv_r; auto.
-    apply Cmult_neq_0; auto.
   - unfold Cdiv.
     apply Cmult_neq_0; auto.
-    apply nonzero_div_nonzero.
     apply Cmult_neq_0; auto.
+    apply nonzero_div_nonzero; auto.
 Qed.
 
 Local Open Scope ucom.
