@@ -186,3 +186,79 @@ Proof.
   all: replace (Q2R (3 / 2))%R with (3 / 2)%R by easy.
   all: lra.
 Qed.
+
+(* Fig 5 nam *)
+
+Lemma comm_1 : forall α, @RZRZ 2 α 1; RZH 1; RZCNOT 0 1; RZH 1 ≡u RZH 1; RZCNOT 0 1; RZH 1; RZRZ α 1.
+Proof.
+  intros.
+  circuit_to_zx_full.
+  assert ((Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0)) ∝ ⊙((X 1 2 0 ↕ — ⟷ (— ↕ Z 2 1 0)))) by (simpl; easy).
+  rewrite H.
+  rewrite colorswap_is_bihadamard.
+  simpl; cleanup_zx; simpl_casts.
+  repeat rewrite compose_assoc.
+  rewrite <- (compose_assoc (□ ↕ □) (— ↕ □)).
+  rewrite <- (stack_compose_distr □ —); cleanup_zx.
+  repeat rewrite <- compose_assoc.
+  rewrite (compose_assoc _ (— ↕ □)).
+  do 3 (rewrite <- (stack_compose_distr — □); cleanup_zx).
+  repeat rewrite compose_assoc.
+  do 2 rewrite <- (stack_compose_distr □ —); cleanup_zx.
+  rewrite <- (wire_removal_l □) at 4.
+  rewrite <- (wire_removal_r (Z 1 1 _)) at 2.
+  rewrite stack_compose_distr.
+  rewrite <- (compose_assoc (— ↕ (Z 2 1 0))).
+  rewrite <- stack_compose_distr.
+  rewrite Z_spider_1_1_fusion.
+  rewrite Rplus_0_l.
+  rewrite <- (Rplus_0_r (Q2R α * PI)) at 2.
+  rewrite <- Z_spider_1_1_fusion.
+  rewrite stack_compose_distr.
+  cleanup_zx.
+  bundle_wires.
+  cleanup_zx.
+  assert (□ ↕ Z 1 1 (Q2R α * PI) ⟷ (X 1 2 0 ↕ — ⟷ (— ↕ Z 2 1 0 ⟷ (□ ↕ —))) ∝ □ ↕ Z 1 1 (Q2R α * PI) ⟷ (X 1 2 0 ↕ — ⟷ (— ↕ Z 2 1 0) ⟷ (□ ↕ —))).
+  {
+    repeat rewrite compose_assoc.
+    easy.
+  }
+  rewrite H0; clear H0.
+  rewrite <- notc_is_notc_r.
+  repeat rewrite <- compose_assoc.
+  rewrite <- stack_compose_distr.
+  rewrite Z_spider_1_1_fusion.
+  rewrite Rplus_0_r.
+  rewrite <- (Rplus_0_l (Q2R α * PI)) at 1.
+  rewrite <- Z_spider_1_1_fusion.
+  rewrite stack_compose_distr.
+  cleanup_zx.
+  apply compose_simplify; try easy.
+  repeat rewrite compose_assoc.
+  apply compose_simplify; try easy.
+  apply notc_is_notc_r_general.
+Qed.
+
+Lemma comm_3 : forall α, @RZRZ 2 α 0; RZCNOT 0 1 ≡u RZCNOT 0 1; RZRZ α 0.
+Proof.
+  intros.
+  circuit_to_zx_full.
+  rewrite cnot_is_cnot_r at 2.
+  repeat rewrite <- compose_assoc.
+  rewrite <- (stack_compose_distr (Z 1 1 _) (Z 1 2 0) — —).
+  cleanup_zx.
+  rewrite Z_spider_1_1_fusion.
+  rewrite cnot_is_cnot_r_general.
+  repeat rewrite compose_assoc.
+  apply compose_simplify; [ easy | ].
+  rewrite <- (stack_compose_distr (Z 2 1 0) (Z 1 1 _) — —).
+  rewrite Z_spider_1_1_fusion.
+  cleanup_zx.
+  apply stack_simplify; [ | easy ].
+  apply Z_simplify.
+  lra.
+Qed.
+
+
+
+

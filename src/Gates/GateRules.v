@@ -132,10 +132,10 @@ Unshelve.
 all: lia.
 Qed.
 
-Lemma cnot_is_cnot_r : _CNOT_ ∝ _CNOT_R.
+Lemma cnot_is_cnot_r_general : forall α β, Z 1 2 α ↕ — ⟷ (— ↕ X 2 1 β) ∝ — ↕ X 1 2 β ⟷ (Z 2 1 α ↕ —).
 Proof.
   intros.
-  remember (— ↕ X 1 2 0 ⟷ (Z 2 1 0 ↕ —)) as RHS.
+  remember (— ↕ X 1 2 _ ⟷ (Z 2 1 _ ↕ —)) as RHS.
   rewrite (Z_wrap_under_bot_left 1 1).
   rewrite (X_wrap_over_top_left 1 1).
   simpl_casts.
@@ -143,17 +143,17 @@ Proof.
   rewrite stack_nwire_distribute_l.
   rewrite stack_nwire_distribute_r.
   repeat rewrite <- compose_assoc.
-  rewrite (compose_assoc _ (Z (1 + 1) 1 0 ↕ (n_wire _) ↕ _)).
+  rewrite (compose_assoc _ (Z (1 + 1) 1 _ ↕ (n_wire _) ↕ _)).
   rewrite stack_assoc.
   simpl_casts.
   rewrite n_wire_stack.
-  rewrite (nwire_stack_compose_botleft (Z (1 + 1) 1 0) (n_wire 1 ↕ X 1 2 0)).
-  rewrite <- (nwire_stack_compose_topleft (n_wire 1 ↕ X 1 2 0)).
+  rewrite (nwire_stack_compose_botleft (Z (1 + 1) 1 _) (n_wire 1 ↕ X 1 2 _)).
+  rewrite <- (nwire_stack_compose_topleft (n_wire 1 ↕ X 1 2 _)).
   rewrite <- compose_assoc.
   rewrite stack_assoc_back.
   simpl_casts.
   rewrite n_wire_stack.
-  rewrite <- (stack_compose_distr ((n_wire 1) ↕ ⊂) (n_wire 3) (n_wire 1) (X 1 2 0)).
+  rewrite <- (stack_compose_distr ((n_wire 1) ↕ ⊂) (n_wire 3) (n_wire 1) (X 1 2 _)).
   cleanup_zx.
   rewrite <- nwire_stack_compose_topleft.
   rewrite compose_assoc.
@@ -175,6 +175,11 @@ Unshelve.
 all: lia.
 Qed.
 
+Lemma cnot_is_cnot_r : _CNOT_ ∝ _CNOT_R.
+Proof.
+  apply cnot_is_cnot_r_general.
+Qed.
+
 Lemma cnot_inv_is_swapped_cnot : _CNOT_inv_ ∝ ⨉ ⟷ _CNOT_ ⟷ ⨉.
 Admitted.
 
@@ -191,3 +196,8 @@ Proof.
   rewrite <- notc_r_is_swapp_cnot_r.
   easy.
 Qed.
+
+Lemma notc_is_notc_r_general : forall α β, — ↕ Z 1 2 α ⟷ (X 2 1 β ↕ —) ∝ X 1 2 β ↕ — ⟷ (— ↕ Z 2 1 α).
+Proof. 
+  (* Needs a few general lemmas but should be easy *)
+Admitted.
