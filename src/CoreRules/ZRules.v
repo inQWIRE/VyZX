@@ -6,6 +6,7 @@ Require Import StackComposeRules.
 Require Import SwapRules.
 Require Import WireRules.
 Require Import SpiderInduction.
+Require Import ZArith.
 
 Lemma grow_Z_top_left : forall (nIn nOut : nat) α,
 	Z (S (S nIn)) nOut α ∝  
@@ -851,15 +852,18 @@ Proof. transpose_of Z_n_wrap_under_r_base. Qed.
 
 (* @nocheck name *)
 (* PI is captialized in Coq R *)
-Lemma Z_2_PI : forall n m a, Z n m (INR a * 2 * PI) ∝ Z n m 0.
+Lemma Z_2_PI : forall n m a, Z n m (IZR a * 2 * PI) ∝ Z n m 0.
 Proof.
 	intros.
 	prop_exists_nonzero 1.
 	Msimpl.
 	simpl.
-	unfold Z_semantics. 
-	rewrite Cexp_2_PI.
-	rewrite Cexp_0.
+	unfold Z_semantics.
+	replace ((IZR a * 2))%R with (IZR (a * 2))%R by (rewrite mult_IZR; simpl; lra).
+	rewrite Cexp_mod_2PI.
+	rewrite Z_mod_mult.
+	rewrite Rmult_0_l.
+	autorewrite with Cexp_db.
 	easy.
 Qed.
 

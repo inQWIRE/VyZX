@@ -84,6 +84,7 @@ Proof.
   rewrite <- (stack_compose_distr (X 0 (1 + 1) _) (n_wire 1 ↕ X 1 1 _) (Z 1 (1 + 0) _) (X 1 1 _)).
   rewrite (dominated_X_spider_fusion_bot_left 1 0).
   replace ((INR b * PI + (INR b * PI + 0)))%R with (INR b * 2 * PI)%R by lra.
+  rewrite (INR_IZR_INZ b).
   rewrite X_2_PI.
   rewrite X_0_is_wire.
   rewrite <- (nwire_removal_l (X 0 _ _)).
@@ -96,6 +97,7 @@ Proof.
   cleanup_zx; simpl_casts.
   rewrite Z_spider_1_1_fusion.
   replace (INR a * PI + 0 + INR a * PI)%R with ((INR a * 2 * PI))%R by lra.
+  rewrite (INR_IZR_INZ a).
   rewrite Z_2_PI.
   rewrite Z_0_is_wire.
   easy.
