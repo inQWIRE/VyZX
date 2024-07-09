@@ -12,7 +12,7 @@ Require Import Ingest.
 Local Open Scope ZX_scope.
 
 Definition scalar_equiv_ucom {dim} (l o : ucom RzQGateSet.U dim) := (RzQToBaseUCom l) ≡ (RzQToBaseUCom o) by uc_eval. 
-Notation "l '≡u' o" := (scalar_equiv_ucom l o) (at level 70).
+Notation "l '≡u' o" := (scalar_equiv_ucom l o) (at level 80).
 
 Lemma prop_implies_scalar_equiv_rz_q {dim} : forall (l o : ucom RzQGateSet.U dim),
   uc_well_typed l -> uc_well_typed o ->
@@ -66,4 +66,6 @@ Ltac solve_uc_well_typed :=
   end.
 
 Ltac circuit_to_zx := apply prop_implies_scalar_equiv_rz_q; [ solve_uc_well_typed | solve_uc_well_typed | ].
+
+Ltac circuit_to_zx_b := apply prop_implies_scalar_equiv_rz_q; [ apply uc_well_typed_b_equiv; easy | apply uc_well_typed_b_equiv; easy | ].
 
