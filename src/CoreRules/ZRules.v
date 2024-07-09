@@ -862,3 +862,7 @@ Proof.
 	rewrite Cexp_0.
 	easy.
 Qed.
+
+Lemma Z_simplify : forall α β n m, α = β -> Z n m α ∝ Z n m β.
+Proof. intros. subst. easy. Qed.
+	

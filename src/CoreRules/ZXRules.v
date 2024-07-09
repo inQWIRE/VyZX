@@ -207,58 +207,143 @@ Proof.
 	apply Z_copy.
 Qed.
 
-Lemma Z_0_copy : forall n prfn prfm, 
-	(Z 1 1 0 ⟷ X 1 n 0) ∝
-	X 1 n 0 ⟷ 
-		(cast n n prfn prfm
-			(n ⇑ (Z 1 1 0))).
+
+
+Lemma Z_0_copy_base : forall α, Z 1 1 0 ⟷ X 1 0 α ∝ X 1 0 (α).
 Proof.
 	intros.
-	specialize (Z_copy n 0).
-	intros.
-	simpl in H.
-	rewrite Rmult_0_l in H.
-	apply H.
+	simpl.
+	prop_exists_nonzero 1.
+	simpl.
+	unfold X_semantics, Z_semantics.
+	simpl.
+	solve_matrix.
+	autorewrite with Cexp_db.
+	lca.
 Qed.
 
-Lemma Z_pi_copy : forall n prfn prfm, 
-	(Z 1 1 PI ⟷ X 1 n 0) ∝
-	X 1 n 0 ⟷ 
+Lemma X_0_copy_base : forall α, X 1 1 0 ⟷ Z 1 0 α ∝ Z 1 0 (α).
+Proof.
+	intros.
+	colorswap_of Z_0_copy_base.
+Qed.
+
+
+Lemma Z_pi_copy_base : forall α, Z 1 1 (INR 1 * PI) ⟷ X 1 0 α ∝ X 1 0 (-α).
+Proof.
+	intros.
+	simpl.
+	prop_exists_nonzero (Cexp α).
+	simpl.
+	rewrite Rmult_1_l.
+	unfold X_semantics, Z_semantics.
+	simpl.
+	solve_matrix.
+	autorewrite with Cexp_db.
+	rewrite Cmult_plus_distr_l.
+	rewrite Cmult_assoc.
+	rewrite Cinv_r.
+	lca.
+	nonzero.
+	field_simplify.
+	autorewrite with Cexp_db.
+	repeat rewrite <- Copp_mult_distr_l.
+	field_simplify.
+	lca.
+	all:nonzero.
+Qed.
+
+Lemma X_pi_copy_base : forall α, X 1 1 (INR 1 * PI) ⟷ Z 1 0 α ∝ Z 1 0 (-α).
+Proof.
+	intros.
+	colorswap_of Z_pi_copy_base.
+Qed.
+
+Lemma Z_0_copy : forall n α, 
+	(Z 1 1 0 ⟷ X 1 n α) ∝
+	X 1 n α.
+Proof.
+	intros.
+	replace (α) with (α + 0+ 0)%R by lra.
+	rewrite (@X_add_r 1%nat 0%nat n) at 1.
+	rewrite <- compose_assoc.
+	replace 0%R with (INR 0 * PI)%R at 01 by (simpl; lra).
+	rewrite Z_copy at 1.
+	simpl_casts.
+	simpl.
+	cleanup_zx.
+	simpl_casts.
+	rewrite compose_assoc.
+	rewrite <- (stack_compose_distr (Z 1 1 (0 * PI)) (X 1 0 α) (Z 1 1 (0 * PI)) (X 1 n 0)).
+	replace (0 * PI)%R with (INR 0 * PI)%R by easy.
+	rewrite Z_copy.
+	simpl.
+	rewrite Rmult_0_l.
+	rewrite Z_0_copy_base.
+	rewrite <- (nwire_removal_r (X 1 0 _)).
+	rewrite stack_compose_distr.
+	rewrite <- compose_assoc.
+	rewrite <- X_add_r.
+	simpl_casts.
+	simpl.
+	cleanup_zx.
+	rewrite nstack_is_nstack1.
+	simpl_casts.
+	cleanup_zx.
+	easy.
+Unshelve.
+all: lia.
+Qed.
+
+Lemma Z_pi_copy : forall n α prfn prfm, 
+	(Z 1 1 PI ⟷ X 1 n α) ∝
+	X 1 n (-α) ⟷ 
 		(cast n n prfn prfm
 			(n ⇑ (Z 1 1 PI))).
 Proof.
 	intros.
-	specialize (Z_copy n 1).
-	intros.
-	simpl in H.
-	rewrite Rmult_1_l in H.
-	apply H.
+	replace (α) with (α + 0+ 0)%R by lra.
+	rewrite (@X_add_r 1%nat 0%nat n).
+	rewrite <- compose_assoc.	
+	replace (PI) with (INR 1 * PI)%R by (simpl; lra).
+	rewrite Z_copy.
+	simpl_casts.
+	simpl.
+	cleanup_zx.
+	simpl_casts.
+	rewrite compose_assoc.
+	rewrite <- (stack_compose_distr (Z 1 1 (1 * PI)) (X 1 0 α) (Z 1 1 (1 * PI)) (X 1 n 0)).
+	replace (1 * PI)%R with (INR 1 * PI)%R by easy.
+	rewrite Z_copy.
+	rewrite Z_pi_copy_base.
+	rewrite <- (nwire_removal_r (X 1 0 _)).
+	rewrite stack_compose_distr.
+	rewrite <- compose_assoc.
+	rewrite <- X_add_r.
+	apply compose_simplify.
+	apply X_simplify; lra.
+	simpl.
+	cleanup_zx.
+	easy.
+Unshelve.
+all: lia.
 Qed.
 
-Lemma X_0_copy : forall n prfn prfm, 
-	(X 1 1 0 ⟷ Z 1 n 0) ∝
-	Z 1 n 0 ⟷ 
-		(cast n n prfn prfm
-			(n ⇑ (X 1 1 0))).
+
+Lemma X_0_copy : forall n α, 
+	(X 1 1 0 ⟷ Z 1 n α) ∝
+	Z 1 n α.
 Proof.
 	intros.
-	specialize (X_copy n 0).
-	intros.
-	simpl in H.
-	rewrite Rmult_0_l in H.
-	apply H.
+	colorswap_of Z_0_copy.
 Qed.
 
-Lemma X_pi_copy : forall n prfn prfm, 
-	(X 1 1 PI ⟷ Z 1 n 0) ∝
-	Z 1 n 0 ⟷ 
+Lemma X_pi_copy : forall n α prfn prfm, 
+	(X 1 1 PI ⟷ Z 1 n α) ∝
+	Z 1 n (-α) ⟷ 
 		(cast n n prfn prfm
 			(n ⇑ (X 1 1 PI))).
 Proof.
 	intros.
-	specialize (X_copy n 1).
-	intros.
-	simpl in H.
-	rewrite Rmult_1_l in H.
-	apply H.
+	colorswap_of Z_pi_copy.
 Qed.

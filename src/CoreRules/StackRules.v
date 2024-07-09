@@ -248,3 +248,14 @@ Qed.
 
 Lemma nstack1_0 : forall zx, 0 ↑ zx ∝ ⦰.
 Proof. easy. Qed.
+
+Lemma nstack_is_nstack1 : forall (zx : ZX 1 1) n prfn prfm, n ⇑ zx ∝ cast _ _ prfn prfm (n ↑ zx).
+Proof.
+	intros.
+	simpl_casts.
+	induction n.
+	- easy.
+	- simpl.
+		rewrite IHn; [ | lia | lia].
+		easy.
+Qed.

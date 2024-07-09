@@ -200,3 +200,6 @@ Proof. transpose_of X_n_wrap_under_r_base. Qed.
 (* PI is captialized in Coq R *)
 Lemma X_2_PI : forall n m a, X n m (INR a * 2 * PI) ∝ X n m 0.
 Proof. colorswap_of Z_2_PI. Qed.
+
+Lemma X_simplify : forall α β n m, α = β -> X n m α ∝ X n m β.
+Proof. intros. subst. easy. Qed.

@@ -1,5 +1,6 @@
 Require Import CoreData.CoreData.
 Require Import StackRules.
+Require Import ComposeRules.
 Require Import CastRules.
 
 Local Open Scope ZX_scope.
@@ -53,9 +54,38 @@ Qed.
 Lemma yank_l : 
   (— ↕ ⊂) ⟷ (⊃ ↕ —) ∝ —.
 Proof.
-  prop_exists_nonzero 1.
+  apply transpose_diagrams.
   simpl.
-  solve_matrix.
+  apply yank_r.
+Qed.
+
+Lemma yank_l_general : forall {n m prfn prfm} (zx0 : ZX n 1) (zx1 : ZX 1 m), 
+  (zx0 ↕ ⊂) ⟷ (⊃ ↕ zx1) ∝ cast _ _ prfn prfm zx0 ⟷ zx1.
+Proof.
+  intros.
+  rewrite <- (wire_removal_l zx1).
+  rewrite <- (wire_removal_r zx0).
+  rewrite <- (nwire_removal_r ⊃).
+  rewrite <- (nwire_removal_l ⊂).
+  simpl.
+  rewrite 2 stack_compose_distr.
+  rewrite compose_assoc.
+  rewrite <- (compose_assoc (— ↕ ⊂)).
+  rewrite yank_l.
+  rewrite stack_empty_r, stack_empty_l.
+  rewrite 2 wire_removal_l, wire_removal_r.
+  easy.
+Qed.
+
+Lemma yank_r_general : forall {n m prfn prfm} (zx0 : ZX n 1) (zx1 : ZX 1 m), 
+(⊂ ↕ zx0) ⟷ (zx1 ↕ ⊃) ∝ zx0 ⟷ cast _ _ prfn prfm zx1.
+Proof.
+  intros.
+  apply transpose_diagrams.
+  simpl.
+  rewrite (@yank_l_general _ _ prfm prfn (zx1)⊤ zx0⊤).
+  rewrite cast_transpose.
+  easy.
 Qed.
 
 Lemma n_wire_stack : forall n m, n_wire n ↕ n_wire m ∝ n_wire (n + m).
