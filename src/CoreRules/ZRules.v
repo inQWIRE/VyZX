@@ -852,7 +852,7 @@ Proof. transpose_of Z_n_wrap_under_r_base. Qed.
 
 (* @nocheck name *)
 (* PI is captialized in Coq R *)
-Lemma Z_2_PI : forall n m a, Z n m (IZR a * 2 * PI) ∝ Z n m 0.
+Lemma Z_2_PI : forall {n m} a, Z n m (IZR a * 2 * PI) ∝ Z n m 0.
 Proof.
 	intros.
 	prop_exists_nonzero 1.
@@ -870,3 +870,12 @@ Qed.
 Lemma Z_simplify : forall α β n m, α = β -> Z n m α ∝ Z n m β.
 Proof. intros. subst. easy. Qed.
 	
+Lemma Z_simplify_general : forall {α β n m} c, α = ((IZR c) * 2 * PI + β)%R -> Z n m α ∝ Z n m β.
+Proof. 
+	intros; subst. 
+	rewrite <- Z_spider_1_1_fusion. 
+	rewrite (Z_2_PI c).
+	rewrite Z_spider_1_1_fusion.
+	apply Z_simplify.
+	lra.
+Qed.
