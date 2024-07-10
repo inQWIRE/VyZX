@@ -207,3 +207,8 @@ Proof. intros. subst. easy. Qed.
 Lemma X_simplify_general : forall {α β n m} c, α = ((IZR c) * 2 * PI + β)%R -> X n m α ∝ X n m β.
 Proof. intros. colorswap_of (@Z_simplify_general α β n m c). easy. Qed.
 	
+Lemma X_n_swap_absorbtion_left_base : forall n m α, n_swap n ⟷ X n m α ∝ X n m α.
+Proof.
+	colorswap_of Z_n_swap_absorbtion_left_base.
+Qed.
+		

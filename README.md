@@ -2,8 +2,6 @@
 
 Verifying the ZX Calculus
 
-[Check out the paper on arxiv](https://arxiv.org/abs/2205.05781)
-
 ## Building VyZX
 
 Works with Coq 8.16-8.18.

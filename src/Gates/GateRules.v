@@ -181,13 +181,20 @@ Proof.
 Qed.
 
 Lemma cnot_inv_is_swapped_cnot : _CNOT_inv_ ∝ ⨉ ⟷ _CNOT_ ⟷ ⨉.
-Admitted.
+Proof.
+  solve_prop 1.
+Qed.
 
 Lemma notc_is_swapp_cnot : _NOTC_ ∝ ⨉ ⟷ _CNOT_ ⟷ ⨉. 
-Admitted.
+Proof.
+  solve_prop 1.
+Qed.
 
 Lemma notc_r_is_swapp_cnot_r : _NOTC_R ∝ ⨉ ⟷ _CNOT_R ⟷ ⨉. 
-Admitted.
+Proof.
+  rewrite <- cnot_is_cnot_r.
+  solve_prop 1.
+Qed.
 
 Lemma notc_is_notc_r : _NOTC_ ∝ _NOTC_R.
 Proof.

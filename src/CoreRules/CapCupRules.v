@@ -114,15 +114,6 @@ Unshelve.
   all: lia.
 Qed.
 
-Lemma n_cup_inv_n_swap_n_wire : forall n, n_cup n ∝ n_wire n ↕ n_swap n ⟷ n_cup_unswapped n.
-Proof.
-  intros.
-  strong induction n.
-  destruct n; [ | destruct n].
-  - simpl. rewrite n_cup_0_empty. cleanup_zx. simpl_casts. easy.
-  - simpl. rewrite n_cup_1_cup. cleanup_zx. simpl_casts. bundle_wires. cleanup_zx. easy.    
-Admitted. (*TODO*)
-
 Lemma n_cup_unswapped_colorswap : forall n, ⊙ (n_cup_unswapped n) ∝ n_cup_unswapped n.
 Proof. 
   intros.
