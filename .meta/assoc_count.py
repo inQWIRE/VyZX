@@ -18,6 +18,15 @@ b_color_reset = '\033[0m'
 b_color_green = '\033[92m'
 b_color_red = '\033[91m'
 
+is_windows = sys.platform.startswith('win')
+if is_windows: # Disable colors on windows 
+  b_color_yellow = ''
+  b_color_cyan = ''
+  b_color_reset = ''
+  b_color_green = ''
+  b_color_red = ''
+  print("Warning: Windows detected. Disabling colored output")
+  
 curr_dir = os.path.dirname(os.path.realpath(__file__))
 src_dir = f"{curr_dir}/../src"
 
