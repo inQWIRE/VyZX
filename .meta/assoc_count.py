@@ -63,14 +63,17 @@ class Result:
     self.repeat_assoc += other.repeat_assoc
     return self
   
+  def total_assoc(self) -> int:
+    return self.assoc + self.repeat_assoc
+  
   def total(self) -> int:
-    return self.assoc + self.non_assoc + self.repeat_assoc
+    return self.total_assoc() + self.non_assoc
     
   def __str__(self) -> str:
     return \
-f"""{b_color_red}Number of repeated assoc lines:{b_color_reset} {self.repeat_assoc} ({self.repeat_assoc / self.total():.2%})
-{b_color_yellow}Number of assoc lines:{b_color_reset} {self.assoc} ({self.assoc / self.total():.2%})
-{b_color_cyan}Total of any assoc lines:{b_color_reset} {self.repeat_assoc + self.assoc} ({(self.repeat_assoc + self.assoc) / self.total():.2%})
+f"""{b_color_red}Number of repeated assoc lines:{b_color_reset} {self.repeat_assoc} ({self.repeat_assoc / self.total():.2%}) ({self.repeat_assoc / self.total_assoc():.2%} of all assoc lines)
+{b_color_yellow}Number of assoc lines:{b_color_reset} {self.assoc} ({self.assoc / self.total():.2%}) ({self.assoc / self.total_assoc():.2%} of all assoc lines)
+{b_color_cyan}Total of any assoc lines:{b_color_reset} {self.total_assoc()} ({self.total_assoc() / self.total():.2%})
 {b_color_green}Number of other proof lines:{b_color_reset} {self.non_assoc} ({self.non_assoc / self.total():.2%})
 Total lines: {self.total()}
 """
