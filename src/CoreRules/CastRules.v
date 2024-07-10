@@ -146,7 +146,7 @@ Proof.
 Qed.
 
 Lemma cast_compose_distribute :
-  forall n n' m o o' prfn prfo (zx0 : ZX n m) (zx1 : ZX m o),
+  forall {n} n' {m o} o' prfn prfo (zx0 : ZX n m) (zx1 : ZX m o),
   cast n' o' prfn prfo (zx0 ⟷ zx1) ∝
   cast n' m prfn eq_refl zx0 ⟷ cast m o' eq_refl prfo zx1.
 Proof.
@@ -155,6 +155,18 @@ Proof.
   simpl_casts.
   reflexivity.
 Qed.
+
+Lemma cast_compose_distribute_general :
+  forall {n} n' {m} m' {o} o' prfn prfm prfo (zx0 : ZX n m) (zx1 : ZX m o),
+  cast n' o' prfn prfo (zx0 ⟷ zx1) ∝
+  cast n' m' prfn prfm zx0 ⟷ cast m' o' prfm prfo zx1.
+Proof.
+  intros.
+  subst.
+  simpl_casts.
+  reflexivity.
+Qed.
+
 
 Lemma cast_compose_l :
   forall {n n' m m' o} prfn prfm (zx0 : ZX n m) (zx1 : ZX m' o),

@@ -39,6 +39,8 @@ Tactic Notation "bundle_wires" := wire_to_n_wire_safe; (* change wires to n_wire
   (fun n m o p => @nwire_stack_compose_topleft n m o p)
   (fun n m o p => @nwire_stack_compose_botleft n m o p)
   : cleanup_zx_db.
+#[export] Hint Rewrite <- nstack1_compose : cleanup_zx_db.
+#[export] Hint Rewrite <- nstack_compose : cleanup_zx_db.
 Tactic Notation "cleanup_zx" := auto_cast_eqn (autorewrite with cleanup_zx_db).
 
 #[export] Hint Rewrite

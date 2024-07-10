@@ -115,3 +115,28 @@ Proof.
   simpl_casts.
   easy.
 Qed.
+
+Lemma colorswap_h_commute_l : forall n m (zx : ZX n m),
+  (n ↑ □) ⟷ zx ∝  (⊙ zx ⟷ (m ↑ □)).
+Proof.
+  intros.
+  rewrite colorswap_is_bihadamard.
+  rewrite 2 compose_assoc.
+  rewrite <- nstack1_compose.
+  rewrite box_compose.
+  rewrite nwire_removal_r.
+  easy.
+Qed.
+
+Lemma colorswap_h_commute_r : forall n m (zx : ZX n m),
+  zx ⟷ (m ↑ □) ∝ ((n ↑ □) ⟷ ⊙ zx).
+Proof.
+  intros.
+  apply colorswap_diagrams.
+  simpl.
+  rewrite 2 n_stack1_colorswap.
+  rewrite colorswap_involutive.
+  simpl.
+  rewrite colorswap_h_commute_l.
+  easy.
+Qed.
