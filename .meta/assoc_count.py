@@ -78,7 +78,7 @@ f"""{b_color_red}Number of repeated assoc lines:{b_color_reset} {self.repeat_ass
 Total lines: {self.total()}
 """
     
-    
+do_regex = re.compile(r'do \d+')
   
 
 def count_assoc_non_assoc(proof : str, proof_completion : str) -> Result:
@@ -87,7 +87,7 @@ def count_assoc_non_assoc(proof : str, proof_completion : str) -> Result:
   result = Result()
   for stmt in stmt_regex.findall(proof):
     if any(map(lambda pattern : pattern.match(stmt[0]), regex_assoc)):
-      if 'repeat' in stmt[0]:
+      if 'repeat' in stmt[0] or do_regex.match(stmt[0]):
         result.repeat_assoc += 1
       else:
         result.assoc += 1
