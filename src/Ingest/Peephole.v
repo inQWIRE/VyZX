@@ -339,7 +339,8 @@ Proof.
   lra.
 Qed.
 
-Ltac zx_simpl := simpl; cleanup_zx; simpl_casts.
+Ltac zx_simpl := simpl; repeat (cleanup_zx; simpl_casts). 
+(* TODO: Move to core automation *)
 
 Lemma top_to_bottom_2 : top_to_bottom 2 ∝ ⨉.
 Proof.
@@ -434,6 +435,14 @@ Lemma top_to_bottom_1 : top_to_bottom 1 ∝ —.
 Proof. easy. Qed.
 Opaque top_to_bottom.
 
+Lemma cast_top_to_bottom : forall {n} n' prfn prfn', top_to_bottom n ∝ cast _ _ prfn prfn' (top_to_bottom n').
+Proof.
+  intros.
+  subst.
+  simpl_casts.
+  easy.
+Qed.
+(* TODO: Move to cast rules *)
 
 Lemma top_to_bottom_X {n m α} {prfn prfm} : forall (zx1 : ZX 1 1), 
   top_to_bottom (n + 1) ⟷ (X n m α ↕ zx1)
@@ -451,8 +460,34 @@ Proof.
       zx_simpl.
       admit.
     + simpl.
-      simpl_casts. 
-      rewrite top_to_bottom_1.
+      simpl_casts.
+      rewrite (@cast_top_to_bottom (S (m + 1)) (S (S m))).
+      rewrite <- cast_compose_distribute_general.
+      rewrite top_to_bottom_grow_l.
+      rewrite (X_add_r_base_rot 1 m) at 2.
+      cleanup_zx.
+      rewrite stack_wire_distribute_l.
+      repeat rewrite <- compose_assoc.
+      rewrite (compose_assoc _ (— ↕ (— ↕ _))).
+      rewrite stack_assoc_back.
+      simpl_casts.
+      rewrite <- (stack_compose_distr (— ↕ —) ⨉ (X 1 m 0)).
+      bundle_wires.
+      cleanup_zx.
+      rewrite <- (nwire_removal_r ⨉).
+      rewrite <- (wire_removal_l (X 1 m 0)).
+      rewrite stack_compose_distr.
+      zx_simpl.
+      rewrite stack_assoc.
+      simpl_casts.
+      rewrite 2 compose_assoc.
+      rewrite <- stack_wire_distribute_l.
+      rewrite (cast_top_to_bottom (m + 1)).
+      rewrite cast_compose_r.
+      (* TODO : Generalize inputs of X in IH *)
+
+
+
 Admitted.
 
 
