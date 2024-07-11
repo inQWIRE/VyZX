@@ -315,7 +315,7 @@ Proof.
   cleanup_zx.
   apply compose_simplify; try easy.
   repeat rewrite compose_assoc.
-  apply compose_simplify; try easy.
+  apply compose_simplify; try easy.   
   apply notc_is_notc_r_general.
 Qed.
 

@@ -134,13 +134,13 @@ Proof.
   intros.
   rewrite colorswap_is_bihadamard.
   rewrite 2 compose_assoc.
-  rewrite <- nstack1_compose.
+  rewrite nstack1_compose.
   rewrite box_compose.
   rewrite nwire_removal_r.
   easy.
 Qed.
 
-Lemma colorswap_h_commute_r : forall n m (zx : ZX n m),
+Lemma colorswap_h_commute_r : forall {n m} (zx : ZX n m),
   zx ⟷ (m ↑ □) ∝ ((n ↑ □) ⟷ ⊙ zx).
 Proof.
   intros.
