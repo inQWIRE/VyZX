@@ -96,29 +96,38 @@ Proof.
   lra.
 Qed. 
 
+Lemma remove_q_2_r12 : Q2R (1 / 2) = (1 / 2)%R.
+Proof. easy. Qed.
+
+Lemma remove_q_2_r32 : Q2R (1 / 2) = (1 / 2)%R.
+Proof. easy. Qed.
+
+Lemma normalize_rotation1_2 : ((Z 1 1 (- (3 / 2 * PI))) ∝ (Z 1 1 (1 / 2 * PI))).
+Proof. apply (Z_simplify_general (-1)); lra. Qed.
+
+Lemma normalize_rotation3_2 : ((Z 1 1 (- (1 / 2 * PI))) ∝ (Z 1 1 (3 / 2 * PI))).
+Proof. apply (Z_simplify_general (-1)); lra. Qed.
+
+Local Hint Rewrite remove_q_2_r12 remove_q_2_r32 Ropp_0 : normalize_rotation_db.
+Local Hint Rewrite normalize_rotation1_2 normalize_rotation3_2 : normalize_rotation_db.
+
+Ltac normalize_rotation := autorewrite with normalize_rotation_db.
+
 Lemma h_reduction_1 : RZH 0; @RZP 1 0; RZH 0 ≡u @RZPdag 1 0; RZH 0; RZPdag 0.
 Proof.
   circuit_to_zx_full.
-  replace (Q2R (1 / 2)) with (1 / 2)%R by easy.
-  replace (Q2R (3 / 2)) with (3 / 2)%R by easy.
+  normalize_rotation.
   apply h_p_reduction.
 Qed.
 
 Lemma h_reduction_2 : RZH 0; @RZPdag 1 0; RZH 0 ≡u @RZP 1 0; RZH 0; RZP 0.
 Proof.
   circuit_to_zx_full.
-  apply adjoint_diagrams.
-  unfold ZXCore.adjoint.
+  apply conjugate_diagrams.
   simpl.
-  replace (Q2R (1 / 2))%R with (1 / 2)%R by easy.
-  replace (Q2R (3 / 2))%R with (3 / 2)%R by easy.
-  assert ((Z 1 1 (- (3 / 2 * PI))) ∝ (Z 1 1 (1 / 2 * PI))) by (apply (Z_simplify_general (-1)); lra).
-  assert ((Z 1 1 (- (1 / 2 * PI))) ∝ (Z 1 1 (3 / 2 * PI))) by (apply (Z_simplify_general (-1)); lra).
-  rewrite H, H0.
-  repeat rewrite <- compose_assoc.
+  normalize_rotation.
   apply h_p_reduction.
 Qed.
-
 
 Lemma h_reduction_3 : @RZH 2 0; RZH 1; RZCNOT 0 1; RZH 0; RZH 1 ≡u RZCNOT 1 0.
 Proof.
@@ -138,22 +147,7 @@ Lemma h_p_reduction' : □ ⟷ Z 1 1 (1 / 2 * PI) ∝ Z 1 1 (3 / 2 * PI) ⟷ □
   easy.
 Qed.
 
-Lemma h_p_reduction'' : □ ⟷ Z 1 1 (3 / 2 * PI) ∝ Z 1 1 (1 / 2 * PI) ⟷ □ ⟷ Z 1 1 (1 / 2 * PI) ⟷ □.
-  apply adjoint_diagrams.
-  unfold ZXCore.adjoint.
-  simpl.
-  assert ((Z 1 1 (- (3 / 2 * PI))) ∝ (Z 1 1 (1 / 2 * PI))) by (apply (Z_simplify_general (-1)); lra).
-  assert ((Z 1 1 (- (1 / 2 * PI))) ∝ (Z 1 1 (3 / 2 * PI))) by (apply (Z_simplify_general (-1)); lra).
-  rewrite H, H0.
-  repeat rewrite <- compose_assoc.
-  rewrite 2 (compose_assoc □).
-  rewrite <- h_p_reduction.
-  repeat rewrite <- compose_assoc.
-  cleanup_zx.
-  easy.
-Qed.
-
-Lemma h_reduction_4_zx : — ↕ □ ⟷ (— ↕ Z 1 1 ((1 / 2) * PI)) ⟷ (Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0))
+Lemma h_reduction_4_5_zx : — ↕ □ ⟷ (— ↕ Z 1 1 ((1 / 2) * PI)) ⟷ (Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0))
 ⟷ (— ↕ Z 1 1 ((3 / 2) * PI)) ⟷ (— ↕ □)
 ∝ — ↕ Z 1 1 ((3 / 2) * PI) ⟷ (Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0))
   ⟷ (— ↕ Z 1 1 ((1 / 2) * PI)).
@@ -195,76 +189,20 @@ Proof.
   easy.
 Qed.
 
-Lemma h_reduction_5_zx : — ↕ □ ⟷ (— ↕ Z 1 1 ((3 / 2) * PI)) ⟷ (Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0))
-⟷ (— ↕ Z 1 1 ((1 / 2) * PI)) ⟷ (— ↕ □)
-∝ — ↕ Z 1 1 ((1 / 2) * PI) ⟷ (Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0))
-  ⟷ (— ↕ Z 1 1 ((3 / 2) * PI)).
-Proof.
-  repeat rewrite <- compose_assoc.
-  rewrite <- stack_compose_distr.
-  rewrite h_p_reduction''.
-  do 2 rewrite (compose_assoc (Z 1 1 (1 / 2 * PI))).
-  rewrite (compose_assoc □ _ □).
-  rewrite <- (nstack1_1 □) at 1 2.
-  rewrite <- colorswap_is_bihadamard.
-  simpl.
-  rewrite stack_compose_distr.
-  rewrite (compose_assoc _ (Z 1 2 0 ↕ —)).
-  rewrite cnot_is_cnot_r.
-  repeat rewrite <- compose_assoc.
-  rewrite (compose_assoc _ (— ↕ X 1 1 _)).
-  rewrite <- stack_compose_distr.
-  rewrite X_spider_1_1_fusion.
-  cleanup_zx.
-  rewrite (compose_assoc _ (—↕ X 1 2 _)).
-  rewrite <- cnot_is_cnot_r_general.
-  rewrite Rplus_0_r.
-  rewrite <- (Rplus_0_l (1 / 2 * PI)) at 2.
-  rewrite <- X_spider_1_1_fusion.
-  rewrite stack_wire_distribute_l.
-  replace (X 1 1 (1 / 2 * PI)) with (⊙(Z 1 1 (1 / 2 * PI))) by easy.
-  rewrite colorswap_is_bihadamard.
-  rewrite nstack1_1.
-  rewrite 2 stack_wire_distribute_l.
-  repeat rewrite compose_assoc.
-  rewrite <- 3 stack_wire_distribute_l.
-  rewrite <- (compose_assoc (Z 1 1 (1 / 2 * PI))).
-  rewrite <- (compose_assoc (Z 1 1 (1/ 2 * PI) ⟷ □)).
-  rewrite <- h_p_reduction''.
-  rewrite <- stack_wire_distribute_l. 
-  rewrite <- (compose_assoc □).
-  cleanup_zx.
-  easy.
-Qed.
-  
 Lemma h_reduction_4 : @RZH 2 1; RZP 1; RZCNOT 0 1; RZPdag 1; RZH 1 ≡u RZPdag 1; RZCNOT 0 1; RZP 1.
 Proof.
   circuit_to_zx_full.
-  replace (Q2R (1 / 2))%R with (1 / 2)%R by easy.
-  replace (Q2R (3 / 2))%R with (3 / 2)%R by easy.
-  apply h_reduction_4_zx.
+  normalize_rotation.
+  apply h_reduction_4_5_zx.
 Qed.
 
 Lemma h_reduction_5 : @RZH 2 1; RZPdag 1; RZCNOT 0 1; RZP 1; RZH 1 ≡u RZP 1; RZCNOT 0 1; RZPdag 1.
 Proof.
   circuit_to_zx_full.
-  apply adjoint_diagrams.
-  unfold ZXCore.adjoint.
+  apply conjugate_diagrams.
   simpl.
-  replace (Q2R (1 / 2))%R with (1 / 2)%R by easy.
-  replace (Q2R (3 / 2))%R with (3 / 2)%R by easy.
-  assert ((Z 1 1 (- (3 / 2 * PI))) ∝ (Z 1 1 (1 / 2 * PI))) by (apply (Z_simplify_general (-1)); lra).
-  assert ((Z 1 1 (- (1 / 2 * PI))) ∝ (Z 1 1 (3 / 2 * PI))) by (apply (Z_simplify_general (-1)); lra).
-  rewrite H, H0.
-  repeat rewrite <- compose_assoc.
-  rewrite Ropp_0.
-  rewrite (compose_assoc _ (— ↕ X 1 2 0)).
-  rewrite <- cnot_is_cnot_r.
-  rewrite h_reduction_5_zx.
-  apply compose_simplify ; [ | easy ].
-  rewrite compose_assoc.
-  rewrite cnot_is_cnot_r.
-  easy.
+  normalize_rotation.
+  apply h_reduction_4_5_zx.
 Qed.
 
 (* Fig 5 nam *)
@@ -318,6 +256,14 @@ Proof.
   apply compose_simplify; try easy.   
   apply notc_is_notc_r_general.
 Qed.
+
+Lemma comm_2 : forall α β, @RZRZ 2 α 1; RZCNOT 0 1; RZRZ β 1; RZCNOT 0 1 ≡u  RZCNOT 0 1; RZRZ β 1; RZCNOT 0 1; RZRZ α 1.
+Proof.
+  intros.
+  circuit_to_zx_full.
+  (* solve_prop 1. *)
+(* Qed. *)
+Admitted.
 
 Lemma comm_3 : forall α, @RZRZ 2 α 0; RZCNOT 0 1 ≡u RZCNOT 0 1; RZRZ α 0.
 Proof.

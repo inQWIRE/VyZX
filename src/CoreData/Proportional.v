@@ -345,6 +345,16 @@ Proof.
   assumption.
 Qed.
 
+Lemma conjugate_diagrams : forall n m (zx0 zx1 : ZX n m),
+  zx0 ⊼ ∝ zx1 ⊼ -> zx0 ∝ zx1.
+Proof.
+  intros.
+  apply adjoint_diagrams.
+  unfold adjoint.
+  rewrite H.
+  easy.
+Qed.
+
 Lemma colorswap_adjoint_commute : forall n m (zx : ZX n m),
   ⊙ (zx †) ∝ (⊙ zx) †.
 Proof.
