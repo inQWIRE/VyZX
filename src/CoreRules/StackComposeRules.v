@@ -116,6 +116,18 @@ Proof.
   easy.
 Qed.
 
+Lemma nstack1_compose : forall n (zx0 zx1 : ZX 1 1),
+	n ↑ zx0 ⟷ n ↑ zx1 ∝ n ↑ (zx0 ⟷ zx1).
+Proof.
+	intros.
+	induction n.
+	- simpl. solve_prop 1.
+	- simpl. rewrite <- (stack_compose_distr zx0 zx1).
+  rewrite IHn.
+  easy.
+Qed.
+	
+
 Lemma colorswap_h_commute_l : forall n m (zx : ZX n m),
   (n ↑ □) ⟷ zx ∝  (⊙ zx ⟷ (m ↑ □)).
 Proof.
