@@ -288,9 +288,11 @@ Qed.
 Ltac zx_simpl := simpl; repeat (cleanup_zx; simpl_casts). 
 (* TODO: Move to core automation *)
 
-Lemma comm_4 : @RZCNOT 3 2 1; RZCNOT 0 1 ≡u RZCNOT 0 1; RZCNOT 2 1.
+Lemma comm_4_5 : (— ↕ (□ ↕ □ ⟷ (Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0)) ⟷ (□ ↕ □))
+⟷ (Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0) ↕ —)
+∝ Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0) ↕ —
+  ⟷ (— ↕ (□ ↕ □ ⟷ (Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0)) ⟷ (□ ↕ □)))).
 Proof.
-  circuit_to_zx_full.
   rewrite <- (nstack1_1 □).
   rewrite <- nstack1_split.
   rewrite compose_assoc.
@@ -372,7 +374,42 @@ Proof.
   rewrite <- Z_wrap_over_top_left.
   easy. 
 Unshelve.
-all: lia.
+  all: lia.
+Qed.
+
+Lemma comm_4 : @RZCNOT 3 2 1; RZCNOT 0 1 ≡u RZCNOT 0 1; RZCNOT 2 1.
+Proof.
+  circuit_to_zx_full.
+  apply comm_4_5.
+Qed.
+
+Lemma comm_5 : @RZCNOT 3 1 2; RZCNOT 1 0 ≡u RZCNOT 1 0; RZCNOT 1 2.
+Proof.
+  circuit_to_zx_full.
+  apply colorswap_diagrams.
+  simpl.
+  assert (X 1 2 0 ↕ — ⟷ (— ↕ Z 2 1 0) ∝ □ ↕ □ ⟷ (Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0)) ⟷ (□ ↕ □)).
+  {
+    rewrite <- (nstack1_1 □).
+    rewrite <- nstack1_split.
+    rewrite compose_assoc.
+    rewrite <- colorswap_is_bihadamard.
+    simpl.
+    easy.
+  }
+  assert (□ ↕ □ ⟷ (X 1 2 0 ↕ — ⟷ (— ↕ Z 2 1 0)) ⟷ (□ ↕ □) ∝ (Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0))).
+  {
+    rewrite <- (nstack1_1 □).
+      rewrite <- nstack1_split.
+      rewrite compose_assoc.
+      rewrite <- colorswap_is_bihadamard.
+      simpl.
+      easy.
+  }
+  rewrite H at 1.
+  rewrite H0 at 1.
+  rewrite comm_4_5.
+  apply compose_simplify; apply stack_simplify; easy.
 Qed.
 
 Lemma top_to_bottom_2 : top_to_bottom 2 ∝ ⨉.
