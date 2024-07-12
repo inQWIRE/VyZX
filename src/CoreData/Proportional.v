@@ -405,11 +405,3 @@ Proof.
   apply Z_spider_1_1_fusion.
 Qed.
 
-Lemma proportional_sound : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut),
-  zx0 ∝ zx1 -> exists (zxConst : ZX 0 0), ⟦ zx0 ⟧ = ⟦ zxConst ↕ zx1 ⟧.
-Proof.
-  intros.
-  simpl; unfold proportional, proportional_general in H.
-  destruct H as [c [H cneq0]].
-  rewrite H.
-Abort.

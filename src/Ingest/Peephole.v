@@ -39,8 +39,6 @@ Definition RZP {dim} t : ucom U dim := uapp1 (URzQ_Rz (1 / 2)) t.
 (* @nocheck name *)
 (* Qualifier *)
 Definition RZPdag {dim} t : ucom U dim := uapp1 (URzQ_Rz (3 / 2)) t.
-(* Nam Hadamard reduction*)
-
 
 Local Open Scope ZX_scope.
 
@@ -112,6 +110,8 @@ Local Hint Rewrite remove_q_2_r12 remove_q_2_r32 Ropp_0 : normalize_rotation_db.
 Local Hint Rewrite normalize_rotation1_2 normalize_rotation3_2 : normalize_rotation_db.
 
 Ltac normalize_rotation := autorewrite with normalize_rotation_db.
+
+(* fig 4 nam *)
 
 Lemma h_reduction_1 : RZH 0; @RZP 1 0; RZH 0 ≡u @RZPdag 1 0; RZH 0; RZPdag 0.
 Proof.
@@ -261,9 +261,8 @@ Lemma comm_2 : forall α β, @RZRZ 2 α 1; RZCNOT 0 1; RZRZ β 1; RZCNOT 0 1 ≡
 Proof.
   intros.
   circuit_to_zx_full.
-  (* solve_prop 1. *)
-(* Qed. *)
-Admitted.
+  solve_prop 1.
+Qed.
 
 Lemma comm_3 : forall α, @RZRZ 2 α 0; RZCNOT 0 1 ≡u RZCNOT 0 1; RZRZ α 0.
 Proof.
@@ -284,9 +283,6 @@ Proof.
   apply Z_simplify.
   lra.
 Qed.
-
-Ltac zx_simpl := simpl; repeat (cleanup_zx; simpl_casts). 
-(* TODO: Move to core automation *)
 
 Lemma comm_4_5 : (— ↕ (□ ↕ □ ⟷ (Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0)) ⟷ (□ ↕ □))
 ⟷ (Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0) ↕ —)
@@ -534,266 +530,4 @@ all: lia.
 Qed.
 
 
-Lemma top_to_bottom_2 : top_to_bottom 2 ∝ ⨉.
-Proof.
-  zx_simpl.
-  bundle_wires.
-  zx_simpl.
-  easy.
-Qed.
-
-Opaque top_to_bottom.
-
-Lemma swap_comm : forall (zx0 zx1 : ZX 1 1),
-  zx0 ↕ zx1 ⟷ ⨉ ∝ ⨉ ⟷ (zx1 ↕ zx0).
-Proof.
-  intros.
-  prop_exists_nonzero 1.
-  Msimpl.
-  simpl.
-  specialize (WF_ZX 1 1 zx0);
-  specialize (WF_ZX 1 1 zx1); intros.
-  solve_matrix.
-Qed.
-
-Lemma bigyank_cap : forall (zx1 : ZX 1 1),
-  ⊂ ↕ zx1 ∝ — ↕ ⊂ ⟷ top_to_bottom 3 ⟷ (— ↕ — ↕ zx1).
-Proof.
-  intros.
-  rewrite top_to_bottom_grow_r.
-  zx_simpl.
-  rewrite top_to_bottom_2.
-  repeat rewrite compose_assoc.
-  rewrite (stack_assoc — —).
-  zx_simpl.
-  rewrite <- (stack_wire_distribute_l ⨉ (— ↕ zx1)).
-  rewrite <- swap_comm.
-  rewrite stack_wire_distribute_l.
-  rewrite <- (compose_assoc (⨉ ↕ —)).
-  rewrite (stack_assoc_back — (zx1)).
-  zx_simpl.
-  rewrite <- (stack_wire_distribute_r ⨉ (— ↕ zx1)).
-  rewrite <- swap_comm.
-  rewrite <- compose_assoc.
-  solve_prop 1.
-  Unshelve.
-  all: lia.
-Qed.
-
-Lemma bigyank_cup : forall (zx1 : ZX 1 1),
-  top_to_bottom 3 ⟷ (⊃ ↕ zx1) ∝ — ↕ ⊃ ⟷ zx1.
-Proof.
-  intros.
-  rewrite (stack_empty_r_rev zx1) at 2.
-  simpl_casts.
-  rewrite <- (stack_compose_distr — zx1).
-  zx_simpl.
-  rewrite top_to_bottom_grow_l.
-  zx_simpl.
-  rewrite top_to_bottom_2.
-  rewrite compose_assoc.
-  rewrite <- (nwire_removal_l ⊃).
-  rewrite <- (wire_removal_r zx1).
-  rewrite (stack_compose_distr).
-  zx_simpl.
-  rewrite <- (compose_assoc (— ↕ ⨉)).
-  rewrite stack_assoc.
-  simpl_casts.
-  rewrite <- stack_wire_distribute_l.
-  rewrite <- swap_comm.
-  rewrite stack_wire_distribute_l.
-  rewrite <- 2 (compose_assoc (⨉ ↕ —)).
-  rewrite (stack_assoc_back — zx1 —). 
-  simpl_casts.
-  rewrite <- (stack_wire_distribute_r (⨉) (— ↕ zx1)).
-  rewrite <- swap_comm.
-  zx_simpl.
-  rewrite stack_wire_distribute_r.
-  repeat rewrite compose_assoc.
-  setoid_replace ((⨉ ↕ — ⟷ (— ↕ ⨉ ⟷ (⊃ ↕ —)))) with (— ↕ ⊃).
-  rewrite (stack_assoc zx1).
-  zx_simpl.
-  bundle_wires.
-  rewrite <- (stack_compose_distr zx1 —).
-  zx_simpl.
-  easy.
-  solve_prop 1.
-  Unshelve.
-  all: lia.
-Qed.
-
-Transparent top_to_bottom.
-Lemma top_to_bottom_1 : top_to_bottom 1 ∝ —.
-Proof. easy. Qed.
-Opaque top_to_bottom.
-
-Lemma cast_top_to_bottom : forall {n} n' prfn prfn', top_to_bottom n ∝ cast _ _ prfn prfn' (top_to_bottom n').
-Proof.
-  intros.
-  subst.
-  simpl_casts.
-  easy.
-Qed.
-(* TODO: Move to cast rules *)
-
-Lemma top_to_bottom_X {n m α} {prfn prfm} : forall (zx1 : ZX 1 1), 
-  top_to_bottom (n + 1) ⟷ (X n m α ↕ zx1)
-  ∝ (cast (n + 1) (m + 1) prfn prfm (— ↕ X n m α)) ⟷ top_to_bottom (m + 1) ⟷ (n_wire m ↕ zx1).
-Proof.
-  intros.
-  generalize dependent m;
-  induction n; intros.
-  - induction m.
-    + simpl.
-      zx_simpl.
-      rewrite (stack_empty_r_rev zx1) at 2.
-      simpl_casts.
-      rewrite <- (stack_compose_distr — zx1).
-      zx_simpl.
-      admit.
-    + simpl.
-      simpl_casts.
-      rewrite (@cast_top_to_bottom (S (m + 1)) (S (S m))).
-      rewrite <- cast_compose_distribute_general.
-      rewrite top_to_bottom_grow_l.
-      rewrite (X_add_r_base_rot 1 m) at 2.
-      cleanup_zx.
-      rewrite stack_wire_distribute_l.
-      repeat rewrite <- compose_assoc.
-      rewrite (compose_assoc _ (— ↕ (— ↕ _))).
-      rewrite stack_assoc_back.
-      simpl_casts.
-      rewrite <- (stack_compose_distr (— ↕ —) ⨉ (X 1 m 0)).
-      bundle_wires.
-      cleanup_zx.
-      rewrite <- (nwire_removal_r ⨉).
-      rewrite <- (wire_removal_l (X 1 m 0)).
-      rewrite stack_compose_distr.
-      zx_simpl.
-      rewrite stack_assoc.
-      simpl_casts.
-      rewrite 2 compose_assoc.
-      rewrite <- stack_wire_distribute_l.
-      rewrite (cast_top_to_bottom (m + 1)).
-      rewrite cast_compose_r.
-      (* TODO : Generalize inputs of X in IH *)
-
-
-
-Admitted.
-
-
-
-Lemma top_to_bottom_big_yank_r {n m} {prfn prfm} : forall (zx1 : ZX 1 1) (zx0 : ZX n m), 
-  top_to_bottom (n + 1) ⟷ (zx0 ↕ zx1) ∝
-  (cast (n + 1) (m + 1) prfn prfm (— ↕ zx0)) ⟷ 
-    top_to_bottom (m + 1) ⟷ (n_wire m ↕ zx1).
-Proof.
-  intros.
-  generalize dependent zx1.
-  induction zx0; intros.
-  - zx_simpl.
-    zx_simpl.
-    easy.
-  - zx_simpl.
-    apply bigyank_cap.
-  - zx_simpl.
-    apply bigyank_cup.
-  - zx_simpl.
-    rewrite top_to_bottom_grow_r.
-    zx_simpl.
-    rewrite top_to_bottom_2.
-    rewrite <- (nwire_removal_r ⨉) at 3. 
-    rewrite <- (wire_removal_l zx1) at 1.
-    rewrite stack_compose_distr.
-    zx_simpl.
-    repeat rewrite <- compose_assoc.
-    apply compose_simplify.
-    + solve_prop 1.
-      Unshelve.
-      all: lia.
-    + easy.
-  - zx_simpl.
-    rewrite top_to_bottom_2.
-    bundle_wires.
-    zx_simpl.
-    easy.
-  - zx_simpl.
-    rewrite top_to_bottom_2.
-    rewrite swap_comm.
-    rewrite compose_assoc.
-    rewrite <- (stack_compose_distr □ —).
-    zx_simpl.
-    easy.
-  - zx_simpl.
-    admit.
-  - zx_simpl.
-    admit.
-  - zx_simpl.
-    admit.
-  - zx_simpl.
-    rewrite <- (wire_removal_l zx1) at 1.
-    rewrite stack_compose_distr.
-    rewrite <- compose_assoc.
-    rewrite IHzx0_1.
-    bundle_wires.
-    zx_simpl.
-    rewrite compose_assoc.
-    rewrite IHzx0_2.
-    repeat rewrite <- compose_assoc.
-    apply compose_simplify.
-    apply compose_simplify.
-    rewrite stack_wire_distribute_l.
-    rewrite cast_compose_distribute.
-    erewrite (cast_compose_mid (S m) _ _ ($ n + 1, m + 1 ::: — ↕ zx0_1 $)).
-    simpl_casts.
-    apply compose_simplify.
-    simpl.
-    eapply (cast_diagrams (S n) (S m)).
-    simpl_casts.
-    easy.
-    eapply (cast_diagrams (S m) (S o)).
-    simpl_casts.
-    easy.
-    easy.
-    easy.
-Admitted.
-
-Ltac zx_easy := bundle_wires; zx_simpl; easy.
-
-Lemma top_to_bottom_big_yank_l {n m} {prfn prfm} : forall (zx0 : ZX 1 1) (zx1 : ZX n m),
-  (zx0 ↕ zx1) ⟷ top_to_bottom (S m) ∝
-  (zx0 ↕ n_wire n) ⟷ top_to_bottom (S n) ⟷
-    (cast (S n) (S m) prfn prfm (zx1 ↕ —)).
-Proof.
-  intros.
-  induction zx1.
-  - repeat zx_simpl; easy.
-  - zx_simpl.
-    rewrite top_to_bottom_grow_r.
-    rewrite top_to_bottom_2.
-    zx_simpl.
-    admit.
-  - admit.
-  - simpl.
-    rewrite top_to_bottom_grow_r.
-    cleanup_zx.
-    simpl_casts.
-    rewrite top_to_bottom_2.
-    zx_simpl.
-    admit.
-  - zx_simpl.
-    rewrite top_to_bottom_2.
-    bundle_wires.
-    cleanup_zx.
-    easy.
-  - zx_simpl.
-    rewrite top_to_bottom_2.
-    rewrite 2 swap_comm.
-    rewrite compose_assoc.
-    rewrite <- (stack_compose_distr — □).
-    zx_simpl.
-    easy.
-  - 
-Admitted.
 

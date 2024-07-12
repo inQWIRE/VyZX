@@ -64,3 +64,5 @@ Tactic Notation "cleanup_zx" := auto_cast_eqn (autorewrite with cleanup_zx_db).
 Ltac transpose_of H := intros; apply transpose_diagrams; repeat (simpl; autorewrite with transpose_db); apply H.
 Ltac adjoint_of H := intros; apply adjoint_diagrams; repeat (simpl; autorewrite with adjoint_db); apply H.
 Ltac colorswap_of H := intros; apply colorswap_diagrams; repeat (simpl; autorewrite with colorswap_db); apply H.
+
+Ltac zx_simpl := simpl; repeat (cleanup_zx; simpl_casts). 

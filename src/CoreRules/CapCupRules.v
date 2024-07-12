@@ -199,3 +199,71 @@ Qed.
   (fun n => @n_cup_transpose n)
   (fun n => @n_cap_transpose n)
   : transpose_db.
+Local Open Scope ZX_scope.
+
+Lemma bigyank_cap : forall (zx1 : ZX 1 1),
+  ⊂ ↕ zx1 ∝ — ↕ ⊂ ⟷ top_to_bottom 3 ⟷ (— ↕ — ↕ zx1).
+Proof.
+  intros.
+  rewrite top_to_bottom_grow_r.
+  simpl_casts.
+  rewrite top_to_bottom_2.
+  repeat rewrite compose_assoc.
+  rewrite (stack_assoc — —).
+  zx_simpl.
+  repeat rewrite ComposeRules.compose_assoc.
+  rewrite <- (stack_wire_distribute_l ⨉ (— ↕ zx1)).
+  rewrite <- swap_comm.
+  rewrite stack_wire_distribute_l.
+  rewrite <- (ComposeRules.compose_assoc (⨉ ↕ —)).
+  rewrite (stack_assoc_back — (zx1)).
+  zx_simpl.
+  rewrite <- (stack_wire_distribute_r ⨉ (— ↕ zx1)).
+  rewrite <- swap_comm.
+  solve_prop 1.
+  Unshelve.
+  all: lia.
+Qed.
+
+Lemma bigyank_cup : forall (zx1 : ZX 1 1),
+  top_to_bottom 3 ⟷ (⊃ ↕ zx1) ∝ — ↕ ⊃ ⟷ zx1.
+Proof.
+  intros.
+  rewrite (stack_empty_r_rev zx1) at 2.
+  simpl_casts.
+  rewrite <- (stack_compose_distr — zx1).
+  cleanup_zx.
+  rewrite top_to_bottom_grow_l.
+  cleanup_zx.
+  rewrite top_to_bottom_2.
+  rewrite ComposeRules.compose_assoc.
+  rewrite <- (nwire_removal_l ⊃).
+  rewrite <- (wire_removal_r zx1).
+  rewrite (stack_compose_distr).
+  zx_simpl.
+  rewrite <- (ComposeRules.compose_assoc (— ↕ ⨉)).
+  rewrite stack_assoc.
+  simpl_casts.
+  rewrite <- stack_wire_distribute_l.
+  rewrite <- swap_comm.
+  rewrite stack_wire_distribute_l.
+  rewrite <- 2 (ComposeRules.compose_assoc (⨉ ↕ —)).
+  rewrite (stack_assoc_back — zx1 —). 
+  simpl_casts.
+  rewrite <- (stack_wire_distribute_r (⨉) (— ↕ zx1)).
+  rewrite <- swap_comm.
+  zx_simpl.
+  rewrite stack_wire_distribute_r.
+  repeat rewrite ComposeRules.compose_assoc.
+  assert ((⨉ ↕ — ⟷ (— ↕ ⨉ ⟷ (⊃ ↕ —))) ∝ (— ↕ ⊃)) as Hrw. { shelve. }
+  rewrite Hrw; clear Hrw.
+  rewrite (stack_assoc zx1).
+  zx_simpl.
+  bundle_wires.
+  rewrite <- (stack_compose_distr zx1 —).
+  zx_simpl.
+  easy.
+Unshelve.
+  all: try lia.
+  solve_prop 1.
+Qed.

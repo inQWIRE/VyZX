@@ -182,19 +182,26 @@ Qed.
 
 Lemma cnot_inv_is_swapped_cnot : _CNOT_inv_ ∝ ⨉ ⟷ _CNOT_ ⟷ ⨉.
 Proof.
-  (* solve_prop 1. *)
-Admitted.
+  solve_prop 1.
+Qed.
 
 Lemma notc_is_swapp_cnot : _NOTC_ ∝ ⨉ ⟷ _CNOT_ ⟷ ⨉. 
 Proof.
-  (* solve_prop 1. *)
-Admitted.
+  rewrite <- cnot_inv_is_swapped_cnot.
+  rewrite compose_assoc.
+  rewrite <- colorswap_is_bihadamard.
+  rewrite cnot_is_cnot_r.
+  easy.
+Qed.
 
 Lemma notc_r_is_swapp_cnot_r : _NOTC_R ∝ ⨉ ⟷ _CNOT_R ⟷ ⨉. 
 Proof.
   rewrite <- cnot_is_cnot_r.
-  (* solve_prop 1. *)
-Admitted.
+  rewrite <- cnot_inv_is_swapped_cnot.
+  rewrite compose_assoc.
+  rewrite <- colorswap_is_bihadamard.
+  easy.
+Qed.
 
 Lemma notc_is_notc_r : _NOTC_ ∝ _NOTC_R.
 Proof.
@@ -206,5 +213,9 @@ Qed.
 
 Lemma notc_is_notc_r_general : forall α β, — ↕ Z 1 2 α ⟷ (X 2 1 β ↕ —) ∝ X 1 2 β ↕ — ⟷ (— ↕ Z 2 1 α).
 Proof. 
-  (* Needs a few general lemmas but should be easy *)
-Admitted.
+  intros.
+  apply colorswap_diagrams.
+  simpl.
+  rewrite cnot_is_cnot_r_general.
+  easy.
+Qed.

@@ -513,38 +513,40 @@ Qed.
 Lemma swap_pullthrough_top_right_Z_1_1 : forall α, (Z 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (Z 1 1 α)).
 Proof. intros. solve_prop 1. Qed.
 
-
-Lemma swap_pullthrough_top_right_Z : forall n α prfn prfm, ((Z (S n) 1 α) ↕ —) ⟷ ⨉ ∝ cast _ _ prfn prfm (n_swap _ ⟷ (— ↕ (Z (S n) 1 α))).
+Lemma top_to_bottom_2 : top_to_bottom 2 ∝ ⨉.
 Proof.
-  intro n.
-  induction n; intros.
-  - simpl_casts.
-    cleanup_zx.
-    rewrite n_swap_2_is_swap.
-    rewrite swap_pullthrough_top_right_Z_1_1.
-    easy.
-  - rewrite SpiderInduction.grow_Z_left_2_1 at 1.
-    rewrite stack_wire_distribute_r.
-    rewrite compose_assoc.
-    rewrite IHn.
-    simpl_casts.
-    rewrite n_swap_grow_l.
-    rewrite compose_assoc.
-    rewrite (cast_compose_mid_contract _ (S (S n))).
-    simpl_casts.
-    rewrite (stack_assoc (Z 2 1 _) (n_wire n) —).
-    bundle_wires.
-    rewrite bottom_to_top_grow_r.
-    simpl_casts.
-    rewrite (cast_compose_mid (S (S n))).
-    erewrite <- (@cast_n_wire (S n)).
-    rewrite cast_stack_r.
-    rewrite cast_contract.
-    simpl_casts.
-    erewrite (cast_compose_mid_contract _ (S (S n)) _ _ _ _ _ _ _ (— ↕ bottom_to_top (S n)) (⨉ ↕ n_wire n)).
-    simpl_casts.
-Abort.
+  zx_simpl.
+  bundle_wires.
+  zx_simpl.
+  easy.
+Qed.
 
+Opaque top_to_bottom.
+
+Lemma swap_comm : forall (zx0 zx1 : ZX 1 1),
+  zx0 ↕ zx1 ⟷ ⨉ ∝ ⨉ ⟷ (zx1 ↕ zx0).
+Proof.
+  intros.
+  prop_exists_nonzero 1.
+  Msimpl.
+  simpl.
+  specialize (WF_ZX 1 1 zx0);
+  specialize (WF_ZX 1 1 zx1); intros.
+  solve_matrix.
+Qed.
+
+Transparent top_to_bottom.
+Lemma top_to_bottom_1 : top_to_bottom 1 ∝ —.
+Proof. easy. Qed.
+Opaque top_to_bottom.
+
+Lemma cast_top_to_bottom : forall {n} n' prfn prfn', top_to_bottom n ∝ cast _ _ prfn prfn' (top_to_bottom n').
+Proof.
+  intros.
+  subst.
+  simpl_casts.
+  easy.
+Qed.
 
 Lemma swap_pullthrough_top_right_X_1_1 : forall α, (X 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (X 1 1 α)).
 Proof. intros. colorswap_of swap_pullthrough_top_right_Z_1_1. Qed.
