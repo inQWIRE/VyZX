@@ -39,6 +39,8 @@ Tactic Notation "bundle_wires" := wire_to_n_wire_safe; (* change wires to n_wire
   (fun n m o p => @nwire_stack_compose_topleft n m o p)
   (fun n m o p => @nwire_stack_compose_botleft n m o p)
   : cleanup_zx_db.
+#[export] Hint Rewrite <- nstack1_compose : cleanup_zx_db.
+#[export] Hint Rewrite <- nstack_compose : cleanup_zx_db.
 Tactic Notation "cleanup_zx" := auto_cast_eqn (autorewrite with cleanup_zx_db).
 
 #[export] Hint Rewrite
@@ -62,3 +64,5 @@ Tactic Notation "cleanup_zx" := auto_cast_eqn (autorewrite with cleanup_zx_db).
 Ltac transpose_of H := intros; apply transpose_diagrams; repeat (simpl; autorewrite with transpose_db); apply H.
 Ltac adjoint_of H := intros; apply adjoint_diagrams; repeat (simpl; autorewrite with adjoint_db); apply H.
 Ltac colorswap_of H := intros; apply colorswap_diagrams; repeat (simpl; autorewrite with colorswap_db); apply H.
+
+Ltac zx_simpl := simpl; repeat (cleanup_zx; simpl_casts). 

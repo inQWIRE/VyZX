@@ -198,5 +198,17 @@ Proof. transpose_of X_n_wrap_under_r_base. Qed.
 
 (* @nocheck name *)
 (* PI is captialized in Coq R *)
-Lemma X_2_PI : forall n m a, X n m (INR a * 2 * PI) ∝ X n m 0.
-Proof. colorswap_of Z_2_PI. Qed.
+Lemma X_2_PI : forall {n m} a, X n m (IZR a * 2 * PI) ∝ X n m 0.
+Proof. intros. colorswap_of (@Z_2_PI n m a). Qed.
+
+Lemma X_simplify : forall α β n m, α = β -> X n m α ∝ X n m β.
+Proof. intros. subst. easy. Qed.
+
+Lemma X_simplify_general : forall {α β n m} c, α = ((IZR c) * 2 * PI + β)%R -> X n m α ∝ X n m β.
+Proof. intros. colorswap_of (@Z_simplify_general α β n m c). easy. Qed.
+	
+Lemma X_n_swap_absorbtion_left_base : forall n m α, n_swap n ⟷ X n m α ∝ X n m α.
+Proof.
+	colorswap_of Z_n_swap_absorbtion_left_base.
+Qed.
+		

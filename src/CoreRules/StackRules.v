@@ -1,6 +1,7 @@
 Require Export CoreData.CoreData.
 Require Import CastRules.
 Require Import SpiderInduction.
+Require Import ComposeRules.
 
 Local Open Scope ZX_scope.
 
@@ -197,7 +198,7 @@ Unshelve.
 all: lia.
 Qed.
 
-(* Lemma n_wire_collapse_r : forall {n0 n1 m1} (zx0 : ZX n0 0) (zx1 : ZX n1 m1),
+(* Lemma n_wre_collapse_r : forall {n0 n1 m1} (zx0 : ZX n0 0) (zx1 : ZX n1 m1),
  (zx0 ↕ n_wire n1) ⟷ zx1 ∝ zx0 ↕ zx1. *)
 
 Lemma nstack1_split : forall n m (zx : ZX 1 1),
@@ -248,3 +249,46 @@ Qed.
 
 Lemma nstack1_0 : forall zx, 0 ↑ zx ∝ ⦰.
 Proof. easy. Qed.
+
+Lemma nstack_is_nstack1 : forall (zx : ZX 1 1) n prfn prfm, n ⇑ zx ∝ cast _ _ prfn prfm (n ↑ zx).
+Proof.
+	intros.
+	simpl_casts.
+	induction n.
+	- easy.
+	- simpl.
+		rewrite IHn; [ | lia | lia].
+		easy.
+Qed.
+
+Lemma nstack1_is_nstack : forall (zx : ZX 1 1) n prfn prfm, (n ↑ zx) ∝  cast _ _ prfn prfm (n ⇑ zx).
+Proof.
+	intros.
+	rewrite <- cast_symm.
+	rewrite nstack_is_nstack1.
+	easy.
+Unshelve.
+	all: lia.
+Qed.
+
+Lemma nstack_compose : forall n m o n' (zx0 : ZX n m) (zx1 : ZX m o), n' ⇑ (zx0 ⟷ zx1) ∝ n' ⇑ zx0 ⟷ n' ⇑ zx1.
+Proof.
+	intros.
+	induction n'.
+	- simpl. rewrite compose_empty_r. easy.
+	- simpl.
+		rewrite IHn'.
+		rewrite stack_compose_distr.
+    easy.
+Qed.
+
+Lemma nstack1_compose : forall n' (zx0 zx1 : ZX 1 1), n' ↑ (zx0 ⟷ zx1) ∝ n' ↑ zx0 ⟷ n' ↑ zx1.
+Proof.
+	intros.
+  rewrite 3 nstack1_is_nstack.
+	rewrite nstack_compose.
+	rewrite (cast_compose_distribute_general _ n').
+	easy.
+Unshelve.
+all: lia.
+Qed.
