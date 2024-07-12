@@ -21,6 +21,12 @@ b_color_green = '\033[92m'
 b_color_yellow = '\033[93m'
 b_color_reset = '\033[0m'
 
+is_windows = sys.platform.startswith('win')
+if is_windows: # Disable colors on windows 
+  b_color_green = ''
+  b_color_yellow = ''
+  b_color_reset = ''
+  print("Warning: Windows detected. Disabling colored output")
 
 if len(args) > 1:
   print(usage)
