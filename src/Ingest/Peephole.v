@@ -412,6 +412,128 @@ Proof.
   apply compose_simplify; apply stack_simplify; easy.
 Qed.
 
+Lemma comm_6 : @RZCNOT 3 0 1; RZH 1; RZCNOT 1 2; RZH 1 ≡u RZH 1; RZCNOT 1 2; RZH 1; RZCNOT 0 1.
+Proof.
+  circuit_to_zx_full.
+  repeat rewrite compose_assoc.
+  rewrite (stack_assoc — □ —); simpl_casts.
+  rewrite <- (stack_wire_distribute_l _CNOT_ (□ ↕ —)).
+  rewrite <- stack_wire_distribute_l.
+  rewrite compose_assoc.
+  rewrite <- (stack_compose_distr — □ (X 2 1 0)).
+  cleanup_zx.
+  rewrite <- (nwire_stack_compose_botleft □ (X 2 1 0)).
+  rewrite <- (compose_assoc (Z 1 2 0 ↕ —)).
+  rewrite <- (nstack1_1 —) at 6.
+  replace (Z 1 2 0) with (⊙ (X 1 2 0)) at 2 by easy.
+  rewrite colorswap_is_bihadamard.
+  zx_simpl.
+  repeat rewrite <- compose_assoc.
+  rewrite <- (stack_wire_distribute_r □ (□ ⟷ X 1 2 0 ⟷ (□ ↕ □))).
+  repeat rewrite <- compose_assoc.
+  cleanup_zx.
+  rewrite (stack_assoc_back □ — —); simpl_casts.
+  rewrite <- (stack_wire_distribute_r (X 1 2 0 ⟷ (□ ↕ □)) (□ ↕ —)).
+  rewrite (compose_assoc (X 1 2 0)).
+  rewrite <- (stack_compose_distr □ □ □).
+  cleanup_zx.
+  rewrite (stack_wire_distribute_r (Z 1 2 0 ↕ —) (— ↕ X 2 1 0)) at 1.
+  rewrite stack_wire_distribute_l.
+  repeat rewrite compose_assoc.
+  rewrite <- (compose_assoc (— ↕ X 2 1 0 ↕ —)).
+  rewrite (stack_assoc — (X 2 1 0) —); simpl_casts.
+  rewrite <- (stack_wire_distribute_l (X 2 1 0 ↕ —)).
+  rewrite <- (stack_wire_distribute_r (X 2 1 0) (X 1 2 0 ⟷ (— ↕ □))).
+  rewrite <- compose_assoc.
+  rewrite X_spider_1_1_fusion.
+  rewrite X_wrap_over_top_left.
+  repeat (rewrite stack_wire_distribute_r; rewrite stack_wire_distribute_l).
+  repeat rewrite <- compose_assoc.
+  rewrite (stack_assoc (Z 1 2 0)).
+  rewrite (stack_assoc_back —).
+  simpl_casts.
+  rewrite Rplus_0_l.
+  rewrite (stack_assoc_back — —  (X 1 3 0)); simpl_casts.
+  rewrite (stack_assoc (— ↕ —)); simpl_casts.
+  rewrite <- (stack_compose_distr (Z 1 2 0) (— ↕ —) (— ↕ —) (X 1 3 0 ↕ —)).
+  bundle_wires; cleanup_zx.
+  rewrite <- (nwire_stack_compose_topleft (X 1 3 0 ↕ —)).
+  repeat rewrite <- compose_assoc.
+  rewrite (compose_assoc (n_wire 1 ↕ (X 1 3 0 ↕ —))).
+  rewrite <- (n_wire_stack 1 3).
+  rewrite (stack_assoc_back — _ —).
+  rewrite (stack_assoc_back — ⊃ (n_wire 2)).
+  rewrite (stack_assoc_back (Z 1 2 0) (n_wire 1) (n_wire 3)).
+  simpl_casts.
+  rewrite (stack_assoc (— ↕ ⊃) (n_wire 2) —); simpl_casts.
+  rewrite <- (stack_compose_distr (Z 1 2 0 ↕ n_wire 1) (— ↕ ⊃) (n_wire 3) (n_wire 2 ↕ —)).
+  assert (forall prfn prfm, (— ↕ ⊃) ∝ cast (1 + 1 + 1) 1 prfn prfm (n_wire 1 ↕ ⊃)) as Hcast1 by (intros; zx_simpl; easy).
+  rewrite Hcast1.
+  rewrite nstack1_1 at 2.
+  rewrite <- (Z_wrap_under_bot_right 1 1 0).
+  rewrite <- (nstack1_1 —) at 5.
+  cleanup_zx.
+  rewrite (X_add_r_base_rot 2 1).
+  cleanup_zx.
+  rewrite stack_wire_distribute_r.
+  rewrite stack_nwire_distribute_l.
+  rewrite (stack_assoc — □ —).
+  rewrite (stack_assoc_back — —).
+  simpl_casts.
+  rewrite (stack_assoc_back — — (□ ↕ —)); simpl_casts.
+  rewrite <- (n_wire_stack 1 1).
+  rewrite nstack1_1.
+  rewrite (stack_assoc — — —). 
+  rewrite (stack_assoc (X 1 2 0) — —).
+  simpl_casts.
+  rewrite (stack_assoc_back (Z 2 1 0) —).
+  rewrite (stack_assoc_back — (X 1 2 0) (— ↕ —)).
+  simpl_casts.
+  repeat rewrite compose_assoc.
+  rewrite <- (stack_compose_distr (— ↕ —) (— ↕ —) (□ ↕ —) (X 2 1 0)).
+  rewrite <- (stack_compose_distr (Z 2 1 0 ↕ —) (— ↕ — ⟷ (— ↕ —)) (— ↕ —) (□ ↕ — ⟷ X 2 1 0)).
+  rewrite <- (stack_compose_distr (— ↕ X 1 2 0) (Z 2 1 0 ↕ — ⟷ (— ↕ — ⟷ (— ↕ —))) (— ↕ —) (— ↕ — ⟷ (□ ↕ — ⟷ X 2 1 0))).
+  bundle_wires.
+  cleanup_zx.
+  rewrite <- cnot_is_cnot_r.
+  replace (Z 1 2 0) with (⊙ (X 1 2 0)) at 2 by easy.
+  rewrite colorswap_is_bihadamard.
+  zx_simpl.
+  repeat rewrite <- compose_assoc.
+  rewrite <- stack_wire_distribute_l.
+  rewrite <- (stack_wire_distribute_r □ (□ ⟷ X 1 2 0 ⟷ (□ ↕ □))).
+  repeat rewrite <- compose_assoc.
+  cleanup_zx.
+  rewrite (stack_assoc — —); simpl_casts.
+  rewrite stack_wire_distribute_r.
+  rewrite stack_wire_distribute_l.
+  repeat rewrite <- compose_assoc.
+  rewrite 2 (compose_assoc (— ↕ (X 1 2 0 ↕ —))).
+  rewrite <- 2 stack_wire_distribute_l.
+  rewrite (stack_assoc □); simpl_casts.
+  rewrite <- (stack_compose_distr □ — (□ ↕ —)).
+  rewrite wire_removal_r.
+  rewrite <- (stack_compose_distr □ □ (□ ↕ — ⟷ X 2 1 0)).
+  cleanup_zx.
+  repeat rewrite compose_assoc.
+  apply compose_simplify; [ easy | ].
+  rewrite 2 stack_wire_distribute_l.
+  rewrite (stack_assoc_back — —).
+  rewrite (stack_assoc_back — — (□ ↕ —)).
+  simpl_casts.
+  rewrite <- (stack_compose_distr (— ↕ —) (— ↕ —) (□ ↕ —) (X 2 1 0)).
+  rewrite <- (nstack1_1 —) at 4 5 6 7.
+  rewrite n_wire_stack.
+  cleanup_zx.
+  rewrite <- (stack_wire_distribute_r (Z 1 2 0 ↕ —) (— ↕ X 2 1 0)).
+  rewrite <- (nstack1_1 —) at 8.
+  rewrite (nwire_stack_compose_topleft (□ ↕ — ⟷ X 2 1 0) _CNOT_).
+  easy.
+Unshelve.
+all: lia.
+Qed.
+
+
 Lemma top_to_bottom_2 : top_to_bottom 2 ∝ ⨉.
 Proof.
   zx_simpl.
