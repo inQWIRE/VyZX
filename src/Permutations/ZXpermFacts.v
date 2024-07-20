@@ -890,6 +890,10 @@ Proof.
 	now rewrite zx_comm_commutes_r.
 Qed.
 
+(* NB: These are intentionally swapped l / r *)
+Notation swap_commutes_l := swap_pullthrough_r.
+Notation swap_commutes_r := swap_pullthrough_l.
+
 (* TODO: move *)
 Lemma permutation_change_dims n m (H : n = m) f : 
 	permutation n f <-> permutation m f.
@@ -1019,13 +1023,30 @@ Definition zx_gap_comm p m q : (ZX (p + m + q) (q + m + p)) :=
 	cast _ _ eq_refl (eq_sym (Nat.add_assoc _ _ _))
 	(zx_comm (p + m) q ⟷ (n_wire q ↕ zx_comm p m)).
 
+Lemma zx_gap_comm_pf p m q : p + m + q = q + m + p.
+Proof. lia. Qed.
+
 Lemma zx_gap_comm_defn p m q : 
 	zx_gap_comm p m q ∝ 
-	cast _ _ eq_refl (eq_sym zx_of_perm 
+	cast _ _ eq_refl (zx_gap_comm_pf _ _ _) 
+	(zx_of_perm (p + m + q) (rotr (p + m + q) (p + m) ∘ 
+		stack_perms q (p + m) idn (rotr (p + m) p))).
+Proof.
+	unfold zx_gap_comm, zx_comm.
+	rewrite <- zx_of_perm_idn.
+	clean_eqns rewrite cast_stack_r.
+	rewrite stack_zx_of_perm by auto with perm_db.
+	rewrite cast_compose_l, !cast_cast_eq.
+	rewrite cast_zx_of_perm_natural_l.
+	rewrite cast_compose_r, cast_id, compose_zx_of_perm by 
+		(erewrite permutation_change_dims; auto with perm_db zarith).
+	rewrite cast_cast_eq.
+	now apply cast_simplify.
+Qed.
 
 Import ComposeRules StackComposeRules CastRules.
 
-Lemma zx_gap_comm_pullthrough_r {n m r s p q} 
+Lemma zx_gap_comm_pullthrough_l {n m r s p q} 
 	(zx0 : ZX n m) (zx1 : ZX r s) (zx2 : ZX p q) :
 	zx0 ↕ zx1 ↕ zx2 ⟷ zx_gap_comm m s q ∝
 	zx_gap_comm n r p ⟷ (zx2 ↕ zx1 ↕ zx0).
@@ -1045,17 +1066,372 @@ Proof.
 	auto using compose_simplify, cast_simplify, proportional_refl.
 Qed.
 
-Lemma zx_gap_comm_pullthrough_l {n m r s p q} 
+Lemma zx_gap_comm_pullthrough_r {n m r s p q} 
 	(zx0 : ZX n m) (zx1 : ZX r s) (zx2 : ZX p q) :
 	zx_gap_comm n r p ⟷ (zx2 ↕ zx1 ↕ zx0) ∝
 	zx0 ↕ zx1 ↕ zx2 ⟷ zx_gap_comm m s q.
 Proof.
 	symmetry. 
-	apply zx_gap_comm_pullthrough_r.
+	apply zx_gap_comm_pullthrough_l.
 Qed.
+
+(* NB: These are intentionally swapped l / r *)
+Notation zx_gap_comm_commutes_l := zx_gap_comm_pullthrough_r.
+Notation zx_gap_comm_commutes_r := zx_gap_comm_pullthrough_l.
 
 Lemma zx_gap_comm_1_m_1_a_swap m : 
 	zx_gap_comm 1 m 1 ∝ a_swap (1 + m + 1).
 Proof.
-	unfold zx_gap_comm, zx_.
+	rewrite zx_gap_comm_defn, cast_id.
 	by_perm_eq.
+	rewrite Nat.add_sub.
+	rewrite perm_of_zx_of_perm_eq_WF 
+		by (rewrite (Nat.add_comm 1 m), Nat.add_comm; cleanup_perm_inv).
+	rewrite stack_perms_idn_f.
+	rewrite 2!rotr_add_l_eq.
+	intros k Hk; unfold compose.
+	unfold swap_perm.
+	rewrite (Nat.add_comm 1 m).
+	bdestructΩ'.
+Qed.
+
+Lemma a_swap_pullthrough_l {n m o p} 
+	(zx0 : ZX n 1) (zx1 : ZX m o) (zx2 : ZX p 1) : 
+	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + o + 1) ∝
+	zx_gap_comm n m p ⟷ (zx2 ↕ zx1 ↕ zx0).
+Proof.
+	rewrite <- zx_gap_comm_1_m_1_a_swap.
+	apply zx_gap_comm_pullthrough_l.
+Qed.
+
+Lemma a_swap_pullthrough_r {n m o p} 
+	(zx0 : ZX 1 n) (zx1 : ZX m o) (zx2 : ZX 1 p) : 
+	a_swap (1 + m + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	zx2 ↕ zx1 ↕ zx0 ⟷ zx_gap_comm p o n .
+Proof.
+	rewrite <- zx_gap_comm_1_m_1_a_swap.
+	apply zx_gap_comm_pullthrough_r.
+Qed.
+
+(* NB: These are intentionally swapped l / r *)
+Notation a_swap_commutes_l := a_swap_pullthrough_r.
+Notation a_swap_commutes_r := a_swap_pullthrough_l.
+
+
+
+
+Lemma zx_comm_nat_bot_l {p q n m} 
+	(zxBot : ZX m q) (zxTop : ZX n p) :
+	zxTop ↕ zxBot ⟷ zx_comm p q ∝
+	zxTop ↕ n_wire m ⟷ zx_comm p m 
+	⟷ (zxBot ↕ n_wire p).
+Proof.
+	rewrite 2!zx_comm_commutes_r, compose_assoc.
+	rewrite <- stack_compose_distr.
+	now rewrite nwire_removal_l, nwire_removal_r.
+Qed.
+
+Lemma zx_comm_nat_top_l {p q n m} 
+	(zxTop : ZX n p) (zxBot : ZX m q) :
+	zxTop ↕ zxBot ⟷ zx_comm p q ∝
+	n_wire n ↕ zxBot ⟷ zx_comm n q 
+	⟷ (n_wire q ↕ zxTop).
+Proof.
+	rewrite 2!zx_comm_commutes_r, compose_assoc.
+	rewrite <- stack_compose_distr.
+	now rewrite nwire_removal_l, nwire_removal_r.
+Qed.
+
+Lemma zx_comm_nat_bot_r {p q n m} 
+	(zxBot : ZX m q) (zxTop : ZX n p) :
+	zx_comm m n ⟷ (zxTop ↕ zxBot) ∝
+	zxBot ↕ n_wire n ⟷ zx_comm q n 
+	⟷ (zxTop ↕ n_wire q).
+Proof.
+	rewrite compose_assoc, 2!zx_comm_commutes_l, <- compose_assoc.
+	rewrite <- stack_compose_distr.
+	now rewrite nwire_removal_l, nwire_removal_r.
+Qed.
+
+Lemma zx_comm_nat_top_r {p q n m} 
+  (zxTop : ZX n p) (zxBot : ZX m q) :
+	zx_comm m n ⟷ (zxTop ↕ zxBot) ∝
+	n_wire m ↕ zxTop ⟷ zx_comm m p 
+	⟷ (n_wire p ↕ zxBot).
+Proof.
+	rewrite compose_assoc, 2!zx_comm_commutes_l, <- compose_assoc.
+	rewrite <- stack_compose_distr.
+	now rewrite nwire_removal_l, nwire_removal_r.
+Qed.
+
+
+
+Lemma swap_nat_bot_l {n m} 
+	(zxBot : ZX m 1) (zxTop : ZX n 1) :
+	zxTop ↕ zxBot ⟷ ⨉ ∝
+	zxTop ↕ n_wire m ⟷ zx_comm 1 m 
+	⟷ (zxBot ↕ n_wire 1).
+Proof.
+	rewrite swap_commutes_r, zx_comm_commutes_r, compose_assoc.
+	rewrite <- stack_compose_distr.
+	now rewrite nwire_removal_l, nwire_removal_r.
+Qed.
+
+Lemma swap_nat_top_l {n m} 
+	(zxTop : ZX n 1) (zxBot : ZX m 1) :
+	zxTop ↕ zxBot ⟷ ⨉ ∝
+	n_wire n ↕ zxBot ⟷ zx_comm n 1 
+	⟷ (n_wire 1 ↕ zxTop).
+Proof.
+	rewrite swap_commutes_r, zx_comm_commutes_r, compose_assoc.
+	rewrite <- stack_compose_distr.
+	now rewrite nwire_removal_l, nwire_removal_r.
+Qed.
+
+Lemma swap_nat_bot_r {p q} 
+	(zxBot : ZX 1 q) (zxTop : ZX 1 p) :
+	⨉ ⟷ (zxTop ↕ zxBot) ∝
+	zxBot ↕ n_wire 1 ⟷ zx_comm q 1 
+	⟷ (zxTop ↕ n_wire q).
+Proof.
+	rewrite compose_assoc, swap_commutes_l, 
+		zx_comm_commutes_l, <- compose_assoc.
+	rewrite <- stack_compose_distr.
+	now rewrite nwire_removal_l, nwire_removal_r.
+Qed.
+
+Lemma swap_nat_top_r {p q} 
+  (zxTop : ZX 1 p) (zxBot : ZX 1 q) :
+	⨉ ⟷ (zxTop ↕ zxBot) ∝
+	n_wire 1 ↕ zxTop ⟷ zx_comm 1 p 
+	⟷ (n_wire p ↕ zxBot).
+Proof.
+	rewrite compose_assoc, swap_commutes_l, 
+		zx_comm_commutes_l, <- compose_assoc.
+	rewrite <- stack_compose_distr.
+	now rewrite nwire_removal_l, nwire_removal_r.
+Qed.
+
+
+
+Lemma swap_nat_bot_l_1 {n} 
+	(zxBot : ZX 1 1) (zxTop : ZX n 1) :
+	zxTop ↕ zxBot ⟷ ⨉ ∝
+	zxTop ↕ n_wire 1 ⟷ ⨉
+	⟷ (zxBot ↕ n_wire 1).
+Proof.
+	rewrite 2!swap_commutes_r, compose_assoc.
+	change 2%nat with (1 + 1)%nat.
+	rewrite <- stack_compose_distr.
+	now rewrite nwire_removal_l, nwire_removal_r.
+Qed.
+
+Lemma swap_nat_top_l_1 {m} 
+	(zxTop : ZX 1 1) (zxBot : ZX m 1) :
+	zxTop ↕ zxBot ⟷ ⨉ ∝
+	n_wire 1 ↕ zxBot ⟷ ⨉ 
+	⟷ (n_wire 1 ↕ zxTop).
+Proof.
+	rewrite 2!swap_commutes_r, compose_assoc.
+	change 2%nat with (1 + 1)%nat.
+	rewrite <- stack_compose_distr.
+	now rewrite nwire_removal_l, nwire_removal_r.
+Qed.
+
+Lemma swap_nat_bot_r_1 {p} 
+	(zxBot : ZX 1 1) (zxTop : ZX 1 p) :
+	⨉ ⟷ (zxTop ↕ zxBot) ∝
+	zxBot ↕ n_wire 1 ⟷ ⨉
+	⟷ (zxTop ↕ n_wire 1).
+Proof.
+	rewrite compose_assoc, 2!swap_commutes_l, <- compose_assoc.
+	rewrite <- stack_compose_distr.
+	now rewrite nwire_removal_l, nwire_removal_r.
+Qed.
+
+Lemma swap_nat_top_r_1 {q} 
+  (zxTop : ZX 1 1) (zxBot : ZX 1 q) :
+	⨉ ⟷ (zxTop ↕ zxBot) ∝
+	n_wire 1 ↕ zxTop ⟷ ⨉
+	⟷ (n_wire 1 ↕ zxBot).
+Proof.
+	rewrite compose_assoc, 2!swap_commutes_l, <- compose_assoc.
+	rewrite <- stack_compose_distr.
+	now rewrite nwire_removal_l, nwire_removal_r.
+Qed.
+
+
+
+Lemma zx_gap_comm_nat_top_l {n m o q r s}
+	(zx0 : ZX n q) (zx1 : ZX m r) (zx2 : ZX o s) : 
+	zx0 ↕ zx1 ↕ zx2 ⟷ zx_gap_comm q r s ∝
+	n_wire n ↕ zx1 ↕ zx2 ⟷ zx_gap_comm n r s 
+	⟷ (n_wire s ↕ n_wire r ↕ zx0).
+Proof.
+	rewrite 2!zx_gap_comm_commutes_r, compose_assoc, <- !stack_compose_distr.
+	now rewrite ?nwire_removal_l, ?nwire_removal_r.
+Qed.
+
+Lemma zx_gap_comm_nat_mid_l {n m o q r s}
+	(zx1 : ZX m r) (zx0 : ZX n q) (zx2 : ZX o s) : 
+	zx0 ↕ zx1 ↕ zx2 ⟷ zx_gap_comm q r s ∝
+	zx0 ↕ n_wire m ↕ zx2 ⟷ zx_gap_comm q m s 
+	⟷ (n_wire s ↕ zx1 ↕ n_wire q).
+Proof.
+	rewrite 2!zx_gap_comm_commutes_r, compose_assoc, <- !stack_compose_distr.
+	now rewrite ?nwire_removal_l, ?nwire_removal_r.
+Qed.
+
+Lemma zx_gap_comm_nat_bot_l {n m o q r s}
+	(zx2 : ZX o s) (zx0 : ZX n q) (zx1 : ZX m r) : 
+	zx0 ↕ zx1 ↕ zx2 ⟷ zx_gap_comm q r s ∝
+	zx0 ↕ zx1 ↕ n_wire o ⟷ zx_gap_comm q r o
+	⟷ (zx2 ↕ n_wire r ↕ n_wire q).
+Proof.
+	rewrite 2!zx_gap_comm_commutes_r, compose_assoc, <- !stack_compose_distr.
+	now rewrite ?nwire_removal_l, ?nwire_removal_r.
+Qed.
+
+Lemma zx_gap_comm_nat_top_r {n m o q r s}
+	(zx0 : ZX n q) (zx1 : ZX m r) (zx2 : ZX o s) : 
+	zx_gap_comm _ _ _ ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	n_wire _ ↕ n_wire _ ↕ zx0 ⟷ zx_gap_comm _ _ _
+	⟷ (n_wire _ ↕ zx1 ↕ zx2).
+Proof.
+	rewrite compose_assoc, 2!zx_gap_comm_commutes_l, 
+		<- compose_assoc, <- !stack_compose_distr.
+	now rewrite ?nwire_removal_l, ?nwire_removal_r.
+Qed.
+
+Lemma zx_gap_comm_nat_mid_r {n m o q r s}
+	(zx1 : ZX m r) (zx0 : ZX n q) (zx2 : ZX o s) : 
+	zx_gap_comm _ _ _ ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	n_wire _ ↕ zx1 ↕ n_wire _ ⟷ zx_gap_comm _ _ _
+	⟷ (zx0 ↕ n_wire _ ↕ zx2).
+Proof.
+	rewrite compose_assoc, 2!zx_gap_comm_commutes_l, 
+		<- compose_assoc, <- !stack_compose_distr.
+	now rewrite ?nwire_removal_l, ?nwire_removal_r.
+Qed.
+
+Lemma zx_gap_comm_nat_bot_r {n m o q r s}
+	(zx2 : ZX o s) (zx0 : ZX n q) (zx1 : ZX m r) : 
+	zx_gap_comm _ _ _ ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	zx2 ↕ n_wire _ ↕ n_wire _ ⟷ zx_gap_comm _ _ _
+	⟷ (zx0 ↕ zx1 ↕ n_wire _).
+Proof.
+	rewrite compose_assoc, 2!zx_gap_comm_commutes_l, 
+		<- compose_assoc, <- !stack_compose_distr.
+	now rewrite ?nwire_removal_l, ?nwire_removal_r.
+Qed.
+
+
+
+Lemma a_swap_nat_top_l {n m o r}
+	(zx0 : ZX n 1) (zx1 : ZX m r) (zx2 : ZX o 1) : 
+	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + r + 1) ∝
+	n_wire n ↕ zx1 ↕ zx2 ⟷ zx_gap_comm n r 1 
+	⟷ (n_wire 1 ↕ n_wire r ↕ zx0).
+Proof.
+	rewrite a_swap_commutes_r, zx_gap_comm_commutes_r, 
+		compose_assoc, <- !stack_compose_distr.
+	now rewrite ?nwire_removal_l, ?nwire_removal_r.
+Qed.
+
+Lemma a_swap_nat_mid_l {n m o r}
+	(zx0 : ZX n 1) (zx1 : ZX m r) (zx2 : ZX o 1) : 
+	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + r + 1) ∝
+	zx0 ↕ n_wire m ↕ zx2 ⟷ a_swap (1 + m + 1)
+	⟷ (n_wire 1 ↕ zx1 ↕ n_wire 1).
+Proof.
+	rewrite 2!a_swap_commutes_r, compose_assoc, <- !stack_compose_distr.
+	now rewrite ?nwire_removal_l, ?nwire_removal_r.
+Qed.
+
+Lemma a_swap_nat_bot_l {n m o r}
+	(zx0 : ZX n 1) (zx1 : ZX m r) (zx2 : ZX o 1) : 
+	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + r + 1) ∝
+	zx0 ↕ zx1 ↕ n_wire o ⟷ zx_gap_comm 1 r o
+	⟷ (zx2 ↕ n_wire r ↕ n_wire 1).
+Proof.
+	rewrite a_swap_commutes_r, zx_gap_comm_commutes_r, 
+		compose_assoc, <- !stack_compose_distr.
+	now rewrite ?nwire_removal_l, ?nwire_removal_r.
+Qed.
+
+Lemma a_swap_nat_top_r {m q r s}
+	(zx0 : ZX 1 q) (zx1 : ZX m r) (zx2 : ZX 1 s) : 
+	a_swap (1 + _ + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	n_wire _ ↕ n_wire _ ↕ zx0 ⟷ zx_gap_comm _ _ _
+	⟷ (n_wire _ ↕ zx1 ↕ zx2).
+Proof.
+	rewrite compose_assoc, a_swap_commutes_l, zx_gap_comm_commutes_l, 
+		<- compose_assoc, <- !stack_compose_distr.
+	now rewrite ?nwire_removal_l, ?nwire_removal_r.
+Qed.
+
+Lemma a_swap_nat_mid_r {m q r s}
+	(zx0 : ZX 1 q) (zx1 : ZX m r) (zx2 : ZX 1 s) : 
+	a_swap (1 + _ + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	n_wire _ ↕ zx1 ↕ n_wire _ ⟷ a_swap (1 + _ + 1)
+	⟷ (zx0 ↕ n_wire _ ↕ zx2).
+Proof.
+	rewrite compose_assoc, 2!a_swap_commutes_l,
+		<- compose_assoc, <- !stack_compose_distr.
+	now rewrite ?nwire_removal_l, ?nwire_removal_r.
+Qed.
+
+Lemma a_swap_nat_bot_r {m q r s}
+	(zx0 : ZX 1 q) (zx1 : ZX m r) (zx2 : ZX 1 s) : 
+	a_swap (1 + _ + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	zx2 ↕ n_wire _ ↕ n_wire _ ⟷ zx_gap_comm _ _ _
+	⟷ (zx0 ↕ zx1 ↕ n_wire _).
+Proof.
+	rewrite compose_assoc, a_swap_commutes_l, zx_gap_comm_commutes_l, 
+		<- compose_assoc, <- !stack_compose_distr.
+	now rewrite ?nwire_removal_l, ?nwire_removal_r.
+Qed.
+
+
+
+Lemma a_swap_nat_top_l_1 {m o r}
+	(zx0 : ZX 1 1) (zx1 : ZX m r) (zx2 : ZX o 1) : 
+	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + r + 1) ∝
+	n_wire 1 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + _ + 1)
+	⟷ (n_wire 1 ↕ n_wire r ↕ zx0).
+Proof.
+	rewrite 2!a_swap_commutes_r, compose_assoc, <- !stack_compose_distr.
+	now rewrite ?nwire_removal_l, ?nwire_removal_r.
+Qed.
+
+Lemma a_swap_nat_bot_l_1 {n m r}
+	(zx0 : ZX n 1) (zx1 : ZX m r) (zx2 : ZX 1 1) : 
+	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + r + 1) ∝
+	zx0 ↕ zx1 ↕ n_wire 1 ⟷ a_swap (1 + _ + 1)
+	⟷ (zx2 ↕ n_wire r ↕ n_wire 1).
+Proof.
+	rewrite 2!a_swap_commutes_r, compose_assoc, <- !stack_compose_distr.
+	now rewrite ?nwire_removal_l, ?nwire_removal_r.
+Qed.
+
+Lemma a_swap_nat_top_r_1 {m r s}
+	(zx0 : ZX 1 1) (zx1 : ZX m r) (zx2 : ZX 1 s) : 
+	a_swap (1 + _ + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	n_wire _ ↕ n_wire _ ↕ zx0 ⟷ a_swap (1 + _ + 1)
+	⟷ (n_wire _ ↕ zx1 ↕ zx2).
+Proof.
+	rewrite compose_assoc, 2!a_swap_commutes_l, 
+		<- compose_assoc, <- !stack_compose_distr.
+	now rewrite ?nwire_removal_l, ?nwire_removal_r.
+Qed.
+
+Lemma a_swap_nat_bot_r_1 {m q r}
+	(zx0 : ZX 1 q) (zx1 : ZX m r) (zx2 : ZX 1 1) : 
+	a_swap (1 + _ + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	zx2 ↕ n_wire _ ↕ n_wire _ ⟷ a_swap (1 + _ + 1)
+	⟷ (zx0 ↕ zx1 ↕ n_wire _).
+Proof.
+	rewrite compose_assoc, 2!a_swap_commutes_l,
+		<- compose_assoc, <- !stack_compose_distr.
+	now rewrite ?nwire_removal_l, ?nwire_removal_r.
+Qed.
