@@ -522,7 +522,8 @@ Ltac solve_simple_mod_eqns :=
 Ltac solve_modular_permutation_equalities :=
   (cleanup_perm_of_zx || cleanup_perm_inv || cleanup_perm);
   unfold Basics.compose, rotr, rotl, stack_perms, swap_2_perm, swap_perm;
-  try (apply functional_extensionality; intros ?);
+  try (apply functional_extensionality; 
+  let k := fresh "k" in intros k);
   bdestructΩ';
   solve_simple_mod_eqns.
 
@@ -629,7 +630,8 @@ Ltac simpl_permlike_zx :=
     rewrite
       (cast_cast_eq _ _ _ _ _ _ zx0), (cast_cast_eq _ _ _ _ _ _ zx1),
       (cast_id_eq _ _ _ _ zx0)
-end; repeat simpl_casts_eq) || (repeat simpl_casts_eq).
+  end; repeat simpl_casts_eq) 
+  || (repeat simpl_casts_eq).
 
 #[export] Hint Extern 2 => 
   (repeat first [rewrite cast_id_eq | rewrite cast_cast_eq]) : zxperm_db.
@@ -884,6 +886,14 @@ Ltac show_term_nonzero term :=
   match term with
   | 2 ^ ?a => exact (pow2_nonzero a)
   | ?a ^ ?b => exact (Nat.pow_nonzero a b ltac:(show_term_nonzero a))
+  | ?a * ?b => 
+    (assert (a <> 0) by (show_term_nonzero a);
+    assert (b <> 0) by (show_term_nonzero b);
+    lia)
+  | ?a + ?b => 
+    ((assert (a <> 0) by (show_term_nonzero a) ||
+    assert (b <> 0) by (show_term_nonzero b));
+    lia)
   | _ => lia
   | _ => nia
   end.

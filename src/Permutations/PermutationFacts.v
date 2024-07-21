@@ -10,6 +10,12 @@ Open Scope nat.
 Open Scope prg.
 Open Scope perm_scope.
 
+Lemma permutation_change_dims n m (H : n = m) f : 
+	permutation n f <-> permutation m f.
+Proof.
+	now subst.
+Qed.
+
 Lemma permutation_eqb_iff {n f} a b : permutation n f -> 
   a < n -> b < n ->
   f a =? f b = (a =? b).
@@ -1166,12 +1172,12 @@ Proof. solve_modular_permutation_equalities. Qed.
 #[export] Hint Rewrite stack_perms_idn_idn : perm_cleanup_db.
 
 Lemma stack_perms_compose {n0 n1} {f g} {f' g'} 
-	(Hf' : permutation n0 f') (Hg' : permutation n1 g') :
+	(Hf' : perm_bounded n0 f') (Hg' : perm_bounded n1 g') :
 	(stack_perms n0 n1 f g ∘ stack_perms n0 n1 f' g'
 	= stack_perms n0 n1 (f ∘ f') (g ∘ g'))%prg.
 Proof.
-	destruct Hf' as [Hf'inv Hf'].
-	destruct Hg' as [Hg'inv Hg'].
+	(* destruct Hf' as [Hf'inv Hf']. *)
+	(* destruct Hg' as [Hg'inv Hg']. *)
 	unfold compose.
 	(* bdestruct_one. *)
   solve_modular_permutation_equalities.
@@ -1180,6 +1186,9 @@ Proof.
 	- assert (Hk: k - n0 < n1) by lia.
 	  specialize (Hg' _ Hk); lia.
 Qed.
+
+#[export] Hint Rewrite @stack_perms_compose 
+	using auto with perm_db perm_bounded_db : perm_inv_db.
 
 Lemma stack_perms_assoc {n0 n1 n2} {f g h} :
   stack_perms (n0 + n1) n2 (stack_perms n0 n1 f g) h =
@@ -1201,6 +1210,10 @@ Proof.
   - apply Hf; easy.
   - rewrite Hg; lia.
 Qed.
+
+#[export] Hint Resolve stack_perms_idn_of_left_right_idn 
+	stack_perms_compose : perm_inv_db.
+  
 
 
 Lemma contract_perm_bounded {n f} (Hf : perm_bounded n f) a : 
@@ -1544,6 +1557,25 @@ Proof.
   pose proof (Nat.mod_upper_bound k (S n) H').
   lia.
 Qed.
+
+Lemma rotr_add_n_l n k : 
+	rotr n (n + k) = rotr n k.
+Proof.
+	rewrite rotr_eq_rotr_mod.
+	rewrite Nat.add_comm, mod_add_n_r.
+	now rewrite <- rotr_eq_rotr_mod.
+Qed.
+
+Lemma rotr_add_n_r n k : 
+	rotr n (k + n) = rotr n k.
+Proof.
+	rewrite rotr_eq_rotr_mod.
+	rewrite mod_add_n_r.
+	now rewrite <- rotr_eq_rotr_mod.
+Qed.
+
+#[export] Hint Rewrite rotr_add_n_r rotr_add_n_l : perm_cleanup_db.
+
 
 
 Lemma reflect_perm_invol n k : 

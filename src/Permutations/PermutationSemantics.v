@@ -12,6 +12,16 @@ Qed.
 
 #[export] Hint Rewrite perm_to_matrix_rotr_eq_kron_comm : perm_inv_db.
 
+Lemma perm_to_matrix_rotr_eq_kron_comm_alt : forall n o,
+  perm_to_matrix (n + o) (rotr (n + o) o) = kron_comm (2^n) (2^o).
+Proof.
+  intros n o.
+  rewrite Nat.add_comm.
+  cleanup_perm_inv.
+Qed.
+
+#[export] Hint Rewrite perm_to_matrix_rotr_eq_kron_comm_alt : perm_inv_db.
+
 Lemma perm_to_matrix_rotr_eq_kron_comm_mat_equiv : forall n o,
   perm_to_matrix (n + o) (rotr (n + o) n) ≡ kron_comm (2^o) (2^n).
 Proof.
@@ -242,3 +252,71 @@ Proof.
   easy.
 Qed.
 
+Lemma perm_to_matrix_pullthrough_middle_eq_idn padl padm padr padm' f
+  (Hf : permutation (padl + padm + padr) f)
+  (Hfid : perm_eq_id_mid padl padm f)
+  (A : Matrix (2^padm') (2^padm)) (HA : WF_Matrix A) :
+  @Mmult (2^padl*2^padm'*2^padr) (2^padl*2^padm*2^padr) (2^(padl+padm+padr))
+  (I (2^padl) ⊗ A ⊗ I (2^padr)) (perm_to_matrix (padl + padm + padr) f) = 
+  @Mmult (2^(padl+padm'+padr)) (2^padl*2^padm'*2^padr) (2^padl*2^padm*2^padr)
+    (perm_to_matrix (padl + padm' + padr) 
+      (expand_perm_id_mid padl padm' padr 
+      (contract_perm_id_mid padl padm padr f)))
+    (I (2^padl) ⊗ A ⊗ I (2^padr)).
+Proof.
+  rewrite (perm_to_matrix_eq_of_perm_eq _ _ _
+    (perm_eq_sym (expand_contract_perm_perm_eq_idn_inv Hf Hfid))).
+  unfold expand_perm_id_mid.
+  rewrite 4!perm_to_matrix_compose by
+    (erewrite permutation_change_dims; auto with perm_db zarith 
+    || apply permutation_compose;
+    erewrite permutation_change_dims; auto with perm_db zarith).
+  replace (padl + padm + padr) with (padl + padr + padm) by lia.
+  rewrite perm_to_matrix_of_stack_perms by auto with perm_db.
+  replace (padl + padr + padm) with (padl + (padm + padr)) by lia.
+  rewrite !perm_to_matrix_of_stack_perms by auto with perm_db.
+  replace (padl + padm' + padr) with (padl + padr + padm') by lia.
+  rewrite perm_to_matrix_of_stack_perms by auto with perm_db.
+  replace (padl + padr + padm') with (padl + (padm' + padr)) by lia.
+  rewrite !perm_to_matrix_of_stack_perms by auto with perm_db.
+  
+  rewrite !perm_to_matrix_idn.
+  rewrite !perm_to_matrix_rotr_eq_kron_comm_alt, 
+    !perm_to_matrix_rotr_eq_kron_comm.
+  unify_pows_two.
+  rewrite <- !Mmult_assoc.
+  rewrite !Nat.pow_add_r.
+  rewrite kron_assoc, <- 2!Nat.mul_assoc by auto with wf_db.
+  rewrite kron_mixed_product.
+  restore_dims.
+  (* replace (@Mmult (2 ^ padm' * 2 ^ padr) (2 ^ padm * 2 ^ padr)
+  (2 ^ padm * 2 ^ padr)) with 
+  (@Mmult (2 ^ padm' * 2 ^ padr) (2 ^ padm * 2 ^ padr)
+  (2 ^ padr * 2 ^ padm)) by (f_equal; lia). *)
+  rewrite (kron_comm_commutes_r _ _ _ _ A (I (2^padr))) by auto with wf_db.
+  rewrite (Nat.mul_comm (2^padm) (2^padr)).
+  rewrite <- kron_mixed_product.
+  rewrite <- kron_assoc by auto with wf_db.
+  rewrite !Mmult_assoc.
+  f_equal.
+  restore_dims.
+  rewrite !Nat.pow_add_r.
+  rewrite <- (Mmult_assoc (_ ⊗ _ ⊗ A)).
+  rewrite kron_mixed_product.
+  rewrite Mmult_1_r by auto.
+  rewrite id_kron.
+  restore_dims.
+  rewrite Mmult_1_l, <- (Mmult_1_r _ _ (perm_to_matrix _ _)) by auto with wf_db.
+  rewrite <- (Mmult_1_l _ _ A) by auto.
+  rewrite <- kron_mixed_product.
+  rewrite Mmult_1_r, Mmult_1_l by auto with wf_db.
+  rewrite Mmult_assoc.
+  f_equal.
+  rewrite kron_mixed_product, kron_comm_commutes_l by auto with wf_db.
+  rewrite <- kron_mixed_product.
+  restore_dims.
+  rewrite <- kron_assoc by auto with wf_db.
+  rewrite Nat.pow_add_r, <- id_kron.
+  now restore_dims.
+Qed.
+  

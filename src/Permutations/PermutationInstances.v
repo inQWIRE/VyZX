@@ -190,12 +190,6 @@ Proof.
   perm_eq_by_inv_inj (stack_perms n m f g) (n+m).
 Qed.
 
-#[export] Hint Resolve stack_perms_idn_of_left_right_idn 
-	stack_perms_compose : perm_inv_db.
-#[export] Hint Rewrite @stack_perms_compose 
-	using auto with perm_db : perm_inv_db.
-
-
 
 Lemma stack_perms_proper {n0 n1} {f f' g g'} 
   (Hf : perm_eq n0 f f') (Hg : perm_eq n1 g g') : 

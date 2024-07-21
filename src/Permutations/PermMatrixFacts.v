@@ -610,3 +610,244 @@ Proof.
   apply perm_to_matrix_eq_of_perm_eq.
   now apply perm_to_matrix_perm_eq_of_proportional.
 Qed.
+
+Definition perm_eq_id_mid (padl padm : nat) (f : nat -> nat) : Prop :=
+  forall a, a < padm -> f (padl + a) = padl + a.
+
+Lemma inv_perm_eq_id_mid {padl padm padr f} 
+  (Hf : permutation (padl + padm + padr) f)
+  (Hfidn : perm_eq_id_mid padl padm f) :
+  forall k, k < padl + padm + padr ->
+   padl <= f k < padl + padm -> f k = k.
+Proof.
+  intros k Hk [].
+  apply (permutation_is_injective _ _ Hf); [lia..|].
+  replace (f k) with (padl + (f k - padl)) by lia.
+  (* unfold perm_eq_id_mid in Hfidn. *)
+  apply Hfidn; lia.
+Qed.
+
+Definition expand_perm_id_mid (padl padm padr : nat) 
+  (f : nat -> nat) : nat -> nat :=
+  stack_perms padl (padm + padr) idn (rotr (padm + padr) padm) 
+  ∘ (stack_perms (padl + padr) padm f idn)
+  ∘ stack_perms padl (padm + padr) idn (rotr (padm + padr) padr).
+
+Arguments compose_assoc [_ _ _ _].
+
+Lemma expand_perm_id_mid_compose (f g : nat -> nat) (padl padm padr : nat) 
+  (Hf : perm_bounded (padl + padr) f)
+  (Hg : perm_bounded (padl + padr) g) :
+  expand_perm_id_mid padl padm padr f ∘ expand_perm_id_mid padl padm padr g =
+  expand_perm_id_mid padl padm padr (f ∘ g).
+Proof.
+  unfold expand_perm_id_mid.
+  (* cleanup_perm. *)
+  rewrite (compose_assoc _ (stack_perms _ _ idn (rotr _ padr))), 
+    <- !(compose_assoc _ _ (stack_perms _ _ idn (rotr _ padr))).
+  cleanup_perm_inv.
+  cleanup_perm.
+  rewrite (Nat.add_comm padr padm).
+  cleanup_perm.
+  rewrite compose_assoc, <- (compose_assoc _ _ (stack_perms _ _ f _)).
+  cleanup_perm.
+Qed.
+
+Lemma expand_perm_id_mid_eq_of_perm_eq {padl padr f g} 
+  (Hfg : perm_eq (padl + padr) f g) padm : 
+  expand_perm_id_mid padl padm padr f = expand_perm_id_mid padl padm padr g.
+Proof.
+  unfold expand_perm_id_mid.
+  do 2 f_equal.
+  now apply stack_perms_proper_eq.
+Qed.
+
+Lemma expand_perm_id_mid_permutation {padl padr f} 
+  (Hf : permutation (padl + padr) f) padm : 
+  permutation (padl + padm + padr) (expand_perm_id_mid padl padm padr f).
+Proof.
+  unfold expand_perm_id_mid.
+  rewrite <- Nat.add_assoc.
+  apply permutation_compose; [|auto with perm_db].
+  apply permutation_compose; [auto with perm_db|].
+  replace (padl + (padm + padr)) with (padl + padr + padm) by lia.
+  auto with perm_db.
+Qed.
+
+#[export] Hint Resolve expand_perm_id_mid_permutation : perm_db.
+
+Definition contract_perm_id_mid (padl padm padr : nat) 
+  (f : nat -> nat) : nat -> nat :=
+  stack_perms padl (padm + padr) idn (rotr (padm + padr) padr) ∘ 
+  f ∘ stack_perms padl (padm + padr) idn (rotr (padm + padr) padm).
+
+Lemma contract_expand_perm_perm_eq_inv padl padm padr f 
+  (Hf : perm_bounded (padl + padr) f) :
+  perm_eq (padl + padr)
+    (contract_perm_id_mid padl padm padr 
+      (expand_perm_id_mid padl padm padr f)) 
+    f.
+Proof.
+  unfold contract_perm_id_mid, expand_perm_id_mid.
+  rewrite !compose_assoc.
+  cleanup_perm.
+  rewrite (Nat.add_comm padr padm).
+  rewrite <- !compose_assoc.
+  cleanup_perm.
+  rewrite (Nat.add_comm padr padm).
+  cleanup_perm.
+  intros k Hk.
+  now rewrite stack_perms_left by easy.
+Qed.
+
+Lemma stack_perms_idn_compose n0 n1 f g 
+  (Hg : perm_bounded n1 g) : 
+  stack_perms n0 n1 idn (f ∘ g) =
+  stack_perms n0 n1 idn f ∘ stack_perms n0 n1 idn g.
+Proof.
+  cleanup_perm.
+Qed.
+
+Lemma stack_perms_compose_idn n0 n1 f g 
+  (Hg : perm_bounded n0 g) : 
+  stack_perms n0 n1 (f ∘ g) idn =
+  stack_perms n0 n1 f idn ∘ stack_perms n0 n1 g idn.
+Proof.
+  cleanup_perm.
+Qed.
+
+Lemma contract_perm_id_mid_compose {padl padm padr f}
+  (Hf : perm_bounded (padl + padm + padr) f) g : 
+  contract_perm_id_mid padl padm padr g ∘ contract_perm_id_mid padl padm padr f =
+  contract_perm_id_mid padl padm padr (g ∘ f).
+Proof.
+  unfold contract_perm_id_mid.
+  rewrite (compose_assoc _ (stack_perms _ _ idn (rotr _ padm))), 
+    <- !(compose_assoc _ _ (stack_perms _ _ idn (rotr _ padm))).
+  cleanup_perm.
+Qed.
+
+Lemma contract_perm_id_mid_permutation_big {padl padm padr f} 
+  (Hf : permutation (padl + padm + padr) f) : 
+  permutation (padl + padm + padr) (contract_perm_id_mid padl padm padr f).
+Proof.
+  unfold contract_perm_id_mid.
+  rewrite <- Nat.add_assoc in *.
+  auto with perm_db.
+Qed.
+
+Lemma permutation_of_le_permutation_idn_above n m f :
+  permutation n f -> m <= n -> (forall k, m <= k < n -> f k = k) -> 
+  permutation m f.
+Proof.
+  intros Hf Hm Hfid.
+  pose proof Hf as Hf'.
+  destruct Hf' as [finv Hfinv].
+  exists finv.
+  intros k Hk; repeat split; try (apply Hfinv; lia).
+  - pose proof (Hfinv k ltac:(lia)) as (?&?&?&?).
+    bdestructΩ (f k <? m).
+    specialize (Hfid (f k) ltac:(lia)).
+    pose proof (Hfinv (f k) ltac:(easy)) as Hfinvk.
+    rewrite Hfid in Hfinvk. 
+    lia.
+  - pose proof (Hfinv k ltac:(lia)) as (?&?&?&?).
+    bdestructΩ (finv k <? m).
+    specialize (Hfid (finv k) ltac:(lia)).
+    replace -> (f (finv k)) in Hfid.
+    lia.
+Qed.
+
+Lemma contract_perm_id_mid_permutation {padl padm padr f}
+  (Hf : permutation (padl + padm + padr) f) 
+  (Hfid : perm_eq_id_mid padl padm f) : 
+  permutation (padl + padr) (contract_perm_id_mid padl padm padr f).
+Proof.
+  apply (permutation_of_le_permutation_idn_above _ _ _
+    (contract_perm_id_mid_permutation_big Hf));
+  [lia|].
+  intros k [].
+  unfold contract_perm_id_mid.
+  unfold compose at 1.
+  rewrite stack_perms_right by lia.
+  rewrite rotr_add_l_eq.
+  do 2 simplify_bools_lia_one_kernel.
+  unfold compose.
+  rewrite (Nat.add_comm _ padl), Hfid by lia.
+  rewrite stack_perms_right by lia.
+  rewrite rotr_add_r_eq.
+  bdestructΩ'.
+Qed.
+
+#[export] Hint Resolve contract_perm_id_mid_permutation_big
+  contract_perm_id_mid_permutation : perm_db.
+
+
+Lemma expand_contract_perm_perm_eq_idn_inv {padl padm padr f}
+  (Hf : permutation (padl + padm + padr) f) 
+  (Hfidn : perm_eq_id_mid padl padm f) :
+  perm_eq (padl + padm + padr)
+    ((expand_perm_id_mid padl padm padr 
+      (contract_perm_id_mid padl padm padr f))) 
+    f.
+Proof.
+  unfold contract_perm_id_mid, expand_perm_id_mid.
+  (* rewrite rotr_add_l_eq, rotr_add_r_eq.
+  rewrite 2!stack_perms_idn_f, stack_perms_f_idn. *)
+  intros k Hk.
+  rewrite (stack_perms_idn_f _ _ (rotr _ padr)) at 2.
+  unfold compose at 1.
+
+  simplify_bools_lia_one_kernel.
+  replace (if ¬ k <? padl then rotr (padm + padr) padr (k - padl) + padl else k)
+  with (if ¬ k <? padl then if k <? padl + padm then k + padr else k - padm else k)
+    by (rewrite rotr_add_r_eq; bdestructΩ').
+  pose proof (inv_perm_eq_id_mid Hf Hfidn k).
+  pose proof (Hfidn (k - padl)).
+  bdestruct (k <? padl); simpl;
+  [|bdestruct (k <? padl + padm); simpl].
+  - unfold compose at 1.
+    rewrite (@stack_perms_left (padl + padr)) by lia.
+    unfold compose at 1.
+    rewrite (stack_perms_left (k:=k)) by lia.
+    unfold compose.
+    rewrite (stack_perms_idn_f _ _ (rotr _ padr)).
+    pose proof (permutation_is_bounded _ f Hf k ltac:(easy)).
+    simplify_bools_lia_one_kernel.
+    rewrite rotr_add_r_eq.
+    bdestruct (f k <? padl);
+    [simpl; now rewrite stack_perms_left by lia|].
+    simpl.
+    simplify_bools_lia_one_kernel.
+    bdestructΩ'.
+    (* replace (f k - padl - padm + padl) with (f k - padm) by lia. *)
+    rewrite stack_perms_right by lia.
+    rewrite rotr_add_l_eq.
+    bdestructΩ'.
+  - unfold compose at 1.
+    rewrite (@stack_perms_right (padl + padr)) by lia.
+    rewrite stack_perms_right by lia.
+    rewrite rotr_add_l_eq.
+    replace (padl + (k - padl)) with k in * by lia.
+    bdestructΩ'.
+  - unfold compose at 1.
+    rewrite (@stack_perms_left (padl + padr)) by lia.
+    unfold compose at 1.
+    rewrite (stack_perms_right (k:=k - padm)) by lia.
+    rewrite rotr_add_l_eq.
+    do 2 simplify_bools_lia_one_kernel.
+    replace (k - padm - padl + padm + padl) with k by lia.
+    unfold compose.
+    rewrite (stack_perms_idn_f _ _ (rotr _ padr)).
+    pose proof (permutation_is_bounded _ f Hf k ltac:(easy)).
+    simplify_bools_lia_one_kernel.
+    rewrite rotr_add_r_eq.
+    bdestruct (f k <? padl);
+    [simpl; now rewrite stack_perms_left by lia|].
+    simpl.
+    simplify_bools_lia_one_kernel.
+    bdestructΩ'.
+    rewrite stack_perms_right by lia.
+    bdestructΩ'.
+Qed.
+
