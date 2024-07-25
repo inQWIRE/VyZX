@@ -279,7 +279,6 @@ Proof.
   rewrite perm_to_matrix_of_stack_perms by auto with perm_db.
   replace (padl + padr + padm') with (padl + (padm' + padr)) by lia.
   rewrite !perm_to_matrix_of_stack_perms by auto with perm_db.
-  
   rewrite !perm_to_matrix_idn.
   rewrite !perm_to_matrix_rotr_eq_kron_comm_alt, 
     !perm_to_matrix_rotr_eq_kron_comm.
@@ -289,10 +288,6 @@ Proof.
   rewrite kron_assoc, <- 2!Nat.mul_assoc by auto with wf_db.
   rewrite kron_mixed_product.
   restore_dims.
-  (* replace (@Mmult (2 ^ padm' * 2 ^ padr) (2 ^ padm * 2 ^ padr)
-  (2 ^ padm * 2 ^ padr)) with 
-  (@Mmult (2 ^ padm' * 2 ^ padr) (2 ^ padm * 2 ^ padr)
-  (2 ^ padr * 2 ^ padm)) by (f_equal; lia). *)
   rewrite (kron_comm_commutes_r _ _ _ _ A (I (2^padr))) by auto with wf_db.
   rewrite (Nat.mul_comm (2^padm) (2^padr)).
   rewrite <- kron_mixed_product.

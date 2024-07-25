@@ -223,21 +223,21 @@ Qed.
 
 
 
-Lemma perm_of_transpose_is_rinv {n} {zx} (H : ZXperm n zx) :
+Lemma perm_of_zx_transpose_is_rinv {n} {zx} (H : ZXperm n zx) :
 	(perm_of_zx zx ∘ perm_of_zx zx⊤)%prg = idn.
 Proof.
 	cleanup_perm_of_zx.
 Qed.
 
-Lemma perm_of_transpose_is_linv {n} {zx} (H : ZXperm n zx) :
+Lemma perm_of_zx_transpose_is_linv {n} {zx} (H : ZXperm n zx) :
 	(perm_of_zx zx⊤ ∘ perm_of_zx zx)%prg = idn.
 Proof.
 	cleanup_perm_of_zx.
 Qed.
 
 #[export] Hint Rewrite 
-  @perm_of_transpose_is_rinv 
-  @perm_of_transpose_is_linv 
+  @perm_of_zx_transpose_is_rinv 
+  @perm_of_zx_transpose_is_linv 
 	using (auto with zxperm_db) : perm_of_zx_cleanup_db.
 
 Lemma perm_of_conjugate {n m} (zx : ZX n m) :
@@ -279,6 +279,18 @@ Proof.
 Qed.
 
 #[export] Hint Rewrite perm_of_n_wire : perm_of_zx_cleanup_db.
+
+Lemma zxperm_transpose_right_inverse {n zx} (H : ZXperm n zx) : 
+	zx ⟷ zx ⊤ ∝ n_wire n.
+Proof.
+	by_perm_eq.
+Qed.
+
+Lemma zxperm_transpose_left_inverse {n zx} (H : ZXperm n zx) : 
+	zx ⊤ ⟷ zx ∝ n_wire n.
+Proof.
+	by_perm_eq.
+Qed.
 
 Lemma perm_of_zx_stack_n_wire_alt {n0} {zx} (H : ZXperm n0 zx) {n1} :
 	perm_of_zx (zx ↕ (n_wire n1)) = perm_of_zx zx.
@@ -894,30 +906,7 @@ Qed.
 Notation swap_commutes_l := swap_pullthrough_r.
 Notation swap_commutes_r := swap_pullthrough_l.
 
-(* TODO: move *)
-Lemma permutation_change_dims n m (H : n = m) f : 
-	permutation n f <-> permutation m f.
-Proof.
-	now subst.
-Qed.
-
-Lemma rotr_add_n_l n k : 
-	rotr n (n + k) = rotr n k.
-Proof.
-	rewrite rotr_eq_rotr_mod.
-	rewrite Nat.add_comm, mod_add_n_r.
-	now rewrite <- rotr_eq_rotr_mod.
-Qed.
-
-Lemma rotr_add_n_r n k : 
-	rotr n (k + n) = rotr n k.
-Proof.
-	rewrite rotr_eq_rotr_mod.
-	rewrite mod_add_n_r.
-	now rewrite <- rotr_eq_rotr_mod.
-Qed.
-
-#[export] Hint Rewrite rotr_add_n_r rotr_add_n_l : perm_cleanup_db.
+(* TODO: Move *)
 
 Lemma cast_compose_eq_mid_join n m o n' m' o' 
 	(Hn : n' = n) (Hm Hm' : m' = m) (Ho : o' = o)
@@ -1435,3 +1424,189 @@ Proof.
 		<- compose_assoc, <- !stack_compose_distr.
 	now rewrite ?nwire_removal_l, ?nwire_removal_r.
 Qed.
+
+(* Section on X / Z absorbtion *)
+
+Import SwapRules ZXRules.
+
+Lemma X_cast_r_to_refl n m α {m' o' o} (zx : ZX m' o') Hm Ho : 
+	X n m α ⟷ cast m o Hm Ho zx = 
+	X n m' α ⟷ cast m' o eq_refl Ho zx.
+Proof.
+	now subst.
+Qed.
+
+Lemma X_cast_r_contract n m α {m' o' o} (zx : ZX m' o') Hm Ho : 
+	X n m α ⟷ cast m o Hm Ho zx = 
+	cast n o eq_refl Ho (X n m' α ⟷ zx).
+Proof.
+	now subst.
+Qed.
+
+Lemma Z_cast_r_to_refl n m α {m' o' o} (zx : ZX m' o') Hm Ho : 
+	Z n m α ⟷ cast m o Hm Ho zx = 
+	Z n m' α ⟷ cast m' o eq_refl Ho zx.
+Proof.
+	now subst.
+Qed.
+
+Lemma Z_cast_r_contract n m α {m' o' o} (zx : ZX m' o') Hm Ho : 
+	Z n m α ⟷ cast m o Hm Ho zx = 
+	cast n o eq_refl Ho (Z n m' α ⟷ zx).
+Proof.
+	now subst.
+Qed.
+
+Lemma X_stacked_a_swap_absorbtion_right n m0 m1 m2 α : 
+	X n (m0 + m1 + m2) α ⟷ (n_wire m0 ↕ a_swap m1 ↕ n_wire m2) ∝
+	X n (m0 + m1 + m2) α.
+Proof.
+	(* rewrite grow_X_bot_right. *)
+	rewrite 2!X_add_r_base_rot, compose_assoc.
+	rewrite <- (nwire_removal_l (X 1 m2 0)).
+	rewrite stack_compose_distr, compose_assoc.
+	rewrite <- stack_compose_distr.
+	rewrite <- (stack_compose_distr (X 1 m0 0)).
+	rewrite 2!nwire_removal_r.
+	now rewrite X_a_swap_absorbtion_right_base.
+Qed.
+
+Lemma Z_stacked_a_swap_absorbtion_right n m0 m1 m2 α : 
+	Z n (m0 + m1 + m2) α ⟷ (n_wire m0 ↕ a_swap m1 ↕ n_wire m2) ∝
+	Z n (m0 + m1 + m2) α.
+Proof.
+	colorswap_of (X_stacked_a_swap_absorbtion_right n m0 m1 m2 α).
+Qed.
+
+Lemma zxperm_colorswap_eq {n} (zx : ZX n n) (Hzx : ZXperm n zx) :
+	⊙ zx = zx.
+Proof.
+	induction Hzx; simpl; now f_equal.
+Qed.
+
+Lemma colorswap_zx_to_bot a m : 
+	⊙ (zx_to_bot a m) ∝ zx_to_bot a m.
+Proof.
+	now rewrite zxperm_colorswap_eq by auto with zxperm_db.
+Qed.
+
+Lemma colorswap_zx_of_swap_list l : 
+	⊙ (zx_of_swap_list l) ∝ zx_of_swap_list l.
+Proof.
+	now rewrite zxperm_colorswap_eq by auto with zxperm_db.
+Qed.
+
+#[export] Hint Rewrite colorswap_zx_to_bot 
+	colorswap_zx_of_swap_list : colorswap_db.
+
+Lemma X_zx_to_bot_absorbtion_right n m α a : 
+	X n m α ⟷ zx_to_bot a m ∝
+	X n m α.
+Proof.
+	unfold zx_to_bot.
+	rewrite X_cast_r_contract.
+	rewrite grow_X_bot_right, compose_assoc, <- stack_compose_distr.
+	rewrite X_a_swap_absorbtion_right_base, nwire_removal_l.
+	rewrite <- grow_X_bot_right.
+	now simpl_casts.
+Qed.
+
+Lemma Z_zx_to_bot_absorbtion_right n m α a : 
+	Z n m α ⟷ zx_to_bot a m ∝
+	Z n m α.
+Proof.
+	colorswap_of (X_zx_to_bot_absorbtion_right n m α a).
+Qed.
+
+Lemma X_zx_of_swap_list_absorbtion_right n α l : 
+	X n (length l) α ⟷ zx_of_swap_list l ∝
+	X n (length l) α.
+Proof.
+	revert n α;
+	induction l; intros n α.
+	- simpl.
+		now cleanup_zx.
+	- simpl.
+		rewrite <- compose_assoc.
+		rewrite X_zx_to_bot_absorbtion_right.
+		rewrite X_cast_r_contract.
+		rewrite X_add_r_base_rot, compose_assoc.
+		rewrite <- (stack_compose_distr (X 1 (length l) 0)).
+		rewrite wire_removal_r, IHl.
+		rewrite <- X_add_r_base_rot.
+		now simpl_casts.
+Qed.
+
+Lemma Z_zx_of_swap_list_absorbtion_right n α l : 
+	Z n (length l) α ⟷ zx_of_swap_list l ∝
+	Z n (length l) α.
+Proof.
+	colorswap_of (X_zx_of_swap_list_absorbtion_right n α l).
+Qed.
+
+Section Absorbtion.
+(* This is a section only to localize the following hint, 
+	which may be too costly to want to use globally *)
+
+Local Hint Rewrite @zxperm_colorswap_eq using auto with zxperm_db : 
+	colorswap_db.
+
+Lemma X_zx_of_perm_absorbtion_right n m α f : 
+	X n m α ⟷ zx_of_perm m f ∝
+	X n m α.
+Proof.
+	unfold zx_of_perm.
+	rewrite X_cast_r_contract.
+	unfold zx_of_perm_uncast.
+	rewrite X_zx_of_swap_list_absorbtion_right.
+	now simpl_casts.
+Qed.
+
+Lemma Z_zx_of_perm_absorbtion_right n m α f : 
+	Z n m α ⟷ zx_of_perm m f ∝
+	Z n m α.
+Proof. 
+	colorswap_of (X_zx_of_perm_absorbtion_right n m α f).
+Qed.
+
+Lemma X_zxperm_absorbtion_right n m α 
+	(zx : ZX m m) (Hzx : ZXperm m zx) :
+	X n m α ⟷ zx ∝ 
+	X n m α.
+Proof.
+	rewrite <- (zx_of_perm_of_zx Hzx).
+	apply X_zx_of_perm_absorbtion_right.
+Qed.
+
+Lemma Z_zxperm_absorbtion_right n m α 
+	(zx : ZX m m) (Hzx : ZXperm m zx) :
+	Z n m α ⟷ zx ∝ 
+	Z n m α.
+Proof.
+	colorswap_of (X_zxperm_absorbtion_right n m α zx Hzx).
+Qed.
+
+Lemma X_zxperm_absorbtion_left n m α 
+	(zx : ZX n n) (Hzx : ZXperm n zx) : 
+	zx ⟷ X n m α ∝
+	X n m α.
+Proof.
+	transpose_of (X_zxperm_absorbtion_right m n α 
+		(zx⊤) (transpose_zxperm Hzx)).
+Qed.
+
+Lemma Z_zxperm_absorbtion_left n m α 
+	(zx : ZX n n) (Hzx : ZXperm n zx) : 
+	zx ⟷ Z n m α ∝
+	Z n m α.
+Proof.
+	transpose_of (Z_zxperm_absorbtion_right m n α 
+		(zx⊤) (transpose_zxperm Hzx)).
+Qed.
+
+End Absorbtion.
+
+
+		
+
+zx_of_swap_list
