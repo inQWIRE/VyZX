@@ -267,6 +267,11 @@ Qed.
 #[export] Hint Rewrite @perm_of_adjoint 
 	using (auto with zxperm_db) : perm_of_zx_cleanup_db.
 
+Lemma zxperm_colorswap_eq {n} (zx : ZX n n) (Hzx : ZXperm n zx) :
+	⊙ zx = zx.
+Proof.
+	induction Hzx; simpl; now f_equal.
+Qed.
 
 
 (* Section on specific values of perm_of_zx *)
@@ -490,6 +495,21 @@ Qed.
 
 #[export] Hint Rewrite perm_of_zx_of_swap_list 
 	using auto with perm_db : perm_of_zx_cleanup_db.
+
+Lemma colorswap_zx_to_bot a m : 
+	⊙ (zx_to_bot a m) ∝ zx_to_bot a m.
+Proof.
+	now rewrite zxperm_colorswap_eq by auto with zxperm_db.
+Qed.
+
+Lemma colorswap_zx_of_swap_list l : 
+	⊙ (zx_of_swap_list l) ∝ zx_of_swap_list l.
+Proof.
+	now rewrite zxperm_colorswap_eq by auto with zxperm_db.
+Qed.
+
+#[export] Hint Rewrite colorswap_zx_to_bot 
+	colorswap_zx_of_swap_list : colorswap_db.
 
 Lemma perm_of_zx_uncast_of_perm_eq n f : permutation n f ->
 	perm_eq n (perm_of_zx (zx_of_perm_uncast n f)) f.
@@ -830,8 +850,6 @@ Lemma zx_comm_semantics p q :
 Proof.
 	unfold zx_comm.
 	cleanup_perm_of_zx.
-	(* simpl_zx_of_perm_semantics.
-	rewrite zx_of_perm_casted_semantics. *)
 Qed.
 
 #[export] Hint Rewrite zx_comm_semantics : perm_of_zx_cleanup_db.
@@ -850,6 +868,34 @@ Proof.
 Qed.
 
 #[export] Hint Rewrite zx_comm_cancel : perm_of_zx_cleanup_db.
+
+Lemma zx_comm_transpose p q :
+	(zx_comm p q) ⊤ ∝ zx_comm q p.
+Proof.
+	unfold zx_comm.
+	simpl_casts.
+	rewrite <- cast_transpose, cast_zx_of_perm.
+	by_perm_eq.
+	rewrite Nat.add_comm.
+	rewrite perm_of_zx_of_perm_eq_WF by cleanup_perm.
+	cleanup_perm.
+	perm_eq_by_inv_inj (rotr (p + q) p) (p + q).
+	cleanup_perm.
+	rewrite Nat.add_comm.
+	cleanup_perm.
+Qed.
+
+#[export] Hint Rewrite zx_comm_transpose : transpose_db.
+
+Lemma zx_comm_colorswap p q : 
+	⊙ (zx_comm p q) ∝ zx_comm p q.
+Proof.
+	unfold zx_comm.
+	simpl_casts.
+	now rewrite zxperm_colorswap_eq by auto with zxperm_db.
+Qed.
+
+#[export] Hint Rewrite zx_comm_colorswap : colorswap_db.
 
 Lemma zx_comm_commutes_l {n m p q} (zx0 : ZX n m) (zx1 : ZX p q) :
 	zx_comm p n ⟷ (zx0 ↕ zx1) ∝
@@ -1032,6 +1078,53 @@ Proof.
 	rewrite cast_cast_eq.
 	now apply cast_simplify.
 Qed.
+
+Lemma zx_gap_comm_transpose p m q : 
+	(zx_gap_comm p m q) ⊤ ∝ zx_gap_comm q m p.
+Proof.
+	rewrite 2!zx_gap_comm_defn.
+	simpl_casts.
+	rewrite <- cast_transpose, cast_zx_of_perm.
+	by_perm_eq.
+	replace (q + m + p) with (p + m + q) by lia.
+	pose proof (fun f => proj2 (permutation_change_dims 
+		(p + m + q) (q + (p + m)) ltac:(lia) f)).
+	pose proof (fun f => proj2 (permutation_change_dims 
+		(p + m + q) (p + (q + m)) ltac:(lia) f)).
+	rewrite 2!perm_of_zx_of_perm_eq_WF; auto with perm_db;
+	[|apply compose_WF_Perm; [auto with WF_Perm_db|]..];
+	[|replace (p+m+q) with (p+(q+m)) by lia 
+	| replace (p+m+q) with (q+(p+m)) by lia];
+	[|auto with WF_Perm_db..].
+	perm_eq_by_inv_inj (rotr (p + m + q) (p + m)
+		∘ stack_perms q (p + m) idn (rotr (p + m) p)) (p + m + q).
+	replace (p + m + q) with ((q + m) + p) by lia.
+	rewrite <- stack_perms_rotr_natural by cleanup_perm.
+	replace (q + m + p) with (p + m + q) by lia.
+	rewrite <- stack_perms_rotr_natural by cleanup_perm.
+	cleanup_perm.
+	rewrite 3!rotr_add_l_eq.
+	replace (p + m + q) with (q + m + p) by lia.
+	rewrite rotr_add_l_eq.
+	rewrite <- !compose_assoc.
+	intros k Hk.
+	unfold compose at 1.
+	simplify_bools_lia_one_kernel.
+	repeat (bdestructΩ'; unfold compose at 1).
+Qed.
+
+#[export] Hint Rewrite zx_gap_comm_transpose : transpose_db.
+
+Lemma zx_gap_comm_colorswap p m q : 
+	⊙ (zx_gap_comm p m q) ∝ zx_gap_comm p m q.
+Proof.
+	unfold zx_gap_comm.
+	simpl_casts.
+	simpl.
+	now autorewrite with colorswap_db.
+Qed.
+
+#[export] Hint Rewrite zx_gap_comm_colorswap : colorswap_db.
 
 Import ComposeRules StackComposeRules CastRules.
 
@@ -1478,27 +1571,6 @@ Proof.
 	colorswap_of (X_stacked_a_swap_absorbtion_right n m0 m1 m2 α).
 Qed.
 
-Lemma zxperm_colorswap_eq {n} (zx : ZX n n) (Hzx : ZXperm n zx) :
-	⊙ zx = zx.
-Proof.
-	induction Hzx; simpl; now f_equal.
-Qed.
-
-Lemma colorswap_zx_to_bot a m : 
-	⊙ (zx_to_bot a m) ∝ zx_to_bot a m.
-Proof.
-	now rewrite zxperm_colorswap_eq by auto with zxperm_db.
-Qed.
-
-Lemma colorswap_zx_of_swap_list l : 
-	⊙ (zx_of_swap_list l) ∝ zx_of_swap_list l.
-Proof.
-	now rewrite zxperm_colorswap_eq by auto with zxperm_db.
-Qed.
-
-#[export] Hint Rewrite colorswap_zx_to_bot 
-	colorswap_zx_of_swap_list : colorswap_db.
-
 Lemma X_zx_to_bot_absorbtion_right n m α a : 
 	X n m α ⟷ zx_to_bot a m ∝
 	X n m α.
@@ -1606,7 +1678,66 @@ Qed.
 
 End Absorbtion.
 
+Lemma X_zx_comm_absorbtion_right n p q α : 
+	X n (p + q) α ⟷ zx_comm p q ∝
+	X n (q + p) α.
+Proof.
+	unfold zx_comm.
+	rewrite X_cast_r_contract, X_zx_of_perm_absorbtion_right.
+	now simpl_casts.
+Qed.
 
-		
+Lemma Z_zx_comm_absorbtion_right n p q α : 
+	Z n (p + q) α ⟷ zx_comm p q ∝
+	Z n (q + p) α.
+Proof.
+	colorswap_of (X_zx_comm_absorbtion_right n p q α).
+Qed.
 
-zx_of_swap_list
+Lemma X_zx_comm_absorbtion_left p q m α :
+	zx_comm p q ⟷ X (q + p) m α ∝
+	X (p + q) m α.
+Proof.
+	transpose_of (X_zx_comm_absorbtion_right m q p α).
+Qed.
+
+Lemma Z_zx_comm_absorbtion_left p q m α :
+	zx_comm p q ⟷ Z (q + p) m α ∝
+	Z (p + q) m α.
+Proof.
+	colorswap_of (X_zx_comm_absorbtion_left p q m α).
+Qed.
+
+Lemma X_zx_gap_comm_absorbtion_right n p m q α : 
+	X n (p + m + q) α ⟷ zx_gap_comm p m q ∝
+	X n (q + m + p) α.
+Proof.
+	unfold zx_gap_comm.
+	rewrite X_cast_r_contract.
+	rewrite <- compose_assoc, X_zx_comm_absorbtion_right.
+	rewrite grow_X_bot_right, compose_assoc, <- stack_nwire_distribute_l.
+	rewrite X_zx_comm_absorbtion_right.
+	rewrite <- grow_X_bot_right.
+	now simpl_casts.
+Qed.
+
+Lemma Z_zx_gap_comm_absorbtion_right n p m q α : 
+	Z n (p + m + q) α ⟷ zx_gap_comm p m q ∝
+	Z n (q + m + p) α.
+Proof.
+	colorswap_of (X_zx_gap_comm_absorbtion_right n p m q α).
+Qed.
+
+Lemma X_zx_gap_comm_absorbtion_left p n q m α : 
+	zx_gap_comm p n q ⟷ X (q + n + p) m α ∝
+	X (p + n + q) m α.
+Proof.
+	transpose_of (X_zx_gap_comm_absorbtion_right m q n p α).
+Qed.
+
+Lemma Z_zx_gap_comm_absorbtion_left p n q m α : 
+	zx_gap_comm p n q ⟷ Z (q + n + p) m α ∝
+	Z (p + n + q) m α.
+Proof.
+	colorswap_of (X_zx_gap_comm_absorbtion_left p n q m α).
+Qed.
