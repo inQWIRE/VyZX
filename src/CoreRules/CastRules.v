@@ -26,14 +26,30 @@ Proof.
   congruence.
 Qed.
 
-Tactic Notation "cast_irrelevance" := 
+Ltac cast_irrelevance := 
   apply cast_simplify; try easy.
 
-Tactic Notation "auto_cast_eqn" tactic3(tac) := unshelve tac; try lia; shelve_unifiable.
+Ltac auto_cast_eqn tac := 
+  unshelve tac; try lia; shelve_unifiable.
+
+Tactic Notation "auto_cast_eqn" tactic3(tac) := 
+  unshelve tac; try lia; shelve_unifiable.
+
+Create HintDb cast_simpl_db.
 
 #[export] Hint Rewrite @cast_id : cast_simpl_db.
-Tactic Notation "simpl_casts" := auto_cast_eqn (autorewrite with cast_simpl_db); repeat cast_irrelevance.
-Tactic Notation "simpl_casts_in" hyp(H) := auto_cast_eqn (autorewrite with cast_simpl_db in H); repeat (apply cast_simplify in H).
+
+Ltac simpl_casts := 
+  auto_cast_eqn (autorewrite with cast_simpl_db); 
+  repeat cast_irrelevance.
+
+Ltac simpl_casts_in H := 
+  auto_cast_eqn (autorewrite with cast_simpl_db in H); 
+  repeat (apply cast_simplify in H).
+
+Tactic Notation "simpl_casts_in" hyp(H) := 
+  auto_cast_eqn (autorewrite with cast_simpl_db in H); 
+  repeat (apply cast_simplify in H).
 
 
 Lemma cast_stack_l : forall {nTop nTop' mTop mTop' nBot mBot} prfnTop prfmTop prfn prfm
@@ -324,6 +340,26 @@ Proof.
 Qed.
 
 #[export] Hint Rewrite @cast_Z @cast_X: cast_simpl_db.
+
+Lemma cast_Z_to_refl_r n m α {m' o' o} (zx : ZX m' o') Hm Ho : 
+	Z n m α ⟷ cast m o Hm Ho zx = 
+	Z n m' α ⟷ cast m' o eq_refl Ho zx.
+Proof. now subst. Qed.
+
+Lemma cast_X_to_refl_r n m α {m' o' o} (zx : ZX m' o') Hm Ho : 
+	X n m α ⟷ cast m o Hm Ho zx = 
+	X n m' α ⟷ cast m' o eq_refl Ho zx.
+Proof. now subst. Qed.
+
+Lemma cast_Z_contract_r n m α {m' o' o} (zx : ZX m' o') Hm Ho : 
+	Z n m α ⟷ cast m o Hm Ho zx = 
+	cast n o eq_refl Ho (Z n m' α ⟷ zx).
+Proof. now subst. Qed.
+
+Lemma cast_X_contract_r n m α {m' o' o} (zx : ZX m' o') Hm Ho : 
+	X n m α ⟷ cast m o Hm Ho zx = 
+	cast n o eq_refl Ho (X n m' α ⟷ zx).
+Proof. now subst. Qed.
 
 Lemma cast_n_stack1 : forall {n n'} prfn prfm (zx : ZX 1 1),
   cast n' n' prfn prfm (n ↑ zx) ∝ n' ↑ zx.

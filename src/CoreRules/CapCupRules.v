@@ -9,17 +9,17 @@ Require Import CoreAutomation.
 Lemma cup_Z : ⊃ ∝ Z 2 0 0.
 Proof.
   prop_exists_nonzero 1.
-  Msimpl; simpl.
-  solve_matrix.
-  autorewrite with Cexp_db; easy.
+  rewrite Mscale_1_l.
+  lma'.
+  now rewrite Cexp_0.
 Qed.
 
 Lemma cap_Z : ⊂ ∝ Z 0 2 0.
 Proof.
   prop_exists_nonzero 1.
-  Msimpl; simpl.
-  solve_matrix.
-  autorewrite with Cexp_db; easy.
+  rewrite Mscale_1_l.
+  lma'.
+  now rewrite Cexp_0.
 Qed.
 
 Lemma cup_X : ⊃ ∝ X 2 0 0.
@@ -31,23 +31,19 @@ Proof. colorswap_of cap_Z. Qed.
 Lemma n_cup_0_empty : n_cup 0 ∝ ⦰.
 Proof.
   unfold n_cup.
-  repeat (simpl;
-  cleanup_zx;
-  simpl_casts).
-  easy.
+  cbn.
+  cleanup_zx.
+  apply cast_id.
 Qed.
 
 Lemma n_cup_1_cup : n_cup 1 ∝ ⊃.
 Proof.
   unfold n_cup.
-  simpl.
-  simpl_casts.
-  simpl.
+  cbn.
+  rewrite cast_id.
   cleanup_zx.
-  simpl_casts.
-  bundle_wires.
-  cleanup_zx.
-  easy.
+  rewrite !cast_id.
+  now rewrite wire_to_n_wire, n_wire_stack, 2!nwire_removal_l.
 Qed.
 
 Opaque n_cup.
@@ -78,23 +74,21 @@ Proof.
   intros.
   induction n.
   - simpl.
-    simpl_casts.
+    rewrite !cast_id.
     cleanup_zx.
-    simpl_casts.
-    bundle_wires.
-    cleanup_zx.
-    easy.
+    rewrite !cast_id.
+    now rewrite wire_to_n_wire, n_wire_stack, nwire_removal_l.
   - simpl.
     simpl in IHn.
     rewrite IHn at 1.
     simpl_casts.
     rewrite stack_wire_distribute_l.
     rewrite stack_wire_distribute_r.
-    bundle_wires.
-    erewrite <- (@cast_n_wire (n + 1) (1 + n)).
+    change (— ↕ n_wire n) with (n_wire (1 + n)).
+    rewrite <- (@cast_n_wire (n + 1) (1 + n)).
     rewrite <- ComposeRules.compose_assoc.
     apply compose_simplify; [ | easy].
-    erewrite (cast_compose_mid (S (n + S n))).
+    rewrite (cast_compose_mid (S (n + S n))).
     rewrite cast_compose_distribute.
     repeat rewrite cast_contract.
     apply compose_simplify; [ | apply cast_simplify; easy].
@@ -103,13 +97,13 @@ Proof.
     simpl_casts.
     rewrite 3 stack_assoc_back.
     simpl_casts.
-    erewrite <- (@cast_n_wire (n + 1) (1 + n)) at 2.
+    rewrite <- (@cast_n_wire (n + 1) (1 + n)) at 2.
     rewrite cast_stack_r.
     simpl.
-    rewrite (stack_assoc (— ↕ n_wire n ↕ ⊃) (n_wire n) —). 
-    bundle_wires.
+    rewrite (stack_assoc (— ↕ n_wire n ↕ ⊃) (n_wire n) —).
+    rewrite <- n_wire_stack.
     simpl_casts.
-    easy.
+    now rewrite <- wire_to_n_wire.
 Unshelve.
   all: lia.
 Qed.

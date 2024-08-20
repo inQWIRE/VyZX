@@ -1,11 +1,10 @@
-Require Import ZXCore.
+Require Import ZXCore CoreAutomation.
 Require Import StackComposeRules.
 Require Import CastRules.
 Require Export ZXperm.
-Require Import PermutationAutomation.
-Require Import PermutationSemantics. 
-Require Export PermutationInstances. 
-Require Export PermutationFacts.
+Require Export ZXpermAutomation.
+Require Import QuantumLib.Permutations QuantumLib.Modulus.
+Require Import QuantumLib.Kronecker.
 Require Export ZXpermSemantics.
 
 (* In this file, we develop some tools for showing things are ZXperms and
@@ -23,6 +22,7 @@ Definition zx_of_perm n f :=
 
 Local Open Scope nat.
 Local Open Scope ZX_scope.
+Local Open Scope prg.
 
 Lemma zxperm_iff_cast {n0 n1} {zx} (Hn Hn' : n1 = n0) :
 	ZXperm n1 (cast _ _ Hn Hn' zx) <-> ZXperm n0 zx.
@@ -93,6 +93,169 @@ Qed.
 #[export] Hint Resolve n_compose_zxperm : zxperm_db. *)
 
 
+(* Showing our permutations are permutations *)
+(* Section on top_to_bottom and bottom_to_top *)
+Lemma bottom_to_top_perm_bounded {n} k : 
+	k < n -> bottom_to_top_perm n k < n.
+Proof.
+	intros Hk.
+	unfold bottom_to_top_perm.
+	replace_bool_lia (n <=? k) false.
+	destruct k; lia.
+Qed.
+
+Lemma top_to_bottom_perm_bounded {n} k :
+	k < n -> top_to_bottom_perm n k < n.
+Proof.
+	intros Hk.
+	unfold top_to_bottom_perm.
+	replace_bool_lia (n <=? k) false.
+	bdestruct (k =? n - 1); lia.
+Qed.
+
+Global Hint Resolve bottom_to_top_perm_bounded top_to_bottom_perm_bounded : perm_bounded_db.
+
+Lemma bottom_to_top_WF_perm n :
+	WF_Perm n (bottom_to_top_perm n).
+Proof.
+	intros k Hk.
+	unfold bottom_to_top_perm.
+	replace_bool_lia (n <=? k) true.
+	easy.
+Qed.
+
+Lemma top_to_bottom_WF_perm n : 
+	WF_Perm n (top_to_bottom_perm n).
+Proof.
+	intros k Hk.
+	unfold top_to_bottom_perm.
+	replace_bool_lia (n <=? k) true.
+	easy.
+Qed.
+	
+Global Hint Resolve bottom_to_top_WF_perm top_to_bottom_WF_perm : WF_Perm_db.
+
+Lemma bottom_to_top_to_bottom_inv n : 
+	bottom_to_top_perm n ∘ top_to_bottom_perm n = idn.
+Proof.
+	apply functional_extensionality; intros k.
+	unfold compose, bottom_to_top_perm, top_to_bottom_perm.
+	bdestruct (n <=? k).
+	1: replace_bool_lia (n <=? k) true; easy.
+	bdestruct (k =? n - 1).
+	- destruct n.
+	  + easy.
+	  + replace_bool_lia (S n <=? 0) false.
+	  	lia.
+	- replace_bool_lia (n <=? k + 1) false.
+	  replace (k + 1) with (S k) by lia.
+	  easy.
+Qed.
+
+Lemma top_to_bottom_to_top_inv n :
+	top_to_bottom_perm n ∘ bottom_to_top_perm n = idn.
+Proof.
+	apply functional_extensionality; intros k.
+	unfold compose, bottom_to_top_perm, top_to_bottom_perm.
+	bdestruct (n <=? k).
+	1: replace_bool_lia (n <=? k) true; easy.
+	destruct k.
+	- destruct n; [easy|].
+	  replace_bool_lia (S n <=? S n - 1) false.
+	  rewrite Nat.eqb_refl.
+	  easy.
+	- replace_bool_lia (n <=? k) false.
+	  replace_bool_lia (k =? n - 1) false.
+	  lia.
+Qed.
+
+Lemma bottom_to_top_to_bottom_inv' n k :
+	bottom_to_top_perm n (top_to_bottom_perm n k) = k.
+Proof.
+	pose proof (bottom_to_top_to_bottom_inv n) as H.
+	apply (f_equal (fun g => g k)) in H.
+	unfold compose in H.
+	easy.
+Qed.
+
+Lemma top_to_bottom_to_top_inv' n k :
+	top_to_bottom_perm n (bottom_to_top_perm n k) = k.
+Proof.
+	pose proof (top_to_bottom_to_top_inv n) as H.
+	apply (f_equal (fun g => g k)) in H.
+	unfold compose in H.
+	easy.
+Qed.
+
+#[export] Hint Rewrite 
+  bottom_to_top_to_bottom_inv
+  bottom_to_top_to_bottom_inv'
+  top_to_bottom_to_top_inv
+  top_to_bottom_to_top_inv'
+  : perm_inv_db.
+
+Lemma top_to_bottom_permutation n :
+	permutation n (top_to_bottom_perm n).
+Proof.
+  perm_by_inverse (bottom_to_top_perm n).
+Qed.
+
+Lemma bottom_to_top_permutation n :
+	permutation n (bottom_to_top_perm n). 
+Proof.
+	perm_by_inverse (top_to_bottom_perm n).
+Qed.
+
+Global Hint Resolve top_to_bottom_permutation bottom_to_top_permutation : perm_db.
+
+Lemma top_to_bottom_inv n : 
+	perm_eq n (perm_inv n (top_to_bottom_perm n)) (bottom_to_top_perm n).
+Proof.
+	perm_eq_by_inv_inj (top_to_bottom_perm n) n.
+Qed.
+
+Lemma bottom_to_top_inv n : 
+	perm_eq n (perm_inv n (bottom_to_top_perm n)) (top_to_bottom_perm n).
+Proof.
+	perm_eq_by_inv_inj (bottom_to_top_perm n) n.
+Qed.
+
+Lemma top_to_bottom_inv' n : 
+	perm_inv' n (top_to_bottom_perm n) = bottom_to_top_perm n.
+Proof.
+	permutation_eq_by_WF_inv_inj (top_to_bottom_perm n) n.
+Qed.
+
+Lemma bottom_to_top_inv' n : 
+	perm_inv' n (bottom_to_top_perm n) = top_to_bottom_perm n.
+Proof.
+	permutation_eq_by_WF_inv_inj (bottom_to_top_perm n) n.
+Qed.
+
+#[export] Hint Rewrite top_to_bottom_inv top_to_bottom_inv'
+	bottom_to_top_inv bottom_to_top_inv' : perm_inv_db.
+
+Lemma top_to_bottom_perm_eq_rotr n :
+	top_to_bottom_perm n = rotr n 1.
+Proof.
+	apply functional_extensionality; intros k.
+	unfold top_to_bottom_perm, rotr.
+	bdestructΩ'.
+	- subst. 
+	  replace (n - 1 + 1) with n by lia.
+	  rewrite Nat.Div0.mod_same; lia.
+	- rewrite Nat.mod_small; lia.
+Qed.
+
+#[export] Hint Rewrite top_to_bottom_perm_eq_rotr : perm_cleanup_db.
+
+Lemma bottom_to_top_perm_eq_rotl n :
+	bottom_to_top_perm n = rotl n 1.
+Proof.
+  permutation_eq_by_WF_inv_inj (top_to_bottom_perm n) n.
+Qed.
+
+#[export] Hint Rewrite bottom_to_top_perm_eq_rotl : perm_cleanup_db.
 
 (* Section on specific ZXperms *)
 Lemma top_to_bottom_helper_zxperm n :
@@ -147,7 +310,13 @@ Qed.
 
 #[export] Hint Resolve a_swap_zxperm : zxperm_db.
 
+Lemma n_swap_zxperm n : 
+	ZXperm n (n_swap n).
+Proof.
+	induction n; simpl; auto with zxperm_db.
+Qed.
 
+#[export] Hint Resolve n_swap_zxperm : zxperm_db.
 
 
 
@@ -159,7 +328,7 @@ Lemma perm_of_zx_WF {n} {zx} (H : ZXperm n zx) :
 Proof.
 	induction H; intros k Hk; try easy.
 	- simpl.
-	  destruct k; [|destruct k]; cbn; lia.
+	  destruct k; [|destruct k]; cbv; lia.
 	- simpl. 
 	  rewrite stack_perms_high; easy.
 	- simpl.
@@ -212,8 +381,9 @@ Lemma perm_of_zx_transpose {n} {zx} (Hzx : ZXperm n zx) :
 Proof.
 	induction Hzx; [simpl; cleanup_perm_inv..| |];
 	simpl;
-	cleanup_perm_inv;
-	now f_equal.
+	cleanup_perm_inv; [| now f_equal]. 
+	rewrite IHHzx1, IHHzx2. 
+	now cleanup_perm_inv.
 Qed.
 
 #[export] Hint Rewrite @perm_of_zx_transpose 
@@ -253,14 +423,14 @@ Qed.
 Lemma perm_of_adjoint_eq_transpose {n} {zx} (H : ZXperm n zx) :
 	perm_of_zx (zx †) = perm_of_zx (zx ⊤).
 Proof.
-	unfold adjoint.
+	unfold "†".
 	cleanup_perm_of_zx.
 Qed.
 
 Lemma perm_of_adjoint {n} {zx} (H : ZXperm n zx) :
 	perm_of_zx (zx †) = perm_inv' n (perm_of_zx zx).
 Proof.
-	unfold adjoint.
+	unfold "†".
 	cleanup_perm_of_zx.
 Qed.
 
@@ -324,9 +494,10 @@ Proof.
 	[eq_by_WF_perm_eq 1; intros []; easy |].
 	simpl.
 	cleanup_perm_of_zx.
-	rewrite stack_perms_idn_zx by auto with zxperm_db.
 	unfold swap_2_perm.
+	rewrite stack_perms_idn_zx by auto with zxperm_db.
 	rewrite IHn.
+	rewrite top_to_bottom_perm_eq_rotr.
 	solve_modular_permutation_equalities.
 Qed.
 
@@ -412,10 +583,28 @@ Lemma perm_of_a_swap n :
 Proof.
 	destruct n; [cleanup_perm; easy|].
 	simpl.
+	cleanup_perm_of_zx.
 	solve_modular_permutation_equalities.
 Qed.
 
 #[export] Hint Rewrite perm_of_a_swap : perm_of_zx_cleanup_db.
+
+Lemma perm_of_n_swap n : 
+	perm_of_zx (n_swap n) = reflect_perm n.
+Proof.
+	induction n; [easy|].
+	simpl.
+	rewrite IHn.
+	cleanup_perm_of_zx.
+	eq_by_WF_perm_eq (1 + n).
+	intros i Hi.
+	unfold reflect_perm.
+	autounfold with perm_unfold_db.
+	bdestructΩ'; solve_simple_mod_eqns.
+Qed.
+
+#[export] Hint Rewrite perm_of_n_swap : perm_of_zx_cleanup_db.
+
 
 Lemma zx_to_bot_zxperm a n :
 	ZXperm n (zx_to_bot a n).
@@ -845,6 +1034,8 @@ Definition zx_comm p q : (ZX (p + q) (q + p)) :=
 	cast (p+q) (q + p) eq_refl (Nat.add_comm q p)
 		(zx_of_perm (p + q) (rotr (p + q) p)).
 
+Arguments zx_comm : simpl never.
+
 Lemma zx_comm_semantics p q : 
 	⟦ zx_comm p q ⟧ = kron_comm (2^q) (2^p).
 Proof.
@@ -932,6 +1123,14 @@ Proof.
 	intros [| []]; easy.
 Qed.
 
+Lemma perm_of_swap : 
+	perm_of_zx ⨉ = swap_perm 0 1 2.
+Proof.
+	easy.
+Qed.
+
+#[export] Hint Rewrite perm_of_swap : perm_of_zx_cleanup_db.
+
 Lemma swap_pullthrough_l {n m} (zx0 : ZX n 1) (zx1 : ZX m 1) : 
 	(zx0 ↕ zx1) ⟷ ⨉ ∝
 	zx_comm n m ⟷ (zx1 ↕ zx0).
@@ -963,8 +1162,6 @@ Proof.
 	subst.
 	now rewrite (Peano_dec.UIP_nat _ _ Hm' eq_refl).
 Qed.
-
-#[export] Hint Rewrite cast_compose_eq_mid_join : cast_simpl_db.
 
 Lemma zx_of_perm_compose_cast_r n n' m' Hn Hm f g 
 	(Hf : permutation n f) (Hg : permutation n' g) :
@@ -1058,6 +1255,8 @@ Definition zx_gap_comm p m q : (ZX (p + m + q) (q + m + p)) :=
 	cast _ _ eq_refl (eq_sym (Nat.add_assoc _ _ _))
 	(zx_comm (p + m) q ⟷ (n_wire q ↕ zx_comm p m)).
 
+Arguments zx_gap_comm : simpl never.
+
 Lemma zx_gap_comm_pf p m q : p + m + q = q + m + p.
 Proof. lia. Qed.
 
@@ -1069,7 +1268,7 @@ Lemma zx_gap_comm_defn p m q :
 Proof.
 	unfold zx_gap_comm, zx_comm.
 	rewrite <- zx_of_perm_idn.
-	clean_eqns rewrite cast_stack_r.
+	auto_cast_eqn rewrite cast_stack_r.
 	rewrite stack_zx_of_perm by auto with perm_db.
 	rewrite cast_compose_l, !cast_cast_eq.
 	rewrite cast_zx_of_perm_natural_l.
@@ -1087,15 +1286,7 @@ Proof.
 	rewrite <- cast_transpose, cast_zx_of_perm.
 	by_perm_eq.
 	replace (q + m + p) with (p + m + q) by lia.
-	pose proof (fun f => proj2 (permutation_change_dims 
-		(p + m + q) (q + (p + m)) ltac:(lia) f)).
-	pose proof (fun f => proj2 (permutation_change_dims 
-		(p + m + q) (p + (q + m)) ltac:(lia) f)).
-	rewrite 2!perm_of_zx_of_perm_eq_WF; auto with perm_db;
-	[|apply compose_WF_Perm; [auto with WF_Perm_db|]..];
-	[|replace (p+m+q) with (p+(q+m)) by lia 
-	| replace (p+m+q) with (q+(p+m)) by lia];
-	[|auto with WF_Perm_db..].
+	rewrite perm_of_zx_of_perm_eq_WF by cleanup_perm_inv.
 	perm_eq_by_inv_inj (rotr (p + m + q) (p + m)
 		∘ stack_perms q (p + m) idn (rotr (p + m) p)) (p + m + q).
 	replace (p + m + q) with ((q + m) + p) by lia.
@@ -1103,13 +1294,14 @@ Proof.
 	replace (q + m + p) with (p + m + q) by lia.
 	rewrite <- stack_perms_rotr_natural by cleanup_perm.
 	cleanup_perm.
-	rewrite 3!rotr_add_l_eq.
+	rewrite 3!rotr_add_l.
+	(* rewrite 3!rotr_add_l_eq. *)
 	replace (p + m + q) with (q + m + p) by lia.
-	rewrite rotr_add_l_eq.
+	rewrite rotr_add_l.
 	rewrite <- !compose_assoc.
 	intros k Hk.
 	unfold compose at 1.
-	simplify_bools_lia_one_kernel.
+	unfold big_swap_perm.
 	repeat (bdestructΩ'; unfold compose at 1).
 Qed.
 
@@ -1139,7 +1331,7 @@ Proof.
 	rewrite cast_compose_r, cast_id, <- stack_compose_distr.
 	rewrite zx_comm_commutes_r, nwire_removal_r.
 	rewrite <- (nwire_removal_l zx2) at 1.
-	clean_eqns rewrite stack_compose_distr, stack_assoc_back.
+	auto_cast_eqn rewrite stack_compose_distr, stack_assoc_back.
 	rewrite (cast_compose_r _ _ (_ ↕ _)).
 	simpl_casts.
 	rewrite <- compose_assoc.
@@ -1167,12 +1359,10 @@ Proof.
 	rewrite zx_gap_comm_defn, cast_id.
 	by_perm_eq.
 	rewrite Nat.add_sub.
-	rewrite perm_of_zx_of_perm_eq_WF 
-		by (rewrite (Nat.add_comm 1 m), Nat.add_comm; cleanup_perm_inv).
+	rewrite 2!rotr_add_l.
 	rewrite stack_perms_idn_f.
-	rewrite 2!rotr_add_l_eq.
 	intros k Hk; unfold compose.
-	unfold swap_perm.
+	unfold big_swap_perm, swap_perm.
 	rewrite (Nat.add_comm 1 m).
 	bdestructΩ'.
 Qed.
@@ -1516,228 +1706,4 @@ Proof.
 	rewrite compose_assoc, 2!a_swap_commutes_l,
 		<- compose_assoc, <- !stack_compose_distr.
 	now rewrite ?nwire_removal_l, ?nwire_removal_r.
-Qed.
-
-(* Section on X / Z absorbtion *)
-
-Import SwapRules ZXRules.
-
-Lemma X_cast_r_to_refl n m α {m' o' o} (zx : ZX m' o') Hm Ho : 
-	X n m α ⟷ cast m o Hm Ho zx = 
-	X n m' α ⟷ cast m' o eq_refl Ho zx.
-Proof.
-	now subst.
-Qed.
-
-Lemma X_cast_r_contract n m α {m' o' o} (zx : ZX m' o') Hm Ho : 
-	X n m α ⟷ cast m o Hm Ho zx = 
-	cast n o eq_refl Ho (X n m' α ⟷ zx).
-Proof.
-	now subst.
-Qed.
-
-Lemma Z_cast_r_to_refl n m α {m' o' o} (zx : ZX m' o') Hm Ho : 
-	Z n m α ⟷ cast m o Hm Ho zx = 
-	Z n m' α ⟷ cast m' o eq_refl Ho zx.
-Proof.
-	now subst.
-Qed.
-
-Lemma Z_cast_r_contract n m α {m' o' o} (zx : ZX m' o') Hm Ho : 
-	Z n m α ⟷ cast m o Hm Ho zx = 
-	cast n o eq_refl Ho (Z n m' α ⟷ zx).
-Proof.
-	now subst.
-Qed.
-
-Lemma X_stacked_a_swap_absorbtion_right n m0 m1 m2 α : 
-	X n (m0 + m1 + m2) α ⟷ (n_wire m0 ↕ a_swap m1 ↕ n_wire m2) ∝
-	X n (m0 + m1 + m2) α.
-Proof.
-	(* rewrite grow_X_bot_right. *)
-	rewrite 2!X_add_r_base_rot, compose_assoc.
-	rewrite <- (nwire_removal_l (X 1 m2 0)).
-	rewrite stack_compose_distr, compose_assoc.
-	rewrite <- stack_compose_distr.
-	rewrite <- (stack_compose_distr (X 1 m0 0)).
-	rewrite 2!nwire_removal_r.
-	now rewrite X_a_swap_absorbtion_right_base.
-Qed.
-
-Lemma Z_stacked_a_swap_absorbtion_right n m0 m1 m2 α : 
-	Z n (m0 + m1 + m2) α ⟷ (n_wire m0 ↕ a_swap m1 ↕ n_wire m2) ∝
-	Z n (m0 + m1 + m2) α.
-Proof.
-	colorswap_of (X_stacked_a_swap_absorbtion_right n m0 m1 m2 α).
-Qed.
-
-Lemma X_zx_to_bot_absorbtion_right n m α a : 
-	X n m α ⟷ zx_to_bot a m ∝
-	X n m α.
-Proof.
-	unfold zx_to_bot.
-	rewrite X_cast_r_contract.
-	rewrite grow_X_bot_right, compose_assoc, <- stack_compose_distr.
-	rewrite X_a_swap_absorbtion_right_base, nwire_removal_l.
-	rewrite <- grow_X_bot_right.
-	now simpl_casts.
-Qed.
-
-Lemma Z_zx_to_bot_absorbtion_right n m α a : 
-	Z n m α ⟷ zx_to_bot a m ∝
-	Z n m α.
-Proof.
-	colorswap_of (X_zx_to_bot_absorbtion_right n m α a).
-Qed.
-
-Lemma X_zx_of_swap_list_absorbtion_right n α l : 
-	X n (length l) α ⟷ zx_of_swap_list l ∝
-	X n (length l) α.
-Proof.
-	revert n α;
-	induction l; intros n α.
-	- simpl.
-		now cleanup_zx.
-	- simpl.
-		rewrite <- compose_assoc.
-		rewrite X_zx_to_bot_absorbtion_right.
-		rewrite X_cast_r_contract.
-		rewrite X_add_r_base_rot, compose_assoc.
-		rewrite <- (stack_compose_distr (X 1 (length l) 0)).
-		rewrite wire_removal_r, IHl.
-		rewrite <- X_add_r_base_rot.
-		now simpl_casts.
-Qed.
-
-Lemma Z_zx_of_swap_list_absorbtion_right n α l : 
-	Z n (length l) α ⟷ zx_of_swap_list l ∝
-	Z n (length l) α.
-Proof.
-	colorswap_of (X_zx_of_swap_list_absorbtion_right n α l).
-Qed.
-
-Section Absorbtion.
-(* This is a section only to localize the following hint, 
-	which may be too costly to want to use globally *)
-
-Local Hint Rewrite @zxperm_colorswap_eq using auto with zxperm_db : 
-	colorswap_db.
-
-Lemma X_zx_of_perm_absorbtion_right n m α f : 
-	X n m α ⟷ zx_of_perm m f ∝
-	X n m α.
-Proof.
-	unfold zx_of_perm.
-	rewrite X_cast_r_contract.
-	unfold zx_of_perm_uncast.
-	rewrite X_zx_of_swap_list_absorbtion_right.
-	now simpl_casts.
-Qed.
-
-Lemma Z_zx_of_perm_absorbtion_right n m α f : 
-	Z n m α ⟷ zx_of_perm m f ∝
-	Z n m α.
-Proof. 
-	colorswap_of (X_zx_of_perm_absorbtion_right n m α f).
-Qed.
-
-Lemma X_zxperm_absorbtion_right n m α 
-	(zx : ZX m m) (Hzx : ZXperm m zx) :
-	X n m α ⟷ zx ∝ 
-	X n m α.
-Proof.
-	rewrite <- (zx_of_perm_of_zx Hzx).
-	apply X_zx_of_perm_absorbtion_right.
-Qed.
-
-Lemma Z_zxperm_absorbtion_right n m α 
-	(zx : ZX m m) (Hzx : ZXperm m zx) :
-	Z n m α ⟷ zx ∝ 
-	Z n m α.
-Proof.
-	colorswap_of (X_zxperm_absorbtion_right n m α zx Hzx).
-Qed.
-
-Lemma X_zxperm_absorbtion_left n m α 
-	(zx : ZX n n) (Hzx : ZXperm n zx) : 
-	zx ⟷ X n m α ∝
-	X n m α.
-Proof.
-	transpose_of (X_zxperm_absorbtion_right m n α 
-		(zx⊤) (transpose_zxperm Hzx)).
-Qed.
-
-Lemma Z_zxperm_absorbtion_left n m α 
-	(zx : ZX n n) (Hzx : ZXperm n zx) : 
-	zx ⟷ Z n m α ∝
-	Z n m α.
-Proof.
-	transpose_of (Z_zxperm_absorbtion_right m n α 
-		(zx⊤) (transpose_zxperm Hzx)).
-Qed.
-
-End Absorbtion.
-
-Lemma X_zx_comm_absorbtion_right n p q α : 
-	X n (p + q) α ⟷ zx_comm p q ∝
-	X n (q + p) α.
-Proof.
-	unfold zx_comm.
-	rewrite X_cast_r_contract, X_zx_of_perm_absorbtion_right.
-	now simpl_casts.
-Qed.
-
-Lemma Z_zx_comm_absorbtion_right n p q α : 
-	Z n (p + q) α ⟷ zx_comm p q ∝
-	Z n (q + p) α.
-Proof.
-	colorswap_of (X_zx_comm_absorbtion_right n p q α).
-Qed.
-
-Lemma X_zx_comm_absorbtion_left p q m α :
-	zx_comm p q ⟷ X (q + p) m α ∝
-	X (p + q) m α.
-Proof.
-	transpose_of (X_zx_comm_absorbtion_right m q p α).
-Qed.
-
-Lemma Z_zx_comm_absorbtion_left p q m α :
-	zx_comm p q ⟷ Z (q + p) m α ∝
-	Z (p + q) m α.
-Proof.
-	colorswap_of (X_zx_comm_absorbtion_left p q m α).
-Qed.
-
-Lemma X_zx_gap_comm_absorbtion_right n p m q α : 
-	X n (p + m + q) α ⟷ zx_gap_comm p m q ∝
-	X n (q + m + p) α.
-Proof.
-	unfold zx_gap_comm.
-	rewrite X_cast_r_contract.
-	rewrite <- compose_assoc, X_zx_comm_absorbtion_right.
-	rewrite grow_X_bot_right, compose_assoc, <- stack_nwire_distribute_l.
-	rewrite X_zx_comm_absorbtion_right.
-	rewrite <- grow_X_bot_right.
-	now simpl_casts.
-Qed.
-
-Lemma Z_zx_gap_comm_absorbtion_right n p m q α : 
-	Z n (p + m + q) α ⟷ zx_gap_comm p m q ∝
-	Z n (q + m + p) α.
-Proof.
-	colorswap_of (X_zx_gap_comm_absorbtion_right n p m q α).
-Qed.
-
-Lemma X_zx_gap_comm_absorbtion_left p n q m α : 
-	zx_gap_comm p n q ⟷ X (q + n + p) m α ∝
-	X (p + n + q) m α.
-Proof.
-	transpose_of (X_zx_gap_comm_absorbtion_right m q n p α).
-Qed.
-
-Lemma Z_zx_gap_comm_absorbtion_left p n q m α : 
-	zx_gap_comm p n q ⟷ Z (q + n + p) m α ∝
-	Z (p + n + q) m α.
-Proof.
-	colorswap_of (X_zx_gap_comm_absorbtion_left p n q m α).
 Qed.

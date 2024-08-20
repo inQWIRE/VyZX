@@ -16,35 +16,48 @@ Proof.
 	assert (X_state_copy_ind : (X 0 1 (INR r * PI) ⟷ Z 1 2 0) ∝
 		X 0 1 (INR r * PI) ↕ X 0 1 (INR r * PI)).
 	{ 
-		prop_exists_nonzero (/ (√ 2)%R); Msimpl; simpl.
-		unfold X_semantics; unfold Z_semantics.
-		simpl. solve_matrix.
-		all: autorewrite with Cexp_db.
-		all: destruct (INR_pi_exp r); rewrite H.
-		all: try lca; C_field_simplify; try lca.
-		all: nonzero.
+		prop_exists_nonzero (/ (√ 2)%R).
+		prep_matrix_equivalence.
+		cbn.
+		unfold X_semantics.
+		rewrite kron_n_1, Mmult_1_r by auto_wf.
+		rewrite <- kron_mixed_product.
+		restore_dims.
+		compute_matrix (hadamard ⊗ hadamard).
+		group_radicals.
+		compute_matrix 
+			(Z_semantics 0 1 (INR r * PI) ⊗ Z_semantics 0 1 (INR r * PI)).
+		compute_matrix (Z_semantics 1 2 0).
+		rewrite Cexp_0.
+		rewrite <- Cexp_add, <- Rmult_plus_distr_r, <- plus_INR.
+		rewrite double_mult, mult_INR.
+		rewrite !INR_IZR_INZ, <- mult_IZR, Cexp_2nPI.
+		unfold scale;
+		by_cell; cbn; lca.
 	} 
 	induction n; [| destruct n].
-	- simpl. 
-		simpl_casts.
-		prop_exists_nonzero (√ 2)%R; Msimpl; simpl.
-		unfold X_semantics; unfold Z_semantics.
-		simpl.
-		solve_matrix.
-		destruct (INR_pi_exp r); rewrite H.
-		all: autorewrite with Cexp_db.
-		all: C_field_simplify; try lca; try nonzero.
+	- simpl.
+		rewrite cast_id. 
+		prop_exists_nonzero (√ 2)%R; Msimpl.
+		cbn; unfold X_semantics.
+		rewrite kron_n_1, Mmult_1_r by auto_wf.
+		prep_matrix_equivalence.
+		by_cell; unfold scale;
+		cbn.
+		rewrite Cexp_0.
+		C_field.
+		lca.
 	-	simpl. 
 		rewrite Z_0_is_wire.
-		simpl_casts.
+		rewrite cast_id.
 		rewrite stack_empty_r.
-		simpl_casts.
+		rewrite cast_id.
 		cleanup_zx.
 		easy.
 	- eapply (cast_diagrams (S (S n) * 0) (S (S n) * 1)).
 		rewrite cast_contract.
 		rewrite cast_compose_distribute.
-		simpl_casts.
+		rewrite cast_X, cast_Z, cast_id.
 		simpl.
 		eapply (@cast_simplify 0 (S n * 0)%nat (S n) (S n * 1)%nat) in IHn.
 		rewrite cast_compose_distribute in IHn.
@@ -61,7 +74,7 @@ Proof.
 		rewrite X_state_copy_ind.
 		cleanup_zx.
 		rewrite (stack_assoc (X 0 1 (INR r * PI)) (X 0 1 (INR r * PI))).
-		simpl_casts.
+		rewrite cast_id.
 		easy.
 		Unshelve.
 		all: lia.
@@ -149,32 +162,43 @@ Proof.
 	assert (Z_copy_ind : (Z 1 1 (INR r * PI) ⟷ X 1 2 0) ∝
 		X 1 2 0 ⟷ (Z 1 1 (INR r * PI) ↕ Z 1 1 (INR r * PI))).
 	{ 
-		prop_exists_nonzero (1); Msimpl; simpl.
-		unfold X_semantics; unfold Z_semantics.
-		simpl. solve_matrix.
-		all: autorewrite with Cexp_db.
-		all: destruct (INR_pi_exp r); rewrite H.
-		all: try lca; C_field_simplify; try lca.
-		all: nonzero.
+		prop_exists_nonzero (1); rewrite Mscale_1_l. 
+		cbn.
+		rewrite <- X_semantics_transpose, X_2_1_0_semantics.
+		restore_dims.
+		compute_matrix (Z_semantics 1 1 (INR r * PI) 
+			⊗ Z_semantics 1 1 (INR r * PI)).
+		rewrite <- Cexp_add, <- Rmult_plus_distr_r, 
+			<- plus_INR, double_mult, mult_INR, 
+			!INR_IZR_INZ, <- mult_IZR.
+		rewrite Cexp_2nPI.
+		lma'.
 	} 
 	eapply (cast_diagrams 1 (n * 1)).
 	rewrite 2 cast_compose_distribute.
 	simpl_casts.
 	erewrite (@cast_compose_mid _ _ _ (n * 1)%nat _ _ (X 1 n 0)).
-	simpl_casts.
+	rewrite cast_X, cast_contract, cast_id.
 	induction n; [ | destruct n].
 	- simpl.
-		solve_prop 1.
+		prop_exists_nonzero 1.
+		rewrite Mscale_1_l.
+		prep_matrix_equivalence.
+		cbn.
+		unfold X_semantics.
+		rewrite kron_n_1, 2!Mmult_1_l by auto_wf. 
+		by_cell; cbn;
+		rewrite Cexp_0;
+		lca.
 	- simpl.
 		repeat rewrite X_0_is_wire.
 		cleanup_zx.
-		simpl_casts.
-		easy.
+		now rewrite cast_id.
 	- simpl.
 		rewrite grow_X_top_right.
 		simpl in IHn.
 		rewrite <- compose_assoc.
-		rewrite IHn.
+		rewrite IHn by lia.
 		rewrite compose_assoc.
 		rewrite <- (stack_compose_distr 
 			(Z 1 1 (INR r * PI)) 				(X 1 2 0) 
@@ -185,7 +209,7 @@ Proof.
 		rewrite stack_compose_distr.
 		rewrite compose_assoc.
 		rewrite (stack_assoc (Z 1 1 (INR r * PI))).
-		simpl_casts.
+		rewrite cast_id.
 		easy.
 	Unshelve.
 	all: lia.

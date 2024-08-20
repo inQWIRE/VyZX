@@ -81,7 +81,10 @@ Qed.
 
 Theorem trivial_cap_cup : 
   ⊂ ⟷ ⊃ ∝ ⦰.
-Proof. solve_prop 2. Qed.
+Proof.
+  prop_exists_nonzero 2.
+  lma'.
+Qed.
 
 Lemma cap_passthrough : forall (zx : ZX 1 1),  
   (⊂ ⟷ (zx ↕ —)) ∝ (⊂ ⟷ (— ↕ zx⊤)).
@@ -120,19 +123,9 @@ Proof. transpose_of cap_passthrough. Qed.
 Lemma swap_passthrough_1_1 : forall (zx0 : ZX 1 1) (zx1 : ZX 1 1),
   (zx0 ↕ zx1) ⟷ ⨉ ∝ ⨉ ⟷ (zx1 ↕ zx0).
 Proof.
-  intros.
-  prop_exists_nonzero 1.
-  Msimpl; simpl.
-  solve_matrix.
-  all: rewrite WF_ZX; try lca.
-  1-4: left; auto.
-  5,7,9,11: right; auto.
-  1-4: left.
-  5-8: right.
-  all: simpl;
-       apply le_n_S;
-       apply le_n_S;
-       apply Nat.le_0_l.
+  intros. 
+  rewrite <- ZXpermFacts.zx_comm_1_1_swap.
+  apply (ZXpermFacts.zx_comm_commutes_r zx0 zx1).
 Qed.
 
 Lemma Z_commutes_through_swap_t : forall α, 

@@ -20,9 +20,10 @@ match goal with
   | [ |- ?zx1 ∝ ?zx2] => try (wire_to_n_wire_safe_aux zx1); try (wire_to_n_wire_safe_aux zx2); repeat rewrite n_stack_n_wire_1_n_wire
 end.
 
-Tactic Notation "bundle_wires" := wire_to_n_wire_safe; (* change wires to n_wires *)
-                                  repeat rewrite n_wire_stack; (* stack n_wire *)
-                                  repeat rewrite <- wire_to_n_wire. (* restore *)
+Ltac bundle_wires := 
+  wire_to_n_wire_safe; (* change wires to n_wires *)
+  repeat rewrite n_wire_stack; (* stack n_wire *)
+  repeat rewrite <- wire_to_n_wire. (* restore *)
 
 #[export] Hint Rewrite 
   (fun n => @compose_empty_l n)
@@ -39,7 +40,7 @@ Tactic Notation "bundle_wires" := wire_to_n_wire_safe; (* change wires to n_wire
   (fun n m o p => @nwire_stack_compose_topleft n m o p)
   (fun n m o p => @nwire_stack_compose_botleft n m o p)
   : cleanup_zx_db.
-Tactic Notation "cleanup_zx" := auto_cast_eqn (autorewrite with cleanup_zx_db).
+Ltac cleanup_zx := auto_cast_eqn (autorewrite with cleanup_zx_db).
 
 #[export] Hint Rewrite
   (fun n m o p => @cast_colorswap n m o p)

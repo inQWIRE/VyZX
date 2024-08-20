@@ -6,6 +6,7 @@ Require Import StackComposeRules.
 Require Import SwapRules.
 Require Import WireRules.
 Require Import SpiderInduction.
+Require Import ZXpermFacts.
 
 Lemma grow_Z_top_left : forall (nIn nOut : nat) α,
 	Z (S (S nIn)) nOut α ∝  
@@ -39,7 +40,29 @@ Lemma grow_Z_bot_left : forall n {m o α},
 	Z (n + m) o α ∝ 
 	(n_wire n ↕ Z m 1 0) ⟷ Z (n + 1) o α.
 Proof.
-Admitted.
+	intros n m o α.
+	prop_exists_nonzero 1.
+	cbn.
+	rewrite Mscale_1_l.
+	rewrite !Z_semantics_equiv, n_wire_semantics.
+	simpl.
+	rewrite Cexp_0.
+	Msimpl.
+	restore_dims.
+	distribute_plus.
+	distribute_scale.
+	rewrite 2!(kron_n_m_split n 1), !kron_n_1 by auto_wf.
+	rewrite !Mmult_assoc.
+	restore_dims.
+	rewrite !kron_mixed_product, !Mmult_1_r by auto_wf.
+	restore_dims.
+	rewrite <- !Mmult_assoc.
+	rewrite Mmult00, Mmult01, Mmult10, Mmult11.
+	Msimpl.
+	restore_dims.
+	Msimpl.
+	now rewrite <- !kron_n_m_split by auto_wf.
+Qed.
 
 Lemma grow_Z_bot_right : forall {n m} o {α},
 	Z n (m + o) α ∝ 
@@ -53,13 +76,13 @@ Proof.
 	apply grow_Z_bot_left.
 Qed.
 
+Lemma Z_rot_passthrough : forall α β, 
+	(Z 1 1 α ↕ — ⟷ Z 2 1 β) ∝ Z 2 1 β ⟷ Z 1 1 α.
+Proof. intros ? ?; prop_exists_nonzero 1; lma'. Qed.
 
 Lemma Z_rot_l : forall n m α β,
 	Z (S n) m (α + β) ∝ Z 1 1 α ↕ n_wire n ⟷ Z (S n) m β.
 Proof.
-	assert (Z_rot_passthrough : forall α β, 
-		(Z 1 1 α ↕ — ⟷ Z 2 1 β) ∝ Z 2 1 β ⟷ Z 1 1 α).
-		{ solve_prop 1. }
 	induction n; intros.
 	- cleanup_zx.
 		simpl_casts.
@@ -92,12 +115,21 @@ Proof.
 	apply Z_rot_l.
 Qed.
 
+Lemma Z_appendix_base : forall α β,
+	(Z 0 1 α ↕ — ⟷ Z 2 1 β) ∝ Z 1 1 (α + β).
+Proof. 
+	intros. 
+	prop_exists_nonzero 1. 
+	Msimpl.
+	prep_matrix_equivalence. 
+	cbn; unfold Z_semantics.
+	rewrite Cexp_add.
+	by_cell; lca. 
+Qed.
+
 Lemma Z_appendix_rot_l : forall n m α β,
 	Z n m (α + β) ∝ (Z 0 1 α ↕ n_wire n) ⟷ Z (S n) m β.
 Proof.
-	assert (Z_appendix_base : forall α β,
-		(Z 0 1 α ↕ — ⟷ Z 2 1 β) ∝ Z 1 1 (α + β)).
-		{ solve_prop 1. }
 	induction n; intros.
 	- cleanup_zx.
 		simpl_casts.
@@ -257,7 +289,13 @@ Proof. intros. transpose_of (@Z_add_r_base_rot o n m). Qed.
 
 Lemma Z_1_2_1_fusion : forall α β,
 	(Z 1 2 α ⟷ Z 2 1 β) ∝ (Z 1 1 (α + β)).
-Proof. solve_prop 1. Qed.
+Proof. 
+	prop_exists_nonzero 1.
+	prep_matrix_equivalence. 
+	cbn; unfold Z_semantics.
+	rewrite Cexp_add.
+	by_cell; lca.
+Qed.
 
 Lemma Z_absolute_fusion : forall {n m o} α β,
 	(Z n (S m) α ⟷ Z (S m) o β) ∝
@@ -398,25 +436,14 @@ Proof.
 	intros.
 	prop_exists_nonzero 1.
 	Msimpl.
-	simpl.
-	solve_matrix.
-	replace ((2 ^ n + (2 ^ n + 0) - 1)%nat) with (2 ^ (S n) - 1)%nat by (simpl; lia).
-	assert (exists n', 2 ^ S n = (S (S n')))%nat.
-	{
-		intros.
-		induction n.
-		- exists 0%nat.
-			easy.
-		-	destruct IHn.
-			rewrite Nat.pow_succ_r'.
-			rewrite H.
-			exists ((2 * x + 2))%nat.
-			lia.
-	}
-	destruct H.
-	rewrite H.
-	simpl.
-	lca.
+	prep_matrix_equivalence.
+	intros i j Hi Hj.
+	destruct i as [|[]]; [..|cbn in Hi; lia];
+	cbn; [|lca].
+	destruct j; [destruct n; cbn -[Nat.eqb];
+		[cbn|pose proof (Modulus.pow2_nonzero n); 
+		Modulus.bdestructΩ']; lca|].
+	Modulus.bdestructΩ'; lca.
 Qed.
 
 Lemma Z_self_cap_absorbtion_top : forall {n m α}, (Z) n (S (S m)) α ⟷ (⊃ ↕ n_wire m) ∝ Z n m α.
@@ -458,7 +485,7 @@ Proof.
 Qed.
 
 Lemma Z_self_swap_absorbtion_right_base : forall {n α}, Z n 2 α ⟷ ⨉ ∝ Z n 2 α.
-Proof. intros. solve_prop 1. Qed.
+Proof. intros. prop_exists_nonzero 1. lma'. Qed.
 
 Lemma Z_self_swap_absorbtion_right_top : forall {n m α}, Z n (S (S m)) α ⟷ (⨉ ↕ n_wire m) ∝ Z n (S (S m)) α.
 Proof.
@@ -512,7 +539,7 @@ Proof.
 	repeat rewrite cast_compose_distribute.
 	simpl_casts.
 	erewrite (@cast_compose_mid (n + 0) (n + 1 + 1) 3 (n + 2) _ _ ($ n + 0, n + 1 + 1 ::: n_wire n ↕ ⊂ $)).
-	simpl_casts.
+	rewrite !cast_contract, !cast_id.
 	rewrite <- Z_0_2_0_is_cup.
 	bundle_wires.
 	rewrite <- (stack_compose_distr
@@ -559,20 +586,18 @@ Proof.
 	induction m; intros.
 	- simpl.
 		cleanup_zx.
-		simpl_casts.
-		bundle_wires.
-		cleanup_zx.
-		rewrite Z_self_swap_absorbtion_right_base.
-		easy.
+		rewrite cast_id.
+		rewrite wire_to_n_wire, n_wire_stack, nwire_removal_r.
+		apply Z_self_swap_absorbtion_right_base.
 	- rewrite top_to_bottom_grow_r.
 		erewrite <- (@cast_Z n _  ((S (S m)) + 1)).
 		rewrite Z_add_r_base_rot.
 		rewrite (cast_compose_mid ((S (S m)) + 1)).
 		rewrite cast_contract.
-		simpl_casts.
+		rewrite cast_id.
 		rewrite compose_assoc.
 		rewrite cast_compose_l.
-		simpl_casts.
+		rewrite !cast_contract, cast_id.
 		rewrite <- (compose_assoc (Z 1 (S (S m)) 0 ↕ Z 1 1 0)).
 		rewrite <- stack_compose_distr.
 		rewrite IHm.
@@ -586,8 +611,7 @@ Proof.
 		replace ⦰ with (n_wire 0) by easy.
 		rewrite cast_id.
 		rewrite Z_self_swap_absorbtion_right.
-		simpl_casts.
-		easy.
+		apply cast_Z.
 Unshelve.
 	all: lia.
 Qed.
@@ -604,11 +628,8 @@ Proof.
 		unfold bottom_to_top, top_to_bottom.
 		simpl.
 		cleanup_zx.
-		simpl_casts.
-		bundle_wires.
-		cleanup_zx.
-		rewrite Z_self_swap_absorbtion_right_base.
-		easy.
+		rewrite cast_id, wire_to_n_wire, n_wire_stack, nwire_removal_l.
+		apply Z_self_swap_absorbtion_right_base.
 	- rewrite bottom_to_top_grow_r.
 		erewrite <- (@cast_Z n _  (1 + (S (S m)))).
 		rewrite Z_add_r_base_rot.
@@ -656,36 +677,146 @@ Unshelve.
   all: lia.
 Qed.
 
+Lemma Z_stacked_a_swap_absorbtion_right n m0 m1 m2 α : 
+	Z n (m0 + m1 + m2) α ⟷ (n_wire m0 ↕ a_swap m1 ↕ n_wire m2) ∝
+	Z n (m0 + m1 + m2) α.
+Proof.
+	rewrite 2!Z_add_r_base_rot, compose_assoc.
+	rewrite <- (nwire_removal_l (Z 1 m2 0)).
+	rewrite stack_compose_distr, compose_assoc.
+	rewrite <- stack_compose_distr.
+	rewrite <- (stack_compose_distr (Z 1 m0 0)).
+	rewrite 2!nwire_removal_r.
+	now rewrite Z_a_swap_absorbtion_right_base.
+Qed.
+
+Lemma Z_zx_to_bot_absorbtion_right n m α a : 
+	Z n m α ⟷ zx_to_bot a m ∝
+	Z n m α.
+Proof.
+	unfold zx_to_bot.
+	rewrite cast_Z_contract_r.
+	rewrite grow_Z_bot_right, compose_assoc, <- stack_compose_distr.
+	rewrite Z_a_swap_absorbtion_right_base, nwire_removal_l.
+	rewrite <- grow_Z_bot_right.
+	now simpl_casts.
+Qed.
+
+Lemma Z_zx_of_swap_list_absorbtion_right n α l : 
+	Z n (length l) α ⟷ zx_of_swap_list l ∝
+	Z n (length l) α.
+Proof.
+	revert n α;
+	induction l; intros n α.
+	- simpl.
+		now cleanup_zx.
+	- simpl.
+		rewrite <- compose_assoc.
+		rewrite Z_zx_to_bot_absorbtion_right.
+		rewrite cast_Z_contract_r.
+		rewrite Z_add_r_base_rot, compose_assoc.
+		rewrite <- (stack_compose_distr (Z 1 (length l) 0)).
+		rewrite wire_removal_r, IHl.
+		rewrite <- Z_add_r_base_rot.
+		now simpl_casts.
+Qed.
+
+Lemma Z_zx_of_perm_absorbtion_right n m α f : 
+	Z n m α ⟷ zx_of_perm m f ∝
+	Z n m α.
+Proof.
+	unfold zx_of_perm.
+	rewrite cast_Z_contract_r.
+	unfold zx_of_perm_uncast.
+	rewrite Z_zx_of_swap_list_absorbtion_right.
+	now simpl_casts.
+Qed.
+
+Lemma Z_zxperm_absorbtion_right n m α 
+	(zx : ZX m m) (Hzx : ZXperm m zx) :
+	Z n m α ⟷ zx ∝ 
+	Z n m α.
+Proof.
+	rewrite <- (zx_of_perm_of_zx Hzx).
+	apply Z_zx_of_perm_absorbtion_right.
+Qed.
+
+Lemma Z_zxperm_absorbtion_left n m α 
+	(zx : ZX n n) (Hzx : ZXperm n zx) : 
+	zx ⟷ Z n m α ∝
+	Z n m α.
+Proof.
+	transpose_of (Z_zxperm_absorbtion_right m n α 
+		(zx⊤) (transpose_zxperm Hzx)).
+Qed.
+
+Lemma Z_zx_comm_absorbtion_right n p q α : 
+	Z n (p + q) α ⟷ zx_comm p q ∝
+	Z n (q + p) α.
+Proof.
+	unfold zx_comm.
+	rewrite cast_Z_contract_r, Z_zx_of_perm_absorbtion_right.
+	now simpl_casts.
+Qed.
+
+Lemma Z_zx_comm_absorbtion_left p q m α :
+	zx_comm p q ⟷ Z (q + p) m α ∝
+	Z (p + q) m α.
+Proof. transpose_of (Z_zx_comm_absorbtion_right m q p α). Qed.
+
+Lemma Z_zx_gap_comm_absorbtion_right n p m q α : 
+	Z n (p + m + q) α ⟷ zx_gap_comm p m q ∝
+	Z n (q + m + p) α.
+Proof.
+	unfold zx_gap_comm.
+	rewrite cast_Z_contract_r.
+	rewrite <- compose_assoc, Z_zx_comm_absorbtion_right.
+	rewrite grow_Z_bot_right, compose_assoc, <- stack_nwire_distribute_l.
+	rewrite Z_zx_comm_absorbtion_right.
+	rewrite <- grow_Z_bot_right.
+	now simpl_casts.
+Qed.
+
+Lemma Z_zx_gap_comm_absorbtion_left p n q m α : 
+	zx_gap_comm p n q ⟷ Z (q + n + p) m α ∝
+	Z (p + n + q) m α.
+Proof. transpose_of (Z_zx_gap_comm_absorbtion_right m q n p α). Qed.
+
+Lemma Z_swap_pullthrough_top_right : forall n α prfn prfm, 
+	((Z (S n) 1 α) ↕ —) ⟷ ⨉ ∝ 
+	cast _ _ prfn prfm (n_swap _ ⟷ (— ↕ (Z (S n) 1 α))).
+Proof.
+  intros.
+  rewrite swap_commutes_r.
+  auto_cast_eqn rewrite (cast_compose_mid_contract _ (1 + (1 + n))%nat).
+	rewrite n_swap_grow_l.
+  auto_cast_eqn rewrite (cast_compose_mid_contract _ (1 + (1 + n))%nat).
+	rewrite cast_id.
+  (* rewrite cast_fn_eq_dim. *)
+  change (S n) with (1 + n)%nat.
+	change 2%nat with (1 + 1)%nat.
+	auto_cast_eqn rewrite cast_stack_distribute.
+	rewrite 2!cast_id.
+	rewrite compose_assoc.
+	rewrite <- stack_wire_distribute_l.
+	rewrite Z_zxperm_absorbtion_left by auto with zxperm_db.
+	apply compose_simplify; [|easy].
+	unfold zx_comm.
+	simpl_casts.
+	by_perm_eq_nosimpl.
+	rewrite perm_of_bottom_to_top_eq.
+	change (S (1 + n)) with (1 + (1 + n))%nat.
+	rewrite (Nat.add_comm 1 (1 + n)).
+	cleanup_perm_of_zx.
+	rewrite rotl_eq_rotr_sub.
+	rewrite Nat.mod_small by lia.
+	now rewrite Nat.add_sub.
+Qed.
+
 Lemma Z_n_swap_absorbtion_right_base : forall n m α, Z n m α ⟷ n_swap m ∝ Z n m α.
 Proof.
-	intros n m.
-	generalize dependent n.
-	strong induction m.
 	intros.
-	destruct m; [ simpl; cleanup_zx; easy | ].
-	destruct m; [ simpl; cleanup_zx; easy | ].
-	simpl.
-	rewrite <- compose_assoc.
-	rewrite (Z_self_bottom_to_top_absorbtion_right_base n (S (S m)) α).
-	rewrite <- (@cast_Z n _ (1 + (S m))) at 1.
-	rewrite Z_add_r_base_rot at 1.
-	simpl_casts.
-	rewrite compose_assoc.
-	rewrite <- (stack_compose_distr (Z 1 1 0) —).
-	rewrite <- compose_assoc.
-	rewrite (Z_self_bottom_to_top_absorbtion_right_base).
-	rewrite <- (@cast_Z 1 _ (1 + m) (S m)).
-	rewrite Z_add_r_base_rot.
-	simpl_casts.
-	rewrite compose_assoc.
-	rewrite <- (stack_compose_distr (Z 1 1 0) —).
-	rewrite (H m); [ | lia ].
-	rewrite wire_removal_r.
-	rewrite <- (Z_add_r_base_rot 1 m).
-	rewrite <- (Z_add_r_base_rot 1 (1 + m)).
-	easy.
-Unshelve.
-  all: lia.
+	apply Z_zxperm_absorbtion_right; auto with zxperm_db.
 Qed.
 
 Lemma Z_n_wrap_under_r_base_unswapped : forall n m α, Z (n + m) 0 α ∝ (Z n m α ↕ n_wire m) ⟷ n_cup_unswapped m.

@@ -2,6 +2,8 @@ Require Import CoreData.
 From QuantumLib Require Import Polar.
 Require Import CoreRules.
 
+Import Complex.
+
 Lemma c_step_1 : forall α,
 	⟦ (Z 0 1 α ↕ —) ⟷ X 2 1 0 ⟧ = 
 	/(√2)%R .* (∣0⟩⟨0∣ .+ 
@@ -26,8 +28,12 @@ Proof.
 	Msimpl.
 	unfold xbasis_minus, xbasis_plus, braplus, braminus.
 	autorewrite with scalar_move_db.
- replace ((/ (√ 2)%R + Cexp α * / (√ 2)%R) * / (√ 2)%R * / (√ 2)%R) with ((1 + Cexp α) / (2 * (√2)%R)) by C_field.
- replace ((/ (√ 2)%R + Cexp α * - / (√ 2)%R) * / (√ 2)%R * / (√ 2)%R) with ((1 - Cexp α) / (2 * (√2)%R)) by C_field.
+	
+ 	assert (H : ((/ (√ 2)%R + Cexp α * / (√ 2)%R) * / (√ 2)%R * / (√ 2)%R)%C
+ 		= ((1 + Cexp α) / (2 * (√2)%R)) )by C_field.
+	rewrite H.
+ 	replace ((/ (√ 2)%R + Cexp α * - / (√ 2)%R) * / (√ 2)%R * / (√ 2)%R) 
+		with ((1 - Cexp α) / (2 * (√2)%R)) by C_field.
 	repeat rewrite Mmult_plus_distr_r.
 	repeat rewrite Mmult_plus_distr_l.
 	remember ((C1 + Cexp α) / (C2 * (√ 2)%R)) as σ1.
@@ -220,12 +226,10 @@ Proof.
 	repeat rewrite kron_mixed_product.
 	Msimpl.
 	repeat rewrite Mmult_assoc.
-	replace (⟨-∣×σx) with (-1 .* ⟨-∣) by solve_matrix.
-	replace (⟨+∣×σx) with (⟨+∣).
+	replace (⟨-∣×σx) with (-1 .* ⟨-∣) by lma'.
+	replace (⟨+∣×σx) with (⟨+∣) by lma'.
 	autorewrite with scalar_move_db.
 	lma.
-	unfold braplus.
-	solve_matrix.
 Qed.
 
 Lemma c_step_3_flipped : forall γ,
@@ -235,7 +239,7 @@ Proof.
 	intros.
 	rewrite ZX_semantic_equiv.
 	unfold_dirac_spider.
-	autorewrite with Cexp_db.
+	rewrite Cexp_0.
 	Msimpl.
 	rewrite kron_plus_distr_r.
 	rewrite kron_plus_distr_l.
@@ -269,12 +273,10 @@ Proof.
 	repeat rewrite kron_mixed_product.
 	Msimpl.
 	repeat rewrite Mmult_assoc.
-	replace (⟨-∣×σx) with (-1 .* ⟨-∣) by solve_matrix.
-	replace (⟨+∣×σx) with (⟨+∣).
+	replace (⟨-∣×σx) with (-1 .* ⟨-∣) by lma'.
+	replace (⟨+∣×σx) with (⟨+∣) by lma'.
 	autorewrite with scalar_move_db.
 	lma.
-	unfold braplus.
-	solve_matrix.
 Qed.
 
 (* @nocheck name *)

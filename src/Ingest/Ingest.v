@@ -1,6 +1,7 @@
 Require Import SQIR.UnitarySem.
 Require Import SQIR.Equivalences.
 Require Import QuantumLib.Quantum.
+Require Import QuantumLib.Kronecker.
 Require Import CoreData.
 Require Import CoreRules.
 Require Import Gates.
@@ -16,17 +17,21 @@ Local Open Scope ZX_scope.
 Lemma a_swap_sem_base : forall n, a_swap_semantics (S (S n)) = uc_eval (@SWAP (S (S n)) 0 (S n)).
 Proof.
   intros.
-  assert (forall q q', q = qubit0 \/ q = qubit1 -> q' = qubit0 \/ q' = qubit1 -> swap × (I 2 ⊗ (q × q'†%M)) × swap = (q × q'†%M) ⊗ I 2).
+  assert (forall (q q' : Vector 2), WF_Matrix q -> WF_Matrix q' -> 
+    swap × (I 2 ⊗ (q × q'†%M)) × swap = (q × q'†%M) ⊗ I 2).
   {
     intros.
-    destruct H; destruct H0; subst; solve_matrix.
+    rewrite swap_eq_kron_comm.
+    rewrite Kronecker.kron_comm_commutes_l by auto_wf.
+    rewrite Mmult_assoc, Kronecker.kron_comm_mul_inv.
+    apply Mmult_1_r; auto_wf.
   }
   induction n.
   - simpl.
     rewrite denote_swap.
     unfold ueval_swap.
     simpl.
-    gridify.
+    rewrite !kron_1_r.
     unfold Swaps.bottom_wire_to_top.
     unfold Swaps.top_wire_to_bottom.
     rewrite unfold_pad.
@@ -37,44 +42,46 @@ Proof.
     rewrite kron_1_r.
     replace 4%nat with (2 * 2)%nat by lia.
     rewrite swap_transpose.
-    Msimpl.
+    rewrite Mmult_1_l, Mmult_1_r, kron_1_l, kron_1_r by auto_wf.
     apply swap_spec'.
   - rewrite a_swap_semantics_ind.
     rewrite IHn.
-    simpl.
+    (* simpl. *)
     rewrite 2 denote_swap.
     unfold ueval_swap.
-    simpl.
+    cbn [Nat.ltb Nat.leb].
+    
     rewrite Nat.sub_0_r.
     rewrite 2 unfold_pad.
-    simpl.
-    rewrite Nat.add_1_r.
-    rewrite Nat.leb_refl.
-    Msimpl.
-    rewrite Nat.sub_diag.
-    simpl.
-    Msimpl.
+    replace (S n - 1)%nat with (n)%nat by lia.
+    replace (0 + (1 + n + 1))%nat with (S (S n)) by lia.
+    replace ((0 + (1 + (S (S n) - 0 - 1) + 1)))%nat with (S (S (S n))) by lia.
+    rewrite 2!Nat.leb_refl.
+    rewrite 2!Nat.sub_diag.
+    change (2^0)%nat with (S O).
+    replace (S (S n) - 0 - 1)%nat with (S n) by lia.
+    cbn -[Nat.pow].
+    (* rewrite kron_1_l by (auto 100 using WF_Matrix_dim_change with wf_db). auto_wf.
+    Msimpl. *)
     restore_dims.
-    repeat rewrite kron_plus_distr_l.
-    repeat rewrite <- kron_assoc; try auto with wf_db.
-    restore_dims.
-    repeat rewrite (kron_assoc (I 2 ⊗ _) (I (2 ^ n)) _); try auto with wf_db.
-    replace (2 ^ n + (2 ^ n + 0))%nat with (2 ^ n * 2)%nat by lia.
-    restore_dims.
-    repeat rewrite Mmult_plus_distr_l.
-    repeat rewrite Mmult_plus_distr_r.
-    repeat rewrite kron_mixed_product.
-    do 3 pose proof H.
-    specialize (H qubit0 qubit0).
-    specialize (H0 qubit0 qubit1).
-    specialize (H1 qubit1 qubit0).
-    specialize (H2 qubit1 qubit1).
-    rewrite H, H0, H1, H2 by auto.
+    replace (0 <=? n) with true by easy.
     Msimpl.
-    repeat rewrite kron_assoc by auto with wf_db.
-    repeat rewrite <- (kron_assoc (I 2) _ _) by auto with wf_db.
-    rewrite id_kron.
-    replace (2 * 2 ^ n)%nat with (2 ^ n * 2)%nat by lia.
+    replace (2 ^ S n)%nat with (2 * 2 ^ n)%nat by (cbn; lia).
+    (* rewrite <- id_kron, <- kron_assoc by auto_wf. *)
+    (* restore_dims. *)
+    rewrite !(kron_assoc _ (I (2^n))) by auto_wf.
+    restore_dims.
+    distribute_plus.
+    rewrite <- !(kron_assoc (I 2)) by auto_wf.
+    restore_dims.
+    rewrite !kron_mixed_product' by lia.
+    rewrite swap_eq_kron_comm.
+    rewrite !kron_comm_commutes_l by auto_wf.
+    rewrite !(Mmult_assoc _ (kron_comm 2 2)).
+    rewrite kron_comm_mul_inv.
+    Msimpl.
+    rewrite <- id_kron.
+    rewrite !kron_assoc by auto_wf.
     restore_dims.
     easy. 
 Qed.
@@ -122,7 +129,7 @@ Proof.
     replace ((2 ^ 0 * (1 * (2 * 2 ^ x0 * 2) * 2 ^ 0))%nat) 
       with (2 ^ 0 * (2 * 2 ^ x0 * 2))%nat by (simpl; lia).
     apply kron_simplify; try easy.
-    Msimpl.
+    rewrite kron_1_r.
     easy.
   - destruct x; try (exfalso; lia).
     destruct (S x - y)%nat eqn:Hc; try (exfalso; lia).
@@ -130,15 +137,17 @@ Proof.
     replace (S x - S y - 1 + 1)%nat with (S x - S y)%nat by lia.
     replace (S x - S y)%nat with n0 by lia.
     rewrite Nat.leb_refl.
-    Msimpl.
+    restore_dims.
+    rewrite kron_1_l by auto_wf.
     assert (x - y = S x0)%nat by lia.
     assert (x - y = n0)%nat by lia.
     replace (2 ^ S y * (1 * (2 * 2 ^ (n0 - 1) * 2) * 2 ^ (S n0 - S n0)))%nat 
       with (2 ^ S y * (2 * 2 ^ x0 * 2))%nat; [ | shelve ].
     apply kron_simplify; try easy.
-    rewrite Nat.sub_diag. 
-    Msimpl.
-    replace ((2 * 2 ^ (n0 - 1) * 2 * 2 ^ 0)%nat) 
+    rewrite Nat.sub_diag.
+    rewrite kron_1_r.
+    restore_dims.
+    replace ((2 * 2 ^ (n0 - 1) * 2)%nat) 
       with (2 * 2 ^ x0 * 2)%nat; [ | shelve ].
     apply kron_simplify; try easy.
     rewrite <- H6.
@@ -232,9 +241,9 @@ Proof.
     simpl.
     rewrite Nat.leb_refl.
     rewrite Nat.sub_diag.
-    simpl.
-    Msimpl.
+    rewrite !kron_1_r.
     restore_dims.
+    rewrite 2!(kron_id_dist_r 2) by auto_wf.
     easy.
   - destruct n; try (exfalso; lia).
     bdestruct (0 <? 0); try (exfalso; lia).
@@ -258,12 +267,14 @@ Proof.
     destruct n; try (exfalso; lia).
     replace (S n - 0 - 1)%nat with (n) by lia.
     replace (S n - n)%nat with 1%nat by lia.
-    simpl.
+    (* simpl. *)
     rewrite Nat.sub_diag.
-    simpl.
+    restore_dims.
+    (* simpl. *)
+    rewrite !kron_1_l by auto_wf.
     Msimpl.
     restore_dims.
-    rewrite 2 kron_id_dist_l; try auto with wf_db.
+    rewrite 2 kron_id_dist_l; auto with wf_db.
   - destruct n; try (exfalso; lia).
     bdestruct (0 <? 0); try (exfalso; lia).
     lma.
@@ -295,19 +306,16 @@ Proof.
   assert (HSwapSSn : forall n, uc_eval (@SWAP (S (S (S n))) 0 (S n)) = ⟦ (pad_bot_1 (a_swap (S (S n)))) ⟧ ).
   {
     intros.
-    Opaque a_swap.
-    simpl.
     unfold pad_bot_1, pad_bot.
     rewrite swap_pad.
-    simpl.
+    cbn -[a_swap].
     restore_dims.
     simpl_cast_semantics.
-    simpl.
+    cbn -[a_swap].
     rewrite a_swap_correct.
     rewrite a_swap_sem_base.
     Msimpl.
     easy.
-    Transparent a_swap.
   }
   destruct n.
   - unfold unpadded_cnot.

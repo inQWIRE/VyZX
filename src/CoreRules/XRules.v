@@ -3,6 +3,7 @@ Require Import WireRules.
 Require Import CapCupRules.
 Require Import CoreAutomation.
 Require Import SwapRules.
+Require Import ZXpermFacts.
 Require Import ZRules.
 
 Lemma grow_X_top_left : forall (nIn nOut : nat) α,
@@ -25,6 +26,9 @@ Lemma grow_X_bot_right : forall {n m} o {α},
 	X n (m + 1) α ⟷ (n_wire m ↕ X 1 o 0).
 Proof. intros. colorswap_of (@grow_Z_bot_right n m o α). Qed.
 
+Lemma X_rot_passthrough : forall α β, 
+	(X 1 1 α ↕ — ⟷ X 2 1 β) ∝ X 2 1 β ⟷ X 1 1 α.
+Proof. intros. colorswap_of Z_rot_passthrough. Qed.
 
 Lemma X_rot_l : forall n m α β,
 	X (S n) m (α + β) ∝ X 1 1 α ↕ n_wire n ⟷ X (S n) m β.
@@ -39,6 +43,10 @@ Proof. intros. colorswap_of (@Z_add_r_base_rot n). Qed.
 
 Lemma X_add_l_base_rot : forall {n} m o {α}, X (n + m) o α ∝ (X n 1 0 ↕ X m 1 0) ⟷ X 2 o α.
 Proof. intros. colorswap_of (@Z_add_l_base_rot n). Qed.
+
+Lemma X_appendix_base : forall α β,
+	(X 0 1 α ↕ — ⟷ X 2 1 β) ∝ X 1 1 (α + β).
+Proof. intros. colorswap_of (Z_appendix_base α β). Qed.
 
 Lemma X_appendix_rot_l : forall n m α β,
 	X n m (α + β) ∝ (X 0 1 α ↕ n_wire n) ⟷ X (S n) m β.
@@ -168,6 +176,74 @@ Proof. colorswap_of Z_self_bottom_to_top_absorbtion_right_base. Qed.
 
 Lemma X_a_swap_absorbtion_right_base : forall n m α, X n m α ⟷ a_swap m ∝ X n m α.
 Proof. colorswap_of Z_a_swap_absorbtion_right_base. Qed.
+
+Lemma X_stacked_a_swap_absorbtion_right n m0 m1 m2 α : 
+	X n (m0 + m1 + m2) α ⟷ (n_wire m0 ↕ a_swap m1 ↕ n_wire m2) ∝
+	X n (m0 + m1 + m2) α.
+Proof. colorswap_of (Z_stacked_a_swap_absorbtion_right n m0 m1 m2 α). Qed.
+
+Lemma X_zx_to_bot_absorbtion_right n m α a : 
+	X n m α ⟷ zx_to_bot a m ∝ X n m α.
+Proof. colorswap_of (Z_zx_to_bot_absorbtion_right n m α a). Qed.
+
+Lemma X_zx_of_swap_list_absorbtion_right n α l : 
+	X n (length l) α ⟷ zx_of_swap_list l ∝ X n (length l) α.
+Proof. colorswap_of (Z_zx_of_swap_list_absorbtion_right n α l). Qed.
+
+Section Absorbtion.
+(* This is a section only to localize the following hint, 
+	which may be too costly to want to use globally *)
+
+Local Hint Rewrite @zxperm_colorswap_eq using auto with zxperm_db : 
+	colorswap_db.
+
+Lemma X_zx_of_perm_absorbtion_right n m α f : 
+	X n m α ⟷ zx_of_perm m f ∝ X n m α.
+Proof. colorswap_of (Z_zx_of_perm_absorbtion_right n m α f). Qed.
+
+Lemma X_zxperm_absorbtion_right n m α (zx : ZX m m) (Hzx : ZXperm m zx) :
+	X n m α ⟷ zx ∝ X n m α.
+Proof. colorswap_of (Z_zxperm_absorbtion_right n m α zx Hzx). Qed.
+
+Lemma X_zxperm_absorbtion_left n m α (zx : ZX n n) (Hzx : ZXperm n zx) : 
+	zx ⟷ X n m α ∝ X n m α.
+Proof.
+	transpose_of (X_zxperm_absorbtion_right m n α 
+		(zx⊤) (transpose_zxperm Hzx)).
+Qed.
+
+End Absorbtion.
+
+Lemma X_zx_comm_absorbtion_right n p q α : 
+	X n (p + q) α ⟷ zx_comm p q ∝
+	X n (q + p) α.
+Proof. colorswap_of (Z_zx_comm_absorbtion_right n p q α). Qed.
+
+Lemma X_zx_comm_absorbtion_left p q m α :
+	zx_comm p q ⟷ X (q + p) m α ∝
+	X (p + q) m α.
+Proof. colorswap_of (Z_zx_comm_absorbtion_left p q m α). Qed.
+
+Lemma X_zx_gap_comm_absorbtion_right n p m q α : 
+	X n (p + m + q) α ⟷ zx_gap_comm p m q ∝
+	X n (q + m + p) α.
+Proof. colorswap_of (Z_zx_gap_comm_absorbtion_right n p m q α). Qed.
+
+Lemma X_zx_gap_comm_absorbtion_left p n q m α : 
+	zx_gap_comm p n q ⟷ X (q + n + p) m α ∝
+	X (p + n + q) m α.
+Proof. colorswap_of (Z_zx_gap_comm_absorbtion_left p n q m α). Qed.
+
+Lemma X_swap_pullthrough_top_right : forall n α prfn prfm, 
+	((X (S n) 1 α) ↕ —) ⟷ ⨉ ∝ 
+	cast _ _ prfn prfm (n_swap _ ⟷ (— ↕ (X (S n) 1 α))).
+Proof. intros. (* colorswap_of fails because it simplifies too aggressively *)
+	apply colorswap_diagrams.
+	autorewrite with colorswap_db.
+	cbn [color_swap].
+	autorewrite with colorswap_db.
+	exact (Z_swap_pullthrough_top_right n α prfn prfm). 
+Qed.
 
 Lemma X_n_swap_absorbtion_right_base : forall n m α, X n m α ⟷ n_swap m ∝ X n m α.
 Proof. colorswap_of Z_n_swap_absorbtion_right_base. Qed.

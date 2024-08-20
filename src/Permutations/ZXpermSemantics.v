@@ -1,13 +1,9 @@
 Require Import ZXCore.
 Require Import CastRules.
-Require Import PermutationFacts.
-Require Import PermutationInstances.
-Require Import ZXperm.
-Require Import PermutationAuxiliary.
-Require Import PermutationAutomation.
-Require Import PermMatrixFacts.
-Require Import PermutationSemantics.
-Require Import CoreData.Proportional.
+Require Export ZXperm.
+Require Import ZXpermAutomation.
+Require Import QuantumLib.Permutations QuantumLib.Modulus.
+Import CoreData.Proportional.
 
 
 Local Open Scope nat. 
@@ -89,7 +85,7 @@ Lemma compose_permutation_semantics {n m o} {zx0 : ZX n m} {zx1 : ZX m o}
 Proof.
   simpl.
   subst.
-  rewrite perm_to_matrix_compose by easy.
+  rewrite perm_to_matrix_compose by auto with perm_db.
   now rewrite Hzx0, Hzx1.
 Qed.
 
@@ -127,7 +123,7 @@ Qed.
 
 Lemma proportional_of_perm_eq {n} {zx0 zx1 : ZX n n}
 	(Hzx0 : ZXperm n zx0) (Hzx1 : ZXperm n zx1)
-	(Hperm : forall k, k < n -> perm_of_zx zx0 k = perm_of_zx zx1 k) :
+	(Hperm : perm_eq n (perm_of_zx zx0) (perm_of_zx zx1)) :
 	zx0 ∝ zx1.
 Proof.
 	prop_exists_nonzero (RtoC 1).
@@ -135,7 +131,7 @@ Proof.
 	rewrite (perm_of_zx_permutation_semantics Hzx0),
 		(perm_of_zx_permutation_semantics Hzx1).
   apply mat_equiv_eq; auto with wf_db.
-  apply perm_to_matrix_perm_eq, Hperm.
+  apply perm_to_matrix_perm_eq; cleanup_perm. 
 Qed.
 
 (* TODO: split intro prop_perm_eq and prop_perm_eqΩ *)
@@ -177,10 +173,19 @@ Ltac by_perm_eq :=
   (* Goal: zx0 ∝ zx1 *)
   apply proportional_of_perm_eq; [
   (* New goals: *)
-    (*1: ZXperm _ zx0 *) auto 10 with zxperm_db |
-    (*2: ZXperm _ zx1*) auto 10 with zxperm_db |
+    (*1: ZXperm _ zx0 *) auto 100 with zxperm_db |
+    (*2: ZXperm _ zx1*) auto 100 with zxperm_db |
     (*3: forall k, k < n -> perm_of_zx zx0 k = perm_of_zx zx1 k *) 
     cleanup_perm_of_zx; try easy; try lia
   ].
 
-
+Ltac by_perm_eq_nosimpl :=
+  intros;
+  autounfold with zxperm_db;
+  (* Goal: zx0 ∝ zx1 *)
+  apply proportional_of_perm_eq; [
+  (* New goals: *)
+    (*1: ZXperm _ zx0 *) auto 100 with zxperm_db |
+    (*2: ZXperm _ zx1*) auto 100 with zxperm_db |
+    
+  ].

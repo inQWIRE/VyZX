@@ -1,5 +1,5 @@
 Require Import CoreData.
-Require Import PermutationDefinitions.
+Require Import QuantumLib.PermutationsBase.
 
 Open Scope ZX_scope.
 
