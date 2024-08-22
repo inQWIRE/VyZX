@@ -524,6 +524,12 @@ Qed.
 #[export] Hint Resolve WF_Z_semantics WF_X_semantics : wf_db.
 
 
+Definition Mscale_list2D_to_matrix c li :=
+  @Matrix.Mscale_list2D_to_matrix (length li) (length (hd [] li)) c li.
+
+Definition Mscale_list2D_to_matrix_gen c li n m :=
+  @Matrix.Mscale_list2D_to_matrix n m c li.
+
 Lemma X_2_1_semantics α : X_semantics 2 1 α = 
 	(/ √ 2 * / 2) .* @make_WF (2^1) (2^2) (list2D_to_matrix
 		[[1 + Cexp α; 1 - Cexp α; 1 - Cexp α; 1 + Cexp α]; 
