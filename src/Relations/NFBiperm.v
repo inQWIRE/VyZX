@@ -112,6 +112,8 @@ Proof.
   apply matrix_of_realize_biperm_data.
 Qed.
 
+(* FIXME: The interpretations of ncup' and ncap' need to swap 
+  to match the cap/cup swap *)
 Record NF_biperm := {
   lperm' : nat -> nat;
   rperm' : nat -> nat;
@@ -120,8 +122,8 @@ Record NF_biperm := {
   ncap' : nat
 }.
 
-Local Notation NF_insize b := (ncup' b + ncup' b + nid' b).
-Local Notation NF_outsize b := (ncap' b + ncap' b + nid' b).
+Notation NF_insize b := (ncup' b + ncup' b + nid' b).
+Notation NF_outsize b := (ncap' b + ncap' b + nid' b).
 
 Definition uncurry_NF_biperm 
   {A : (nat -> nat) -> (nat -> nat) -> nat -> nat -> nat -> Type} 
@@ -682,11 +684,18 @@ Proof.
     reflexivity.
 Qed.
 
-(* TODO : 
-Lemma realize_stack_NF_biperms (Hb : WF_NF_biperm b) (Hc : WF_NF_biperm c) : 
+
+Lemma stack_NF_biperms_correct b c (Hb : WF_NF_biperm b) (Hc : WF_NF_biperm c) : 
   matrix_of_NF_biperm (stack_NF_biperms b c) = 
   matrix_of_NF_biperm b ⊗ matrix_of_NF_biperm c.
-*)
+Proof.
+  unfold matrix_of_NF_biperm.
+  rewrite <- matrix_of_stack_biperms by auto with biperm_db.
+  (* rewrite NF_insize_stack_NF_biperms, NF_outsize_stack_NF_biperms. *)
+  erewrite matrix_of_biperm_eq_of_perm_eq; 
+  [|rewrite Nat.add_comm; now apply realize_stack_NF_biperms].
+  f_equal; cbn; lia.
+Qed.
 
 Local Open Scope prg.
 
@@ -3229,12 +3238,17 @@ Definition change_fun_to_shrink_biperm (n m : nat) (f : nat -> nat)
     (
       if n <? 2 then (* no outputs; done *)
         (fun g => g)
-      else (* make 0 go to 1*)
+      else if f 0 <? n then
+        (* make 0 go to 1*)
         (fun g => (swap_perm 1 (f 0) n ∘ g ∘ swap_perm 1 (f 0) n))
+      else (* if f is not perm_bounded *)
+        (fun g => g)
         (* = (fun g => 
           biperm_compose_perm_l m n g (swap_perm 1 (f 0) m)) *)
       )
   (* if (n =? 0) || (m =? 0) then (fun g => g) else *)
+  else if (f 0 =? 0) then (* Bad case *)
+    (fun g => g)
   else if (f 0 <? m) then (* we want to prep to add a cap by moving f 0 to 1 *)
     (fun g => (swap_perm 1 (f 0) m ∘ g ∘ swap_perm 1 (f 0) m))
     (* = (fun g => 
@@ -3251,25 +3265,23 @@ Add Parametric Morphism n m : (change_fun_to_shrink_biperm n m) with signature
   (perm_eq (m + n)) ==> (perm_eq (m + n)) ==> perm_eq (m + n) 
   as change_fun_to_shrink_biperm_perm_eq_of_perm_eq.
 Proof.
-  Abort.
-
-
-Add Parametric Morphism n m f (Hf : bipermutation (m + n) f) : 
-  (change_fun_to_shrink_biperm n m f) 
-  with signature (perm_eq (m + n)) ==> perm_eq (m + n) as 
-  change_fun_to_shrink_biperm_perm_eq_of_perm_eq.
-Proof.
-  intros g g' Hg.
+  intros f f' Hf g g' Hg.
   unfold change_fun_to_shrink_biperm.
-  bdestruct (m =? 0); bdestructΩ'.
-  - pose proof (Hf 0).
+  bdestruct (m =? 0).
+  - bdestruct (n <? 2); [easy|].
+    rewrite <- Hf by lia.
+    bdestructΩ'.
+    rewrite 2!compose_assoc.
     now rewrite Hg.
-  - pose proof (Hf 0).
-    rewrite <- (stack_perms_WF_idn m n (swap_perm 1 _ _)) by cleanup_perm_inv.
-    now rewrite Hg.
-  - pose proof (Hf 0).
-    now rewrite Hg.
+  - rewrite <- Hf by lia.
+    bdestructΩ';
+    rewrite 2!compose_assoc.
+    + rewrite <- (stack_perms_WF_idn m n (swap_perm 1 _ _))
+        by cleanup_perm_inv.
+      now rewrite Hg.
+    + now rewrite Hg.
 Qed.
+
 
 Lemma change_fun_to_shrink_biperm_preserves_biperm n m f g
   (Hf : bipermutation (m + n) f) (Hg : bipermutation (m + n) g) :
@@ -3919,6 +3931,9 @@ Fixpoint NF_of_biperm_rec (fuel : nat) (n m : nat) (f : nat -> nat) :
           (contract_biperm 0 1 (change_fun_to_shrink_biperm n m f f))))
       )
   (* if (n =? 0) || (m =? 0) then (fun g => g) else *)
+  else if (f 0 =? 0) then (* only happens if f is not a bipermutation; 
+    this case is here to give us a good Proper statement *)
+    empty_NF_biperm
   else if (f 0 <? m) then (* we want to prep to add a cap by moving f 0 to 1 *)
     (* Have f 0 = 1 (in the outputs), so need to extend with a 
       new cap and move it to the bottom of the ids *)
@@ -3926,10 +3941,13 @@ Fixpoint NF_of_biperm_rec (fuel : nat) (n m : nat) (f : nat -> nat) :
       grow_NF_of_shrunken_biperm n m f (NF_of_biperm_rec fuel' n (m - 2)
         (contract_biperm 0 1 (change_fun_to_shrink_biperm n m f f))))
   (* Can assume f 0 < m + n and, to lessen case analysis, won't add a check *)
-  else (* make 0 go to m + n - 1 *)
+  else if f 0 <? n + m then
+    (* make 0 go to m + n - 1 *)
     change_NF_from_shrink_biperm n m f ( 
     grow_NF_of_shrunken_biperm n m f (NF_of_biperm_rec fuel' (n - 1) (m - 1) 
       (contract_biperm 0 (m + n - 1) (change_fun_to_shrink_biperm n m f f))))
+  else (* as with f 0 = 0, this case is only to give us a good Proper statement *)
+    empty_NF_biperm
   end.
 
 
@@ -3983,21 +4001,22 @@ Proof.
     apply biperm_contract_case_1_bipermutation'; [|easy|].
     + apply (change_fun_to_shrink_biperm_preserves_biperm n 0); easy.
     + unfold change_fun_to_shrink_biperm. 
-      do 2 simplify_bools_lia_one_kernel.
       pose proof (Hf 0).
+      do 3 simplify_bools_lia_one_kernel.
       unfold compose.
       now rewrite (swap_perm_neither _ _ _ 0), swap_perm_right by lia.
+  - pose proof (Hf 0); lia.
   - apply change_NF_from_shrink_biperm_is_rep; [easy|].
     apply grow_NF_of_shrunken_representative; [easy|].
     unfold is_shrunken_representative.
-    do 2 simplify_bools_lia_one_kernel.
     pose proof (Hf 0).
+    do 2 simplify_bools_lia_one_kernel.
     apply IHfuel; [lia|].
     replace (m - 2 + n) with (m + n - 2) by lia.
     apply biperm_contract_case_1_bipermutation'; [|lia|].
     + now apply change_fun_to_shrink_biperm_preserves_biperm.
     + unfold change_fun_to_shrink_biperm.
-      do 2 simplify_bools_lia_one_kernel.
+      do 3 simplify_bools_lia_one_kernel.
       unfold compose.
       now rewrite (swap_perm_neither _ _ _ 0), swap_perm_right by lia.
   - apply change_NF_from_shrink_biperm_is_rep; [easy|].
@@ -4010,9 +4029,10 @@ Proof.
     apply biperm_contract_case_2_bipermutation'; [|lia|].
     + now apply change_fun_to_shrink_biperm_preserves_biperm.
     + unfold change_fun_to_shrink_biperm.
-      do 3 simplify_bools_lia_one_kernel.
+      do 4 simplify_bools_lia_one_kernel.
       unfold compose.
       now rewrite (swap_perm_neither _ _ _ 0), swap_perm_right by lia.
+  - pose proof (Hf 0); lia.
 Qed.
 
 Definition NF_of_biperm n m f :=
@@ -4039,3 +4059,89 @@ Proof. now apply NF_of_biperm_spec. Qed.
 Lemma realize_NF_of_biperm n m f (Hf : bipermutation (m + n) f) : 
   perm_eq (m + n) (realize_NF_biperm (NF_of_biperm n m f)) f.
 Proof. now apply NF_of_biperm_spec. Qed.
+
+Lemma change_NF_from_shrink_biperm_eq_of_perm_eq {n m} {f g} 
+  (Hfg : perm_eq (m + n) f g) b : 
+  change_NF_from_shrink_biperm n m f b = 
+  change_NF_from_shrink_biperm n m g b.
+Proof.
+  unfold change_NF_from_shrink_biperm.
+  repeat (apply f_equal_if_precedent_same; 
+    rewrite ?Nat.eqb_eq, ?Nat.eqb_neq; intros; 
+    rewrite ?Hfg by lia;
+    try reflexivity).
+Qed.
+
+Lemma grow_NF_of_shrunken_biperm_eq_of_perm_eq {n m} {f g} 
+  (Hfg : perm_eq (m + n) f g) b : 
+  grow_NF_of_shrunken_biperm n m f b = 
+  grow_NF_of_shrunken_biperm n m g b.
+Proof.
+  unfold grow_NF_of_shrunken_biperm.
+  repeat (apply f_equal_if_precedent_same; 
+    rewrite ?Nat.eqb_eq, ?Nat.eqb_neq; intros; 
+    rewrite ?Hfg by lia;
+    try reflexivity).
+Qed.
+
+Lemma NF_of_biperm_rec_eq_of_perm_eq fuel : forall n m f g, 
+  perm_eq (m + n) f g ->
+  NF_of_biperm_rec fuel n m f = NF_of_biperm_rec fuel n m g.
+Proof.
+  induction fuel; [easy|].
+  intros n m f g Hfg.
+  cbn.
+  bdestruct (m =? 0).
+  - apply f_equal_if_precedent_same; [easy|].
+    rewrite Nat.eqb_neq; intros Hn.
+    rewrite (change_NF_from_shrink_biperm_eq_of_perm_eq Hfg).
+    f_equal.
+    rewrite (grow_NF_of_shrunken_biperm_eq_of_perm_eq Hfg).
+    f_equal.
+    apply IHfuel.
+    rewrite Nat.add_0_l.
+    replace (n - 2) with (n - 1 - 1) by lia.
+    bdestruct (n =? 1); [subst; intros k Hk; lia|].
+    apply contract_perm_perm_eq_of_perm_eq; [lia|].
+    apply contract_perm_perm_eq_of_perm_eq; [lia|].
+    subst. 
+    now rewrite Hfg.
+  - rewrite <- Hfg by lia.
+    bdestruct_all; [easy|..].
+    + rewrite (change_NF_from_shrink_biperm_eq_of_perm_eq Hfg).
+      f_equal.
+      rewrite (grow_NF_of_shrunken_biperm_eq_of_perm_eq Hfg).
+      f_equal.
+      apply IHfuel.
+      replace (m - 2 + n) with (m + n - 1 - 1) by lia.
+      apply contract_perm_perm_eq_of_perm_eq; [lia|].
+      apply contract_perm_perm_eq_of_perm_eq; [lia|].
+      now rewrite Hfg.
+    + rewrite (change_NF_from_shrink_biperm_eq_of_perm_eq Hfg).
+      f_equal.
+      rewrite (grow_NF_of_shrunken_biperm_eq_of_perm_eq Hfg).
+      f_equal.
+      apply IHfuel.
+      replace (m - 1 + (n - 1)) with (m + n - 2) by lia.
+      apply contract_biperm_perm_eq_proper; [lia..|].
+      now rewrite Hfg.
+    + easy.
+Qed.
+
+Add Parametric Morphism n m : (NF_of_biperm n m) with signature
+  (perm_eq (m + n)) ==> eq as NF_of_biperm_proper.
+Proof.
+  apply NF_of_biperm_rec_eq_of_perm_eq.
+Qed.
+
+
+(* As a corollary, we can now prove bipermutation have even size! *)
+Lemma bipermutation_dim_even n f : bipermutation n f -> Nat.even n = true.
+Proof.
+  intros Hf.
+  destruct (NF_of_biperm_spec n 0 f Hf) as 
+    (_ & Hbin & Hbout & _).
+  replace n with (ncup' (NF_of_biperm n 0 f) + (ncup' (NF_of_biperm n 0 f)))
+    by lia.
+  now rewrite Nat.even_add, eqb_reflx.
+Qed.
