@@ -533,19 +533,15 @@ Proof.
 	cbn [kron_n].
 	Msimpl.
   prep_matrix_equivalence.
-  rewrite make_WF_equiv.
   restore_dims.
-  rewrite Mscale_list2D_to_matrix.
-  cbn [map].
-	restore_dims.
 	compute_matrix (hadamard × Z_semantics 2 1 α × (hadamard ⊗ hadamard)).
 	group_radicals.
-  rewrite Copp_involutive.
   replace (/ √ 2 * / C2 + / √ 2 * Cexp α * / C2) with 
     (/ √ 2 * / C2 * (C1 + Cexp α)) by lca.
   replace (/ √ 2 * / C2 + - (/ √ 2 * Cexp α * / C2)) with 
     (/ √ 2 * / C2 * (C1 - Cexp α)) by lca.
-  apply make_WF_equiv.
+  rewrite 2!make_WF_equiv.
+  by_cell; lca.
 Qed.
 
 Lemma X_2_1_0_semantics : X_semantics 2 1 0 = 
@@ -554,12 +550,12 @@ Lemma X_2_1_0_semantics : X_semantics 2 1 0 =
 Proof.
   rewrite X_2_1_semantics.
   prep_matrix_equivalence.
+  match goal with 
+  |- ?A ≡ _ => compute_matrix A
+  end.
   rewrite 2!make_WF_equiv.
-  restore_dims.
-  rewrite Mscale_list2D_to_matrix.
   rewrite Cexp_0.
   rewrite <- Cdouble, Cmult_1_r, Cminus_diag by reflexivity.
-  cbn [map].
   rewrite <- Cmult_assoc.
   now autorewrite with C_db.
 Qed.
@@ -570,15 +566,14 @@ Lemma X_2_1_PI_semantics : X_semantics 2 1 PI =
 Proof.
   rewrite X_2_1_semantics.
   prep_matrix_equivalence.
-  rewrite 2!make_WF_equiv.
-  restore_dims.
-  rewrite Mscale_list2D_to_matrix.
+  match goal with 
+  |- ?A ≡ _ => compute_matrix A
+  end.
   rewrite Cexp_PI.
   change (-1 : R) with (Ropp 1).
   rewrite RtoC_opp.
   autorewrite with C_db.
-  cbn [map].
-  rewrite <- 2!Cmult_assoc.
+  rewrite <- Cmult_assoc.
   now autorewrite with C_db.
 Qed.
 
