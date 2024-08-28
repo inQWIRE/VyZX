@@ -203,6 +203,16 @@ Qed.
 
 Notation biperm_of_zx zx := (realize_NF_biperm (NF_of_zx zx)).
 
+Lemma matrix_of_biperm_of_zx {n m} (zx : ZX n m) (Hzx : ZXbiperm zx) : 
+  matrix_of_biperm n m (biperm_of_zx zx) [∝]
+  ⟦ zx ⟧.
+Proof.
+  rewrite NF_of_zx_correct by easy.
+  unfold matrix_of_NF_biperm.
+  rewrite NF_insize_NF_of_zx, NF_outsize_NF_of_zx by assumption.
+  easy.
+Qed.
+
 Lemma ZXbiperm_prop_by_biperm_eq {n m} (zx0 zx1 : ZX n m) 
   (Hzx0 : ZXbiperm zx0) (Hzx1 : ZXbiperm zx1) : 
   perm_eq (m + n) (biperm_of_zx zx0) (biperm_of_zx zx1) ->
@@ -489,6 +499,7 @@ Proof.
   easy.
 Qed.
 
+(* FIXME: Move to Modulus.v *)
 Lemma div_eq a b : a / b = (a - a mod b) / b.
 Proof.
   rewrite (Nat.div_mod_eq a b) at 2.
@@ -497,6 +508,30 @@ Proof.
   - now subst.
   - now rewrite Nat.mul_comm, Nat.div_mul by easy.
 Qed.
+
+Lemma mod_mul_sub_le a b c : c <> 0 -> a <= b * c -> 
+  (b * c - a) mod c = 
+  c * Nat.b2n (¬ a mod c =? 0) - a mod c.
+Proof.
+  intros Hc Ha.
+  bdestruct (a =? b * c).
+  - subst.
+    rewrite Nat.sub_diag, Nat.Div0.mod_mul, Nat.Div0.mod_0_l.
+    cbn; lia.
+  - rewrite (Nat.div_mod_eq a c) at 1.
+    assert (a < b * c) by lia.
+    assert (a / c < b) by (apply Nat.Div0.div_lt_upper_bound; lia).
+    assert (a mod c < c) by show_moddy_lt.
+    replace (b * c - (c * (a / c) + a mod c)) with 
+      ((b - a / c - 1) * c + (c - a mod c)) by nia.
+    rewrite mod_add_l.
+    bdestruct (a mod c =? 0).
+    + replace -> (a mod c).
+      rewrite Nat.sub_0_r, Nat.Div0.mod_same.
+      cbn; lia.
+    + rewrite Nat.mod_small by lia.
+      cbn; lia.
+Qed. 
 
 (* Search Nat.modulo Nat.sub. *)
 Lemma div_sub a b c : c <> 0 -> 
@@ -521,9 +556,18 @@ Proof.
       (pose proof (Nat.mod_upper_bound a c Hc);
       bdestructΩ'; cbn; lia).
     f_equal.
-    Abort.
+    apply mod_mul_sub_le; lia.
+Qed.
 
-
+Lemma mod_2_succ n : (S n) mod 2 = 1 - (n mod 2).
+Proof.
+  pose proof (Nat.mod_upper_bound (S n) 2 ltac:(lia)).
+  pose proof (Nat.mod_upper_bound n 2 ltac:(lia)).
+  enough (~ (S n mod 2 = 0) <-> n mod 2 = 0) by lia.
+  rewrite <- Nat.eqb_neq, <- Nat.eqb_eq.
+  rewrite <- 2!even_eqb.
+  apply even_succ_false.
+Qed.
 
 Lemma kron_comm_perm_2_n_conj_reflect_perm_eq n : 
   reflect_perm (n + n) ∘ kron_comm_perm 2 n ∘ reflect_perm (n + n) = 
@@ -535,45 +579,874 @@ Proof.
   rewrite kron_comm_perm_defn.
   unfold compose.
   intros k Hk.
-  Abort.
+  rewrite Nat.mul_comm.
+  rewrite mod_mul_sub_le by lia.
+  rewrite div_sub by lia.
+  rewrite <- even_eqb, Nat.negb_even, Nat.odd_succ, even_eqb.
+  rewrite mod_2_succ.
+  pose proof (Nat.mod_upper_bound k 2 ltac:(lia)).
+  destruct (ltac:(lia) : k mod 2 = 0 \/ k mod 2 = 1) as [Hk2 | Hk2];
+  rewrite Hk2.
+  - cbn -[Nat.div].
+    replace (S k / 2) with (k / 2).
+    + enough (k / 2 < n) by lia.
+      apply Nat.Div0.div_lt_upper_bound; lia.
+    + change (S k) with (1 + k).
+      rewrite (Nat.div_mod_eq k 2).
+      rewrite Hk2, Nat.add_0_r.
+      rewrite Nat.mul_comm, Nat.div_add by lia.
+      rewrite Nat.div_mul by lia.
+      cbn; lia.
+  - cbn -[Nat.div].
+    replace (S k / 2) with (S (k / 2)).
+    + enough (k / 2 < n) by lia.
+      apply Nat.Div0.div_lt_upper_bound; lia. 
+    + change (S k) with (1 + k).
+      rewrite (Nat.div_mod_eq k 2) at 2.
+      rewrite Hk2.
+      rewrite Nat.add_comm, <- Nat.add_assoc, <- Nat.mul_succ_r.
+      now rewrite Nat.mul_comm, Nat.div_mul by lia.
+Qed.
 
+(* FIXME: Move *)
+Lemma perm_inv_inj n f g : 
+  permutation n f -> permutation n g -> 
+  perm_eq n (perm_inv n f) (perm_inv n g) -> 
+  perm_eq n f g.
+Proof.
+  intros Hf Hg Hfg.
+  rewrite <- (perm_inv_perm_inv n f Hf).
+  rewrite Hfg.
+  rewrite perm_inv_perm_inv by easy.
+  easy.
+Qed.
+
+Lemma kron_comm_perm_n_2_conj_reflect_perm_eq n : 
+  reflect_perm (n + n) ∘ kron_comm_perm n 2 ∘ reflect_perm (n + n) = 
+  kron_comm_perm n 2.
+Proof.
+  eq_by_WF_perm_eq (n + n).
+  pose proof (fun f => proj1 (permutation_change_dims 
+    (n * 2) (n + n) ltac:(lia) f)).
+  apply perm_inv_inj;
+  [apply permutation_compose;
+  [apply permutation_compose|]|..];
+  [auto with perm_db..|].
+  rewrite 2!perm_inv_compose by auto with perm_db.
+  do 2 rewrite reflect_perm_inv at 1.
+  pose proof (kron_comm_perm_inv n 2) as Hinv.
+  replace (n * 2) with (n + n) in * by lia.
+  rewrite Hinv.
+  rewrite <- compose_assoc.
+  now rewrite kron_comm_perm_2_n_conj_reflect_perm_eq.
+Qed.
 
 Lemma reflect_perm_NF_rep n : 
-  is_NF_representative (n + n) (n + n) 
-    {| lperm' := idn; rperm' := kron_comm_perm 2 n;
-      ncup' := 0; ncap' := n; nid' := 0|} (reflect_perm (n + n)).
+  is_NF_representative 0 (n + n) 
+    {| lperm' := idn; rperm' := kron_comm_perm n 2;
+      ncup' := 0; ncap' := n; nid' := 0|} 
+    (big_swap_perm n n).
 Proof.
   split.
   split; cbn; auto with perm_db; 
   eapply permutation_change_dims; [| auto with perm_db]; lia.
-  split; split; [cbn; lia..|].
+  split; [|split]; [cbn; lia..|].
   rewrite realize_NF_biperm_constructor.
   unfold realize_biperm_data.
   eapply perm_eq_dim_change_if_nonzero;
   [rewrite biperm_compose_perm_l_spec|lia].
   rewrite biperm_compose_perm_r_spec by auto with biperm_db.
   rewrite compose_assoc.
-  cleanup_perm.
-  zarith.
-  eapply permutation_change_dims; [|auto with perm_db];
-   solve [eauto with perm_db zarith].
-  Abort.
+  rewrite !Nat.add_0_r.
+  rewrite kron_comm_perm_n_2_conj_reflect_perm_eq.
+  replace (n + n) with (n * 2) by lia.
+  rewrite kron_comm_perm_inv.
+  replace (n * 2) with (n + n) by lia.
+  rewrite (ltac:(easy) : perm_eq 0 (perm_inv 0 (reflect_perm 0 ∘
+    perm_inv 0 idn ∘ reflect_perm 0)) idn).
+  rewrite (ltac:(easy) : perm_eq 0 (reflect_perm 0 ∘
+    perm_inv 0 idn ∘ reflect_perm 0) idn).
+  rewrite stack_perms_idn_idn, compose_idn_r, compose_idn_l.
+  rewrite <- compose_assoc.
+  intros k Hk.
+  unfold compose at 1.
+  rewrite stack_perms_left by easy.
+  unfold compose at 1.
+  unfold stack_biperms.
+  cbn.
+  rewrite n_m_cup_cap_ltb_double by constructor.
+  rewrite Nat.sub_0_r.
+  pose proof (kron_comm_perm_bounded n 2 k ltac:(lia)).
+  bdestructΩ'.
+  rewrite stack_perms_left 
+    by (now rewrite n_m_cup_cap_lt_double_iff by lia).
+  unfold kron_comm_perm.
+  replace_bool_lia (n * 2 <=? k) false.
+  replace (2 * n) with (n + n) by lia.
+  rewrite n_m_cup_cap_geb_double by constructor.
+  replace (n + n) with (2 * n) in * by lia.
+  assert (k mod n * 2 + k / n < 2 * n) by show_moddy_lt.
+  replace_bool_lia (2 * n <=? k mod n * 2 + k / n) false.
+  rewrite n_m_cup_cap_eqb.
+  cbn [Nat.add].
+  replace_bool_lia (n + n <=? k mod n * 2 + k / n) false.
+  rewrite div_mul_not_exact by lia.
+  rewrite mod_add_l.
+  assert (k / n < 2) 
+    by (apply Nat.Div0.div_lt_upper_bound; lia).
+  rewrite (Nat.mod_small (k / n) 2) by assumption.
+  rewrite Nat.add_sub, (Nat.add_comm (_ * 2)).
+  rewrite Nat.Div0.mod_add, Nat.div_add by lia.
+  rewrite (Nat.div_small _ 2) by lia.
+  rewrite Nat.mod_small by lia.
+  unfold big_swap_perm.
+  bdestruct_all; try lia.
+  - rewrite Nat.div_small, Nat.mod_small; lia.
+  - replace (k / n) with 1 by 
+      (symmetry; rewrite div_eq_iff; lia).
+    rewrite mod_n_to_2n by lia.
+    lia.
+Qed.
+
+Lemma cap_f_to_vec f : 
+  ⟦ ⊃ ⟧ × f_to_vec 2 f = 
+  b2R (eqb (f 0) ((f 1))) .* I (2 ^ 0).
+Proof.
+  cbn.
+  rewrite kron_1_l by auto_wf.
+  apply mat_equiv_eq; [auto using show_WF_list2D_to_matrix with wf_db..|].
+  by_cell.
+  unfold scale, kron.
+  cbn.
+  destruct (f 0), (f 1); cbn; lca.
+Qed.
+
+Lemma n_cup_unswapped_f_to_vec n f : 
+  ⟦ n_cup_unswapped n ⟧ × f_to_vec (n + n) f = 
+  b2R (forallb (fun k => eqb (f k) ( f (n + n - S k))) (seq 0 n)) .* I (2 ^ 0).
+Proof.
+  revert f;
+  induction n; intros f.
+  - cbn. Csimpl. now Msimpl_light.
+  - cbn [n_cup_unswapped].
+    rewrite zx_compose_spec.
+    simpl_cast_semantics.
+    rewrite 2!zx_stack_spec.
+    replace (S n + S n) with (1 + (n + n) + 1) by lia.
+    rewrite Mmult_assoc.
+    restore_dims.
+    rewrite (@kron_f_to_vec_eq (1 + 0) (1 + (n + n)) 1 1) by auto_wf.
+    rewrite (@kron_f_to_vec_eq 1 1 0 (n + n)) by auto_wf.
+    rewrite IHn.
+    cbn -[f_to_vec seq].
+    rewrite Mmult_1_l, Mmult_1_comm by auto_wf.
+    rewrite (kron_split_diag (f_to_vec 1 f)) by auto_wf.
+    rewrite <- kron_mixed_product, kron_1_r.
+    restore_dims.
+    rewrite f_to_vec_merge.
+    rewrite <- Mmult_assoc.
+    rewrite cap_f_to_vec.
+    cbn [Nat.ltb Nat.leb].
+    rewrite Nat.sub_diag, Nat.add_0_r.
+    rewrite kron_1_l, kron_1_r by auto_wf.
+    cbn -[seq].
+    restore_dims.
+    distribute_scale.
+    Msimpl_light.
+    f_equal.
+    unfold b2R.
+    rewrite !(if_dist _ _ _ RtoC).
+    rewrite Cmult_if_if_1_l.
+    apply f_equal_if; [|easy..].
+    cbn.
+    f_equal; [repeat f_equal; try lia|].
+    apply eq_iff_eq_true.
+    rewrite forallb_seq0, forallb_seq.
+    setoid_rewrite eqb_true_iff.
+    apply forall_iff.
+    intros s.
+    apply impl_iff; intros Hs.
+    rewrite 2!(Nat.add_comm _ 1).
+    cbn.
+    replace (S (n + n - S s)) with (n + n - s) by lia.
+    reflexivity.
+Qed.
+
+Lemma n_cup_f_to_vec n f : 
+  ⟦ n_cup n ⟧ × f_to_vec (n + n) f = 
+  b2R (forallb (fun k => eqb (f k) ( f (n + k))) (seq 0 n)) .* I (2 ^ 0).
+Proof.
+  unfold n_cup.
+  rewrite zx_compose_spec, zx_stack_spec.
+  rewrite n_wire_semantics.
+  rewrite perm_of_zx_permutation_semantics by auto with zxperm_db.
+  rewrite perm_of_n_swap.
+  rewrite Mmult_assoc.
+  restore_dims.
+  rewrite kron_f_to_vec_eq by auto_wf.
+  rewrite perm_to_matrix_permutes_qubits by cleanup_perm.
+  rewrite Mmult_1_l by auto_wf.
+  rewrite f_to_vec_merge.
+  rewrite n_cup_unswapped_f_to_vec.
+  f_equal.
+  f_equal.
+  f_equal.
+  apply eq_iff_eq_true.
+  rewrite 2!forallb_seq0.
+  setoid_rewrite eqb_true_iff.
+  split.
+  - intros Hf.
+    intros s Hs.
+    generalize (Hf (n - S s) ltac:(lia)).
+    do 2 simplify_bools_lia_one_kernel.
+    rewrite reflect_perm_defn by lia.
+    rewrite sub_S_sub_S by lia.
+    intros ->.
+    f_equal; lia.
+  - intros Hf.
+    intros s Hs.
+    generalize (Hf (n - S s) ltac:(lia)).
+    do 2 simplify_bools_lia_one_kernel.
+    rewrite reflect_perm_defn by lia.
+    intros ->.
+    f_equal; lia.
+Qed.
+
+(* Definition zx_reflect n : ZX n n :=
+  zx_of_perm n (reflect_perm n). (* NB : is ∝ n_wire n *)
+
+Lemma zx_reflect_zxperm n : ZXperm n (zx_reflect n).
+Proof.
+  unfold zx_reflect.
+  auto with zxperm_db.
+Qed.
+
+Lemma perm_of_zx_reflect n : 
+  perm_of_zx (zx_reflect n) = reflect_perm n.
+Proof.
+  unfold zx_reflect.
+  cleanup_perm_of_zx.
+Qed. *)
+
+Import CoreRules.
+
+(* FIXME: Move to ZXpermFacts *)
+
+Definition zxperm_inv' {n} (zx : ZX n n) : ZX n n :=
+  zx_of_perm n (perm_inv' n (perm_of_zx zx)).
+
+Lemma zxperm_inv'_zxperm {n} (zx : ZX n n) : 
+  ZXperm n (zxperm_inv' zx).
+Proof.
+  unfold zxperm_inv'.
+  auto with zxperm_db.
+Qed.
+
+#[export] Hint Resolve zxperm_inv'_zxperm : zxperm_db.
+
+Lemma perm_of_zxperm_inv' {n} zx (Hzx : ZXperm n zx) : 
+  perm_of_zx (zxperm_inv' zx) = 
+  perm_inv' n (perm_of_zx zx).
+Proof.
+  unfold zxperm_inv'.
+  cleanup_perm_of_zx.
+Qed.
+
+#[export] Hint Rewrite @perm_of_zxperm_inv' 
+  using (solve [auto with zxperm_db]) : perm_of_zx_cleanup_db.
+
+Lemma zxperm_inv'_linv {n} zx (Hzx : ZXperm n zx) : 
+  zxperm_inv' zx ⟷ zx ∝ n_wire n.
+Proof.
+  by_perm_eq.
+Qed. 
+
+Lemma zxperm_inv'_rinv {n} zx (Hzx : ZXperm n zx) : 
+  zx ⟷ zxperm_inv' zx ∝ n_wire n.
+Proof.
+  by_perm_eq.
+Qed. 
+
+(* FIXME: Move to ZXperm, or ZXpermSemantics, or ZXpermFacts *)
+Lemma nat_inj_dep_pair : forall (P : nat -> Type) (p : nat) (x y : P p),
+  existT P p x = existT P p y -> x = y.
+Proof.
+  apply EqdepFacts.eq_dep_eq__inj_pair2.
+  apply EqdepFacts.eq_rect_eq__eq_dep_eq.
+  apply EqdepFacts.Streicher_K__eq_rect_eq.
+  apply EqdepFacts.UIP_refl__Streicher_K.
+  intros x Hx; now apply Peano_dec.UIP_nat.
+Qed.
+
+Lemma stack_ZXperm_inv {n m} zx0 zx1 : 
+  ZXperm (n + m) (zx0 ↕ zx1) -> 
+  ZXperm n zx0 /\ ZXperm m zx1.
+Proof.
+  intros H.
+  inversion H.
+  subst.
+  repeat lazymatch goal with 
+  | H : ?x = ?x |- _ =>
+    clear H
+  end.
+  repeat lazymatch goal with 
+  | H : existT _ _ _ = _ |- _ => 
+    apply nat_inj_dep_pair in H
+  end; now subst.
+Qed.
+
+Lemma compose_ZXperm_inv {n m} (zx0 : ZX n m) zx1 : 
+  ZXperm n (zx0 ⟷ zx1) -> 
+  {H : n = m |
+    ZXperm n (cast n n eq_refl H zx0) /\ 
+    ZXperm n (cast n n H eq_refl zx1)}.
+Proof.
+  intros H.
+  inversion H.
+  subst.
+  exists eq_refl.
+  cbn [cast].
+  repeat lazymatch goal with 
+  | H : ?x = ?x |- _ =>
+    clear H
+  end.
+  repeat lazymatch goal with 
+  | H : existT _ _ _ = _ |- _ => 
+    apply nat_inj_dep_pair in H
+  end; now subst.
+Qed.
+
+(* Definition ZXpermlike {n m} (zx : ZX n m) := 
+  {H : n = m | ZXperm n (cast n n eq_refl H zx)}.
+
+Lemma ZXpermlike_compose {n m o} (zx0 : ZX n m) (zx1 : ZX m o) :
+  ZXpermlike zx0 -> ZXpermlike zx1 -> ZXpermlike (zx0 ⟷ zx1).
+Proof.
+  intros [] []; subst; exists eq_refl; auto with zxperm_db.
+Qed.
+
+Lemma ZXpermlike_stack {n m o p} (zx0 : ZX n m) (zx1 : ZX o p) :
+  ZXpermlike zx0 -> ZXpermlike zx1 -> ZXpermlike (zx0 ↕ zx1).
+Proof.
+  intros [] []; subst; exists eq_refl; auto with zxperm_db.
+Qed.
+
+Fixpoint is_ZXpermlike {n m} (zx : ZX n m) : bool :=
+  match zx with 
+  | ⦰ => true
+  | — => true
+  | ⨉ => true
+  | zx0 ↕ zx1 => is_ZXpermlike zx0 && is_ZXpermlike zx1
+  | zx0 ⟷ zx1 => is_ZXpermlike zx0 && is_ZXpermlike zx1
+  | _ => false
+  end.
+
+Lemma is_ZXpermlike_iff {n m} (zx : ZX n m) : 
+  is_ZXpermlike zx = true <-> ZXpermlike zx.
+Proof.
+  induction zx; cbn;
+  try (split; [intros _; exists eq_refl; constructor|easy]); 
+  try (split; easy + intros []; easy).
+  - split; easy + intros [H Hperm]; 
+    rewrite ?(Peano_dec.UIP_nat _ _ H eq_refl) in *;
+    cbn in *; easy.
+  - split; easy + intros [H Hperm];
+    subst;
+    cbn in *; easy.
+  - split; easy + intros [H Hperm];
+    subst;
+    cbn in *; easy.
+  - 
+
+
+Lemma ZXpermlike_stack_iff {n m o p} (zx0 : ZX n m) (zx1 : ZX o p) :
+  ZXpermlike (zx0 ↕ zx1) <-> ZXpermlike zx0 /\ ZXpermlike zx1.
+Proof.
+  split; intros H; [|now apply ZXpermlike_stack].
+  destruct H as [H Hperm].
+  inversion Hperm.
+  remember ($ n + o, n + o ::: zx0 ↕ zx1 $) as zx.
+  dependent induction zx; subst.
+  subst x.
+  inversion H3.
+  apply nat_inj_dep_pair in H3.
+
+
+
+Lemma ZXperm_dec_helper {n m} (zx : ZX n m) (H : n = m) : 
+  {ZXperm n (cast n n eq_refl H zx)} + {~ ZXperm n (cast n n eq_refl H zx)}.
+Proof.
+  induction zx;
+  (* Base / nonparametric cases *)
+  [rewrite cast_id_eq || lia;
+    (left; constructor) || (right; easy) .. | | | | ];
+  (* Spiders *)
+  [subst; cbn [cast]; right; easy .. | | ].
+  - (* Stack *)
+    bdestruct (n_0 =? m_0).
+    + subst n_0.
+      assert (n_1 = m_1) by lia.
+      subst.
+      specialize (IHzx1 eq_refl).
+      specialize (IHzx2 eq_refl).
+      rewrite (Peano_dec.UIP_nat _ _ H eq_refl).
+      cbn [cast] in *.
+      destruct IHzx1; [destruct IHzx2|];
+      [left; now constructor|..];
+      right; intros Hfalse; 
+      now apply stack_ZXperm_inv in Hfalse.
+    + right.
+      remember ($ n_0 + n_1, n_0 + n_1 ::: zx1 ↕ zx2 $) as zx.
+      dependent induction zx.
+
+      inversion Hfalse; subst. *)
+
+  
+
+
+Lemma zxperm_inv'_semantics {n} (zx : ZX n n) (H : ZXperm n zx) : 
+  ⟦ zxperm_inv' zx ⟧ = perm_to_matrix n (perm_inv' n (perm_of_zx zx)).
+Proof.
+  unfold zxperm_inv'.
+  cleanup_perm_of_zx.
+Qed.
+
+#[export] Hint Rewrite @zxperm_inv'_linv @zxperm_inv'_rinv
+  using (solve [auto with zxperm_db]) : perm_of_zx_cleanup_db.
+
+Lemma compose_zxperm_l {n m} (zxp : ZX n n) (zx0 zx1 : ZX n m) 
+  (Hzxp : ZXperm n zxp) : 
+  zxp ⟷ zx0 ∝ zx1 <-> zx0 ∝ zxperm_inv' zxp ⟷ zx1.
+Proof.
+  split; [intros <- | intros ->];
+  rewrite <- compose_assoc, 
+    1?zxperm_inv'_linv, 1?zxperm_inv'_rinv,
+    ?nwire_removal_l, ?nwire_removal_r by assumption;
+  reflexivity.
+Qed.
+
+Lemma compose_zxperm_l' {n m} (zxp : ZX n n) (zx0 zx1 : ZX n m) 
+  (Hzxp : ZXperm n zxp) : 
+  zx0 ∝ zxp ⟷ zx1 <-> zxperm_inv' zxp ⟷ zx0 ∝ zx1.
+Proof.
+  split; intros ?; symmetry; apply compose_zxperm_l; 
+  now assumption + symmetry.
+Qed.
+
+Lemma compose_zxperm_r {n m} (zxp : ZX m m) (zx0 zx1 : ZX n m) 
+  (Hzxp : ZXperm m zxp) : 
+  zx0 ⟷ zxp ∝ zx1 <-> zx0 ∝ zx1 ⟷ zxperm_inv' zxp.
+Proof.
+  split; [intros <- | intros ->];
+  rewrite compose_assoc, 
+    1?zxperm_inv'_linv, 1?zxperm_inv'_rinv,
+    ?nwire_removal_l, ?nwire_removal_r by assumption;
+  reflexivity.
+Qed.
+
+Lemma compose_zxperm_r' {n m} (zxp : ZX m m) (zx0 zx1 : ZX n m) 
+  (Hzxp : ZXperm m zxp) : 
+  zx0 ∝ zx1 ⟷ zxp <-> zx0 ⟷ zxperm_inv' zxp ∝ zx1.
+Proof.
+  split; intros ?; symmetry; apply compose_zxperm_r; 
+  now assumption + symmetry.
+Qed.
+
+Lemma equal_on_basis_states_implies_equal' :
+  forall {m dim : nat} (A B : Matrix m (2 ^ dim)),
+  WF_Matrix A -> WF_Matrix B ->
+  (forall f : nat -> bool, A × f_to_vec dim f = B × f_to_vec dim f) -> 
+  A = B.
+Proof.
+  intros m dim A B HA HB HAB.
+  prep_matrix_equivalence.
+  intros i j Hi Hj.
+  rewrite 2!(get_entry_with_e_i _ i j) by lia.
+  rewrite 2!Mmult_assoc.
+  rewrite <- (basis_vector_eq_e_i _ j) by assumption.
+  rewrite basis_f_to_vec_alt by assumption.
+  now rewrite HAB.
+Qed.
+
+Lemma equal_on_conj_basis_states_implies_equal {n m} 
+  (A B : Matrix (2 ^ n) (2 ^ m)) : WF_Matrix A -> WF_Matrix B -> 
+  (forall f g, (f_to_vec n g) ⊤%M × (A × f_to_vec m f) = 
+    (f_to_vec n g) ⊤%M × (B × f_to_vec m f)) -> A = B.
+Proof.
+  intros HA HB HAB.
+  apply equal_on_basis_states_implies_equal'; [auto..|].
+  intros f.
+  apply transpose_matrices.
+  apply equal_on_basis_states_implies_equal'; [auto_wf..|].
+  intros g.
+  apply transpose_matrices.
+  rewrite Mmult_transpose, transpose_involutive, HAB.
+  rewrite Mmult_transpose, transpose_involutive.
+  reflexivity.
+Qed.
+
+
+Lemma n_cup_unswapped_zxperm_pullthrough_top n zx (Hzx : ZXperm n zx) : 
+  zx ↕ n_wire n ⟷ n_cup_unswapped n ∝ 
+  n_wire n ↕ (n_swap n ⟷ zxperm_inv' zx ⟷ n_swap n) 
+    ⟷ n_cup_unswapped n.
+Proof.
+  prop_exists_nonzero 1.
+  rewrite Mscale_1_l.
+  cbn.
+  rewrite n_wire_semantics.
+  rewrite 2!perm_of_zx_permutation_semantics, 
+    zxperm_inv'_semantics by auto with zxperm_db.
+  rewrite perm_of_n_swap.
+  apply equal_on_basis_states_implies_equal'; [auto_wf..|].
+  intros f.
+  rewrite 2!Mmult_assoc.
+  restore_dims.
+  rewrite 2!kron_f_to_vec_eq, !Mmult_assoc by auto_wf.
+  generalize (perm_of_zx_permutation n zx Hzx).
+  generalize (perm_of_zx zx).
+  clear zx Hzx.
+  (* Subproof :/ *)
+  intros g Hg.
+  rewrite (perm_to_matrix_eq_of_perm_eq _ _ _ (perm_inv'_eq n _)).
+  rewrite !perm_to_matrix_permutes_qubits by auto with zxperm_db perm_db.
+  rewrite 2!Mmult_1_l by auto_wf.
+  rewrite 2!f_to_vec_merge.
+  rewrite 2!n_cup_unswapped_f_to_vec.
+  f_equal.
+  f_equal.
+  f_equal.
+  apply eq_iff_eq_true.
+  rewrite 2!forallb_seq0.
+  setoid_rewrite eqb_true_iff.
+  split.
+  - intros Hf.
+    intros s Hs.
+    simplify_bools_lia_one_kernel.
+    generalize (Hf (perm_inv n g s) ltac:(auto with perm_bounded_db)).
+    pose proof (perm_inv_bounded n g s Hs).
+    do 3 simplify_bools_lia_one_kernel.
+    rewrite perm_inv_is_rinv_of_permutation by easy.
+    intros ->.
+    unfold reflect_perm.
+    simplify_bools_lia_one_kernel.
+    replace (n + n - S s - n)%nat with (n - S s)%nat by lia.
+    rewrite sub_S_sub_S by lia.
+    simplify_bools_lia_one_kernel.
+    f_equal; lia.
+  - intros Hf.
+    intros s Hs.
+    simplify_bools_lia_one_kernel.
+    generalize (Hf (g s) ltac:(auto with perm_bounded_db)).
+    pose proof (permutation_is_bounded n g Hg s Hs).
+    do 3 simplify_bools_lia_one_kernel.
+    intros ->.
+    unfold reflect_perm.
+    simplify_bools_lia_one_kernel.
+    replace (n + n - S (g s) - n)%nat with (n - S (g s))%nat by lia.
+    rewrite sub_S_sub_S by lia.
+    rewrite perm_inv_is_linv_of_permutation by easy.
+    simplify_bools_lia_one_kernel.
+    f_equal; lia.
+Qed.
+
+(* FIXME: Move *)
+Lemma zxperm_inv'_compose {n} zx0 zx1 : ZXperm n zx0 -> ZXperm n zx1 ->
+  zxperm_inv' (zx0 ⟷ zx1) ∝ 
+  zxperm_inv' zx1 ⟷ zxperm_inv' zx0.
+Proof.
+  intros H0 H1.
+  by_perm_eq.
+Qed.
+
+Lemma zxperm_inv'_stack {n m} zx0 zx1 : ZXperm n zx0 -> ZXperm m zx1 ->
+  zxperm_inv' (zx0 ↕ zx1) ∝ 
+  zxperm_inv' zx0 ↕ zxperm_inv' zx1.
+Proof.
+  intros H0 H1.
+  by_perm_eq.
+Qed.
+
+Lemma zxperm_inv'_involutive {n} zx : ZXperm n zx -> 
+  zxperm_inv' (zxperm_inv' zx) ∝ zx.
+Proof.
+  by_perm_eq.
+Qed.
+
+Lemma n_cup_unswapped_zxperm_pullthrough_bot n zx (Hzx : ZXperm n zx) : 
+  n_wire n ↕ zx ⟷ n_cup_unswapped n ∝ 
+  (n_swap n ⟷ zxperm_inv' zx ⟷ n_swap n) ↕ n_wire n 
+    ⟷ n_cup_unswapped n.
+Proof.
+  rewrite n_cup_unswapped_zxperm_pullthrough_top,
+    2!zxperm_inv'_compose by auto with zxperm_db.
+  rewrite !compose_assoc, zxperm_inv'_linv, 
+    <- !compose_assoc, zxperm_inv'_rinv, zxperm_inv'_involutive 
+    by auto with zxperm_db.
+  now cleanup_zx.
+Qed.
+
+Lemma n_cup_inv_n_swap_n_wire : forall n, 
+  n_cup n ∝ n_wire n ↕ n_swap n ⟷ n_cup_unswapped n.
+Proof.
+  intros n.
+  rewrite n_cup_unswapped_zxperm_pullthrough_bot by auto with zxperm_db.
+  rewrite zxperm_inv'_rinv, nwire_removal_l by auto with zxperm_db.
+  reflexivity.
+Qed.
+
+Lemma f_to_vec_transpose_f_to_vec n f g :
+  transpose (f_to_vec n f) × f_to_vec n g = 
+  b2R (forallb (fun k => eqb (f k) (g k)) (seq 0 n)) .* I 1.
+Proof.
+  prep_matrix_equivalence.
+  intros [] []; [|lia..]; intros _ _.
+  rewrite 2!basis_f_to_vec.
+  rewrite basis_trans_basis.
+  simplify_bools_moddy_lia_one_kernel.
+  unfold scale.
+  cbn.
+  rewrite Cmult_1_r.
+  unfold b2R.
+  rewrite (if_dist _ _ _ RtoC).
+  apply f_equal_if; [|easy..].
+  apply eq_iff_eq_true.
+  rewrite Nat.eqb_eq, forallb_seq0, <- funbool_to_nat_eq_iff.
+  now setoid_rewrite eqb_true_iff.
+Qed.
+
+Lemma f_to_vec_transpose_self n f :
+  transpose (f_to_vec n f) × f_to_vec n f = 
+  I 1.
+Proof.
+  prep_matrix_equivalence.
+  intros [] []; [|lia..]; intros _ _.
+  rewrite basis_f_to_vec.
+  rewrite basis_trans_basis.
+  do 2 simplify_bools_moddy_lia_one_kernel.
+  easy.
+Qed.
+
+Lemma n_cup_f_to_vec_pullthrough_bot n f : 
+  @Mmult _ (2^(n + n)) (2^n) (⟦ n_cup n ⟧) (I (2 ^ n) ⊗ f_to_vec n f) = 
+  (f_to_vec n f) ⊤%M.
+Proof.
+  unify_pows_two.
+  apply equal_on_basis_states_implies_equal';
+  [auto_wf.. |].
+  intros g.
+  rewrite <- (kron_1_r _ _ (f_to_vec n g)) at 1.
+  rewrite Mmult_assoc.
+  restore_dims.
+  rewrite kron_mixed_product, Mmult_1_l, Mmult_1_r by auto_wf.
+  rewrite f_to_vec_transpose_f_to_vec.
+  rewrite f_to_vec_merge.
+  rewrite n_cup_f_to_vec.
+  do 3 f_equal.
+  apply eq_iff_eq_true.
+  rewrite 2!forallb_seq0.
+  apply forall_iff; intros s.
+  apply impl_iff; intros Hs.
+  do 2 simplify_bools_lia_one_kernel.
+  rewrite add_sub'.
+  rewrite 2!eqb_true_iff.
+  easy.
+Qed.
+
+Lemma n_cup_f_to_vec_pullthrough_top n f : 
+  @Mmult _ (2^(n + n)) (2^n) (⟦ n_cup n ⟧) (f_to_vec n f ⊗ I (2 ^ n)) = 
+  (f_to_vec n f) ⊤%M.
+Proof.
+  unify_pows_two.
+  apply equal_on_basis_states_implies_equal';
+  [auto_wf.. |].
+  intros g.
+  rewrite <- (kron_1_l _ _ (f_to_vec n g)) at 1 by auto_wf.
+  rewrite Mmult_assoc.
+  restore_dims.
+  rewrite kron_mixed_product, Mmult_1_l, Mmult_1_r by auto_wf.
+  rewrite f_to_vec_transpose_f_to_vec.
+  rewrite f_to_vec_merge.
+  rewrite n_cup_f_to_vec.
+  do 3 f_equal.
+  apply eq_iff_eq_true.
+  rewrite 2!forallb_seq0.
+  apply forall_iff; intros s.
+  apply impl_iff; intros Hs.
+  do 2 simplify_bools_lia_one_kernel.
+  now rewrite add_sub'.
+Qed.
+
+Lemma n_cap_f_to_vec_pullthrough_bot n f :
+  @Mmult (2^n) (2^(n + n)) _ (I (2 ^ n) ⊗ (f_to_vec n f) ⊤%M) (⟦ n_cap n ⟧) = 
+  f_to_vec n f.
+Proof.
+  apply transpose_matrices.
+  rewrite Mmult_transpose.
+  restore_dims.
+  rewrite Nat.pow_add_r.
+  change (@transpose (2 ^ n)) with (@transpose (2^n * 2^0)).
+  rewrite (kron_transpose).
+  unfold n_cap.
+  rewrite semantics_transpose_comm.
+  change (transpose (transpose ?x)) with x.
+  rewrite id_transpose_eq.
+  unify_pows_two.
+  apply n_cup_f_to_vec_pullthrough_bot.
+Qed.
+
+Lemma n_cap_f_to_vec_pullthrough_top n f :
+  @Mmult (2^n) (2^(n + n)) _ ((f_to_vec n f) ⊤%M ⊗ I (2 ^ n)) (⟦ n_cap n ⟧) = 
+  f_to_vec n f.
+Proof.
+  apply transpose_matrices.
+  rewrite Mmult_transpose.
+  restore_dims.
+  rewrite Nat.pow_add_r.
+  change (@transpose (2 ^ n)) with (@transpose (2^0 * 2^n)).
+  rewrite (kron_transpose).
+  unfold n_cap.
+  rewrite semantics_transpose_comm.
+  change (transpose (transpose ?x)) with x.
+  rewrite id_transpose_eq.
+  unify_pows_two.
+  apply n_cup_f_to_vec_pullthrough_top.
+Qed.
+
+Lemma Mmult_vec_comm {n} (v u : Vector n) : WF_Matrix u -> WF_Matrix v ->
+  v ⊤%M × u = u ⊤%M × v.
+Proof.
+  intros Hu Hv.
+  prep_matrix_equivalence.
+  by_cell.
+  apply big_sum_eq_bounded.
+  intros k Hk.
+  unfold transpose.
+  lca.
+Qed.
+
+Lemma n_cap_n_cup_pullthrough_general n m (A : Matrix (2 ^ n) (2 ^ m)) 
+  (HA : WF_Matrix A) : 
+  I (2 ^ m) ⊗ (⟦ n_cup n ⟧) × (I (2 ^ m) ⊗ A ⊗ I (2 ^ n)) × 
+    (⟦ n_cap m ⟧ ⊗ I (2 ^ n)) =
+  A ⊤%M.
+Proof.
+  apply equal_on_basis_states_implies_equal'; 
+  [auto_wf..|].
+  intros f.
+  rewrite <- (kron_1_l _ _ (f_to_vec n f)) at 1 by auto_wf.
+  rewrite Mmult_assoc;
+  restore_dims.  
+  rewrite Mmult_assoc, kron_mixed_product' by unify_pows_two.
+  restore_dims.
+  rewrite kron_mixed_product.
+  rewrite !Mmult_1_l, Mmult_1_r by auto_wf.
+  rewrite (kron_split_antidiag (_ × _)), <- id_kron, kron_assoc by auto_wf.
+  rewrite kron_1_r.
+  restore_dims.
+  unify_pows_two.
+
+  rewrite <- Mmult_assoc.
+  restore_dims.
+  rewrite kron_mixed_product' by unify_pows_two.
+  rewrite Mmult_1_r by auto_wf.
+  unify_pows_two.
+  rewrite n_cup_f_to_vec_pullthrough_bot, <- Mmult_assoc.
+  restore_dims.
+  rewrite kron_mixed_product, Mmult_1_r by auto_wf.
+  apply transpose_matrices.
+  rewrite !Mmult_transpose.
+  change (transpose (?A ⊗ ?B)) with ((transpose A) ⊗ (transpose B)).
+  rewrite Mmult_transpose, transpose_involutive.
+  unfold n_cap.
+  rewrite semantics_transpose_comm.
+  change (transpose (transpose ?x)) with x.
+  rewrite id_transpose_eq.
+  unify_pows_two.
+  apply equal_on_basis_states_implies_equal';
+  [auto_wf..|].
+  intros g.
+  rewrite Mmult_assoc.
+  rewrite <- (kron_1_r _ _ (f_to_vec m g)).
+  restore_dims.
+  rewrite kron_mixed_product.
+  rewrite kron_1_r.
+  rewrite Mmult_1_l, Mmult_1_r by auto_wf.
+  rewrite (kron_split_diag (f_to_vec _ _)) by auto_wf.
+  unify_pows_two.
+  rewrite <- Mmult_assoc.
+  rewrite n_cup_f_to_vec_pullthrough_top.
+  rewrite kron_1_l by auto_wf.
+  now rewrite Mmult_vec_comm by auto_wf.
+Qed.
+
+Lemma n_cap_n_cup_pullthrough n m (A : ZX m n) : 
+  (n_cap m ↕ n_wire n) ⟷ 
+  (n_wire m ↕ A ↕ n_wire n) ⟷
+  cast _ _ (eq_sym (Nat.add_assoc m n n)) (eq_sym (Nat.add_0_r m)) 
+    (n_wire m ↕ n_cup n) ∝
+  A ⊤.
+Proof.
+  prop_exists_nonzero 1.
+  rewrite Mscale_1_l.
+  cbn - [n_cup].
+  simpl_cast_semantics.
+  rewrite zx_stack_spec.
+  rewrite 2!n_wire_semantics.
+  rewrite semantics_transpose_comm, <- Mmult_assoc.
+  rewrite <- n_cap_n_cup_pullthrough_general by auto_wf.
+  now restore_dims.
+Qed.
+
+
 
 Lemma n_cup_unswapped_semantics n : 
   ⟦ n_cup_unswapped n ⟧ = 
-  matrix_of_biperm 0 (n + n) 
+  matrix_of_biperm (n + n) 0 
     (reflect_perm (n + n)).
 Proof.
-  induction n.
-  - cbn.
-    now rewrite matrix_of_biperm_0_0.
-  - cbn.
-    simpl_rewrite' matrix_of_cap_NF_biperm.
-Abort.
+  apply equal_on_conj_basis_states_implies_equal; [auto_wf..|].
+  intros f g.
+  rewrite n_cup_unswapped_f_to_vec.
+  rewrite <- Mmult_assoc.
+  prep_matrix_equivalence.
+  intros [] []; [|lia..]; intros _ _.
+  rewrite matrix_of_biperm_funbool_conj.
+  unfold scale; cbn.
+  Csimpl.
+  unfold b2R.
+  rewrite (if_dist _ _ _ RtoC).
+  apply f_equal_if; [|easy..].
+  apply eq_iff_eq_true.
+  rewrite forallb_seq0, number_preserved_iff_all_lt_eq.
+  setoid_rewrite eqb_true_iff.
+  split.
+  - intros Hf.
+    intros s Hs.
+    rewrite 2!testbit_funbool_to_nat.
+    unfold reflect_perm.
+    do 5 simplify_bools_lia_one_kernel.
+    rewrite Nat.add_0_r.
+    rewrite sub_S_sub_S by lia.
+    bdestruct (s <? n).
+    + symmetry; apply Hf; lia. 
+    + rewrite Hf by lia.
+      now rewrite sub_S_sub_S by lia.
+  - intros Hf s Hs.
+    generalize (Hf s ltac:(lia)).
+    rewrite 2!testbit_funbool_to_nat.
+    unfold reflect_perm.
+    do 5 simplify_bools_lia_one_kernel.
+    rewrite Nat.add_0_r, sub_S_sub_S by lia.
+    now intros <-.
+Qed.
+
 
 
 
 (* FIXME: These lemmas go in BipermutationMatrices.v *)
+
+Open Scope nat.
 
 Lemma number_preserved_0 f n : 
   number_preserved 0 f n = true.
@@ -648,7 +1521,41 @@ Create HintDb zxbiperm_cleanup_db.
 #[export] Hint Rewrite 
   NF_insize_stack_NF_biperms 
   NF_outsize_stack_NF_biperms : zxbiperm_cleanup_db.
+#[export] Hint Rewrite 
+  NF_insize_compose_NF_biperms
+  NF_outsize_compose_NF_biperms 
+  using solve [auto with WF_NF_biperm_db]: zxbiperm_cleanup_db.
 
+(* FIXME: Move *)
+Lemma realize_NF_biperm_bipermutation' n m b : 
+  WF_NF_biperm b -> n = NF_insize b -> m = NF_outsize b -> 
+  bipermutation (m + n) (realize_NF_biperm b).
+Proof.
+  intros; subst.
+  auto with biperm_db.
+Qed.
+
+Lemma biperm_of_zx_bipermutation {n m} (zx : ZX n m) (Hzx : ZXbiperm zx) : 
+  bipermutation (m + n) (biperm_of_zx zx).
+Proof.
+  induction Hzx.
+  1, 2, 3, 4, 5, 7 : (apply realize_NF_biperm_bipermutation'; 
+    [cbn; auto using NF_of_zx_WF with WF_NF_biperm_db|..]);
+    cbn [NF_of_zx]; 
+    try reflexivity;
+    autorewrite with zxbiperm_cleanup_db; lia.
+  generalize (NF_of_zx_WF (zx0 ⟷ zx1) ltac:(auto with zxbiperm_db)).
+  cbn.
+  intros H.
+  apply realize_NF_biperm_bipermutation'; [easy
+  | rewrite NF_insize_compose_NF_biperms
+  | rewrite NF_outsize_compose_NF_biperms];
+  solve [auto with WF_NF_biperm_db 
+    | now autorewrite with zxbiperm_cleanup_db].
+Qed.
+
+#[export] Hint Resolve biperm_of_zx_bipermutation : biperm_db.
+  
 Fixpoint make_n_cup_zxperm n : ZX (n * 2) (n * 2) :=
   match n return ZX (n * 2) (n * 2) with 
   | O => Empty
@@ -714,78 +1621,85 @@ Proof.
   now apply cast_simplify.
 Qed.
 
-
-
 Lemma biperm_of_n_cup_unswapped n : 
   perm_eq (n + n)
     (biperm_of_zx (n_cup_unswapped n))
     (reflect_perm (n + n)).
 Proof.
-  rewrite reflect_perm_defn.
-  induction n; [easy|].
+  (* rewrite reflect_perm_defn. *)
+  (* induction n; [easy|]. *)
   rewrite <- Nat.add_0_r at 1.
   apply matrix_of_biperm_inj.
-  - rewrite <- (NF_insize_NF_of_zx (n_cup_unswapped (S n))) at 1
+  - rewrite <- (NF_insize_NF_of_zx (n_cup_unswapped (n))) at 1
       by auto with zxbiperm_db.
-    pose proof (NF_outsize_NF_of_zx (n_cup_unswapped (S n)) 
+    pose proof (NF_outsize_NF_of_zx (n_cup_unswapped (n)) 
       ltac:(auto with zxbiperm_db)) as Heq.
     rewrite <- Heq at 4.
     apply realize_NF_biperm_bipermutation_alt.
     apply NF_of_zx_WF; auto with zxbiperm_db.
-  - intros k Hk; lia.
+  - rewrite Nat.add_0_r, reflect_perm_defn. intros k Hk; lia.
   - apply matrix_of_biperm_mat_equiv_of_prop.
-    cbn -[Nat.add].
-    rewrite compose_NF_biperms_correct' by 
-      (autorewrite with zxbiperm_cleanup_db; 
-      auto with WF_NF_biperm_db zxbiperm_db;
-      cbn; lia).
-    rewrite fn_cast_eq.
-    cbn [NF_of_zx].
-    rewrite 2!stack_NF_biperms_correct 
-      by auto with WF_NF_biperm_db zxbiperm_db.
-    rewrite matrix_of_cap_NF_biperm, matrix_of_wire_NF_biperm.
-    prop_exists_nonzero 1%R.
-    restore_dims.
-    rewrite Mscale_1_l.
-    autorewrite with zxbiperm_cleanup_db.
-    cbn -[Nat.add ZX_semantics].
-    apply mat_equiv_eq; 
-    [auto using WF_Matrix_dim_change with wf_db zarith..|].
-    apply WF_Matrix_dim_change; [lia..|].
-    apply WF_mult; [auto_wf|..].
-    repeat apply WF_kron; unify_pows_two; try lia; 
-    auto_wf.
-    autorewrite with zxbiperm_cleanup_db.
-    eapply WF_Matrix_dim_change; 
-    [..|apply matrix_of_NF_biperm_WF];
-    autorewrite with zxbiperm_cleanup_db; reflexivity.
-    unify_pows_two.
-    eapply WF_Matrix_dim_change; 
-    [..|apply matrix_of_biperm_WF];
-    cbn [Nat.add]; unify_pows_two; reflexivity.
-    apply mat_equiv_of_all_basis_conj.
-    intros i j Hi Hj.
-    cbn [Nat.add] in *.
-    unify_pows_two.
-    rewrite basis_f_to_vec_alt by (revert Hj; now unify_pows_two).
-    apply matrix_of_NF_biperm_WF.
-Abort.
+    rewrite <- n_cup_unswapped_semantics.
+    now rewrite matrix_of_biperm_of_zx by auto with zxbiperm_db.
+Qed.
 
-
-(* Lemma yank_r: forall n, n_cup n ∝ n_wire n ↕ n_swap n ⟷ n_cup_unswapped n.
+(* FIXME: Move *)
+Lemma idn_biperm_eq n : idn_biperm n = big_swap_perm n n.
 Proof.
-  intros n.
-  bdestruct (n =? 1).
-  subst.
-  unfold n_cup.
+  eq_by_WF_perm_eq (n + n)%nat;
+  [unfold idn_biperm; intros k Hk; bdestructΩ'..|].
+  intros k Hk.
+  unfold idn_biperm, big_swap_perm.
+  bdestructΩ'.
+Qed.
+
+Open Scope prg.
+
+Lemma biperm_of_zxperm {n} zx (Hzx : ZXperm n zx) : 
+  perm_eq (n + n) 
+    (biperm_of_zx zx) 
+    (biperm_compose_perm_l n n (idn_biperm n) 
+      (reflect_perm n ∘ perm_of_zx zx ∘ reflect_perm n)).
+Proof.
+  apply matrix_of_biperm_inj; [auto with biperm_db zxbiperm_db..|].
+  apply matrix_of_biperm_mat_equiv_of_prop.
+  rewrite matrix_of_biperm_compose_perm_r_eq by auto with biperm_db.
+  rewrite !Combinators.compose_assoc.
+  do 2 rewrite_compose_assoc_r reflect_perm_invol_eq.
+  rewrite compose_idn_r.
+  rewrite matrix_of_idn_biperm, Mmult_1_r by auto_wf.
+  rewrite matrix_of_biperm_of_zx by auto with zxbiperm_db.
+  rewrite <- perm_of_zx_permutation_semantics by easy.
+  easy.
+Qed.
+
+
+Lemma biperm_of_compose_zxperm_l {n m} (zxp : ZX n n) (zxb : ZX n m) : 
+  ZXperm n zxp -> ZXbiperm zxb ->
+  perm_eq (m + n) (biperm_of_zx (zxp ⟷ zxb)) 
+    (biperm_compose_perm_r m n (biperm_of_zx zxb) 
+      (reflect_perm n ∘ perm_of_zx (zxperm_inv' zxp) ∘ reflect_perm n)).
+Proof.
+  intros Hp Hb.
+  rewrite Nat.add_comm.
+  apply matrix_of_biperm_inj; [auto with biperm_db zxbiperm_db..|].
+  apply matrix_of_biperm_mat_equiv_of_prop.
+  rewrite matrix_of_biperm_of_zx by auto with zxbiperm_db.
+  rewrite matrix_of_biperm_compose_perm_l_eq by auto with biperm_db.
+  rewrite 2!perm_inv'_compose by auto with perm_db.
+  rewrite reflect_perm_inv'.
+  rewrite !Combinators.compose_assoc.
+  do 2 rewrite_compose_assoc_r reflect_perm_invol_eq.
+  rewrite compose_idn_r.
+  rewrite perm_of_zxperm_inv' by easy.
+  rewrite perm_inv'_perm_inv' by auto with perm_db.
   cbn.
-  rewrite cast_id.
-  apply ZXbiperm_prop_by_biperm_eq; [admit..|].
-  Time ZXpermAutomation.by_perm_cell; reflexivity.
-  prop_exists_nonzero 1.
-  rewrite Mscale_1_l.
-  lma'.
-Qed. *)
+  rewrite matrix_of_biperm_of_zx, <- perm_of_zx_permutation_semantics by easy.
+  easy.
+Qed.
+
+
+
 
 
 
