@@ -25,7 +25,113 @@ Open Scope nat_scope.
 4  —  —  ╱  0
 *)
 
-Create HintDb biperm_db.
+Create HintDb biperm_db discriminated.
+
+(* FIXME: Move to Qlib *)
+Ltac auto_perm_to n := 
+  auto n with perm_db perm_bounded_db WF_Perm_db.
+
+Ltac auto_perm := 
+  auto 6 with perm_db perm_bounded_db WF_Perm_db.
+
+Tactic Notation "auto_perm" int_or_var(n) :=
+  auto_perm_to n.
+
+Tactic Notation "auto_perm" :=
+  auto_perm 6.
+
+(* FIXME: Move these two to Qlib.PermutationInstances *)
+Lemma big_swap_perm_defn n m : 
+  perm_eq (n + m) (big_swap_perm n m) 
+  (fun k => if k <? n then k + m else k - n).
+Proof.
+  intros k Hk.
+  unfold big_swap_perm.
+  now simplify_bools_lia_one_kernel.
+Qed.
+
+Lemma big_swap_perm_defn_alt n m : 
+  perm_eq (m + n) (big_swap_perm n m) 
+  (fun k => if k <? n then k + m else k - n).
+Proof.
+  rewrite Nat.add_comm.
+  apply big_swap_perm_defn.
+Qed.
+  
+(* FIXME: Move to Qlib *)
+Definition make_WF_Perm n f :=
+  fun k => if n <=? k then k else f k.
+
+Lemma make_WF_Perm_perm_eq n f : 
+  perm_eq n (make_WF_Perm n f) f.
+Proof.
+  intros k Hk.
+  unfold make_WF_Perm.
+  bdestructΩ'.
+Qed.
+
+#[export] Hint Rewrite make_WF_Perm_perm_eq : perm_cleanup_db.
+#[export] Hint Resolve make_WF_Perm_perm_eq : perm_cleanup_db.
+
+Lemma make_WF_Perm_WF n f : WF_Perm n (make_WF_Perm n f).
+Proof.
+  intros k Hk.
+  unfold make_WF_Perm.
+  bdestructΩ'.
+Qed.
+
+#[export] Hint Resolve make_WF_Perm_WF : WF_Perm_db.
+
+Add Parametric Morphism n : (make_WF_Perm n) with signature
+  perm_eq n ==> eq as make_WF_Perm_eq_of_perm_eq.
+Proof.
+  intros f g Hfg.
+  eq_by_WF_perm_eq n.
+  cleanup_perm.
+Qed.
+
+Lemma make_WF_Perm_permutation n f : 
+  permutation n f -> permutation n (make_WF_Perm n f).
+Proof.
+  cleanup_perm.
+Qed.
+
+#[export] Hint Resolve make_WF_Perm_permutation : perm_db.
+
+Lemma make_WF_Perm_bounded n f : 
+  perm_bounded n f -> perm_bounded n (make_WF_Perm n f).
+Proof.
+  intros Hf k Hk.
+  rewrite make_WF_Perm_perm_eq; auto.
+Qed.
+
+#[export] Hint Resolve make_WF_Perm_bounded : perm_bounded_db.
+
+Lemma make_WF_Perm_inv n f : 
+  perm_eq n (perm_inv n (make_WF_Perm n f)) (perm_inv n f).
+Proof.
+  now rewrite make_WF_Perm_perm_eq.
+Qed.
+
+Lemma make_WF_Perm_inv' n f :
+  perm_inv' n (make_WF_Perm n f) = perm_inv' n f.
+Proof.
+  apply perm_inv'_eq_of_perm_eq.
+  cleanup_perm.
+Qed.
+
+
+Ltac auto_biperm_to n := 
+  auto n with biperm_db perm_db perm_bounded_db WF_Perm_db.
+
+Ltac auto_biperm := 
+  auto 6 with biperm_db perm_db perm_bounded_db WF_Perm_db.
+
+Tactic Notation "auto_biperm" int_or_var(n) :=
+  auto_biperm_to n.
+
+Tactic Notation "auto_biperm" :=
+  auto_biperm 6.
 
 (* Section Bipermutations. *)
 
@@ -64,13 +170,23 @@ Proof.
   - unfold compose. intros (? & ? & ?) k Hk; auto.
 Qed.
 
+(* To apply *)
+Lemma by_bipermutation_defn n f : 
+  perm_bounded n f -> (forall k, k < n -> f k <> k) ->
+  perm_eq n (f ∘ f) idn ->
+  bipermutation n f.
+Proof.
+  rewrite bipermutation_defn.
+  auto.
+Qed.
+
 Lemma permutation_of_bipermutation {n f} : bipermutation n f -> permutation n f.
 Proof.
   intros Hbiperm.
   exists f.
   intros k Hk.
-  repeat split.
-  all: apply Hbiperm, Hk.
+  repeat split;
+  apply Hbiperm, Hk.
 Qed.
 
 #[export] Hint Resolve permutation_of_bipermutation : perm_db biperm_db.
@@ -102,19 +218,42 @@ Proof.
     cleanup_perm_inv.
 Qed.
 
+Lemma by_bipermutation_defn_alt n f : 
+  permutation n f -> (forall k, k < n -> f k <> k) ->
+  perm_eq n (perm_inv n f) f ->
+  bipermutation n f.
+Proof.
+  rewrite bipermutation_defn_alt.
+  auto.
+Qed.
+
 Lemma bipermutation_is_bounded n f : bipermutation n f -> 
   perm_bounded n f.
 Proof.
   intros Hf k Hk; now apply Hf.
 Qed. 
 
-#[export] Hint Resolve bipermutation_is_bounded : perm_bounded_db.
+#[export] Hint Resolve bipermutation_is_bounded : biperm_db perm_bounded_db.
 
 Lemma bipermutation_involutive {n f} k : bipermutation n f -> k < n ->
   f (f k) = k.
 Proof.
   intros Hbiperm Hk.
   apply (Hbiperm k Hk).
+Qed.
+
+Lemma bipermutation_involutive_eq {n f} (Hf : bipermutation n f) : 
+  perm_eq n (f ∘ f) idn.
+Proof.
+  intros k; now apply bipermutation_involutive.
+Qed.
+
+Lemma bipermutation_involutive_eq_WF {n f} (Hf : bipermutation n f) 
+  (HfWF : WF_Perm n f) : 
+  (f ∘ f) = idn.
+Proof.
+  eq_by_WF_perm_eq n.
+  now apply bipermutation_involutive_eq.
 Qed.
 
 Lemma bipermutation_dim_ne_1 {n f} (Hf : bipermutation n f) : 
@@ -154,6 +293,13 @@ Lemma bipermutation_injective {n} {g : nat -> nat}
 Proof.
   rewrite (bipermutation_eq_iff _ _ Hg), (proj2 (proj2 (Hg j Hj)));
   lia + apply Hg; lia.
+Qed.
+
+Lemma bipermutation_inj {n} {g : nat -> nat} 
+  (Hg : bipermutation n g) i j (Hi : i < n) (Hj : j < n) : 
+  g i = g j -> i = j.
+Proof.
+  now apply (bipermutation_injective Hg).
 Qed.
 
 Lemma bipermutation_shift_of_eq_swap n f 
@@ -197,31 +343,129 @@ Proof.
   lia.
 Qed.
 
+Definition compose_perm_biperm n f g :=
+  make_WF_Perm n (g ∘ f ∘ perm_inv n g).
 
-(* TODO: Flip _l and _r here *)
+Lemma compose_perm_biperm_defn n f g :
+  perm_eq n (compose_perm_biperm n f g) 
+    (g ∘ f ∘ perm_inv n g).
+Proof.
+  apply make_WF_Perm_perm_eq.
+Qed.
+
+Lemma compose_perm_bipermutation n f g 
+  (Hf : bipermutation n f) (Hg : permutation n g) :
+  bipermutation n (compose_perm_biperm n f g).
+Proof.
+  rewrite compose_perm_biperm_defn.
+  apply by_bipermutation_defn_alt.
+  - auto with perm_db.
+  - intros k Hk.
+    unfold compose.
+    symmetry.
+    rewrite <- (perm_inv_eq_iff Hg) by auto with perm_bounded_db.
+    symmetry.
+    apply Hf; cleanup_perm_inv.
+  - rewrite 2!perm_inv_compose by auto_biperm.
+    rewrite (perm_inv_bipermutation n f Hf).
+    rewrite perm_inv_perm_inv by auto.
+    reflexivity.
+Qed.
+
+#[export] Hint Resolve compose_perm_bipermutation : biperm_db.
+
+Lemma compose_perm_biperm_WF n f g : WF_Perm n (compose_perm_biperm n f g).
+Proof.
+  apply make_WF_Perm_WF.
+Qed.
+
+#[export] Hint Resolve compose_perm_biperm_WF : WF_Perm_db.
+
+Lemma compose_perm_biperm_compose n f g h 
+  (Hg : permutation n g) (Hh : permutation n h) :
+  compose_perm_biperm n (compose_perm_biperm n f g) h =
+  compose_perm_biperm n f (h ∘ g).
+Proof.
+  eq_by_WF_perm_eq n.
+  rewrite !compose_perm_biperm_defn.
+  now rewrite perm_inv_compose.
+Qed.
+
+Lemma compose_perm_biperm_idn n f : 
+  perm_eq n (compose_perm_biperm n f idn) f.
+Proof.
+  rewrite compose_perm_biperm_defn, idn_inv.
+  easy.
+Qed.
+
+
 Definition biperm_compose_perm_l n m f g : nat -> nat :=
   (* f is a biperm on n + m, g a perm on n; 
      graphically, we put g on the left of f *)
-  fun k => 
+  compose_perm_biperm (n + m) f (stack_perms n m g idn).
+
+Lemma biperm_compose_perm_l_defn n m f g : 
+  perm_eq (n + m) (biperm_compose_perm_l n m f g) 
+    (stack_perms n m g idn ∘ f ∘ perm_inv (n + m) (stack_perms n m g idn)).
+Proof.
+  apply compose_perm_biperm_defn.
+Qed.
+
+Lemma biperm_compose_perm_l_defn_alt n m f g (Hg : permutation n g) : 
+  perm_eq (n + m) (biperm_compose_perm_l n m f g) 
+  (fun k => 
   if k <? n then
-    (if f (g k) <? n then 
-      perm_inv n g (f (g k))
+    (if f (perm_inv n g k) <? n then 
+      g (f (perm_inv n g k))
     else 
-      f (g k))
+      f (perm_inv n g k))
   else
     (if k <? n + m then 
       (if f k <? n then 
-        perm_inv n g (f k)
+        g (f k)
       else
         f k)
     else 
-      k).
+      k)).
+Proof.
+  unfold biperm_compose_perm_l.
+  rewrite compose_perm_biperm_defn.
+  rewrite perm_inv_stack_perms by auto_perm.
+  rewrite idn_inv.
+  rewrite 2!stack_perms_f_idn.
+  unfold compose.
+  intros k Hk.
+  bdestructΩ'.
+Qed.
 
 Definition biperm_compose_perm_r n m f g : nat -> nat :=
   (* f is a biperm on n + m, g a perm on m; 
      graphically, we put g on the right of f *)
-  fun k => 
-  if n + m <=? k then k else
+  compose_perm_biperm (n + m) f (stack_perms n m idn (perm_inv m g)).
+
+Lemma biperm_compose_perm_r_defn n m f g :
+  perm_eq (n + m) (biperm_compose_perm_r n m f g) 
+    (stack_perms n m idn (perm_inv m g) ∘ f 
+      ∘ perm_inv (n + m) (stack_perms n m idn (perm_inv m g))).
+Proof.
+  apply compose_perm_biperm_defn.
+Qed.
+
+Lemma biperm_compose_perm_r_defn' n m f g 
+  (Hg : permutation m g) : 
+  perm_eq (n + m) (biperm_compose_perm_r n m f g) 
+    (stack_perms n m idn (perm_inv m g) ∘ f ∘ stack_perms n m idn g).
+Proof.
+  rewrite biperm_compose_perm_r_defn.
+  now rewrite perm_inv_stack_perms, (perm_inv_perm_inv m g), 
+    idn_inv by auto_perm.
+Qed.
+
+
+Lemma biperm_compose_perm_r_defn_alt n m f g 
+  (Hf : perm_bounded (n + m) f) (Hg : permutation m g) : 
+  perm_eq (n + m) (biperm_compose_perm_r n m f g)
+  (fun k => 
   if k <? n then 
     if f k <? n then f k else
       n + perm_inv m g (f k - n)
@@ -229,147 +473,75 @@ Definition biperm_compose_perm_r n m f g : nat -> nat :=
     if f (n + g (k - n)) <? n then 
       f (n + g (k - n))
     else
-      n + perm_inv m g (f (n + g (k - n)) - n).
-
-Lemma biperm_compose_perm_l_spec n m f g : 
-  perm_eq (n + m) 
-  (biperm_compose_perm_l n m f g)
-  (stack_perms n m (perm_inv n g) idn ∘ f ∘ stack_perms n m g idn).
+      n + perm_inv m g (f (n + g (k - n)) - n)).
 Proof.
-  rewrite (stack_perms_defn n m g).
-  rewrite stack_perms_f_idn.
-  intros k Hk.
-  unfold biperm_compose_perm_l.
+  rewrite biperm_compose_perm_r_defn' by auto.
+  rewrite 2!stack_perms_defn.
   unfold compose.
-  rewrite !(if_dist _ _ _ f).
-  bdestruct (k <? n);
-  [|rewrite Nat.sub_add by lia];
-  bdestructΩ'.
-Qed.
-
-Lemma biperm_compose_perm_r_spec n m f g 
-  (Hf : perm_bounded (n + m) f) (Hg : perm_bounded m g) : 
-  perm_eq (n + m) 
-  (biperm_compose_perm_r n m f g)
-  (stack_perms n m idn (perm_inv m g) ∘ f ∘ stack_perms n m idn g).
-Proof.
-  rewrite (stack_perms_defn n m idn g).
-  rewrite stack_perms_idn_f.
   intros k Hk.
-  unfold biperm_compose_perm_r.
-  unfold compose.
-  rewrite !(if_dist _ _ _ f).
-  pose proof (Hf k Hk).
-  rewrite (Nat.add_comm n (g (k - n))).
-  simplify_bools_lia_one_kernel.
+  rewrite (Nat.add_comm _ n).
   bdestructΩ'.
-  pose proof (Hg (k - n)).
-  pose proof (Hf (g (k - n) + n)).
-  lia.
 Qed.
 
 Lemma biperm_compose_perm_l_WF n m f g :
   WF_Perm (n + m) (biperm_compose_perm_l n m f g).
 Proof.
-  unfold biperm_compose_perm_l.
-  intros k Hk; bdestructΩ'.
+  apply compose_perm_biperm_WF.
 Qed.
 
 Lemma biperm_compose_perm_r_WF n m f g :
   WF_Perm (n + m) (biperm_compose_perm_r n m f g).
 Proof.
-  unfold biperm_compose_perm_r.
-  intros k Hk; bdestructΩ'.
+  apply compose_perm_biperm_WF.
 Qed.
 
 #[export] Hint Resolve biperm_compose_perm_l_WF
   biperm_compose_perm_r_WF : WF_Perm_db. 
 
 Add Parametric Morphism n m : (biperm_compose_perm_r n m) with signature
-  on_predicate_relation_l (fun f => perm_bounded (n + m) f) 
+  (* on_predicate_relation_l (fun f => perm_bounded (n + m) f)  *)
     (perm_eq (n + m)) ==> 
-  on_predicate_relation_l (fun f => perm_bounded m f) 
+  (* on_predicate_relation_l (fun f => perm_bounded m f)  *)
     (perm_eq m) ==> eq as 
     biperm_compose_perm_r_eq_of_perm_eq.
 Proof.
-  intros f f' [Hfbdd Hf] g g' [Hgbdd Hg].
+  intros f f' Hf g g' Hg.
   eq_by_WF_perm_eq (n + m).
-  intros k Hk.
-  unfold biperm_compose_perm_r.
-  simplify_bools_lia_one_kernel.
-  rewrite <- (Hf k Hk).
-  pose proof (Hfbdd k Hk).
-  bdestruct (k <? n).
-  - bdestructΩ'.
-    now rewrite <- (perm_inv_eq_of_perm_eq _ _ _ Hg) by lia.
-  - rewrite <- Hg by lia.
-    pose proof (Hgbdd (k - n)).
-    rewrite <- Hf by lia.
-    bdestructΩ'.
-    pose proof (Hfbdd (n + g (k - n))).
-    now rewrite <- (perm_inv_eq_of_perm_eq _ _ _ Hg) by lia.
+  rewrite 2!biperm_compose_perm_r_defn, 2!compose_assoc.
+  now rewrite Hf, Hg.
 Qed.
 
 Add Parametric Morphism n m : (biperm_compose_perm_l n m) with signature
-  on_predicate_relation_l (fun f => perm_bounded (n + m) f) 
+  (* on_predicate_relation_l (fun f => perm_bounded (n + m) f)  *)
     (perm_eq (n + m)) ==> 
-  on_predicate_relation_l (fun f => perm_bounded n f) 
+  (* on_predicate_relation_l (fun f => perm_bounded n f)  *)
     (perm_eq n) ==> eq as 
     biperm_compose_perm_l_eq_of_perm_eq.
 Proof.
-  intros f f' [Hfbdd Hf] g g' [Hgbdd Hg].
+  intros f f' Hf g g' Hg.
   eq_by_WF_perm_eq (n + m).
-  intros k Hk.
-  unfold biperm_compose_perm_l.
-  simplify_bools_lia_one_kernel.
-  rewrite <- (Hf k Hk).
-  pose proof (Hfbdd k Hk).
-  bdestruct (k <? n).
-  - pose proof (Hgbdd k).
-    rewrite <- Hg, <- Hf by lia.
-    bdestructΩ'.
-    now rewrite <- (perm_inv_eq_of_perm_eq _ _ _ Hg) by lia.
-  - bdestructΩ'.
-    now apply perm_inv_eq_of_perm_eq.
+  rewrite 2!biperm_compose_perm_l_defn, 2!compose_assoc.
+  now rewrite Hf, Hg.
 Qed.
-
-(* TODO: Like the above, but only for the biperm / perm; can we do better? *)
 
 Lemma biperm_compose_perm_l_bounded n m f g 
   (Hf : perm_bounded (n + m) f) (Hg : perm_bounded n g) :
   perm_bounded (n + m) (biperm_compose_perm_l n m f g).
 Proof.
-  unfold biperm_compose_perm_l.
-  intros.
-  bdestructΩ'.
-  - pose proof (perm_inv_bounded n g (f (g k)) ltac:(easy)).
-    lia.
-  - apply Hf.
-    specialize (Hg k ltac:(easy)); lia.
-  - pose proof (perm_inv_bounded n g (f k) ltac:(easy)).
-    lia.
-  - apply Hf; easy.
+  intros k Hk.
+  rewrite biperm_compose_perm_l_defn by auto.
+  rewrite compose_assoc.
+  auto_perm.
 Qed.
 
 Lemma biperm_compose_perm_r_bounded n m f g 
   (Hf : perm_bounded (n + m) f) (Hg : perm_bounded m g) :
   perm_bounded (n + m) (biperm_compose_perm_r n m f g).
 Proof.
-  unfold biperm_compose_perm_r.
-  intros.
-  bdestructΩ'.
-  - apply Nat.add_lt_mono_l.
-    apply perm_inv_bounded.
-    specialize (Hf k ltac:(easy)).
-    apply sub_lt_iff; [lia|].
-    apply Hf.
-  - apply Nat.add_lt_mono_l.
-    pose proof (Hf k) as ?.
-    apply perm_inv_bounded.
-    apply sub_lt_iff; [lia|].
-    apply Hf.
-    apply Nat.add_lt_mono_l, Hg.
-    lia.
+  intros k Hk.
+  rewrite biperm_compose_perm_r_defn by auto.
+  rewrite compose_assoc.
+  auto_perm.
 Qed.
 
 #[export] Hint Resolve biperm_compose_perm_l_bounded
@@ -381,256 +553,57 @@ Lemma biperm_compose_perm_r_biperm n m f g
   (Hf : bipermutation (n + m) f) (Hg : permutation m g) : 
   bipermutation (n + m) (biperm_compose_perm_r n m f g).
 Proof.
-  intros k Hk.
-  pose proof (fun k Hk => proj1 (Hf k Hk)) as Hfbdd.
-  pose proof (fun k Hk => proj1 (proj2 (Hf k Hk))) as Hfne.
-  pose proof (fun k Hk => proj2 (proj2 (Hf k Hk))) as Hfeq.
-  pose proof (permutation_is_bounded _ _ Hg) as Hgbdd.
-  pose proof (Hgbdd (k - n)).
-  pose proof (Hfbdd (n + g (k - n))).
-  split; [auto with perm_bounded_db perm_db | split].
-  - unfold biperm_compose_perm_r.
-    bdestructΩ'; [apply Hf; easy|].
-    intros Hfalse.
-    assert (Hginveq : perm_inv m g (f (n + g (k - n)) - n) = k - n) by lia.
-    rewrite perm_inv_eq_iff in Hginveq by (easy + lia).
-    specialize (Hf (n + g (k - n))); lia.
-  - bdestruct (n <=? k).
-    + unfold biperm_compose_perm_r.
-      do 2 simplify_bools_lia_one_kernel.
-      pose proof (perm_inv_bounded m g (f (n + g (k - n)) - n)).
-      replace (n + m <=?
-      (if f (n + g (k - n)) <? n
-       then f (n + g (k - n))
-       else n + perm_inv m g (f (n + g (k - n)) - n))) with false by
-       (bdestructΩ').
-      rewrite !(if_dist _ _ _ f).
-      rewrite Hfeq by lia.
-      pose proof (Hfeq (n + g (k - n)) ltac:(lia)).
-      bdestructΩ'simp.
-      * rewrite add_sub'.
-        cleanup_perm; lia.
-      * rewrite add_sub' in *.
-        rewrite perm_inv_is_rinv_of_permutation in * by (easy + lia).
-        rewrite Nat.add_sub_assoc, add_sub' in * by lia.
-        lia.
-      * rewrite add_sub'.
-        cleanup_perm.
-        rewrite le_plus_minus_r' by lia.
-        rewrite Hfeq, add_sub' by lia.
-        cleanup_perm; lia.
-    + unfold biperm_compose_perm_r.
-      pose proof (Hfbdd k ltac:(easy)).
-      do 2 simplify_bools_lia_one_kernel.
-      pose proof (perm_inv_bounded m g (f k - n)).
-      replace (n + m <=? (if f k <? n then f k
-        else n + perm_inv m g (f k - n)))
-        with false by bdestructΩ'.
-      rewrite (if_dist' f).
-      rewrite Hfeq by lia.
-      bdestructΩ';
-      rewrite add_sub' in *; 
-      rewrite perm_inv_is_rinv_of_permutation in * by auto with zarith;
-      rewrite Nat.add_sub_assoc, add_sub', Hfeq in *; 
-      lia.
+  unfold biperm_compose_perm_r.
+  auto_biperm.
 Qed.
 
 Lemma biperm_compose_perm_l_biperm n m f g 
   (Hf : bipermutation (n + m) f) (Hg : permutation n g) : 
   bipermutation (n + m) (biperm_compose_perm_l n m f g).
 Proof.
-  intros k Hk.
-  pose proof (fun k Hk => proj1 (Hf k Hk)) as Hfbdd.
-  pose proof (fun k Hk => proj1 (proj2 (Hf k Hk))) as Hfne.
-  pose proof (fun k Hk => proj2 (proj2 (Hf k Hk))) as Hfeq.
-  pose proof (permutation_is_bounded _ _ Hg) as Hgbdd.
-  pose proof (Hgbdd k).
-  split; [auto with perm_bounded_db perm_db | split].
-  - unfold biperm_compose_perm_l.
-    bdestructΩ';
-    rewrite ?perm_inv_eq_iff by (easy + lia);
-    [apply Hf; lia|..].
-    + pose proof (perm_inv_bounded n g (f k)); lia.
-    + apply Hf; lia.
-  - bdestruct (n <=? k).
-    + unfold biperm_compose_perm_l.
-      do 2 simplify_bools_lia_one_kernel.
-      pose proof (perm_inv_bounded n g (f k)).
-      bdestructΩ'; cleanup_perm;
-      rewrite ?perm_inv_is_rinv_of_permutation in * by (easy + lia);
-      rewrite ?Hfeq in * by lia; try lia.
-      specialize (Hf k); lia.
-    + unfold biperm_compose_perm_l.
-      pose proof (Hfbdd k ltac:(easy)).
-      simplify_bools_lia_one_kernel.
-      pose proof (perm_inv_bounded n g (f (g k))).
-      rewrite (if_dist' f).
-      rewrite Hfeq by lia.
-      pose proof (Hfbdd (g k)).
-      bdestruct (f (g k) <? n); 
-      [|bdestructΩ'; cleanup_perm].
-      simplify_bools_lia_one_kernel. 
-      cleanup_perm.
-      rewrite Hfeq by lia.
-      bdestructΩ'; cleanup_perm.
+  unfold biperm_compose_perm_l.
+  auto_biperm.
 Qed.
 
-
+#[export] Hint Resolve biperm_compose_perm_l_biperm
+  biperm_compose_perm_r_biperm : biperm_db.
 
 Lemma biperm_compose_perm_l_compose n m f g h 
   (Hf : bipermutation (n + m) f)
   (Hg : permutation n g) (Hh : permutation n h) :
-  forall k, 
-  biperm_compose_perm_l n m (biperm_compose_perm_l n m f g) h k =
-  biperm_compose_perm_l n m f (g ∘ h)%prg k.
-Proof.
-  intros k.
-  unfold biperm_compose_perm_l.
-  pose proof (fun k Hk => proj1 (Hf k Hk)) as Hfbdd.
-  (* pose proof (fun k Hk => proj1 (proj2 (Hf k Hk))) as Hfne. *)
-  (* pose proof (fun k Hk => proj2 (proj2 (Hf k Hk))) as Hfeq. *)
-  pose proof (permutation_is_bounded _ _ Hg) as Hgbdd.
-  pose proof (permutation_is_bounded _ _ Hh) as Hhbdd.
-  pose proof (permutation_compose n g h Hg Hh) as Hgh.
-  bdestructΩ'; 
-  rewrite ?perm_inv_compose; try easy + lia;
-  let show_lt := (match goal with
-  | |- context[g ?k] => specialize (Hgbdd k); lia
-  | |- context[h ?k] => specialize (Hhbdd k); lia
-  end; lia) in 
-  let do_tac := first 
-  [ assumption | 
-    apply perm_inv_bounded; lia | show_lt |
-    unfold compose in *; lia |
-    apply Hgbdd; lia | apply Hhbdd; lia | apply Hfbdd; lia |
-    match goal with
-    | H : perm_inv _ _ _ >= _ |- _ =>
-      apply perm_inv_ge in H
-    | |- perm_inv _ _ _ = _ =>
-      apply perm_inv_eq_iff
-  end]
-  in repeat do_tac.
-Qed.
-
-Lemma biperm_compose_perm_l_compose_eq (n m : nat) (f g h : nat -> nat) :
-  bipermutation (n + m) f ->
-  permutation n g ->
-  permutation n h ->
   biperm_compose_perm_l n m (biperm_compose_perm_l n m f g) h =
-  biperm_compose_perm_l n m f (g ∘ h).
+  biperm_compose_perm_l n m f (h ∘ g)%prg.
 Proof.
-  intros.
-  apply functional_extensionality.
-  now apply biperm_compose_perm_l_compose.
+  eq_by_WF_perm_eq (n + m).
+  unfold biperm_compose_perm_l.
+  rewrite compose_perm_biperm_compose by auto_perm.
+  now rewrite stack_perms_compose_idn by auto_perm.
 Qed.
 
 Lemma biperm_compose_perm_r_compose n m f g h 
-  (Hf : bipermutation (n + m) f)
   (Hg : permutation m g) (Hh : permutation m h) :
-  forall k, 
-  biperm_compose_perm_r n m (biperm_compose_perm_r n m f g) h k =
-  biperm_compose_perm_r n m f (fun x => g (h x)) k.
-Proof.
-  intros k.
-  pose proof (fun k Hk => proj1 (Hf k Hk)) as Hfbdd.
-  pose proof (fun k Hk => proj1 (proj2 (Hf k Hk))) as Hfne.
-  pose proof (fun k Hk => proj2 (proj2 (Hf k Hk))) as Hfeq.
-  pose proof (permutation_is_bounded _ _ Hg) as Hgbdd.
-  pose proof (permutation_is_bounded _ _ Hh) as Hhbdd.
-  pose proof (permutation_compose m g h Hg Hh) as Hgh.
-  unfold Basics.compose in Hgh.
-  unfold biperm_compose_perm_r.
-  pose proof (Hfbdd k).
-  bdestructΩ'; 
-  rewrite ?perm_inv_compose; try easy + lia;
-  rewrite ?add_sub' in *;
-  let show_lt := (match goal with
-  | |- context[g ?k] => specialize (Hgbdd k); lia
-  | |- context[h ?k] => specialize (Hhbdd k); lia
-  end; lia) in 
-  let do_tac := first 
-  [ assumption | 
-    apply perm_inv_bounded | show_lt |
-    apply Hgbdd | apply Hhbdd | apply Hfbdd |
-    match goal with
-    | |- ?n + _ < ?n + _ =>
-      apply Nat.add_lt_mono_l
-    | |- _ - _ < _ =>
-      apply sub_lt_iff; [lia|]
-    | |- ?n - ?m = ?k =>
-      enough (n = k + m) by lia
-    | |- ?n + _ = ?n + _ =>
-      apply Nat.add_cancel_l
-    | H : _ <= perm_inv _ _ _ |- _ =>
-      let e := eval unfold ge in perm_inv_ge in 
-      apply e in H
-    | H : ?n + _ <= ?n + _ |- _ =>
-      apply add_le_cancel_l_iff in H
-    | |- perm_inv _ _ _ = _ =>
-      apply perm_inv_eq_iff
-    | |- ?n <= ?k => 
-      bdestruct (n <=? k); [easy|];
-      specialize (Hgbdd k ltac:(easy)); lia
-  end |
-  rewrite (perm_inv_is_rinv_of_permutation _ _ Hgh) |
-  lia]
-  in repeat do_tac.
-Qed.
-
-Lemma biperm_compose_perm_r_compose_eq n m f g h : 
-  bipermutation (n + m) f -> permutation m g -> permutation m h ->
   biperm_compose_perm_r n m (biperm_compose_perm_r n m f g) h =
   biperm_compose_perm_r n m f (g ∘ h).
 Proof.
-  intros Hf Hg Hh.
-  apply functional_extensionality.
-  unfold compose.
-  now apply biperm_compose_perm_r_compose.
+  eq_by_WF_perm_eq (n + m).
+  unfold biperm_compose_perm_r.
+  rewrite compose_perm_biperm_compose by auto_perm.
+  now rewrite perm_inv_compose, stack_perms_idn_compose by auto_perm.
 Qed.
 
 Lemma biperm_compose_perm_l_r_swap n m f g h : 
-  bipermutation (n + m) f -> permutation n g -> permutation m h ->
-  forall k,
-  biperm_compose_perm_l n m (biperm_compose_perm_r n m f h) g k =
-  biperm_compose_perm_r n m (biperm_compose_perm_l n m f g) h k.
-Proof.
-  intros Hf Hg Hh.
-  pose proof (fun i Hi => proj1 (Hf i Hi)) as Hfbdd.
-  pose proof (fun i Hi => proj1 (proj2 (Hf i Hi))) as Hfne.
-  pose proof (fun i Hi => proj2 (proj2 (Hf i Hi))) as Hfeq.
-  pose proof (permutation_is_bounded _ _ Hg) as Hgbdd.
-  pose proof (permutation_is_bounded _ _ Hh) as Hhbdd.
-  pose proof (perm_inv_bounded n g) as Hginvbdd.
-  pose proof (perm_inv_bounded m h) as Hhinvbdd.
-  intros k.
-  unfold biperm_compose_perm_l, biperm_compose_perm_r.
-  bdestruct (n + m <=? k);
-  [now simplify_bools_lia|].
-  replace_bool_lia (k <? n + m) true.
-  replace_bool_lia (n + h (k - n) <? n) false.
-  pose proof (Hgbdd k).
-  pose proof (Hhbdd (k - n)).
-  bdestruct (k <? n).
-  - pose proof (Hginvbdd (f (g k))).
-    bdestructΩ'.
-  - replace_bool_lia (n + h (k - n) <? n + m) true.
-    pose proof (Hginvbdd (f (n + h (k - n)))).
-    bdestructΩ'.
-Qed.
-
-Lemma biperm_compose_perm_l_r_swap_eq (n m : nat) (f g h : nat -> nat) : 
-  bipermutation (n + m) f ->
-  permutation n g ->
-  permutation m h ->
+  (* bipermutation (n + m) f -> *) permutation n g -> permutation m h ->
   biperm_compose_perm_l n m (biperm_compose_perm_r n m f h) g =
   biperm_compose_perm_r n m (biperm_compose_perm_l n m f g) h.
 Proof.
-  intros.
-  apply functional_extensionality.
-  now apply biperm_compose_perm_l_r_swap.
+  intros Hg Hh.
+  unfold biperm_compose_perm_l, biperm_compose_perm_r.
+  rewrite 2!compose_perm_biperm_compose by auto_perm.
+  now rewrite <- stack_perms_diag_split, <- stack_perms_antidiag_split 
+    by auto_perm.
 Qed.
 
-Lemma biperm_compose_perm_r_lt_small n m f g : 
+(* Lemma biperm_compose_perm_r_lt_small n m f g : 
   forall k, k < n ->
   biperm_compose_perm_r n m f g k < n <-> f k < n.
 Proof.
@@ -668,9 +641,9 @@ Proof.
   unfold biperm_compose_perm_r.
   do 2 simplify_bools_lia_one_kernel.
   bdestructΩ'.
-Qed.
+Qed. *)
 
-Lemma biperm_compose_perm_l_lt_small n m f g : 
+(* Lemma biperm_compose_perm_l_lt_small n m f g : 
   forall k, k < n ->
   biperm_compose_perm_l n m f g k < n <-> f (g k) < n.
 Proof.
@@ -712,48 +685,67 @@ Proof.
   do 2 simplify_bools_lia_one_kernel.
   pose proof (perm_inv_bounded n g (f k)).
   bdestructΩ'.
-Qed.
+Qed. *)
 
-(*TODO: Improve using the _spec lemma and stack_perms_idn_idn *)
+
 Lemma biperm_compose_perm_r_idn n m f 
-  (Hf : perm_bounded (m + n) f) : 
-  perm_eq (m + n) (biperm_compose_perm_r m n f idn) f.
+  (Hf : perm_bounded (n + m) f) : 
+  perm_eq (n + m) (biperm_compose_perm_r n m f idn) f.
 Proof.
-  intros k Hk.
-  pose proof (Hf k Hk).
   unfold biperm_compose_perm_r.
-  simplify_bools_lia_one_kernel.
-  bdestruct (k <? m).
-  - bdestructΩ'. 
-    rewrite idn_inv; lia.
-  - rewrite Nat.add_sub_assoc, add_sub' by lia.
-    bdestructΩ'. 
-    rewrite idn_inv; lia.
+  rewrite idn_inv, stack_perms_idn_idn.
+  apply compose_perm_biperm_idn.
 Qed.
 
-(* TODO : 
-Lemma biperm_compose_perm_r_idn n m f 
-  (Hf : perm_bounded (m + n) f) : 
-  perm_eq (m + n) (biperm_compose_perm_r m n f idn) f.
+Lemma biperm_compose_perm_l_idn n m f 
+  (Hf : perm_bounded (n + m) f) : 
+  perm_eq (n + m) (biperm_compose_perm_l n m f idn) f.
 Proof.
-  intros k Hk.
-  pose proof (Hf k Hk).
-  unfold biperm_compose_perm_r.
-  simplify_bools_lia_one_kernel.
-  bdestruct (k <? m).
-  - bdestructΩ'. 
-    rewrite idn_inv; lia.
-  - rewrite Nat.add_sub_assoc, add_sub' by lia.
-    bdestructΩ'. 
-    rewrite idn_inv; lia.
+  unfold biperm_compose_perm_l.
+  rewrite stack_perms_idn_idn.
+  apply compose_perm_biperm_idn.
 Qed.
-*)
-
-
 
 (* TODO: Fix this definition to have the right order of arguments *)
 Definition stack_biperms (n0 m0 n1 m1 : nat) (f g : nat -> nat) : nat -> nat :=
-  fun k => if n0 + n1 + m0 + m1 <=? k then k else
+  compose_perm_biperm (n0 + n1 + (m0 + m1)) 
+    (stack_perms (n0 + m0) (n1 + m1) f g)
+    (stack_perms (n0 + m0 + n1) m1
+      (stack_perms n0 (m0 + n1) idn 
+        (big_swap_perm m0 n1)) idn).
+
+Lemma stack_biperms_defn n0 m0 n1 m1 f g :
+  perm_eq (n0 + n1 + (m0 + m1)) 
+  (stack_biperms n0 m0 n1 m1 f g)
+  ((stack_perms (n0 + m0 + n1) m1
+    (stack_perms n0 (m0 + n1) idn 
+      (big_swap_perm m0 n1)) idn) ∘
+    (stack_perms (n0 + m0) (n1 + m1) f g) ∘
+   (stack_perms (n0 + m0 + n1) m1
+    (stack_perms n0 (m0 + n1) idn 
+      (big_swap_perm n1 m0)) idn)).
+Proof.
+  unfold stack_biperms.
+  rewrite compose_perm_biperm_defn.
+  replace (n0 + n1 + (m0 + m1)) with (n0 + m0 + (n1 + m1)) by lia.
+  rewrite Nat.add_assoc.
+  (* replace (n0 + m0 + (n1 + m1)) with (n0 + m0 + n1 + m1) by lia. *)
+  (* eapply perm_eq_dim_change_if_nonzero; *)
+  rewrite perm_inv_stack_perms by auto_perm.
+  rewrite <- (Nat.add_assoc n0 m0 n1). 
+  rewrite perm_inv_stack_perms by auto_perm.
+  rewrite (stack_perms_perm_eq_to_eq_proper n0 (m0 + n1)
+    _ _ (idn_inv n0) _ _ (big_swap_perm_inv m0 n1)).
+  rewrite idn_inv.
+  easy.
+Qed.
+
+Lemma stack_biperms_defn_alt n0 m0 n1 m1 f g 
+  (Hf : perm_bounded (n0 + m0) f)
+  (Hg : perm_bounded (n1 + m1) g) :
+  perm_eq (n0 + n1 + (m0 + m1)) 
+  (stack_biperms n0 m0 n1 m1 f g)
+  (fun k =>
   if k <? n0 then 
     if f k <? n0 then f k else n1 + f k
   else if k - n0 <? n1 then 
@@ -762,105 +754,100 @@ Definition stack_biperms (n0 m0 n1 m1 : nat) (f g : nat -> nat) : nat -> nat :=
     if f (k - n1) <? n0 then f (k - n1) else n1 + f (k - n1)
   else (* n0 + n1 + m0 < k < n0 + n1 + m0 + m1 *)
     if g (k - (n0 + m0)) <? n1 then n0 + g (k - (n0 + m0)) 
-      else n0 + m0 + g (k - (n0 + m0)).
-(* TODO: stack_biperms_spec : stack_biperms m0 n0 m1 n0 f g =
-  stack_perms (m0 + n0 + m1) n1
-    (stack_perms m0 (n0 + m1) 
-      idn (big_swap_perm n0 m1)      <-- big_swap_perm _may_ need args swapped
-    ) idn
-  stack_perms (m0 + n0) (m1 + n1) f g ∘
-  stack_perms (m0 + n0 + m1) n1
-    (stack_perms m0 (n0 + m1) 
-      idn (big_swap_perm m1 n0)      <-- big_swap_perm _may_ need args swapped
-    ) idn
-  *)
+      else n0 + m0 + g (k - (n0 + m0))).
+Proof.
+  rewrite stack_biperms_defn.
+  replace (n0 + n1 + (m0 + m1)) with (n0 + m0 + (n1 + m1)) by lia.
+  rewrite (stack_perms_defn _ _ f g).
+
+  rewrite big_swap_perm_defn, 
+    (stack_perms_perm_eq_to_eq_proper n0 (m0 + n1)
+    _ _ (perm_eq_refl n0 idn) _ _ (big_swap_perm_defn_alt n1 m0)).
+  rewrite <- (Nat.add_assoc n0 m0 n1).
+  rewrite 2!(stack_perms_defn n0 (m0 + n1)).
+  rewrite (Nat.add_assoc n0 m0 n1).
+  rewrite <- (Nat.add_assoc n0 m0 n1) at 1.
+  rewrite Nat.add_assoc.
+  rewrite 2!stack_perms_f_idn.
+  intros k Hk.
+  unfold compose.
+  rewrite !(if_dist nat nat).
+  pose proof (Hf k).
+  pose proof (Hf (k - n1)).
+  assert (sub_add_four : forall a b c, a <= b -> b - a + c + a = b + c)
+    by lia.
+  assert (add_sub_four : forall a b c, b + a - c - a = b - c)
+    by lia.
+  assert (sub_sub_four : forall a b c, a + c <= b -> b - a - c + a = b - c)
+    by lia.
+  bdestructΩ'_with ltac:(
+    try first [
+      rewrite sub_add_four by lia |
+      rewrite 1?Nat.sub_add_distr, add_sub_four |
+      rewrite sub_sub_four by lia
+    ]; 
+    try reflexivity; try lia).
+Qed.
 
 Lemma stack_biperms_WF n0 m0 n1 m1 f g :
-  WF_Perm (m0 + n0 + (m1 + n1)) (stack_biperms n0 m0 n1 m1 f g).
+  WF_Perm (n0 + n1 + (m0 + m1)) (stack_biperms n0 m0 n1 m1 f g).
 Proof.
-  intros i Hi.
   unfold stack_biperms.
-  now simplify_bools_lia_one_kernel.
+  auto_perm.
 Qed.
 
 #[export] Hint Resolve stack_biperms_WF : WF_Perm_db.
 
-(* Add Parametric Morphism n0 m0 n1 m1 nm0 nm1 
-  (H0 : m0 + n0 = nm0) (H1 : m1 + n1 = nm1)
+Lemma stack_biperms_eq_of_perm_eq 
+  {n0 m0 f f'} (Hf : perm_eq (n0 + m0) f f') 
+  {n1 m1 g g'} (Hg : perm_eq (n1 + m1) g g')
+  : stack_biperms n0 m0 n1 m1 f g = stack_biperms n0 m0 n1 m1 f' g'.
+Proof.
+  unfold stack_biperms.
+  now rewrite Hf, Hg.
+Qed.
+
+Add Parametric Morphism n0 m0 n1 m1 
   : (stack_biperms n0 m0 n1 m1) 
   with signature
-  perm_eq nm0 ==> perm_eq nm1 ==> eq
-  as stack_biperms_eq_of_perm_eq.
+  perm_eq (n0 + m0) ==> perm_eq (n1 + m1) ==> eq
+  as stack_biperms_eq_of_perm_eq_proper.
 Proof.
-  subst nm0 nm1.
-  intros f f' Hf g g' Hg.
-  eq_by_WF_perm_eq (m0 + n0 + (m1 + n1)).
-  intros k Hk.
-  unfold stack_biperms.
-  simplify_bools_lia_one_kernel.
-  repeat (apply f_equal_if_precedent; 
-  rewrite ?Nat.ltb_lt, ?Nat.ltb_nlt; intros);
-  try reflexivity;
-  rewrite ?Hf by lia; 
-  try reflexivity;
-  rewrite ?Hg by lia;
-  reflexivity.
-Qed. *)
+  intros.
+  now apply stack_biperms_eq_of_perm_eq.
+Qed.
 
-Lemma stack_biperms_eq_of_perm_eq 
+Lemma stack_biperms_eq_of_perm_eq'
   {nm0 f f'} (Hf : perm_eq nm0 f f') 
   {g g' nm1} (Hg : perm_eq nm1 g g') n0 m0 n1 m1  
-  (H0 : m0 + n0 = nm0) (H1 : m1 + n1 = nm1)
+  (H0 : n0 + m0 = nm0) (H1 : n1 + m1 = nm1)
   : stack_biperms n0 m0 n1 m1 f g = stack_biperms n0 m0 n1 m1 f' g'.
 Proof.
   subst nm0 nm1.
-  eq_by_WF_perm_eq (m0 + n0 + (m1 + n1)).
-  intros k Hk.
-  unfold stack_biperms.
-  simplify_bools_lia_one_kernel.
-  repeat (apply f_equal_if_precedent; 
-  rewrite ?Nat.ltb_lt, ?Nat.ltb_nlt; intros);
-  try reflexivity;
-  rewrite ?Hf by lia; 
-  try reflexivity;
-  rewrite ?Hg by lia;
-  reflexivity.
+  now apply stack_biperms_eq_of_perm_eq.
 Qed.
 
 Lemma stack_biperms_bipermutation {n0 n1 m0 m1} {f g} 
   (Hf : bipermutation (n0 + m0) f) (Hg : bipermutation (n1 + m1) g) :
   bipermutation (n0 + n1 + (m0 + m1)) (stack_biperms n0 m0 n1 m1 f g).
 Proof.
-  intros k Hk.
-  pose proof (fun k Hk => proj1 (Hf k Hk)) as Hfbdd.
-  pose proof (fun k Hk => proj1 (Hg k Hk)) as Hgbdd.
-  pose proof (fun k Hk => proj1 (proj2 (Hf k Hk))) as Hfne.
-  pose proof (fun k Hk => proj1 (proj2 (Hg k Hk))) as Hgne.
-  pose proof (fun k Hk => proj2 (proj2 (Hf k Hk))) as Hfeq.
-  pose proof (fun k Hk => proj2 (proj2 (Hg k Hk))) as Hgeq.
-  split; [|split];
   unfold stack_biperms.
-  - bdestructΩ';
-    match goal with 
-    | |- context[f ?k] => specialize (Hfbdd k)
-    | |- context[g ?k] => specialize (Hgbdd k)
-    end; lia.
-  - bdestructΩ';
-    match goal with 
-    | |- context[f ?k] => specialize (Hfne k)
-    | |- context[g ?k] => specialize (Hgne k)
-    end; lia.
-  - bdestructΩ';
-    rewrite ?add_sub' in *;
-    multimatch goal with 
-    | |- context[f (f ?k)] => specialize (Hfeq k)
-    | |- context[g (g ?k)] => specialize (Hgeq k)
-    | |- context[f ?k] => pose proof (Hfbdd k)
-    | |- context[g ?k] => pose proof (Hgbdd k)
-    end; lia.
+  apply compose_perm_bipermutation; [|auto_perm].
+  apply by_bipermutation_defn_alt.
+  - auto_perm.
+  - intros k Hk.
+    rewrite stack_perms_defn by lia.
+    bdestruct_one.
+    + apply Hf; lia.
+    + pose proof (Hg (k - (n0 + m0))); lia.
+  - replace (n0 + n1 + (m0 + m1)) with (n0 + m0 + (n1 + m1)) by lia.
+    rewrite perm_inv_stack_perms by auto_perm.
+    now rewrite 2!perm_inv_bipermutation by auto.
 Qed.
 
-Lemma stack_biperms_bipermutation_alt {n0 n1 m0 m1} {f g} 
+#[export] Hint Resolve stack_biperms_bipermutation : biperm_db.
+
+(* Lemma stack_biperms_bipermutation_alt {n0 n1 m0 m1} {f g} 
   (Hf : bipermutation (m0 + n0) f) (Hg : bipermutation (m1 + n1) g) :
   bipermutation ((m0 + m1) + (n0 + n1)) (stack_biperms n0 m0 n1 m1 f g).
 Proof.
@@ -868,57 +855,72 @@ Proof.
   [|apply stack_biperms_bipermutation;
     (eapply bipermutation_change_dims; 
     [|eassumption])]; lia.
-Qed.
+Qed. *)
 
 Definition idn_biperm (n : nat) : nat -> nat :=
-  fun k => if n + n <=? k then k else
-  if k <? n then n + k else k - n.
+  big_swap_perm n n.
 
 Lemma idn_biperm_bipermutation n : 
   bipermutation (n + n) (idn_biperm n).
 Proof.
   unfold idn_biperm.
-  intros k Hk; bdestructΩ'.
+  apply by_bipermutation_defn_alt; [auto_perm| |cleanup_perm_inv].
+  intros k Hk; unfold big_swap_perm; bdestructΩ'.
 Qed.
 
+#[export] Hint Resolve idn_biperm_bipermutation : biperm_db.
+
+Lemma idn_biperm_defn n : 
+  perm_eq (n + n) (idn_biperm n)
+  (fun k => if k <? n then k + n else k - n).
+Proof.
+  apply big_swap_perm_defn.
+Qed.
+
+Lemma idn_biperm_WF n : WF_Perm (n + n) (idn_biperm n).
+Proof.
+  unfold idn_biperm.
+  auto_perm.
+Qed.
+
+#[export] Hint Resolve idn_biperm_WF : WF_Perm_db.
+
 Definition flip_biperm n m (f : nat -> nat) : nat -> nat :=
-  fun k =>
-  let outval :=
-    if k <? m then f (k + n) else 
-    if k <? n + m then f (k - m) else f k 
-  in
-    if outval <? n then outval + m else 
-    if outval <? n + m then outval - n else outval.
+  compose_perm_biperm (m + n) f (big_swap_perm n m).
+
+Lemma flip_biperm_defn n m f : 
+  perm_eq (m + n) (flip_biperm n m f) 
+    (big_swap_perm n m ∘ f ∘ big_swap_perm m n).
+Proof.
+  unfold flip_biperm.
+  rewrite compose_perm_biperm_defn.
+  now rewrite big_swap_perm_inv_change_dims by lia.
+Qed.
+
+Lemma flip_biperm_defn_alt n m f :
+  perm_eq (m + n) (flip_biperm n m f) 
+    (fun k =>
+    let outval :=
+      if k <? m then f (k + n) else 
+      if k <? n + m then f (k - m) else f k 
+    in
+      if outval <? n then outval + m else 
+      if outval <? n + m then outval - n else outval).
+Proof.
+  rewrite flip_biperm_defn.
+  rewrite (big_swap_perm_defn m n).
+  intros k Hk.
+  simplify_bools_lia_one_kernel.
+  unfold compose, big_swap_perm.
+  bdestructΩ'.
+Qed.
 
 Lemma flip_biperm_bipermutation n m f (Hf : bipermutation (n + m) f) : 
   bipermutation (m + n) (flip_biperm n m f).
 Proof.
-  pose proof (fun i Hi => proj1 (Hf i Hi)) as Hfbdd.
-  pose proof (fun i Hi => proj1 (proj2 (Hf i Hi))) as Hfne.
-  pose proof (fun i Hi => proj2 (proj2 (Hf i Hi))) as Hfeq.
-  split; [|split].
-  - unfold flip_biperm.
-    bdestructΩ';
-    match goal with |- context[ f ?k ] =>
-      specialize (Hfbdd k); lia
-    end.
-  - unfold flip_biperm.
-    bdestructΩ';
-    match goal with |- context[ f ?k ] =>
-      specialize (Hfne k); lia
-    end.
-  - unfold flip_biperm at 2.
-    replace_bool_lia (k <? n + m) true.
-    pose proof (Hfbdd (k + n)).
-    pose proof (Hfbdd (k - m)).
-    replace ((if k <? m then f (k + n) else f (k - m)) <? n + m) with 
-      true by bdestructΩ'.
-    unfold flip_biperm.
-    bdestructΩ';
-    rewrite ?Nat.add_sub in *;
-    rewrite ?Nat.sub_add in * by lia;
-    rewrite ?Hfeq in * by lia;
-    lia.
+  unfold flip_biperm.
+  rewrite Nat.add_comm.
+  auto_biperm.
 Qed.
 
 
@@ -1070,8 +1072,65 @@ Qed.
 
 (* Section on n_m_cup_cap, in Bipermutations.v *)
 Definition n_m_cup_cap (n m : nat) : nat -> nat :=
-  fun k => if n + n + (m + m) <=? k then k else
-  if Nat.even k then S k else pred k.
+  tensor_perms (n + m) 2 idn (swap_2_perm).
+
+Lemma n_m_cup_cap_defn n m : 
+  perm_eq (n + n + (m + m)) (n_m_cup_cap n m)
+  (fun k => k / 2 * 2 + swap_perm 0 1 2 (k mod 2)).
+Proof.
+  eapply perm_eq_dim_change_if_nonzero;
+  [apply tensor_perms_defn|lia].
+Qed. 
+
+Lemma n_m_cup_cap_defn_alt n m : 
+  perm_eq (n + n + (m + m))
+  (n_m_cup_cap n m)
+  (fun k => if Nat.even k then S k else pred k).
+Proof.
+  rewrite n_m_cup_cap_defn.
+  intros k Hk.
+  pose proof (Nat.mod_upper_bound k 2 ltac:(lia)) as Hk2.
+  rewrite even_eqb.
+  unfold swap_2_perm.
+  bdestruct_one.
+  - replace (k mod 2) with 0 by lia.
+    rewrite swap_perm_left by lia.
+    pose proof (Nat.div_mod_eq k 2).
+    lia.
+  - replace (k mod 2) with 1 by lia.
+    rewrite swap_perm_right by lia.
+    pose proof (Nat.div_mod_eq k 2).
+    lia.
+Qed.
+
+
+Lemma n_m_cup_cap_WF n m : 
+  WF_Perm (n + n + (m + m)) (n_m_cup_cap n m).
+Proof.
+  unfold n_m_cup_cap.
+  auto_perm.
+Qed.
+
+(* Lemma n_m_cup_cap_WF_alt n m : 
+  WF_Perm (n + n + (m + m)) (n_m_cup_cap m n).
+Proof.
+  intros k Hk; unfold n_m_cup_cap; bdestructΩ'.
+Qed. *)
+
+#[export] Hint Resolve n_m_cup_cap_WF (* n_m_cup_cap_WF_alt *) : WF_Perm_db.
+
+
+Lemma n_m_cup_cap_defn_alt_eq n m : 
+  (n_m_cup_cap n m) = 
+  (fun k => if n + n + (m + m) <=? k then k else 
+    if Nat.even k then S k else pred k).
+Proof.
+  change (n_m_cup_cap n m = make_WF_Perm (n + n + (m + m))
+    (fun k => if Nat.even k then S k else pred k)).
+  eq_by_WF_perm_eq (n + n + (m + m)).
+  rewrite n_m_cup_cap_defn_alt.
+  now rewrite make_WF_Perm_perm_eq.
+Qed.
 
 Lemma n_m_cup_cap_comm n m : 
   n_m_cup_cap n m = n_m_cup_cap m n.
@@ -1080,66 +1139,44 @@ Proof.
   now rewrite Nat.add_comm.
 Qed.
 
-Lemma n_m_cup_cap_WF n m : 
-  WF_Perm (n + n + (m + m)) (n_m_cup_cap n m).
-Proof.
-  intros k Hk; unfold n_m_cup_cap; bdestructΩ'.
-Qed.
 
-Lemma n_m_cup_cap_WF_alt n m : 
-  WF_Perm (n + n + (m + m)) (n_m_cup_cap m n).
-Proof.
-  intros k Hk; unfold n_m_cup_cap; bdestructΩ'.
-Qed.
-
-#[export] Hint Resolve n_m_cup_cap_WF n_m_cup_cap_WF_alt : WF_Perm_db.
-
-(* TODO: Redo with the new bipermutation_iff lemmas *)
 Lemma n_m_cup_cap_bipermutation (n m : nat) : 
   bipermutation (n + n + (m + m)) (n_m_cup_cap n m).
 Proof.
   assert (Hev : Nat.even (n + n + (m + m)) = true) by
     now rewrite 3!Nat.even_add, !eqb_reflx.
-  unfold n_m_cup_cap.
-  intros k Hk; split; [|split];
-  bdestructΩ'.
-  - bdestruct (S k =? n + n + (m + m)); [|lia].
-    rewrite <- Nat.odd_succ in Heqb.
-    replace -> (S k) in Heqb.
-    rewrite <- Nat.negb_even in Heqb.
-    rewrite Hev in Heqb; easy.
-  - destruct k; easy.
-  - assert (Heq : S k = n + n + (m + m)) by lia.
-    apply (f_equal Nat.odd) in Heq.
-    rewrite Nat.odd_succ, Heqb in Heq.
-    rewrite <- Nat.negb_even, Hev in Heq.
-    easy.
-  - rewrite Nat.even_succ, <- Nat.negb_even in *.
-    rewrite Heqb in *.
-    easy.
-  - destruct k; easy.
-  - destruct k; [easy|].
-    rewrite Nat.even_succ, <- Nat.negb_even in Heqb.
-    simpl in *.
-    destruct (Nat.even k); easy.
+  replace (n + n + (m + m)) with ((n + m) * 2) by lia.
+  apply by_bipermutation_defn_alt; 
+  [unfold n_m_cup_cap; auto_perm|..].
+  - intros k Hk.
+    rewrite n_m_cup_cap_defn by lia.
+    pose proof (Nat.div_mod_eq k 2).
+    pose proof (Nat.mod_upper_bound k 2).
+    bdestruct (k mod 2 =? 0).
+    + replace (k mod 2) with 0 by lia.
+      rewrite swap_perm_left; lia.
+    + replace (k mod 2) with 1 by lia.
+      rewrite swap_perm_right; lia.
+  - unfold n_m_cup_cap.
+    rewrite tensor_perms_inv by auto_perm.
+    now rewrite idn_inv, swap_2_perm_inv.
 Qed.
 
-Lemma n_m_cup_cap_bipermutation' ncup ncap : 
+(* Lemma n_m_cup_cap_bipermutation' ncup ncap : 
   bipermutation (ncap + ncap + (ncup + ncup))
   (n_m_cup_cap ncup ncap).
 Proof.
   rewrite Nat.add_comm.
   apply n_m_cup_cap_bipermutation.
-Qed.
+Qed. *)
 
-Hint Resolve n_m_cup_cap_bipermutation' : biperm_db biperm_db_alt.
+Hint Resolve n_m_cup_cap_bipermutation
+  (* n_m_cup_cap_bipermutation' *) : biperm_db.
 
-Lemma n_m_cup_cap_bounded n m k : 
-  k < n + n + (m + m) ->
-  n_m_cup_cap n m k < n + n + (m + m).
+Lemma n_m_cup_cap_bounded n m : 
+  perm_bounded (n + n + (m + m)) (n_m_cup_cap n m).
 Proof.
-  intros Hk.
-  now apply n_m_cup_cap_bipermutation.
+  auto_biperm.
 Qed.
 
 Lemma n_m_cup_cap_lt_double_iff m n a k : 
@@ -1147,7 +1184,7 @@ Lemma n_m_cup_cap_lt_double_iff m n a k :
   n_m_cup_cap m n k < a + a <-> k < a + a.
 Proof.
   intros Ha.
-  unfold n_m_cup_cap.
+  rewrite n_m_cup_cap_defn_alt_eq.
   split; bdestructΩ'.
   - destruct k; [easy|].
     simpl.
@@ -1161,7 +1198,7 @@ Lemma n_m_cup_cap_even_plus n m a k :
   n_m_cup_cap n m (a + k) = a + n_m_cup_cap n m k.
 Proof.
   intros Ha Hak.
-  unfold n_m_cup_cap.
+  rewrite n_m_cup_cap_defn_alt_eq.
   do 2 simplify_bools_lia_one_kernel.
   rewrite Nat.even_add, Ha, eqb_true_l.
   bdestructΩ'; destruct k; [easy|lia].
@@ -1242,22 +1279,108 @@ Proof.
   replace (a + a) with (S k + (a + a - S k)) at 1 by lia.
   Search ((_ - _ ) mod _). *)
 
+Lemma n_m_cup_cap_eqb' n m :
+  n_m_cup_cap n m = 
+  (fun k => 
+  if n + n + (m + m) <=? k then k else
+  k / 2 * 2 + (1 - (k mod 2))).
+Proof.
+  change (n_m_cup_cap n m = make_WF_Perm (n+n+(m+m))
+  (fun k => k / 2 * 2 + (1 - (k mod 2)))).
+  eq_by_WF_perm_eq (n+n+(m+m)).
+  rewrite n_m_cup_cap_defn, make_WF_Perm_perm_eq.
+  intros k Hk.
+  f_equal.
+  pose proof (Nat.mod_upper_bound k 2).
+  unfold swap_perm.
+  bdestructΩ'.
+Qed.
+
 Lemma n_m_cup_cap_eqb n m k :
   n_m_cup_cap n m k = 
   if n + n + (m + m) <=? k then k else
   k / 2 * 2 + (1 - (k mod 2)).
 Proof.
+  now rewrite n_m_cup_cap_eqb'.
+Qed.
+
+(* TODO: Move *)
+Lemma stack_biperms_0_out n0 n1 m1 f g : 
+  stack_biperms n0 0 n1 m1 f g = 
+  stack_perms n0 (n1 + m1) f g.
+Proof.
+  eq_by_WF_perm_eq (n0 + n1 + (0 + m1)).
+  rewrite stack_biperms_defn.
+  rewrite big_swap_perm_0_l, big_swap_perm_0_r.
+  rewrite !stack_perms_idn_idn, Nat.add_0_r.
+  easy.
+Qed.
+
+Lemma stack_biperms_0_in n0 m0 m1 f g : 
+  stack_biperms n0 m0 0 m1 f g = 
+  stack_perms (n0 + m0) m1 f g.
+Proof.
+  eq_by_WF_perm_eq (n0 + 0 + (m0 + m1)).
+  rewrite stack_biperms_defn.
+  rewrite big_swap_perm_0_l, big_swap_perm_0_r.
+  rewrite !stack_perms_idn_idn.
+  easy.
+Qed.
+
+(* FIXME: Move to Modulus *)
+Lemma sub_mul_div x y z : y * z <= x -> 
+  (x - y * z) / z = x / z - y.
+Proof.
+  intros H.
+  bdestruct (z =? 0).
+  - subst.
+    now rewrite !Nat.div_0_r.
+  - assert (y <= x / z) by (apply Nat.div_le_lower_bound; lia).
+    pose proof (Nat.div_mod_eq x z) as Hxz.
+    replace (x - y * z) with ((x / z - y) * z + x mod z) by nia.
+    rewrite Nat.div_add_l by auto.
+    rewrite mod_div.
+    lia.
+Qed.
+
+(* FIXME: Move, likely to Qlib *)
+(* TODO: version for idn_r *)
+Lemma tensor_perms_stack_l_split n0 n1 m f0 f1 g : 
+  tensor_perms (n0 + n1) m (stack_perms n0 n1 f0 f1) g =
+  stack_perms (n0 * m) (n1 * m)
+    (tensor_perms n0 m f0 g)
+    (tensor_perms n1 m f1 g).
+Proof.
+  eq_by_WF_perm_eq ((n0 + n1) * m).
+  rewrite (stack_perms_defn n0 n1).
+  rewrite !tensor_perms_defn, Nat.mul_add_distr_r, stack_perms_defn.
+  intros k HK.
+  pose proof (Nat.Div0.div_lt_upper_bound k m n0).
+  pose proof (Nat.div_le_lower_bound k m n0 ltac:(lia)).
+  bdestructΩ'.
+  rewrite sub_mul_mod by lia.
+  rewrite sub_mul_div by lia.
+  lia.
+Qed.
+
+Lemma tensor_perms_idn_l_split n0 n1 m f :
+  tensor_perms (n0 + n1) m idn f =
+  stack_perms (n0 * m) (n1 * m) 
+  (tensor_perms n0 m idn f)
+  (tensor_perms n1 m idn f).
+Proof.
+  now rewrite <- tensor_perms_stack_l_split, stack_perms_idn_idn.
+Qed.
+
+Lemma n_m_cup_cap_stack_biperms_decomp' ncup ncap :
+  n_m_cup_cap ncup ncap = 
+  stack_perms (ncup + ncup) (ncap + ncap) 
+    (n_m_cup_cap 0 ncup) (n_m_cup_cap 0 ncap).
+Proof.
   unfold n_m_cup_cap.
-  bdestruct_one; [easy|].
-  rewrite (Nat.div_mod_eq k 2).
-  rewrite Nat.even_add, Nat.even_mul.
-  cbn [Nat.even orb].
-  rewrite eqb_true_l.
-  assert (k mod 2 < 2) by show_moddy_lt.
-  assert (Hdisj : k mod 2 = 0 \/ k mod 2 = 1) by lia.
-  rewrite Nat.mul_comm, mod_add_l, Nat.div_add_l, mod_div, Nat.add_0_r by lia.
-  destruct Hdisj; replace -> (k mod 2);
-  simpl; lia.
+  rewrite !double_mult.
+  rewrite !(Nat.mul_comm 2).
+  apply tensor_perms_idn_l_split.
 Qed.
 
 Lemma n_m_cup_cap_stack_biperms_decomp ncup ncap :
@@ -1265,23 +1388,9 @@ Lemma n_m_cup_cap_stack_biperms_decomp ncup ncap :
   stack_biperms (ncap + ncap) 0 0 (ncup + ncup) 
     (n_m_cup_cap 0 ncap) (n_m_cup_cap ncup 0).
 Proof.
-  apply functional_extensionality.
-  intros k.
-  bdestruct (k <? ncap + ncap + (ncup + ncup));
-  [|unfold n_m_cup_cap, stack_biperms; 
-    now do 2 simplify_bools_lia_one_kernel].
-  unfold stack_biperms.
-  simplify_bools_lia_one_kernel.
-  rewrite Tauto.if_same.
-  bdestruct (k <? ncap + ncap).
-  - rewrite 2!n_m_cup_cap_eqb.
-    bdestructΩ'.
-  - rewrite Nat.add_0_r.
-    replace k with ((ncap + ncap) + (k - (ncap + ncap))) at 1 by lia.
-    rewrite n_m_cup_cap_double_plus by lia.
-    f_equal.
-    rewrite 2!n_m_cup_cap_eqb.
-    bdestructΩ'.
+  rewrite n_m_cup_cap_comm, n_m_cup_cap_stack_biperms_decomp'.
+  rewrite stack_biperms_0_in, ?Nat.add_0_r, ?Nat.add_0_l.
+  now rewrite (n_m_cup_cap_comm _ 0).
 Qed.
 
 Lemma n_m_cup_cap_stack_biperms_decomp_alt ncup ncap :
@@ -1298,11 +1407,13 @@ Lemma n_m_cup_cap_plus_plus_decomp n0 n1 m0 m1 :
   stack_biperms (n0 + n0) (m0 + m0) (n1 + n1) (m1 + m1)
   (n_m_cup_cap n0 m0) (n_m_cup_cap n1 m1).
 Proof.
-  apply functional_extensionality; intros k.
-  unfold stack_biperms.
-  bdestruct (k <? n0 + n0 + n1 + n1 + m0 + m0 + m1 + m1); 
-  simplify_bools_lia_one_kernel;
-  [|rewrite n_m_cup_cap_eqb; bdestructΩ'].
+  eq_by_WF_perm_eq (n0 + n0 + (n1 + n1) + ((m0 + m0) + (m1 + m1))).
+  1: {
+    rewrite <- 2!double_add.
+    auto_perm.
+  }
+  rewrite stack_biperms_defn_alt by auto_biperm.
+  intros k Hk.
   rewrite !n_m_cup_cap_ltb_double by lia.
   bdestructΩ'.
   - rewrite 2!n_m_cup_cap_eqb; bdestructΩ'.
@@ -1522,203 +1633,114 @@ Local Arguments Nat.sub : simpl nomatch.
 Lemma n_m_cup_cap_absorb_tensor_2_idn_perm_l n m f 
   (Hf : permutation n f) :
   perm_eq (n + n + (m + m))
-  (biperm_compose_perm_r (m + m) 
-    (n + n)
-  (n_m_cup_cap m n)
+  (biperm_compose_perm_l (n + n) (m + m) 
+  (n_m_cup_cap n m)
   (tensor_perms n 2 f idn))
-  (n_m_cup_cap m n).
+  (n_m_cup_cap n m).
 Proof.
-  rewrite Nat.add_assoc.
-  intros k HK.
-  unfold biperm_compose_perm_r.
-  simplify_bools_lia_one_kernel.
-  replace (n + n) with (n * 2) in * by lia.
-  rewrite 2!n_m_cup_cap_ltb_double by lia.
-  simplify_bools_lia_one_kernel.
-  bdestruct (k <? m + m); [easy|].
-  pose proof (tensor_perms_bounded n 2 f idn 
-    ltac:(cleanup_perm) ltac:(cleanup_perm) (k - (m + m)) ltac:(lia)).
-  rewrite n_m_cup_cap_double_plus by lia.
-  rewrite add_sub'.
-  rewrite tensor_perms_inv; auto with perm_db;
-  [|replace (n*2) with (n + n);
-  [apply n_m_cup_cap_lt_double_iff|]; lia].
-  unfold tensor_perms at 2.
-  simplify_bools_lia_one_kernel.
-  pose proof (permutation_is_bounded n f Hf ((k - (m + m)) / 2)
-    ltac:(apply Nat.Div0.div_lt_upper_bound; lia)).
-  assert ((k - (m + m)) mod 2 < 2) by show_moddy_lt.
-  rewrite n_m_cup_cap_twice_plus by 
-    (apply (Nat.lt_le_trans _ ((n - 1)*2 + 2)); [nia | show_pow2_le]).
-  rewrite n_m_cup_cap_eqb.
-  simplify_bools_lia_one_kernel.
-  rewrite mod_div, Nat.mul_0_l, Nat.add_0_l.
-  rewrite Nat.mod_small by easy.
-  unfold tensor_perms.
-  simplify_bools_lia_one_kernel.
-  rewrite Nat.div_add_l, (Nat.div_small (1 - _)), Nat.add_0_r by lia.
-  rewrite mod_add_l, Nat.mod_small by lia.
-  cleanup_perm; [|apply Nat.Div0.div_lt_upper_bound; lia].
-  rewrite idn_inv by lia. 
-  symmetry.
-  replace k with (m + m + (k - (m + m))) at 1 by lia.
-  rewrite n_m_cup_cap_double_plus by lia.
-  f_equal.
-  rewrite n_m_cup_cap_eqb.
-  bdestructΩ'.
+  (* rewrite Nat.add_assoc. *)
+  rewrite biperm_compose_perm_l_defn.
+  rewrite perm_inv_stack_perms, idn_inv by auto_perm.
+  rewrite n_m_cup_cap_stack_biperms_decomp'.
+  rewrite stack_perms_compose by (exact (n_m_cup_cap_bounded 0 _)).
+  rewrite stack_perms_compose by auto_perm.
+  apply stack_perms_perm_eq_to_perm_eq_proper; [|easy].
+  replace (n + n) with (n * 2) by lia.
+  rewrite tensor_perms_inv by auto_perm.
+  unfold n_m_cup_cap.
+  cbn.
+  rewrite 2!tensor_perms_compose by auto_perm.
+  rewrite idn_inv, perm_inv_rinv_of_permutation by auto.
+  easy.
 Qed.
 
 Lemma n_m_cup_cap_absorb_tensor_2_idn_perm_l_eq n m f
   (Hf : permutation n f) : 
-  biperm_compose_perm_r (m + m) (n + n)
-    (n_m_cup_cap m n) (tensor_perms n 2 f idn) 
-  = n_m_cup_cap m n.
+  biperm_compose_perm_l (n + n) (m + m)
+    (n_m_cup_cap n m) (tensor_perms n 2 f idn) 
+  = n_m_cup_cap n m.
 Proof.
-  eq_by_WF_perm_eq (m + m + (n + n)).
-  rewrite Nat.add_comm.
+  eq_by_WF_perm_eq ((n + n) + (m + m)).
   now apply n_m_cup_cap_absorb_tensor_2_idn_perm_l.
 Qed.
 
 Lemma n_m_cup_cap_absorb_reflect_perm_l n m :
-  biperm_compose_perm_r (m + m) (n + n)
-    (n_m_cup_cap m n) (reflect_perm (n + n))
-  = n_m_cup_cap m n.
+  biperm_compose_perm_l (n + n) (m + m)
+    (n_m_cup_cap n m) (reflect_perm (n + n))
+  = n_m_cup_cap n m.
 Proof.
-  eq_by_WF_perm_eq (m + m + (n + n)).
+  eq_by_WF_perm_eq ((n + n) + (m + m)).
+  rewrite biperm_compose_perm_l_defn.
+  rewrite perm_inv_stack_perms, reflect_perm_inv, idn_inv by auto_perm.
+  rewrite n_m_cup_cap_stack_biperms_decomp'.
+  rewrite stack_perms_compose by (exact (n_m_cup_cap_bounded 0 _)).
+  rewrite stack_perms_compose by auto_perm.
+  apply stack_perms_perm_eq_to_perm_eq_proper; [|easy].
+  rewrite n_m_cup_cap_defn_alt.
+  replace (n + n) with (n * 2) by lia.
+  rewrite reflect_perm_defn at 2.
   intros k Hk.
-  unfold biperm_compose_perm_r.
-  simplify_bools_lia_one_kernel.
-  rewrite !n_m_cup_cap_ltb_double by lia.
-  simplify_bools_lia_one_kernel.
-  bdestructΩ (k <? m + m).
-  rewrite n_m_cup_cap_double_plus
-    by (pose proof (reflect_perm_bounded (n + n) (k - (m+m))); lia).
-  rewrite add_sub'.
-  rewrite reflect_perm_inv 
-    by (apply n_m_cup_cap_lt_double_iff; auto with zarith perm_bounded_db).
-  unfold reflect_perm.
-  simplify_bools_lia_one_kernel.
-  rewrite n_m_cup_cap_geb_double by lia.
-  simplify_bools_lia_one_kernel.
-  unfold n_m_cup_cap.
-  do 2 simplify_bools_lia_one_kernel.
-  rewrite Nat.even_sub, even_add_same, eqb_true_l by lia.
-  rewrite Nat.even_succ, <- Nat.negb_even.
-  rewrite Nat.even_sub, even_add_same, eqb_true_r by lia.
-  rewrite if_negb.
-  bdestructΩ'.
-  - pose proof (succ_even_lt_even k (m + n + (m + n)) ltac:(easy)
-      (even_add_same _)).
+  unfold compose.
+  rewrite Nat.even_sub, Nat.even_mul, (Nat.even_succ k) by lia.
+  rewrite orb_true_r, eqb_true_l.
+  rewrite <- Nat.negb_even.
+  destruct (Nat.even k) eqn:e.
+  - cbn [negb].
+    unfold reflect_perm.
+    simplify_bools_lia_one_kernel.
+    assert (Hev: Nat.even (n * 2) = true) by 
+      (now rewrite Nat.mul_comm, Nat.even_mul).
+    pose proof (succ_even_lt_even k (n * 2) e Hev Hk).
     lia.
-  - assert (k <> m + m) by (intros Hf; subst; now rewrite even_add_same in *).
-    lia. 
+  - cbn [negb].
+    unfold reflect_perm.
+    assert (k <> 0) by (intros ->; cbn in *; easy).
+    simplify_bools_lia_one_kernel.
+    lia.
 Qed.
 
 Lemma n_m_cup_cap_absorb_perm_swap_even_S_l n m a 
   (Ha : Nat.even a = true) :
-  biperm_compose_perm_r (m + m) (n + n)
-    (n_m_cup_cap m n) (swap_perm a (S a) (n + n))
-  = n_m_cup_cap m n.
+  biperm_compose_perm_l (n + n) (m + m)
+    (n_m_cup_cap n m) (swap_perm a (S a) (n + n))
+  = n_m_cup_cap n m.
 Proof.
-  eq_by_WF_perm_eq (m + m + (n + n)).
+  eq_by_WF_perm_eq ((n + n) + (m + m)).
   bdestruct (a <? n + n).
   2: {
     rewrite swap_perm_big_eq by lia.
-    apply biperm_compose_perm_r_idn, n_m_cup_cap_bipermutation.
+    apply biperm_compose_perm_l_idn, n_m_cup_cap_bounded.
   }
-  pose proof (succ_even_lt_even a (n + n) Ha (even_add_same n) ltac:(easy)).
+  assert (Hev : Nat.even (n + n) = true) by (apply even_add_same).
+  assert (S a < n + n) by (now apply succ_even_lt_even).
+  rewrite biperm_compose_perm_l_defn.
+  rewrite perm_inv_stack_perms, swap_perm_inv, idn_inv by auto_perm.
+  rewrite n_m_cup_cap_stack_biperms_decomp'.
+  rewrite stack_perms_compose by (exact (n_m_cup_cap_bounded 0 _)).
+  rewrite stack_perms_compose by auto_perm.
+  apply stack_perms_perm_eq_to_perm_eq_proper; [|easy].
+  change (n + n) with ((0 + 0) + (n + n)).
+  rewrite compose_assoc.
+  pose proof (n_m_cup_cap_bipermutation 0 n).
+  rewrite swap_perm_defn at 1 by lia.
+  rewrite n_m_cup_cap_defn_alt, swap_perm_defn by lia.
   intros k Hk.
-  pose proof (n_m_cup_cap_bounded m n k Hk).
-  unfold biperm_compose_perm_r.
-  rewrite 2!n_m_cup_cap_ltb_double by lia.
-  do 2 simplify_bools_lia_one_kernel.
-  bdestructΩ (k <? m + m).
-  pose proof (swap_perm_bounded a (S a) (n+n) 
-    ltac:(easy) ltac:(easy) (k-(m+m)) ltac:(lia)).
-  rewrite n_m_cup_cap_double_plus by lia.
-  rewrite add_sub'.
-  rewrite swap_perm_inv by (lia + apply n_m_cup_cap_lt_double_iff; lia).
-  unfold swap_perm at 2.
-  simplify_bools_lia_one_kernel.
-  bdestruct (k =? m + m + a);
-  simplify_bools_lia_one_kernel;
-  [|bdestruct (k =? m + m + S a);
-    simplify_bools_lia_one_kernel].
-  - unfold n_m_cup_cap.
-    rewrite Nat.even_succ, <- Nat.negb_even.
-    rewrite Ha.
-    do 2 simplify_bools_lia_one_kernel.
-    subst.
-    rewrite Nat.even_add, even_add_same, Ha.
-    unfold swap_perm; bdestructΩ'.
-  - unfold n_m_cup_cap.
-    rewrite Ha.
-    do 2 simplify_bools_lia_one_kernel.
-    subst.
-    rewrite Nat.even_add, even_add_same.
-    rewrite Nat.even_succ, <- Nat.negb_even, Ha.
-    unfold swap_perm; bdestructΩ'.
-  - unfold swap_perm.
-    rewrite n_m_cup_cap_geb_double by lia.
-    simplify_bools_lia_one_kernel.
-    rewrite n_m_cup_cap_sub_double by lia.
-    assert (m + m <= n_m_cup_cap m n k) 
-      by (rewrite n_m_cup_cap_ge_double_iff; lia).
-    unfold n_m_cup_cap.
-    simplify_bools_lia_one_kernel.
-    destruct (Nat.even k) eqn:e.
-    + bdestruct (S k - (m + m) =? a);
-      [subst a; rewrite Nat.even_sub, even_add_same,
-        Nat.even_succ, <- Nat.negb_even, e in Ha by lia; easy|].
-      bdestructΩ'.
-    + destruct k; [easy|].
-      rewrite even_succ_false in *.
-      simpl.
-      bdestruct (k =? (m + m) + S a);
-      [subst k; rewrite Nat.even_add, even_add_same, 
-        Nat.even_succ, <- Nat.negb_even, Ha in e; easy|].
-      pose proof (even_le_even_of_le_succ k (m + m) 
-        ltac:(easy) (even_add_same m) ltac:(lia)). 
-      bdestructΩ'.
+  unfold compose.
+  assert (Nat.even (S a) = false) by (now apply even_succ_false).
+  pose proof (Nat.even_succ_succ k).
+  bdestructΩ'.
+  - congruence.
+  - replace k with (S (S a)) in * by lia.
+    rewrite !Nat.even_succ_succ in *.
+    congruence.
 Qed.
 
 Lemma n_m_cup_cap_absorb_perm_swap_0_1_l n m :
-  biperm_compose_perm_r (m + m) (n + n)
-    (n_m_cup_cap m n) (swap_perm 0 1 (n + n))
-  = n_m_cup_cap m n.
+  biperm_compose_perm_l (n + n) (m + m)
+    (n_m_cup_cap n m) (swap_perm 0 1 (n + n))
+  = n_m_cup_cap n m.
 Proof.
-  eq_by_WF_perm_eq (m + m + (n + n)).
-  intros k Hk.
-  unfold biperm_compose_perm_r.
-  simplify_bools_lia_one_kernel.
-  rewrite 2!n_m_cup_cap_ltb_double by lia.
-  simplify_bools_lia_one_kernel.
-  bdestructΩ'.
-  unfold swap_perm at 2.
-  simplify_bools_lia_one_kernel.
-  bdestruct (k =? m + m);
-  simplify_bools_lia_one_kernel;
-  [|bdestruct (k =? m + m + 1);
-  simplify_bools_lia_one_kernel];
-  rewrite n_m_cup_cap_double_plus, add_sub' by lia;
-  rewrite swap_perm_inv by (lia + apply n_m_cup_cap_lt_double_iff; lia).
-  - unfold n_m_cup_cap.
-    do 2 simplify_bools_lia_one_kernel.
-    subst.
-    rewrite even_add_same.
-    unfold swap_perm; bdestructΩ'.
-  - unfold n_m_cup_cap.
-    do 2 simplify_bools_lia_one_kernel.
-    subst.
-    rewrite Nat.even_add, even_add_same.
-    unfold swap_perm; bdestructΩ'.
-  - assert (1 + 1 <= n_m_cup_cap m n (k - (m + m))) 
-      by (apply n_m_cup_cap_ge_double_iff; lia).
-    unfold swap_perm.
-    rewrite n_m_cup_cap_geb_double by lia.
-    bdestructΩ'.
-    rewrite <- n_m_cup_cap_double_plus by lia.
-    f_equal; lia.
+  now apply n_m_cup_cap_absorb_perm_swap_even_S_l.
 Qed.
 
 
@@ -1727,7 +1749,7 @@ Qed.
 (* TODO: Move these to earlier in the file, maybe? Maybe better to have them
   concentrated, though, since we can't really use them in this file anyways *)
 
-Create HintDb biperm_db_alt.
+(* Create HintDb biperm_db_alt.
 
 #[export] Hint Resolve idn_biperm_bipermutation flip_biperm_bipermutation
   n_m_cup_cap_bipermutation (* remove_swap_bipermutation *)
@@ -1749,35 +1771,36 @@ Create HintDb biperm_db_alt.
   (* compose_swap_biperm_bipermutation *) (* compose_cap_biperm_l_bipermutation *)
   (* compose_cup_biperm_l_bipermutation *) 
   biperm_compose_perm_l_biperm biperm_compose_perm_r_biperm
-  : biperm_db_alt.
+  : biperm_db_alt. *)
 
 (* FIXME: Test these replacements *)
-Hint Extern 0 (permutation _ _) => auto with perm_db : biperm_db biperm_db_alt.
-(*
-Hint Extern 0 (permutation _ _) => solve [auto with perm_db] 
-  : biperm_db biperm_db_alt.
-*)
+(* Hint Extern 0 (permutation _ _) => auto with perm_db : biperm_db biperm_db_alt. *)
 
-Hint Extern 0 (_ < _) => auto with perm_bounded_db : biperm_db biperm_db_alt.
-(* 
-Hint Extern 0 (_ < _) => solve [auto with perm_bounded_db] : biperm_db biperm_db_alt.
-*)
+Hint Extern 100 (permutation _ _) => solve [auto with perm_db] 
+  : biperm_db (* biperm_db_alt *).
 
 
-Hint Extern 4 (bipermutation (?n + ?m) _) => 
-  (* idtac n m; *) rewrite (Nat.add_comm n m); auto with biperm_db_alt : biperm_db.
+(* Hint Extern 0 (_ < _) => auto with perm_bounded_db : biperm_db biperm_db_alt. *)
+
+Hint Extern 100 (_ < _) => 
+  solve [auto with perm_bounded_db] : biperm_db (* biperm_db_alt *).
+
+
+
+(* Hint Extern 4 (bipermutation (?n + ?m) _) => 
+  (* idtac n m; *) rewrite (Nat.add_comm n m); auto with biperm_db_alt : biperm_db. *)
 (*
 Hint Extern 4 (bipermutation (?n + ?m) _) => 
   rewrite (Nat.add_comm n m) : biperm_db.
 *)
 
-Hint Extern 4 (bipermutation (?n) _) => 
+(* Hint Extern 4 (bipermutation (?n) _) => 
   let k := fresh in 
   evar (k : nat); 
   replace n with k;
   unfold k;
   auto with biperm_db_alt;
-  lia : biperm_db.
+  lia : biperm_db. *)
 (*
 Hint Extern 4 (bipermutation (?n) _) =>
   is_ground n;
@@ -1789,13 +1812,13 @@ Hint Extern 4 (bipermutation (?n) _) =>
   [| (lia || cbn; lia)] : biperm_db.
 *)
 
-Hint Extern 4 (permutation (?n) _) => 
+(* Hint Extern 4 (permutation (?n) _) => 
   let k := fresh in 
   evar (k : nat); 
   replace n with k;
   unfold k;
   auto with biperm_db_alt;
-  lia : biperm_db.
+  lia : biperm_db. *)
 (*
 Hint Extern 4 (permutation (?n) _) => 
   is_ground n;
