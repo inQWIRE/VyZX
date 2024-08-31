@@ -208,14 +208,15 @@ Proof.
   rewrite !compose_assoc.
   rewrite (swap_pullthrough_l — (X 2 1 0)).
   rewrite <- (compose_assoc (zx_comm 1 2)).
-  unfold zx_comm.
+  unfold zx_comm, zx_of_perm_cast.
   simpl_casts.
   rewrite compose_zx_of_perm by auto with perm_db.
-  assert (H : perm_eq (1 + 2) (rotr (1 + 2) 1 ∘ rotr (1 + 2) 1)%prg
+  assert (H : perm_eq (1 + 2) 
+    (big_swap_perm 2 1 ∘ big_swap_perm 2 1)%prg
     (big_swap_perm 1 2))
-    by (rewrite rotr_add_l;
-      intros [|[|[|]]]; [reflexivity..|lia]).
+    by (by_perm_cell; reflexivity).
   rewrite H.
+  clear H.
   rewrite <- (compose_assoc _ _ (2 ↑ □)).
   rewrite <- colorswap_is_bihadamard.
   simpl.
@@ -281,13 +282,13 @@ Proof.
   rewrite !compose_assoc.
   rewrite (swap_pullthrough_l — (X 2 1 0)).
   rewrite <- (compose_assoc (zx_comm 1 2)).
-  unfold zx_comm.
+  unfold zx_comm, zx_of_perm_cast.
   simpl_casts.
   rewrite compose_zx_of_perm by auto with perm_db.
-  assert (H : perm_eq (1 + 2) (rotr (1 + 2) 1 ∘ rotr (1 + 2) 1)%prg
+  assert (H : perm_eq (1 + 2) 
+    (big_swap_perm 2 1 ∘ big_swap_perm 2 1)%prg
     (big_swap_perm 1 2))
-    by (rewrite rotr_add_l;
-      intros [|[|[|]]]; [reflexivity..|lia]).
+    by (by_perm_cell; reflexivity).
   rewrite H.
   clear H.
   assert (H : zx_of_perm (1 + 2) (big_swap_perm 1 2) ∝ — ↕ ⨉ ⟷ (⨉ ↕ —)). 1: {
@@ -310,10 +311,11 @@ Proof.
   rewrite !compose_assoc.
   rewrite (swap_pullthrough_l (Z 2 1 0) —).
   rewrite <- (compose_assoc (zx_comm 2 1)).
-  unfold zx_comm.
+  unfold zx_comm, zx_of_perm_cast.
   simpl_casts.
   rewrite compose_zx_of_perm by auto with perm_db.
-  assert (H : perm_eq (2 + 1) (rotr (2 + 1) 2 ∘ rotr (2 + 1) 2)%prg
+  assert (H : perm_eq (2 + 1) 
+    (big_swap_perm 1 2 ∘ big_swap_perm 1 2)%prg
     (big_swap_perm 2 1))
     by (by_perm_cell; reflexivity).
   rewrite H.

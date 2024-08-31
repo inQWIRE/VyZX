@@ -201,16 +201,17 @@ Lemma X_zx_of_perm_absorbtion_right n m α f :
 	X n m α ⟷ zx_of_perm m f ∝ X n m α.
 Proof. colorswap_of (Z_zx_of_perm_absorbtion_right n m α f). Qed.
 
-Lemma X_zxperm_absorbtion_right n m α (zx : ZX m m) (Hzx : ZXperm m zx) :
-	X n m α ⟷ zx ∝ X n m α.
-Proof. colorswap_of (Z_zxperm_absorbtion_right n m α zx Hzx). Qed.
+Lemma X_zx_of_perm_cast_absorbtion_right n m o α f H : 
+	X n m α ⟷ zx_of_perm_cast m o f H ∝ X n o α.
+Proof. colorswap_of (Z_zx_of_perm_cast_absorbtion_right n m o α f H). Qed.
 
-Lemma X_zxperm_absorbtion_left n m α (zx : ZX n n) (Hzx : ZXperm n zx) : 
-	zx ⟷ X n m α ∝ X n m α.
-Proof.
-	transpose_of (X_zxperm_absorbtion_right m n α 
-		(zx⊤) (transpose_zxperm Hzx)).
-Qed.
+Lemma X_zxperm_absorbtion_right n m o α (zx : ZX m o) (Hzx : ZXperm zx) :
+	X n m α ⟷ zx ∝ X n o α.
+Proof. colorswap_of (Z_zxperm_absorbtion_right n m o α zx Hzx). Qed.
+
+Lemma X_zxperm_absorbtion_left n m o α (zx : ZX n m) (Hzx : ZXperm zx) : 
+	zx ⟷ X m o α ∝ X n o α.
+Proof. colorswap_of (Z_zxperm_absorbtion_left n m o α (zx) (Hzx)). Qed.
 
 End Absorbtion.
 

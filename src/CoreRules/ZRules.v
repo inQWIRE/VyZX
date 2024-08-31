@@ -732,21 +732,29 @@ Proof.
 	now simpl_casts.
 Qed.
 
-Lemma Z_zxperm_absorbtion_right n m α 
-	(zx : ZX m m) (Hzx : ZXperm m zx) :
-	Z n m α ⟷ zx ∝ 
-	Z n m α.
+Lemma Z_zx_of_perm_cast_absorbtion_right n m o α f H : 
+	Z n m α ⟷ zx_of_perm_cast m o f H ∝
+	Z n o α.
 Proof.
-	rewrite <- (zx_of_perm_of_zx Hzx).
+	subst.
 	apply Z_zx_of_perm_absorbtion_right.
 Qed.
 
-Lemma Z_zxperm_absorbtion_left n m α 
-	(zx : ZX n n) (Hzx : ZXperm n zx) : 
-	zx ⟷ Z n m α ∝
-	Z n m α.
+Lemma Z_zxperm_absorbtion_right n m o α 
+	(zx : ZX m o) (Hzx : ZXperm zx) :
+	Z n m α ⟷ zx ∝ 
+	Z n o α.
 Proof.
-	transpose_of (Z_zxperm_absorbtion_right m n α 
+	rewrite (zxperm_to_zx_of_perm_cast zx Hzx).
+	apply Z_zx_of_perm_cast_absorbtion_right.
+Qed.
+
+Lemma Z_zxperm_absorbtion_left n m o α 
+	(zx : ZX n m) (Hzx : ZXperm zx) : 
+	zx ⟷ Z m o α ∝
+	Z n o α.
+Proof.
+	transpose_of (Z_zxperm_absorbtion_right o m n α 
 		(zx⊤) (transpose_zxperm Hzx)).
 Qed.
 
@@ -754,9 +762,7 @@ Lemma Z_zx_comm_absorbtion_right n p q α :
 	Z n (p + q) α ⟷ zx_comm p q ∝
 	Z n (q + p) α.
 Proof.
-	unfold zx_comm.
-	rewrite cast_Z_contract_r, Z_zx_of_perm_absorbtion_right.
-	now simpl_casts.
+	apply Z_zxperm_absorbtion_right; auto_zxperm.
 Qed.
 
 Lemma Z_zx_comm_absorbtion_left p q m α :
@@ -768,13 +774,7 @@ Lemma Z_zx_gap_comm_absorbtion_right n p m q α :
 	Z n (p + m + q) α ⟷ zx_gap_comm p m q ∝
 	Z n (q + m + p) α.
 Proof.
-	unfold zx_gap_comm.
-	rewrite cast_Z_contract_r.
-	rewrite <- compose_assoc, Z_zx_comm_absorbtion_right.
-	rewrite grow_Z_bot_right, compose_assoc, <- stack_nwire_distribute_l.
-	rewrite Z_zx_comm_absorbtion_right.
-	rewrite <- grow_Z_bot_right.
-	now simpl_casts.
+	apply Z_zxperm_absorbtion_right; auto_zxperm.
 Qed.
 
 Lemma Z_zx_gap_comm_absorbtion_left p n q m α : 
@@ -801,22 +801,21 @@ Proof.
 	rewrite <- stack_wire_distribute_l.
 	rewrite Z_zxperm_absorbtion_left by auto with zxperm_db.
 	apply compose_simplify; [|easy].
-	unfold zx_comm.
+	unfold zx_comm, zx_of_perm_cast.
 	simpl_casts.
 	by_perm_eq_nosimpl.
 	rewrite perm_of_bottom_to_top_eq.
 	change (S (1 + n)) with (1 + (1 + n))%nat.
 	rewrite (Nat.add_comm 1 (1 + n)).
-	cleanup_perm_of_zx.
-	rewrite rotl_eq_rotr_sub.
-	rewrite Nat.mod_small by lia.
-	now rewrite Nat.add_sub.
+	rewrite perm_of_zx_of_perm_eq, 
+		bottom_to_top_perm_eq_rotl by auto_perm.
+	now rewrite rotl_add_r.
 Qed.
 
 Lemma Z_n_swap_absorbtion_right_base : forall n m α, Z n m α ⟷ n_swap m ∝ Z n m α.
 Proof.
 	intros.
-	apply Z_zxperm_absorbtion_right; auto with zxperm_db.
+	apply Z_zxperm_absorbtion_right; auto_zxperm.
 Qed.
 
 Lemma Z_n_wrap_under_r_base_unswapped : forall n m α, Z (n + m) 0 α ∝ (Z n m α ↕ n_wire m) ⟷ n_cup_unswapped m.

@@ -8,11 +8,48 @@ Import CoreData.Proportional.
 
 Local Open Scope nat. 
 
-Lemma perm_of_zx_permutation n zx : 
-  ZXperm n zx -> permutation n (perm_of_zx zx).
-Proof. 
+Lemma zxperm_square {n m} (zx : ZX n m) : 
+  ZXperm zx -> n = m.
+Proof.
+  intros H; induction H; lia.
+Qed.
+
+Lemma zxperm_square_induction 
+  (P : forall {n m : nat}, ZX n m -> Prop)
+  (Pempty : P Empty)
+  (Pwire : P Wire)
+  (Pswap : P Swap)
+  (Pstack : forall n m (zx0 : ZX n n) (zx1 : ZX m m), 
+    ZXperm zx0 -> ZXperm zx1 -> 
+    P zx0 -> P zx1 -> P (zx0 ↕ zx1))
+  (Pcompose : forall n (zx0 zx1 : ZX n n),
+    ZXperm zx0 -> ZXperm zx1 ->
+    P zx0 -> P zx1 -> P (zx0 ⟷ zx1)) : 
+    forall {n m} (zx : ZX n m), ZXperm zx -> P zx.
+Proof.
+  intros n m zx Hzx.
+  induction Hzx;
+  [assumption..| |].
+  - pose proof (zxperm_square zx0 ltac:(auto)) as H0eq.
+    pose proof (zxperm_square zx1 ltac:(auto)) as H1eq.
+    gen zx0 zx1.
+    revert H0eq H1eq.
+    intros [] [].
+    auto.
+  - pose proof (zxperm_square zx0 ltac:(auto)) as H0eq.
+    pose proof (zxperm_square zx1 ltac:(auto)) as H1eq.
+    gen zx0 zx1.
+    revert H0eq H1eq.
+    intros [] [].
+    auto.
+Qed.
+
+Lemma perm_of_zx_permutation {n m} (zx : ZX n m) : 
+  ZXperm zx -> permutation n (perm_of_zx zx).
+Proof.
   intros H.
-  induction H; show_permutation.
+  induction H using zxperm_square_induction; 
+  show_permutation.
 Qed.
 
 #[export] Hint Resolve perm_of_zx_permutation : perm_db.
@@ -21,26 +58,6 @@ Qed.
   solve [auto with zxperm_db] : perm_db.
 
 #[export] Hint Constructors ZXperm : zxperm_db.
-
-(* TODO: Decide whether this goes here (it does) or somewhere else (it doesn't) *)
-Lemma stack_perms_matrix_helper {n0 n1 i j} {f g} 
-  (Hi : i < 2 ^ (n0 + n1)) (Hj: j < 2 ^ (n0 + n1)) :
-  permutation n0 f -> permutation n1 g ->
-  i =? qubit_perm_to_nat_perm (n0 + n1) (stack_perms n0 n1 f g) j = 
-  (i / 2 ^ n1 =? qubit_perm_to_nat_perm n0 f (j / 2 ^ n1)) &&
-  (i mod 2 ^ n1 =? qubit_perm_to_nat_perm n1 g (j mod 2 ^ n1)).
-Proof.
-  intros Hfperm Hgperm.
-  rewrite qubit_perm_to_nat_perm_stack_perms by auto with perm_bounded_db.
-  rewrite (eqb_iff_div_mod_eqb (2^n1)), andb_comm.
-  do 2 f_equal; 
-  unfold tensor_perms; 
-  simplify_bools_moddy_lia_one_kernel.
-  - rewrite Nat.div_add_l by show_nonzero.
-    rewrite (Nat.div_small (_ _)) by auto with perm_bounded_db.
-    lia.
-  - now rewrite mod_add_l, Nat.mod_small by auto with perm_bounded_db.
-Qed.
 
 Lemma empty_permutation_semantics : ⟦ Empty ⟧ = zxperm_to_matrix 0 Empty.
 Proof. lma'. Qed.
@@ -95,11 +112,11 @@ Lemma cast_permutations_semantics {n0 n1} {zx : ZX n0 n0}
   ⟦ cast _ _ Hn Hn zx ⟧ = zxperm_to_matrix n1 (cast _ _ Hn Hn zx).
 Proof. subst; easy. Qed.
 
-Lemma perm_of_zx_permutation_semantics {n zx} : 
-  ZXperm n zx -> ⟦ zx ⟧ = zxperm_to_matrix n zx.
+Lemma perm_of_zx_permutation_semantics {n m} (zx : ZX n m) : 
+  ZXperm zx -> ⟦ zx ⟧ = zxperm_to_matrix n zx.
 Proof.
   intros H.
-  induction H.
+  induction H using zxperm_square_induction.
   - apply empty_permutation_semantics.
   - apply wire_permutation_semantics.
   - apply swap_2_perm_semantics.
@@ -109,38 +126,38 @@ Qed.
 
 (* ... which enables the main result: *)
 
-Lemma proportional_of_equal_perm {n} {zx0 zx1 : ZX n n}
-	(Hzx0 : ZXperm n zx0) (Hzx1 : ZXperm n zx1)
+Lemma proportional_of_equal_perm {n m} {zx0 zx1 : ZX n m}
+	(Hzx0 : ZXperm zx0) (Hzx1 : ZXperm zx1)
 	(Hperm : perm_of_zx zx0 = perm_of_zx zx1) :
 	zx0 ∝ zx1.
 Proof.
 	prop_exists_nonzero (RtoC 1).
 	rewrite Mscale_1_l.
-	rewrite (perm_of_zx_permutation_semantics Hzx0),
-		(perm_of_zx_permutation_semantics Hzx1).
+	rewrite (perm_of_zx_permutation_semantics zx0 Hzx0),
+		(perm_of_zx_permutation_semantics zx1 Hzx1).
 	f_equal; easy.
 Qed.
 
-Lemma proportional_of_perm_eq {n} {zx0 zx1 : ZX n n}
-	(Hzx0 : ZXperm n zx0) (Hzx1 : ZXperm n zx1)
+Lemma proportional_of_perm_eq {n m} {zx0 zx1 : ZX n m}
+	(Hzx0 : ZXperm zx0) (Hzx1 : ZXperm zx1)
 	(Hperm : perm_eq n (perm_of_zx zx0) (perm_of_zx zx1)) :
 	zx0 ∝ zx1.
 Proof.
+  pose proof (zxperm_square zx0 Hzx0); subst.
 	prop_exists_nonzero (RtoC 1).
 	rewrite Mscale_1_l.
-	rewrite (perm_of_zx_permutation_semantics Hzx0),
-		(perm_of_zx_permutation_semantics Hzx1).
-  apply mat_equiv_eq; auto with wf_db.
-  apply perm_to_matrix_perm_eq; cleanup_perm. 
+	rewrite (perm_of_zx_permutation_semantics zx0 Hzx0),
+		(perm_of_zx_permutation_semantics zx1 Hzx1).
+  now apply perm_to_matrix_eq_of_perm_eq. 
 Qed.
 
 (* TODO: split intro prop_perm_eq and prop_perm_eqΩ *)
 
 Ltac prop_perm_eq_nosimpl :=
   intros;
-  simpl_casts;
-  simpl_permlike_zx;
-  __cast_prop_sides_to_square;
+  (* simpl_casts; *)
+  (* simpl_permlike_zx; *)
+  (* __cast_prop_sides_to_square; *)
   (* Goal: zx0 ∝ zx1 *)
   apply proportional_of_equal_perm; [
   (* New goals: *)
@@ -154,7 +171,7 @@ Ltac prop_perm_eq :=
   autounfold with zxperm_db;
   simpl_casts;
   simpl_permlike_zx;
-  __cast_prop_sides_to_square;
+  (* __cast_prop_sides_to_square; *)
   (* Goal: zx0 ∝ zx1 *)
   apply proportional_of_equal_perm; [
   (* New goals: *)
@@ -169,7 +186,7 @@ Ltac by_perm_eq :=
   autounfold with zxperm_db;
   simpl_casts;
   simpl_permlike_zx;
-  __cast_prop_sides_to_square;
+  (* __cast_prop_sides_to_square; *)
   (* Goal: zx0 ∝ zx1 *)
   apply proportional_of_perm_eq; [
   (* New goals: *)
