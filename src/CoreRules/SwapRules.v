@@ -226,58 +226,37 @@ Qed.
 
 Lemma a_swap_semantics_ind : forall n, a_swap_semantics (S (S (S n))) = swap ⊗ (I (2 ^ (S n))) × (I 2 ⊗ a_swap_semantics (S (S n))) × (swap ⊗ (I (2 ^ (S n)))).
 Proof.
-  intros.
-  rewrite <- 2 a_swap_correct.
-  simpl.
-  repeat rewrite kron_id_dist_l by shelve.
+  intros n.
+  rewrite <- a_swap_correct.
+  rewrite <- n_wire_semantics.
+  change (I 2) with (⟦ — ⟧).
+  rewrite <- a_swap_correct.
+  change (swap ⊗ ⟦n_wire (S n)⟧) with
+    (⟦ ⨉ ↕ n_wire (S n)⟧).
   restore_dims.
-  rewrite <- 2 (kron_assoc (I 2) (I 2) (_)) by shelve.
-  repeat rewrite id_kron.
-  replace ((2 ^ n + (2 ^ n + 0)))%nat with (2 ^ (S n))%nat by (simpl; lia).
-  restore_dims.
-  repeat rewrite <- Mmult_assoc.
-  restore_dims.
-  rewrite (kron_mixed_product swap (I _) (I (2 * 2)) (_)).
-  Msimpl.
-  repeat rewrite Mmult_assoc.
-  restore_dims.
-  repeat rewrite Mmult_assoc.
-  remember (⟦ (top_to_bottom_helper n) ⊤%ZX ⟧) as ZX_tb_t.
-  remember (⟦ top_to_bottom_helper n ⟧) as ZX_tb.
-  restore_dims.
-  rewrite (kron_mixed_product (I (2 * 2)) ZX_tb_t swap (I (2 ^ (S n)))) .
-  Msimpl; [ | shelve].
-  rewrite <- (Mmult_1_r _ _ (swap ⊗ ZX_tb)) by shelve.
-  rewrite n_wire_transpose.
-  rewrite n_wire_semantics.
-  rewrite <- 2 kron_assoc by shelve.
-  restore_dims.
-  repeat rewrite <- Mmult_assoc by shelve.
-  rewrite <- 2 kron_id_dist_r by shelve.
-  rewrite a_swap_3_order_indep.
-  rewrite 2 kron_id_dist_r by shelve.
-  repeat rewrite <- Mmult_assoc by shelve.
-  restore_dims.
-  rewrite (kron_assoc _ (I 2) (I (2 ^ n))) by shelve.
-  rewrite id_kron.
-  replace (2 * (2 ^ n))%nat with (2 ^ (S n))%nat by (simpl; lia).
-  restore_dims.
-  repeat rewrite <- Mmult_assoc by shelve.
-  rewrite kron_mixed_product.
-  Msimpl.
-  2,3: shelve.
-  restore_dims.
-  repeat rewrite Mmult_assoc by shelve.
-  restore_dims.
-  rewrite kron_mixed_product.
-  Msimpl; [ | shelve].
-  easy.
-Unshelve.
-all: subst; auto with wf_db.
-all: try (apply WF_kron; try lia; replace (2 ^ n + (2 ^ n + 0))%nat with (2 ^ (S n))%nat by (simpl; lia); auto with wf_db).
-  apply WF_mult.
-  auto with wf_db.
-  apply WF_kron; try lia; replace (2 ^ n + (2 ^ n + 0))%nat with (2 ^ (S n))%nat by (simpl; lia); auto with wf_db.
+  change (⟦ a_swap (S (S (S n))) ⟧ = ⟦
+    (⨉ ↕ n_wire (S n)) ⟷ ((— ↕ a_swap (S (S n)))
+    ⟷ (⨉ ↕ n_wire (S n))) ⟧).
+  rewrite 2!perm_of_zx_permutation_semantics by auto_zxperm.
+  apply perm_to_matrix_eq_of_perm_eq.
+  cbn [perm_of_zx].
+  rewrite perm_of_n_wire, 2!perm_of_a_swap.
+  rewrite swap_perm_defn by lia.
+  rewrite stack_perms_idn_f, stack_perms_WF_idn by auto_perm.
+  unfold swap_2_perm.
+  intros k Hk.
+  rewrite <- Combinators.compose_assoc.
+  unfold compose at 1.
+  bdestruct (k =? 0); 
+  [unfold swap_perm; bdestructΩ'; 
+    unfold compose; bdestructΩ'|].
+  bdestruct (k =? 1); 
+  [unfold swap_perm; bdestructΩ'; 
+    unfold compose; bdestructΩ'|].
+  unfold swap_perm.
+  simplify_bools_lia_one_kernel.
+  unfold compose.
+  bdestructΩ'.
 Qed. 
 
 Lemma a_swap_transpose : forall n,

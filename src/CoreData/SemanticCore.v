@@ -3,10 +3,11 @@ Contains the definitions for Z and X spider semantics, their equivalence,
 and well formedness 
 *)
 
+Require Export QuantumLib.Modulus.
 Require Export QuantumLib.Quantum.
 Require Import QuantumLib.Proportional.
 Require Export QuantumLib.VectorStates.
-
+Require Export QlibTemp.
 
 (* Sparse Matrix Definition *)
 

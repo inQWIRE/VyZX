@@ -490,8 +490,9 @@ Qed.
 
 Lemma compose_zxperm_l' {n m o} (zxp : ZX n m) (zx0 : ZX m o) 
 	zx1 (H : ZXperm zxp) :
-	zxp ⊤ ⟷ zx1 ∝ zx0 <-> zx1 ∝ zxp ⟷ zx0.
+	zx1 ∝ zxp ⟷ zx0 <-> zxp ⊤ ⟷ zx1 ∝ zx0.
 Proof.
+	symmetry.
 	split; [intros <- | intros ->];
 	rewrite <- compose_assoc, 
 		?zxperm_transpose_left_inverse, ?zxperm_transpose_right_inverse
@@ -512,8 +513,9 @@ Qed.
 
 Lemma compose_zxperm_r' {n m o} (zxp : ZX m o) (zx0 : ZX n m) 
 	zx1 (H : ZXperm zxp) :
-	zx1 ⟷ zxp ⊤ ∝ zx0 <-> zx1 ∝ zx0 ⟷ zxp.
+	zx1 ∝ zx0 ⟷ zxp <-> zx1 ⟷ zxp ⊤ ∝ zx0.
 Proof.
+	symmetry.
 	split; [intros <- | intros ->];
 	rewrite compose_assoc, 
 		?zxperm_transpose_left_inverse, ?zxperm_transpose_right_inverse

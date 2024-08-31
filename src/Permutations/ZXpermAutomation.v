@@ -2,6 +2,9 @@ Require Import ZXCore.
 Require CastRules ComposeRules.
 Require Export ZXperm.
 
+#[export] Hint Extern 100 (WF_Matrix _) => 
+  apply WF_Matrix_dim_change : wf_db.
+
 Create HintDb perm_of_zx_cleanup_db.
 Create HintDb zxperm_db.
 #[export] Hint Constructors ZXperm : zxperm_db.

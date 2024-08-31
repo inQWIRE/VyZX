@@ -81,6 +81,14 @@ Lemma X_absolute_fusion : forall {n m o} α β,
 	X n o (α + β).
 Proof. intros. colorswap_of (@Z_absolute_fusion n m o). Qed.
 
+Lemma X_split_left : forall n m α,
+	X n m α ∝ X n 1 α ⟷ X 1 m 0.
+Proof. intros n m α. colorswap_of (Z_split_left n m α). Qed.
+
+Lemma X_split_right : forall n m α,
+	X n m α ∝ X n 1 0 ⟷ X 1 m α.
+Proof. intros n m α. colorswap_of (Z_split_right n m α). Qed.
+
 Lemma dominated_X_spider_fusion_top_right : forall n m0 m1 o α β,
 	(X n (S m0) α ↕ n_wire m1 ⟷ X (S m0 + m1) o β) ∝
 	X (n + m1) o (α + β).
