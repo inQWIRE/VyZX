@@ -8,29 +8,16 @@ Require Import CompletenessComp.
 Lemma completeness_SUP : forall α, ((Z 0 1 α) ↕ (Z 0 1 (α + PI))) ⟷ (X 2 1 0) ∝ Z 0 2 (2 *α + PI) ⟷ X 2 1 0.
 Proof.
 	intros.
-	prop_exists_nonzero 1;
-	simpl;
-	unfold X_semantics.
-	solve_matrix.
-	- C_field_simplify; [ | split; nonzero ].
-		repeat rewrite Cexp_add.
-		autorewrite with Cexp_db.
-		C_field_simplify.
-		repeat rewrite <- Cexp_add.
-		replace ((R1 + R1)%R, (R0 + R0)%R) with C2 by lca.
-		apply Cplus_simplify; try easy.
-		rewrite <- 3 Cmult_assoc.
-		apply Cmult_simplify; try easy.
-		rewrite Cmult_assoc.
-		rewrite <- Cexp_add.
-		replace (α + α)%R with (2 * α)%R by lra.
-		lca.
-	- C_field_simplify; [ | split; nonzero ].
-		repeat rewrite Cexp_add.
-		autorewrite with Cexp_db.
-		C_field_simplify.
-		repeat rewrite <- Cexp_add.
-		lca.
+	prop_exists_nonzero 1.
+	(* prep_matrix_equivalence. *)
+	rewrite Mscale_1_l.
+	cbn [ZX_semantics Nat.add].
+	rewrite X_2_1_0_semantics.
+	compute_matrix (Z_semantics 0 1 α ⊗ Z_semantics 0 1 (α + PI)).
+	compute_matrix (Z_semantics 0 2 (2 * α + PI)).
+	rewrite <- Cexp_add, <- Rplus_assoc, 3!Cexp_plus_PI, Rplus_diag.
+	prep_matrix_equivalence.
+	by_cell; lca.
 Qed.  
 
 (* @nocheck name *)
@@ -51,11 +38,11 @@ Proof. (* solve matrix takes forever *)
 	simpl.
 	rewrite Heqcs1.
 	rewrite Heqcs1pi.
-	clear Heqcs1; clear Heqcs1pi; clear cs1; clear cs1pi.
+	clear cs1 cs1pi Heqcs1 Heqcs1pi.
 	rewrite c_step_1, c_step_1_pi.
 	autorewrite with scalar_move_db.
 	rewrite Cmult_1_l.
-	apply Mscale_simplify; [| C_field].
+	apply Mscale_simplify; [| easy].
 	replace ((Cexp β .* ∣0⟩⟨0∣ .+ ∣0⟩⟨1∣ .+ ∣1⟩⟨0∣ .+ Cexp β .* ∣1⟩⟨1∣)) with (Cexp β .* (I 2) .+ ∣0⟩⟨1∣ .+ ∣1⟩⟨0∣) by (rewrite <- Mplus01; lma).
 	replace ((∣0⟩⟨0∣ .+ Cexp α .* ∣0⟩⟨1∣ .+ Cexp α .* ∣1⟩⟨0∣ .+ ∣1⟩⟨1∣)) with (I 2 .+ Cexp α .* (∣0⟩⟨1∣ .+ ∣1⟩⟨0∣)) by (rewrite <- Mplus01; lma).
 	fold (⟦ Z 1 2 0 ⟧).

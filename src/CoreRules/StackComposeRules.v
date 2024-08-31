@@ -12,11 +12,7 @@ Lemma nwire_stack_compose_topleft : forall {topIn botIn topOut botOut}
 (zx1 ↕ zx0).
 Proof.
   intros.
-  prop_exists_nonzero 1.
-  simpl.
-  repeat rewrite n_wire_semantics.
-  Msimpl.
-  easy.
+  now rewrite <- stack_compose_distr, nwire_removal_l, nwire_removal_r.
 Qed.
 
 Lemma nwire_stack_compose_botleft : forall {topIn botIn topOut botOut} 
@@ -25,11 +21,19 @@ Lemma nwire_stack_compose_botleft : forall {topIn botIn topOut botOut}
 (zx0 ↕ zx1).
 Proof.
   intros.
-  prop_exists_nonzero 1.
-  simpl.
-  repeat rewrite n_wire_semantics.
-  Msimpl.
-  easy.
+  now rewrite <- stack_compose_distr, nwire_removal_l, nwire_removal_r.
+Qed.
+
+Lemma stack_split_diag {n m o p} (zx0 : ZX n m) (zx1 : ZX o p) : 
+  zx0 ↕ zx1 ∝ zx0 ↕ n_wire o ⟷ (n_wire m ↕ zx1).
+Proof.
+  now rewrite <- stack_compose_distr, nwire_removal_l, nwire_removal_r.
+Qed.
+
+Lemma stack_split_antidiag {n m o p} (zx0 : ZX n m) (zx1 : ZX o p) : 
+  zx0 ↕ zx1 ∝ (n_wire n ↕ zx1) ⟷ (zx0 ↕ n_wire p).
+Proof.
+  now rewrite <- stack_compose_distr, nwire_removal_l, nwire_removal_r.
 Qed.
 
 Lemma push_out_top : forall {nIn nOut nOutAppendix} (appendix : ZX 0 nOutAppendix) (zx : ZX nIn nOut), 

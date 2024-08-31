@@ -1,9 +1,9 @@
 Require Import QuantumLib.Quantum.
 Require Import QuantumLib.Proportional.
 Require Import QuantumLib.VectorStates.
+Require Import QuantumLib.Kronecker.
 
 Require Export SemanticCore.
-Require Export QlibTemp.
 
 (* 
 Base constructions for the ZX calculus, lets us build every diagram inductively.
@@ -99,7 +99,9 @@ Proof.
   apply cast_semantics.
 Qed.
 
-Tactic Notation "simpl_cast_semantics" := try repeat rewrite cast_semantics; try repeat (rewrite cast_semantics_dim; unfold cast_semantics_dim_eqn).
+Ltac simpl_cast_semantics := 
+  try repeat rewrite cast_semantics; 
+  try repeat (rewrite cast_semantics_dim; unfold cast_semantics_dim_eqn).
 (* @nocheck name *)
 
 Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) : 
@@ -246,8 +248,8 @@ Lemma semantics_transpose_comm {nIn nOut} : forall (zx : ZX nIn nOut),
 Proof.
   induction zx.
   - Msimpl; reflexivity.
-  - simpl; solve_matrix.
-  - simpl; solve_matrix.
+  - lma'.
+  - lma'.
   - simpl; lma.
   - simpl; rewrite id_transpose_eq; reflexivity.
   - simpl; rewrite hadamard_st; reflexivity.
@@ -264,8 +266,8 @@ Proof.
   intros.
   induction zx.
   - simpl; Msimpl; reflexivity.
-  - simpl; solve_matrix.
-  - simpl; solve_matrix.
+  - lma'. 
+  - lma'. 
   - simpl; lma.
   - simpl; Msimpl; reflexivity.
   - simpl; lma.
@@ -295,11 +297,34 @@ Lemma semantics_colorswap_comm {nIn nOut} : forall (zx : ZX nIn nOut),
 Proof.
   induction zx.
   - simpl; Msimpl; reflexivity.
-  - solve_matrix.
-  - solve_matrix.
-  - simpl.
+  - cbn.
+    apply mat_equiv_eq; 
+    [auto using show_WF_list2D_to_matrix with wf_db..|].
+    rewrite kron_1_l_mat_equiv.
+    rewrite Mmult_assoc, Mmult_1_r by now apply show_WF_list2D_to_matrix.
+    compute_matrix (hadamard ⊗ hadamard).
+    group_radicals.
+    rewrite make_WF_equiv.
+    unfold Mmult.
+    by_cell; lca.
+  - cbn.
+    apply mat_equiv_eq; 
+    [auto using show_WF_list2D_to_matrix with wf_db..|].
+    rewrite kron_1_l_mat_equiv.
+    rewrite Mmult_1_l by now apply show_WF_list2D_to_matrix.
+    compute_matrix (hadamard ⊗ hadamard).
+    group_radicals.
+    rewrite make_WF_equiv.
+    unfold Mmult.
+    by_cell; lca.
+  - cbn.
     Msimpl.
-    solve_matrix.
+    restore_dims.
+    rewrite swap_eq_kron_comm.
+    rewrite kron_comm_commutes_r by auto_wf.
+    rewrite Mmult_assoc.
+    rewrite kron_mixed_product, MmultHH, id_kron.
+    now rewrite Mmult_1_r by auto_wf.
   - simpl; Msimpl; restore_dims; rewrite MmultHH; reflexivity.
   - simpl; Msimpl; restore_dims; rewrite MmultHH; Msimpl; reflexivity.
   - simpl. unfold X_semantics.
@@ -377,14 +402,20 @@ Qed.
 
 Lemma z_1_1_pi_σz :
 	⟦ Z 1 1 PI ⟧ = σz.
-Proof. solve_matrix. autorewrite with Cexp_db. lca. Qed.
+Proof. lma'. autorewrite with Cexp_db. lca. Qed.
 
 Lemma x_1_1_pi_σx :
 	⟦ X 1 1 PI ⟧ = σx.
-Proof. 
-	simpl. 
-	unfold X_semantics. simpl; Msimpl. solve_matrix; autorewrite with Cexp_db. 
-	all: C_field_simplify; [lca | C_field].
+Proof.
+  prep_matrix_equivalence.
+  cbn [ZX_semantics].
+  unfold X_semantics.
+  rewrite kron_n_1 by auto_wf.
+  simpl_rewrite z_1_1_pi_σz.
+  restore_dims.
+  compute_matrix (hadamard × σz × hadamard).
+  autorewrite with C_db.
+  by_cell; reflexivity.
 Qed.
 
 Definition zx_triangle : ZX 1 1 :=
