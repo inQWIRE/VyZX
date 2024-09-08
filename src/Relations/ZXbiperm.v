@@ -533,16 +533,7 @@ Qed.
 #[export] Hint Resolve n_cap_zxbiperm : zxbiperm_db.
 
 
-(* FIXME: Move to Qlib *)
-Lemma kron_f_to_vec_eq {n m p q : nat} (A : Matrix (2^n) (2^m))
-  (B : Matrix (2^p) (2^q)) (f : nat -> bool) : WF_Matrix A -> WF_Matrix B -> 
-  A ⊗ B × f_to_vec (m + q) f
-  = A × f_to_vec m f ⊗ (B × f_to_vec q (fun k : nat => f (m + k))).
-Proof.
-  intros.
-  prep_matrix_equivalence.
-  apply kron_f_to_vec.
-Qed.
+
 
 (* FIXME: Move to Modulus.v *)
 Lemma div_eq a b : a / b = (a - a mod b) / b.
@@ -753,109 +744,8 @@ Proof.
     lia.
 Qed. *)
 
-Lemma cap_f_to_vec f : 
-  ⟦ ⊃ ⟧ × f_to_vec 2 f = 
-  b2R (eqb (f 0) ((f 1))) .* I (2 ^ 0).
-Proof.
-  cbn.
-  rewrite kron_1_l by auto_wf.
-  apply mat_equiv_eq; [auto using show_WF_list2D_to_matrix with wf_db..|].
-  by_cell.
-  unfold scale, kron.
-  cbn.
-  destruct (f 0), (f 1); cbn; lca.
-Qed.
 
-Lemma n_cup_unswapped_f_to_vec n f : 
-  ⟦ n_cup_unswapped n ⟧ × f_to_vec (n + n) f = 
-  b2R (forallb (fun k => eqb (f k) ( f (n + n - S k))) (seq 0 n)) .* I (2 ^ 0).
-Proof.
-  revert f;
-  induction n; intros f.
-  - cbn. Csimpl. now Msimpl_light.
-  - cbn [n_cup_unswapped].
-    rewrite zx_compose_spec.
-    simpl_cast_semantics.
-    rewrite 2!zx_stack_spec.
-    replace (S n + S n) with (1 + (n + n) + 1) by lia.
-    rewrite Mmult_assoc.
-    restore_dims.
-    rewrite (@kron_f_to_vec_eq (1 + 0) (1 + (n + n)) 1 1) by auto_wf.
-    rewrite (@kron_f_to_vec_eq 1 1 0 (n + n)) by auto_wf.
-    rewrite IHn.
-    cbn -[f_to_vec seq].
-    rewrite Mmult_1_l, Mmult_1_comm by auto_wf.
-    rewrite (kron_split_diag (f_to_vec 1 f)) by auto_wf.
-    rewrite <- kron_mixed_product, kron_1_r.
-    restore_dims.
-    rewrite f_to_vec_merge.
-    rewrite <- Mmult_assoc.
-    rewrite cap_f_to_vec.
-    cbn [Nat.ltb Nat.leb].
-    rewrite Nat.sub_diag, Nat.add_0_r.
-    rewrite kron_1_l, kron_1_r by auto_wf.
-    cbn -[seq].
-    restore_dims.
-    distribute_scale.
-    Msimpl_light.
-    f_equal.
-    unfold b2R.
-    rewrite !(if_dist _ _ _ RtoC).
-    rewrite Cmult_if_if_1_l.
-    apply f_equal_if; [|easy..].
-    cbn.
-    f_equal; [repeat f_equal; lia|].
-    apply eq_iff_eq_true.
-    rewrite forallb_seq0, forallb_seq.
-    setoid_rewrite eqb_true_iff.
-    apply forall_iff.
-    intros s.
-    apply impl_iff; intros Hs.
-    rewrite 2!(Nat.add_comm _ 1).
-    cbn.
-    replace (S (n + n - S s)) with (n + n - s) by lia.
-    reflexivity.
-Qed.
 
-Lemma n_cup_f_to_vec n f : 
-  ⟦ n_cup n ⟧ × f_to_vec (n + n) f = 
-  b2R (forallb (fun k => eqb (f k) ( f (n + k))) (seq 0 n)) .* I (2 ^ 0).
-Proof.
-  unfold n_cup.
-  rewrite zx_compose_spec, zx_stack_spec.
-  rewrite n_wire_semantics.
-  rewrite perm_of_zx_permutation_semantics by auto with zxperm_db.
-  rewrite perm_of_n_swap.
-  rewrite Mmult_assoc.
-  restore_dims.
-  rewrite kron_f_to_vec_eq by auto_wf.
-  rewrite perm_to_matrix_permutes_qubits by cleanup_perm.
-  rewrite Mmult_1_l by auto_wf.
-  rewrite f_to_vec_merge.
-  rewrite n_cup_unswapped_f_to_vec.
-  f_equal.
-  f_equal.
-  f_equal.
-  apply eq_iff_eq_true.
-  rewrite 2!forallb_seq0.
-  setoid_rewrite eqb_true_iff.
-  split.
-  - intros Hf.
-    intros s Hs.
-    generalize (Hf (n - S s) ltac:(lia)).
-    do 2 simplify_bools_lia_one_kernel.
-    rewrite reflect_perm_defn by lia.
-    rewrite sub_S_sub_S by lia.
-    intros ->.
-    f_equal; lia.
-  - intros Hf.
-    intros s Hs.
-    generalize (Hf (n - S s) ltac:(lia)).
-    do 2 simplify_bools_lia_one_kernel.
-    rewrite reflect_perm_defn by lia.
-    intros ->.
-    f_equal; lia.
-Qed.
 
 (* Definition zx_reflect n : ZX n n :=
   zx_of_perm n (reflect_perm n). (* NB : is ∝ n_wire n *)
@@ -875,7 +765,8 @@ Qed. *)
 
 Import CoreRules.
 
-(* FIXME: Move to ZXpermFacts *)
+(* FIXME: Remove; this is a convoluted 
+  redefinition of transpose... *)
 
 Definition zxperm_inv' {n} (zx : ZX n n) : ZX n n :=
   zx_of_perm n (perm_inv' n (perm_of_zx zx)).
@@ -1210,180 +1101,6 @@ Proof.
 Qed.
 
 
-
-Lemma n_cup_f_to_vec_pullthrough_bot n f : 
-  @Mmult _ (2^(n + n)) (2^n) (⟦ n_cup n ⟧) (I (2 ^ n) ⊗ f_to_vec n f) = 
-  (f_to_vec n f) ⊤%M.
-Proof.
-  unify_pows_two.
-  apply equal_on_basis_states_implies_equal';
-  [auto_wf.. |].
-  intros g.
-  rewrite <- (kron_1_r _ _ (f_to_vec n g)) at 1.
-  rewrite Mmult_assoc.
-  restore_dims.
-  rewrite kron_mixed_product, Mmult_1_l, Mmult_1_r by auto_wf.
-  rewrite f_to_vec_transpose_f_to_vec.
-  rewrite f_to_vec_merge.
-  rewrite n_cup_f_to_vec.
-  do 3 f_equal.
-  apply eq_iff_eq_true.
-  rewrite 2!forallb_seq0.
-  apply forall_iff; intros s.
-  apply impl_iff; intros Hs.
-  do 2 simplify_bools_lia_one_kernel.
-  rewrite add_sub'.
-  rewrite 2!eqb_true_iff.
-  easy.
-Qed.
-
-Lemma n_cup_f_to_vec_pullthrough_top n f : 
-  @Mmult _ (2^(n + n)) (2^n) (⟦ n_cup n ⟧) (f_to_vec n f ⊗ I (2 ^ n)) = 
-  (f_to_vec n f) ⊤%M.
-Proof.
-  unify_pows_two.
-  apply equal_on_basis_states_implies_equal';
-  [auto_wf.. |].
-  intros g.
-  rewrite <- (kron_1_l _ _ (f_to_vec n g)) at 1 by auto_wf.
-  rewrite Mmult_assoc.
-  restore_dims.
-  rewrite kron_mixed_product, Mmult_1_l, Mmult_1_r by auto_wf.
-  rewrite f_to_vec_transpose_f_to_vec.
-  rewrite f_to_vec_merge.
-  rewrite n_cup_f_to_vec.
-  do 3 f_equal.
-  apply eq_iff_eq_true.
-  rewrite 2!forallb_seq0.
-  apply forall_iff; intros s.
-  apply impl_iff; intros Hs.
-  do 2 simplify_bools_lia_one_kernel.
-  now rewrite add_sub'.
-Qed.
-
-Lemma n_cap_f_to_vec_pullthrough_bot n f :
-  @Mmult (2^n) (2^(n + n)) _ (I (2 ^ n) ⊗ (f_to_vec n f) ⊤%M) (⟦ n_cap n ⟧) = 
-  f_to_vec n f.
-Proof.
-  apply transpose_matrices.
-  rewrite Mmult_transpose.
-  restore_dims.
-  rewrite Nat.pow_add_r.
-  change (@transpose (2 ^ n)) with (@transpose (2^n * 2^0)).
-  rewrite (kron_transpose).
-  unfold n_cap.
-  rewrite semantics_transpose_comm.
-  change (transpose (transpose ?x)) with x.
-  rewrite id_transpose_eq.
-  unify_pows_two.
-  apply n_cup_f_to_vec_pullthrough_bot.
-Qed.
-
-Lemma n_cap_f_to_vec_pullthrough_top n f :
-  @Mmult (2^n) (2^(n + n)) _ ((f_to_vec n f) ⊤%M ⊗ I (2 ^ n)) (⟦ n_cap n ⟧) = 
-  f_to_vec n f.
-Proof.
-  apply transpose_matrices.
-  rewrite Mmult_transpose.
-  restore_dims.
-  rewrite Nat.pow_add_r.
-  change (@transpose (2 ^ n)) with (@transpose (2^0 * 2^n)).
-  rewrite (kron_transpose).
-  unfold n_cap.
-  rewrite semantics_transpose_comm.
-  change (transpose (transpose ?x)) with x.
-  rewrite id_transpose_eq.
-  unify_pows_two.
-  apply n_cup_f_to_vec_pullthrough_top.
-Qed.
-
-Lemma Mmult_vec_comm {n} (v u : Vector n) : WF_Matrix u -> WF_Matrix v ->
-  v ⊤%M × u = u ⊤%M × v.
-Proof.
-  intros Hu Hv.
-  prep_matrix_equivalence.
-  by_cell.
-  apply big_sum_eq_bounded.
-  intros k Hk.
-  unfold transpose.
-  lca.
-Qed.
-
-Lemma n_cap_n_cup_pullthrough_general n m (A : Matrix (2 ^ n) (2 ^ m)) 
-  (HA : WF_Matrix A) : 
-  I (2 ^ m) ⊗ (⟦ n_cup n ⟧) × (I (2 ^ m) ⊗ A ⊗ I (2 ^ n)) × 
-    (⟦ n_cap m ⟧ ⊗ I (2 ^ n)) =
-  A ⊤%M.
-Proof.
-  apply equal_on_basis_states_implies_equal'; 
-  [auto_wf..|].
-  intros f.
-  rewrite <- (kron_1_l _ _ (f_to_vec n f)) at 1 by auto_wf.
-  rewrite Mmult_assoc;
-  restore_dims.  
-  rewrite Mmult_assoc, kron_mixed_product' by unify_pows_two.
-  restore_dims.
-  rewrite kron_mixed_product.
-  rewrite !Mmult_1_l, Mmult_1_r by auto_wf.
-  rewrite (kron_split_antidiag (_ × _)), <- id_kron, kron_assoc by auto_wf.
-  rewrite kron_1_r.
-  restore_dims.
-  unify_pows_two.
-
-  rewrite <- Mmult_assoc.
-  restore_dims.
-  rewrite kron_mixed_product' by unify_pows_two.
-  rewrite Mmult_1_r by auto_wf.
-  unify_pows_two.
-  rewrite n_cup_f_to_vec_pullthrough_bot, <- Mmult_assoc.
-  restore_dims.
-  rewrite kron_mixed_product, Mmult_1_r by auto_wf.
-  apply transpose_matrices.
-  rewrite !Mmult_transpose.
-  change (transpose (?A ⊗ ?B)) with ((transpose A) ⊗ (transpose B)).
-  rewrite Mmult_transpose, transpose_involutive.
-  unfold n_cap.
-  rewrite semantics_transpose_comm.
-  change (transpose (transpose ?x)) with x.
-  rewrite id_transpose_eq.
-  unify_pows_two.
-  apply equal_on_basis_states_implies_equal';
-  [auto_wf..|].
-  intros g.
-  rewrite Mmult_assoc.
-  rewrite <- (kron_1_r _ _ (f_to_vec m g)).
-  restore_dims.
-  rewrite kron_mixed_product.
-  rewrite kron_1_r.
-  rewrite Mmult_1_l, Mmult_1_r by auto_wf.
-  rewrite (kron_split_diag (f_to_vec _ _)) by auto_wf.
-  unify_pows_two.
-  rewrite <- Mmult_assoc.
-  rewrite n_cup_f_to_vec_pullthrough_top.
-  rewrite kron_1_l by auto_wf.
-  now rewrite Mmult_vec_comm by auto_wf.
-Qed.
-
-Lemma n_cap_n_cup_pullthrough n m (A : ZX m n) : 
-  (n_cap m ↕ n_wire n) ⟷ 
-  (n_wire m ↕ A ↕ n_wire n) ⟷
-  cast _ _ (eq_sym (Nat.add_assoc m n n)) (eq_sym (Nat.add_0_r m)) 
-    (n_wire m ↕ n_cup n) ∝
-  A ⊤.
-Proof.
-  prop_exists_nonzero 1.
-  rewrite Mscale_1_l.
-  cbn - [n_cup].
-  simpl_cast_semantics.
-  rewrite zx_stack_spec.
-  rewrite 2!n_wire_semantics.
-  rewrite semantics_transpose_comm, <- Mmult_assoc.
-  rewrite <- n_cap_n_cup_pullthrough_general by auto_wf.
-  now restore_dims.
-Qed.
-
-
-
 Lemma n_cup_unswapped_semantics n : 
   ⟦ n_cup_unswapped n ⟧ = 
   matrix_of_biperm (n + n) 0 
@@ -1421,6 +1138,7 @@ Proof.
     do 3 simplify_bools_lia_one_kernel.
     easy.
 Qed.
+
 
 
 
@@ -1534,17 +1252,7 @@ Fixpoint make_n_cup_zxperm n : ZX (n * 2) (n * 2) :=
 
 Import CoreRules.
 
-Lemma stack_split_diag {n m o p} (zx0 : ZX n m) (zx1 : ZX o p) : 
-  zx0 ↕ zx1 ∝ zx0 ↕ n_wire o ⟷ (n_wire m ↕ zx1).
-Proof.
-  now cleanup_zx.
-Qed.
 
-Lemma stack_split_antidiag {n m o p} (zx0 : ZX n m) (zx1 : ZX o p) : 
-  zx0 ↕ zx1 ∝ (n_wire n ↕ zx1) ⟷ (zx0 ↕ n_wire p).
-Proof.
-  now cleanup_zx.
-Qed.
 
 
 

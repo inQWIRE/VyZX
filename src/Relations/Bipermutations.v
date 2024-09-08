@@ -27,36 +27,6 @@ Open Scope nat_scope.
 
 Create HintDb biperm_db discriminated.
 
-(* FIXME: Move to Qlib *)
-Ltac auto_perm_to n := 
-  auto n with perm_db perm_bounded_db WF_Perm_db.
-
-Ltac auto_perm := 
-  auto 6 with perm_db perm_bounded_db WF_Perm_db.
-
-Tactic Notation "auto_perm" int_or_var(n) :=
-  auto_perm_to n.
-
-Tactic Notation "auto_perm" :=
-  auto_perm 6.
-
-(* FIXME: Move these two to Qlib.PermutationInstances *)
-Lemma big_swap_perm_defn n m : 
-  perm_eq (n + m) (big_swap_perm n m) 
-  (fun k => if k <? n then k + m else k - n).
-Proof.
-  intros k Hk.
-  unfold big_swap_perm.
-  now simplify_bools_lia_one_kernel.
-Qed.
-
-Lemma big_swap_perm_defn_alt n m : 
-  perm_eq (m + n) (big_swap_perm n m) 
-  (fun k => if k <? n then k + m else k - n).
-Proof.
-  rewrite Nat.add_comm.
-  apply big_swap_perm_defn.
-Qed.
   
 (* FIXME: Move to Qlib *)
 Definition make_WF_Perm n f :=
@@ -1644,7 +1614,7 @@ Proof.
   rewrite n_m_cup_cap_stack_biperms_decomp'.
   rewrite stack_perms_compose by (exact (n_m_cup_cap_bounded 0 _)).
   rewrite stack_perms_compose by auto_perm.
-  apply stack_perms_perm_eq_to_perm_eq_proper; [|easy].
+  erewrite stack_perms_perm_eq_to_eq_proper; [reflexivity| | reflexivity].
   replace (n + n) with (n * 2) by lia.
   rewrite tensor_perms_inv by auto_perm.
   unfold n_m_cup_cap.
@@ -1675,7 +1645,7 @@ Proof.
   rewrite n_m_cup_cap_stack_biperms_decomp'.
   rewrite stack_perms_compose by (exact (n_m_cup_cap_bounded 0 _)).
   rewrite stack_perms_compose by auto_perm.
-  apply stack_perms_perm_eq_to_perm_eq_proper; [|easy].
+  erewrite stack_perms_perm_eq_to_eq_proper; [reflexivity | | reflexivity].
   rewrite n_m_cup_cap_defn_alt.
   replace (n + n) with (n * 2) by lia.
   rewrite reflect_perm_defn at 2.
@@ -1718,7 +1688,7 @@ Proof.
   rewrite n_m_cup_cap_stack_biperms_decomp'.
   rewrite stack_perms_compose by (exact (n_m_cup_cap_bounded 0 _)).
   rewrite stack_perms_compose by auto_perm.
-  apply stack_perms_perm_eq_to_perm_eq_proper; [|easy].
+  erewrite stack_perms_perm_eq_to_eq_proper; [reflexivity | | reflexivity].
   change (n + n) with ((0 + 0) + (n + n)).
   rewrite compose_assoc.
   pose proof (n_m_cup_cap_bipermutation 0 n).
