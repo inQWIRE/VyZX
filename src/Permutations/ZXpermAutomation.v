@@ -2,6 +2,9 @@ Require Import ZXCore.
 Require CastRules ComposeRules.
 Require Export ZXperm.
 
+#[export] Hint Extern 100 (WF_Matrix _) => 
+  apply WF_Matrix_dim_change : wf_db.
+
 Create HintDb perm_of_zx_cleanup_db.
 Create HintDb zxperm_db.
 #[export] Hint Constructors ZXperm : zxperm_db.
@@ -22,11 +25,11 @@ Ltac __cleanup_stack_perm zx0 zx1 :=
   apply (PermStack (n0:=n0) (n1:=n1))
   end end.
 
-#[export] Hint Extern 0 (ZXperm _ (?zx0 ↕ ?zx1)) => 
+#[export] Hint Extern 0 (ZXperm (?zx0 ↕ ?zx1)) => 
   __cleanup_stack_perm zx0 zx1 : zxperm_db.
 
-#[export] Hint Extern 0 (ZXperm _ (@Stack ?n _ ?m _ ?zx0 ?zx1)) => 
-  apply (@PermStack n m zx0 zx1) : zxperm_db.
+#[export] Hint Extern 0 (ZXperm (@Stack ?n0 ?m0 ?n1 ?m1 ?zx0 ?zx1)) => 
+  apply (@PermStack n0 m0 n1 m1 zx0 zx1) : zxperm_db.
 
 
 (* Making proportional_of_eq_perm usable, mostly through a series of tactics to
@@ -41,7 +44,7 @@ Proof.
   reflexivity.
 Qed.
 
-Ltac __cast_prop_sides_to_square :=
+(* Ltac __cast_prop_sides_to_square :=
   match goal with
   | |- Proportional.proportional ?zx0 ?zx1 =>
     match type of zx0 with 
@@ -51,7 +54,7 @@ Ltac __cast_prop_sides_to_square :=
       assert (Hm0n : n = m) by lia;
       rewrite (prop_iff_double_cast n n zx0 zx1 (eq_refl) (Hm0n))
     end
-  end.
+  end. *)
 
 Lemma cast_compose_eq : forall n0 n1 m o0 o1 (zx0 : ZX n0 m) (zx1 : ZX m o0) Hn0n1 Ho0o1,
   cast n1 o1 Hn0n1 Ho0o1 (zx0 ⟷ zx1) = 
@@ -81,12 +84,12 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma zxperm_iff_cast' : forall n0 n1 zx (H H' : n1 = n0),
-  ZXperm n1 (cast n1 n1 H H' zx) <-> ZXperm n0 zx.
+Lemma zxperm_iff_cast' n m n' m' 
+  (zx : ZX n m) (Hn : n' = n) (Hm : m' = m) :
+  ZXperm (cast n' m' Hn Hm zx) <-> ZXperm zx.
 Proof.
   intros.
-  subst; rewrite cast_id_eq.
-  reflexivity.
+  now subst.
 Qed.
 
 #[export] Hint Resolve <- zxperm_iff_cast' : zxperm_db.
@@ -140,9 +143,9 @@ Ltac __one_round_cleanup_zxperm_of_cast :=
     end end
   end.
 
-#[export] Hint Extern 3 (ZXperm _ (cast _ _ _ _ _)) => __one_round_cleanup_zxperm_of_cast : zxperm_db.
+(* #[export] Hint Extern 3 (ZXperm (cast _ _ _ _ _)) => __one_round_cleanup_zxperm_of_cast : zxperm_db. *)
 
-Lemma perm_of_cast_compose_each_square : forall n m a b c d
+(* Lemma perm_of_cast_compose_each_square : forall n m a b c d
   (zx0 : ZX n n) (zx1 : ZX m m) prfa0 prfb0 prfb1 prfc1 prfd1 prfd2,
   ZXperm n zx0 -> ZXperm m zx1 ->
   ZXperm d (cast d d prfd1 prfd2 
@@ -153,10 +156,10 @@ Proof.
   auto with zxperm_db.
 Qed.
 
-#[export] Hint Resolve perm_of_cast_compose_each_square : zxperm_db.
+#[export] Hint Resolve perm_of_cast_compose_each_square : zxperm_db. *)
 
 (* I don't know if these actually ever help: *)
-Lemma perm_of_cast_compose_each_square_l : forall n m c d
+(* Lemma perm_of_cast_compose_each_square_l : forall n m c d
   (zx0 : ZX n n) (zx1 : ZX m m) prfb1 prfc1 prfd1 prfd2,
   ZXperm n zx0 -> ZXperm m zx1 ->
   ZXperm d (cast d d prfd1 prfd2 
@@ -176,7 +179,7 @@ Proof.
   intros.
   subst.
   auto with zxperm_db.
-Qed.
+Qed. *)
 
 
 (* #[export] Hint Resolve perm_of_cast_compose_each_square_l
@@ -229,3 +232,28 @@ Ltac by_perm_cell :=
       try solve_end).
 
 Arguments Nat.leb !_ !_ /.
+
+(* FIXME: Move to Qlib *)
+Ltac auto_perm_to n := 
+  auto n with perm_db perm_bounded_db WF_Perm_db perm_inv_db.
+
+Ltac auto_perm := 
+  auto 6 with perm_db perm_bounded_db WF_Perm_db perm_inv_db.
+
+Tactic Notation "auto_perm" int_or_var(n) :=
+  auto_perm_to n.
+
+Tactic Notation "auto_perm" :=
+  auto_perm 6.
+
+Ltac auto_zxperm_to n :=
+  auto n with zxperm_db perm_db perm_bounded_db WF_Perm_db perm_inv_db.
+
+Ltac auto_zxperm n :=
+  auto 6 with zxperm_db perm_db perm_bounded_db WF_Perm_db perm_inv_db.
+
+Tactic Notation "auto_zxperm" int_or_var(n) :=
+  auto_zxperm_to n.
+
+Tactic Notation "auto_zxperm" :=
+  auto_zxperm 6.

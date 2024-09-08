@@ -1,10 +1,10 @@
 Require Import ZXCore CoreAutomation.
-Require Import StackComposeRules.
 Require Import CastRules.
 Require Export ZXperm.
 Require Export ZXpermAutomation.
 Require Import QuantumLib.Permutations QuantumLib.Modulus.
 Require Import QuantumLib.Kronecker.
+Require Import StackComposeRules.
 Require Export ZXpermSemantics.
 
 (* In this file, we develop some tools for showing things are ZXperms and
@@ -18,57 +18,52 @@ Definition zx_of_perm n f :=
 		(eq_sym (length_insertion_sort_list n (perm_inv n f)))
 	(zx_of_perm_uncast n f).
 
+(* Though redundant with cast, this makes for much better
+	 proof statements, e.g. with compose_zx_of_perm_cast. 
+	 Since many of our ZXperms are non-square, this is 
+	 a common application. *)
+Definition zx_of_perm_cast n m f (H : n = m) : ZX n m :=
+	cast n m eq_refl (eq_sym H) (zx_of_perm n f).
+
+Arguments zx_of_perm_cast : simpl never.
+
+Notation "'zx_of_perm_cast' n m f '$'" :=
+		(zx_of_perm_cast n m f _) 
+		(at level 10, n at level 9, m at level 9, f at level 9, 
+		only printing) : ZX_scope.
+
 (* Section on very general ZXperm facts *)
 
 Local Open Scope nat.
 Local Open Scope ZX_scope.
 Local Open Scope prg.
 
-Lemma zxperm_iff_cast {n0 n1} {zx} (Hn Hn' : n1 = n0) :
-	ZXperm n1 (cast _ _ Hn Hn' zx) <-> ZXperm n0 zx.
-Proof.
-	split; intros; subst;
-	rewrite cast_id_eq in *; easy.
-Qed.
-
-#[export] Hint Resolve <- zxperm_iff_cast : zxperm_db.
-
-Lemma cast_stack_zxperm {n0 n1 o} {zx0} {zx1}
-	(H0 : ZXperm n0 zx0) (H1 : ZXperm n1 zx1) 
-	(Hn Hn' : o = n0 + n1) :
-	ZXperm o (cast _ _ Hn Hn' (zx0 ↕ zx1)).
-Proof.
-  auto with zxperm_db.
-Qed.
-
-#[export] Hint Resolve cast_stack_zxperm : zxperm_db.
-
-Lemma conjugate_zxperm {n} {zx} (H : ZXperm n zx) :
-  ZXperm n (zx ⊼).
+Lemma conjugate_zxperm {n m} {zx : ZX n m} (H : ZXperm zx) :
+  ZXperm (zx ⊼).
 Proof.
 	induction H; simpl; constructor; easy.
 Qed.
 
 #[export] Hint Resolve conjugate_zxperm : zxperm_db.
 
-Lemma transpose_zxperm {n} {zx} (H : ZXperm n zx) :
-	ZXperm n (zx ⊤).
+Lemma transpose_zxperm {n m} {zx : ZX n m} (H : ZXperm zx) :
+	ZXperm (zx ⊤).
 Proof.
 	induction H; simpl; constructor; easy.
 Qed.
 
 #[export] Hint Resolve transpose_zxperm : zxperm_db.
 
-Lemma adjoint_zxperm {n} {zx} (H : ZXperm n zx) :
-	ZXperm n (zx †).
+Lemma adjoint_zxperm {n m} {zx : ZX n m} (H : ZXperm zx) :
+	ZXperm (zx †).
 Proof.
 	induction H; simpl; constructor; easy.
 Qed.
 
 #[export] Hint Resolve adjoint_zxperm : zxperm_db.
 
-Lemma colorswap_zxperm {n} {zx} (H : ZXperm n zx) :
-	ZXperm n (⊙ zx).
+Lemma colorswap_zxperm {n m} {zx : ZX n m} (H : ZXperm zx) :
+	ZXperm (⊙ zx).
 Proof.
 	induction H; simpl; constructor; easy.
 Qed.
@@ -76,8 +71,8 @@ Qed.
 #[export] Hint Resolve colorswap_zxperm : zxperm_db.
 
 (* Section on core ZXperms *)
-Lemma n_wire_zxperm {n} : 
-	ZXperm n (n_wire n).
+Lemma n_wire_zxperm n : 
+	ZXperm (n_wire n).
 Proof.
 	induction n; simpl; auto with zxperm_db.
 Qed.
@@ -91,7 +86,6 @@ Proof.
 Qed.
 
 #[export] Hint Resolve n_compose_zxperm : zxperm_db. *)
-
 
 (* Showing our permutations are permutations *)
 (* Section on top_to_bottom and bottom_to_top *)
@@ -113,7 +107,8 @@ Proof.
 	bdestruct (k =? n - 1); lia.
 Qed.
 
-Global Hint Resolve bottom_to_top_perm_bounded top_to_bottom_perm_bounded : perm_bounded_db.
+#[export] Hint Resolve bottom_to_top_perm_bounded 
+	top_to_bottom_perm_bounded : perm_bounded_db.
 
 Lemma bottom_to_top_WF_perm n :
 	WF_Perm n (bottom_to_top_perm n).
@@ -133,7 +128,8 @@ Proof.
 	easy.
 Qed.
 	
-Global Hint Resolve bottom_to_top_WF_perm top_to_bottom_WF_perm : WF_Perm_db.
+#[export] Hint Resolve bottom_to_top_WF_perm 
+	top_to_bottom_WF_perm : WF_Perm_db.
 
 Lemma bottom_to_top_to_bottom_inv n : 
 	bottom_to_top_perm n ∘ top_to_bottom_perm n = idn.
@@ -206,7 +202,8 @@ Proof.
 	perm_by_inverse (top_to_bottom_perm n).
 Qed.
 
-Global Hint Resolve top_to_bottom_permutation bottom_to_top_permutation : perm_db.
+#[export] Hint Resolve top_to_bottom_permutation 
+	bottom_to_top_permutation : perm_db.
 
 Lemma top_to_bottom_inv n : 
 	perm_eq n (perm_inv n (top_to_bottom_perm n)) (bottom_to_top_perm n).
@@ -259,32 +256,28 @@ Qed.
 
 (* Section on specific ZXperms *)
 Lemma top_to_bottom_helper_zxperm n :
-	ZXperm (S n) (top_to_bottom_helper n).
+	ZXperm (top_to_bottom_helper n).
 Proof.
-	induction n.
-	- constructor.
-	- simpl.
-	  constructor.
-	  + apply (PermStack PermSwap n_wire_zxperm).
-	  + apply (PermStack PermWire IHn).
+	induction n; cbn; auto with zxperm_db.
 Qed.
 
 #[export] Hint Resolve top_to_bottom_helper_zxperm : zxperm_db.
 
 Lemma top_to_bottom_zxperm {n} :
-	ZXperm n (top_to_bottom n).
+	ZXperm (top_to_bottom n).
 Proof.
 	destruct n; simpl; auto with zxperm_db.
 Qed.
 
 Lemma bottom_to_top_zxperm {n} :
-	ZXperm n (bottom_to_top n).
+	ZXperm (bottom_to_top n).
 Proof.
 	apply transpose_zxperm.
 	apply top_to_bottom_zxperm.
 Qed.
 
-#[export] Hint Resolve top_to_bottom_zxperm bottom_to_top_zxperm : zxperm_db.
+#[export] Hint Resolve top_to_bottom_zxperm 
+	bottom_to_top_zxperm : zxperm_db.
 
 (* Lemma n_top_to_bottom_zxperm : forall n m,
     ZXperm _ (n_top_to_bottom n m).
@@ -303,7 +296,7 @@ Qed.
 #[export] Hint Resolve n_top_to_bottom_zxperm n_bottom_to_top_zxperm : zxperm_db. *)
 
 Lemma a_swap_zxperm n : 
-	ZXperm n (a_swap n).
+	ZXperm (a_swap n).
 Proof.
 	induction n; simpl; auto with zxperm_db.
 Qed.
@@ -311,7 +304,7 @@ Qed.
 #[export] Hint Resolve a_swap_zxperm : zxperm_db.
 
 Lemma n_swap_zxperm n : 
-	ZXperm n (n_swap n).
+	ZXperm (n_swap n).
 Proof.
 	induction n; simpl; auto with zxperm_db.
 Qed.
@@ -323,22 +316,25 @@ Qed.
 
 
 (* Section on rules for perm_of_zx *)
-Lemma perm_of_zx_WF {n} {zx} (H : ZXperm n zx) : 
+Lemma perm_of_zx_WF {n m} {zx : ZX n m} (H : ZXperm zx) : 
 	WF_Perm n (perm_of_zx zx).
 Proof.
-	induction H; intros k Hk; try easy.
-	- simpl.
-	  destruct k; [|destruct k]; cbv; lia.
-	- simpl. 
-	  rewrite stack_perms_high; easy.
-	- simpl.
-	  unfold compose.
-	  rewrite IHZXperm1; rewrite IHZXperm2; lia.
+	induction H using zxperm_square_induction; 
+	cbn; auto with WF_Perm_db.
+Qed.
+
+Lemma perm_of_zx_WF_alt {n m} {zx : ZX n m} (H : ZXperm zx) : 
+	WF_Perm m (perm_of_zx zx).
+Proof.
+	induction H using zxperm_square_induction; 
+	cbn; auto with WF_Perm_db.
 Qed.
 
 #[export] Hint Resolve perm_of_zx_WF : WF_Perm_db.
+#[export] Hint Resolve perm_of_zx_WF_alt | 10 : WF_Perm_db.
 
-Lemma stack_perms_zx_idn {n0 n1} {zx} (H : ZXperm n0 zx) :
+
+Lemma stack_perms_zx_idn {n0 m0 n1} {zx : ZX n0 m0} (H : ZXperm zx) :
 	stack_perms n0 n1 (perm_of_zx zx) idn = 
 	perm_of_zx zx.
 Proof.
@@ -346,14 +342,18 @@ Proof.
   auto with WF_Perm_db.
 Qed.
 
-#[export] Hint Rewrite @stack_perms_zx_idn using (auto with zxperm_db) : perm_of_zx_cleanup_db.
+#[export] Hint Rewrite @stack_perms_zx_idn using 
+	solve [auto with zxperm_db]
+	: perm_of_zx_cleanup_db.
 
-Lemma stack_perms_idn_zx {n0 n1} {zx} (H : ZXperm n1 zx) :
+Lemma stack_perms_idn_zx {n0 n1 m1} {zx : ZX n1 m1} (H : ZXperm zx) :
 	stack_perms n0 n1 idn (perm_of_zx zx) = 
 	fun k => if k <? n0 then k else (perm_of_zx zx (k - n0)) + n0.
 Proof.
-	solve_modular_permutation_equalities.
-	rewrite perm_of_zx_WF; [lia|easy|lia].
+	rewrite stack_perms_idn_f.
+	apply functional_extensionality; intros k.
+	bdestructΩ'.
+	rewrite perm_of_zx_WF; auto with zarith.
 Qed.
 
 Lemma perm_of_zx_compose_spec {n m o} {zx0 : ZX n m} {zx1 : ZX m o} :
@@ -376,30 +376,36 @@ Proof. subst. easy. Qed.
   @perm_of_zx_stack_spec
   @perm_of_zx_cast : perm_of_zx_cleanup_db.
 
-Lemma perm_of_zx_transpose {n} {zx} (Hzx : ZXperm n zx) :
+(* FIXME: Move *)
+#[export] Hint Extern 10 (ZXperm _) => 
+	solve [auto with zxperm_db] : WF_Perm_db.
+
+Lemma perm_of_zx_transpose {n m} {zx : ZX n m} (Hzx : ZXperm zx) :
 	perm_of_zx (zx ⊤) = perm_inv' n (perm_of_zx zx).
 Proof.
-	induction Hzx; [simpl; cleanup_perm_inv..| |];
-	simpl;
-	cleanup_perm_inv; [| now f_equal]. 
-	rewrite IHHzx1, IHHzx2. 
-	now cleanup_perm_inv.
+	eq_by_WF_perm_eq n.
+	induction Hzx using zxperm_square_induction; 
+	cbn [ZXCore.transpose perm_of_zx];
+	[by_perm_cell; reflexivity.. | |]; 
+	rewrite IHHzx1, IHHzx2.
+	- now rewrite perm_inv'_stack_perms by auto_perm.
+	- now rewrite perm_inv'_compose by auto_perm.
 Qed.
 
 #[export] Hint Rewrite @perm_of_zx_transpose 
-	using auto with zxperm_db : perm_of_zx_cleanup_db.
+	using solve [auto with zxperm_db] : perm_of_zx_cleanup_db.
 
 
 
 
 
-Lemma perm_of_zx_transpose_is_rinv {n} {zx} (H : ZXperm n zx) :
+Lemma perm_of_zx_transpose_is_rinv {n m} {zx : ZX n m} (H : ZXperm zx) :
 	(perm_of_zx zx ∘ perm_of_zx zx⊤)%prg = idn.
 Proof.
 	cleanup_perm_of_zx.
 Qed.
 
-Lemma perm_of_zx_transpose_is_linv {n} {zx} (H : ZXperm n zx) :
+Lemma perm_of_zx_transpose_is_linv {n m} {zx : ZX n m} (H : ZXperm zx) :
 	(perm_of_zx zx⊤ ∘ perm_of_zx zx)%prg = idn.
 Proof.
 	cleanup_perm_of_zx.
@@ -408,36 +414,38 @@ Qed.
 #[export] Hint Rewrite 
   @perm_of_zx_transpose_is_rinv 
   @perm_of_zx_transpose_is_linv 
-	using (auto with zxperm_db) : perm_of_zx_cleanup_db.
+	using solve [auto with zxperm_db] : perm_of_zx_cleanup_db.
+
+
+
+
 
 Lemma perm_of_conjugate {n m} (zx : ZX n m) :
 	perm_of_zx (zx ⊼) = perm_of_zx zx.
 Proof.
-	induction zx; simpl; try easy.
-	- rewrite IHzx1, IHzx2; easy.
-	- rewrite IHzx1, IHzx2; easy.
+	induction zx; simpl; now f_equal.
 Qed.
 
 #[export] Hint Rewrite @perm_of_conjugate : perm_of_zx_cleanup_db.
 
-Lemma perm_of_adjoint_eq_transpose {n} {zx} (H : ZXperm n zx) :
+Lemma perm_of_adjoint_eq_transpose {n m} {zx : ZX n m} (H : ZXperm zx) :
 	perm_of_zx (zx †) = perm_of_zx (zx ⊤).
 Proof.
 	unfold "†".
 	cleanup_perm_of_zx.
 Qed.
 
-Lemma perm_of_adjoint {n} {zx} (H : ZXperm n zx) :
+Lemma perm_of_adjoint {n m} {zx : ZX n m} (H : ZXperm zx) :
 	perm_of_zx (zx †) = perm_inv' n (perm_of_zx zx).
 Proof.
 	unfold "†".
-	cleanup_perm_of_zx.
+	now rewrite perm_of_zx_transpose, perm_of_conjugate by auto_zxperm.
 Qed.
 
 #[export] Hint Rewrite @perm_of_adjoint 
-	using (auto with zxperm_db) : perm_of_zx_cleanup_db.
+	using solve [auto with zxperm_db] : perm_of_zx_cleanup_db.
 
-Lemma zxperm_colorswap_eq {n} (zx : ZX n n) (Hzx : ZXperm n zx) :
+Lemma zxperm_colorswap_eq {n m} (zx : ZX n m) (Hzx : ZXperm zx) :
 	⊙ zx = zx.
 Proof.
 	induction Hzx; simpl; now f_equal.
@@ -455,19 +463,70 @@ Qed.
 
 #[export] Hint Rewrite perm_of_n_wire : perm_of_zx_cleanup_db.
 
-Lemma zxperm_transpose_right_inverse {n zx} (H : ZXperm n zx) : 
+Lemma zxperm_transpose_right_inverse {n m} (zx : ZX n m) (H : ZXperm zx) : 
 	zx ⟷ zx ⊤ ∝ n_wire n.
 Proof.
 	by_perm_eq.
 Qed.
 
-Lemma zxperm_transpose_left_inverse {n zx} (H : ZXperm n zx) : 
-	zx ⊤ ⟷ zx ∝ n_wire n.
+Lemma zxperm_transpose_left_inverse {n m} (zx : ZX n m) (H : ZXperm zx) : 
+	zx ⊤ ⟷ zx ∝ n_wire m.
 Proof.
 	by_perm_eq.
 Qed.
 
-Lemma perm_of_zx_stack_n_wire_alt {n0} {zx} (H : ZXperm n0 zx) {n1} :
+Open Scope ZX_scope.
+
+Lemma compose_zxperm_l {n m o} (zxp : ZX n m) (zx0 : ZX m o) 
+	zx1 (H : ZXperm zxp) :
+	zxp ⟷ zx0 ∝ zx1 <-> zx0 ∝ zxp ⊤ ⟷ zx1.
+Proof.
+	split; [intros <- | intros ->];
+	rewrite <- compose_assoc, 
+		?zxperm_transpose_left_inverse, ?zxperm_transpose_right_inverse
+		by auto;
+	now cleanup_zx.
+Qed.
+
+Lemma compose_zxperm_l' {n m o} (zxp : ZX n m) (zx0 : ZX m o) 
+	zx1 (H : ZXperm zxp) :
+	zx1 ∝ zxp ⟷ zx0 <-> zxp ⊤ ⟷ zx1 ∝ zx0.
+Proof.
+	symmetry.
+	split; [intros <- | intros ->];
+	rewrite <- compose_assoc, 
+		?zxperm_transpose_left_inverse, ?zxperm_transpose_right_inverse
+		by auto;
+	now cleanup_zx.
+Qed.
+
+Lemma compose_zxperm_r {n m o} (zxp : ZX m o) (zx0 : ZX n m) 
+	zx1 (H : ZXperm zxp) :
+	zx0 ⟷ zxp ∝ zx1 <-> zx0 ∝ zx1 ⟷ zxp ⊤.
+Proof.
+	split; [intros <- | intros ->];
+	rewrite compose_assoc, 
+		?zxperm_transpose_left_inverse, ?zxperm_transpose_right_inverse
+		by auto;
+	now cleanup_zx.
+Qed.
+
+Lemma compose_zxperm_r' {n m o} (zxp : ZX m o) (zx0 : ZX n m) 
+	zx1 (H : ZXperm zxp) :
+	zx1 ∝ zx0 ⟷ zxp <-> zx1 ⟷ zxp ⊤ ∝ zx0.
+Proof.
+	symmetry.
+	split; [intros <- | intros ->];
+	rewrite compose_assoc, 
+		?zxperm_transpose_left_inverse, ?zxperm_transpose_right_inverse
+		by auto;
+	now cleanup_zx.
+Qed.
+
+
+
+Lemma perm_of_zx_stack_n_wire_alt {n0 m0} {zx : ZX n0 m0} 
+	(H : ZXperm zx) n1 :
 	perm_of_zx (zx ↕ (n_wire n1)) = perm_of_zx zx.
 Proof.
 	simpl.
@@ -476,7 +535,8 @@ Proof.
 	easy. 
 Qed.
 
-Lemma perm_of_zx_stack_n_wire {n0} {zx} (H : ZXperm n0 zx) {n1} :
+Lemma perm_of_zx_stack_n_wire {n0 m0} {zx : ZX n0 m0} 
+	(H : ZXperm zx) n1 :
 	perm_of_zx (zx ↕ (n_wire n1)) = 
 	stack_perms n0 n1 (perm_of_zx zx) (idn).
 Proof.
@@ -485,23 +545,47 @@ Proof.
 Qed.
 
 #[export] Hint Rewrite @perm_of_zx_stack_n_wire 
-	using (auto with zxperm_db) : perm_of_zx_cleanup_db.
+	using solve [auto with zxperm_db] : perm_of_zx_cleanup_db.
 
+(* FIXME: Move these two to Qlib.PermutationInstances *)
+Lemma big_swap_perm_defn n m : 
+  perm_eq (n + m) (big_swap_perm n m) 
+  (fun k => if k <? n then k + m else k - n).
+Proof.
+  intros k Hk.
+  unfold big_swap_perm.
+  now simplify_bools_lia_one_kernel.
+Qed.
+
+Lemma big_swap_perm_defn_alt n m : 
+  perm_eq (m + n) (big_swap_perm n m) 
+  (fun k => if k <? n then k + m else k - n).
+Proof.
+  rewrite Nat.add_comm.
+  apply big_swap_perm_defn.
+Qed.
+	
 Lemma perm_of_top_to_bottom_helper_eq {n} :
 	perm_of_zx (top_to_bottom_helper n) = top_to_bottom_perm (S n).
 Proof.
 	induction n; 
-	[eq_by_WF_perm_eq 1; intros []; easy |].
+	[eq_by_WF_perm_eq 1; by_perm_cell; reflexivity |].
 	simpl.
-	cleanup_perm_of_zx.
-	unfold swap_2_perm.
-	rewrite stack_perms_idn_zx by auto with zxperm_db.
-	rewrite IHn.
-	rewrite top_to_bottom_perm_eq_rotr.
-	solve_modular_permutation_equalities.
+	rewrite IHn, perm_of_n_wire, 2!top_to_bottom_perm_eq_rotr.
+	simpl_rewrite (rotr_add_l 1 n).
+	simpl_rewrite (rotr_add_l 1 (S n)).
+	eq_by_WF_perm_eq (2 + n).
+	rewrite stack_perms_WF_idn by auto_perm.
+	unfold swap_2_perm, swap_perm.
+	rewrite big_swap_perm_defn_alt, (stack_perms_defn 1 (S n)).
+	rewrite big_swap_perm_defn_alt.
+	intros k Hk.
+	unfold compose.
+	bdestructΩ'.
 Qed.
 
-#[export] Hint Rewrite @perm_of_top_to_bottom_helper_eq : perm_of_zx_cleanup_db.
+#[export] Hint Rewrite @perm_of_top_to_bottom_helper_eq 
+	: perm_of_zx_cleanup_db.
 
 Lemma perm_of_top_to_bottom_eq {n} :
 	perm_of_zx (top_to_bottom n) = top_to_bottom_perm n.
@@ -584,7 +668,16 @@ Proof.
 	destruct n; [cleanup_perm; easy|].
 	simpl.
 	cleanup_perm_of_zx.
-	solve_modular_permutation_equalities.
+	eq_by_WF_perm_eq (S n).
+	simpl_rewrite (rotl_add_l 1 n).
+	destruct n;
+	[by_perm_cell; reflexivity|].
+	simpl_rewrite (rotr_add_l 1 n).
+	rewrite big_swap_perm_defn, big_swap_perm_defn_alt, stack_perms_idn_f.
+	rewrite swap_perm_defn by lia.
+	intros k Hk.
+	unfold compose.
+	bdestructΩ'.
 Qed.
 
 #[export] Hint Rewrite perm_of_a_swap : perm_of_zx_cleanup_db.
@@ -597,24 +690,25 @@ Proof.
 	rewrite IHn.
 	cleanup_perm_of_zx.
 	eq_by_WF_perm_eq (1 + n).
-	intros i Hi.
-	unfold reflect_perm.
-	autounfold with perm_unfold_db.
-	bdestructΩ'; solve_simple_mod_eqns.
+	simpl_rewrite (rotl_add_l 1 n).
+	rewrite big_swap_perm_defn, 2!reflect_perm_defn, stack_perms_idn_f.
+	intros k Hk.
+	unfold compose.
+	bdestructΩ'_with idtac; lia.
 Qed.
 
 #[export] Hint Rewrite perm_of_n_swap : perm_of_zx_cleanup_db.
 
 
 Lemma zx_to_bot_zxperm a n :
-	ZXperm n (zx_to_bot a n).
+	ZXperm (zx_to_bot a n).
 Proof.
 	unfold zx_to_bot.
 	auto with zxperm_db.
 Qed.
 
 Lemma zx_to_bot'_zxperm a n H :
-	ZXperm n (zx_to_bot' a n H).
+	ZXperm (zx_to_bot' a n H).
 Proof.
 	unfold zx_to_bot'.
 	auto with zxperm_db.
@@ -623,11 +717,15 @@ Qed.
 #[export] Hint Resolve zx_to_bot_zxperm zx_to_bot'_zxperm : zxperm_db.
 
 Lemma perm_of_zx_to_bot a n :
-	perm_of_zx (zx_to_bot a n) = swap_perm (min a n) (min a n + (n - a - 1)) n.
+	perm_of_zx (zx_to_bot a n) = 
+		swap_perm (min a n) (min a n + (n - a - 1)) n.
 Proof.
+	eq_by_WF_perm_eq n.
 	unfold zx_to_bot.
 	cleanup_perm_of_zx.
-	solve_modular_permutation_equalities.
+	intros k Hk.
+	unfold swap_perm, stack_perms.
+	bdestructΩ'.
 Qed.
 
 Lemma perm_of_zx_to_bot' a n H :
@@ -652,15 +750,15 @@ Qed.
 Lemma zx_to_bot_propto_zx_to_bot' {a n} H : 
 	zx_to_bot a n ∝ zx_to_bot' a n H.
 Proof.
-	prop_perm_eq.
+	by_perm_eq.
 	rewrite (perm_of_zx_to_bot_eq_zx_to_bot' _ _ H).
 	cleanup_perm_of_zx.
 Qed.
 
 Lemma zx_of_swap_list_zxperm l :
-	ZXperm (length l) (zx_of_swap_list l).
+	ZXperm (zx_of_swap_list l).
 Proof.
-	induction l; simpl; auto with zxperm_db.
+	induction l; simpl; auto_zxperm.
 Qed.
 
 #[export] Hint Resolve zx_of_swap_list_zxperm : zxperm_db.
@@ -683,22 +781,46 @@ Proof.
 Qed.
 
 #[export] Hint Rewrite perm_of_zx_of_swap_list 
-	using auto with perm_db : perm_of_zx_cleanup_db.
+	using solve [auto_perm] : perm_of_zx_cleanup_db.
 
 Lemma colorswap_zx_to_bot a m : 
 	⊙ (zx_to_bot a m) ∝ zx_to_bot a m.
 Proof.
-	now rewrite zxperm_colorswap_eq by auto with zxperm_db.
+	now rewrite zxperm_colorswap_eq by auto_zxperm.
 Qed.
 
 Lemma colorswap_zx_of_swap_list l : 
 	⊙ (zx_of_swap_list l) ∝ zx_of_swap_list l.
 Proof.
-	now rewrite zxperm_colorswap_eq by auto with zxperm_db.
+	now rewrite zxperm_colorswap_eq by auto_zxperm.
 Qed.
 
 #[export] Hint Rewrite colorswap_zx_to_bot 
 	colorswap_zx_of_swap_list : colorswap_db.
+
+Lemma zx_of_perm_zxperm n f : 
+	ZXperm (zx_of_perm n f).
+Proof.
+	unfold zx_of_perm.
+	auto_zxperm.
+Qed.
+
+#[export] Hint Resolve zx_of_perm_zxperm : zxperm_db.
+
+Lemma zx_of_perm_cast_id n f H : 
+	zx_of_perm_cast n n f H = zx_of_perm n f.
+Proof.
+	apply cast_id_eq.
+Qed.
+
+Lemma zx_of_perm_cast_zxperm n m f H : 
+	ZXperm (zx_of_perm_cast n m f H).
+Proof.
+	unfold zx_of_perm_cast.
+	auto_zxperm.
+Qed.
+
+#[export] Hint Resolve zx_of_perm_cast_zxperm : zxperm_db.
 
 Lemma perm_of_zx_uncast_of_perm_eq n f : permutation n f ->
 	perm_eq n (perm_of_zx (zx_of_perm_uncast n f)) f.
@@ -718,7 +840,7 @@ Proof.
 Qed.
 
 #[export] Hint Rewrite perm_of_zx_uncast_of_perm_eq_WF
-	using (solve [auto with perm_db WF_Perm_db]) : perm_of_zx_cleanup_db.
+	using (solve [auto_perm]) : perm_of_zx_cleanup_db.
 
 Lemma perm_of_zx_of_perm_eq n f : permutation n f -> 
 	perm_eq n (perm_of_zx (zx_of_perm n f)) f.
@@ -729,6 +851,26 @@ Proof.
 Qed.
 
 #[export] Hint Resolve perm_of_zx_of_perm_eq : perm_inv_db.
+#[export] Hint Rewrite perm_of_zx_of_perm_eq 
+	using solve [auto_perm]: perm_of_zx_cleanup_db.
+
+Lemma perm_of_zx_of_perm_cast_eq n m f H : permutation n f -> 
+	perm_eq n (perm_of_zx (zx_of_perm_cast n m f H)) f.
+Proof.
+	intros Hperm.
+	unfold zx_of_perm_cast.
+	cleanup_perm_of_zx.
+Qed.
+
+Lemma perm_of_zx_of_perm_cast_eq_alt n m f H : permutation m f -> 
+	perm_eq m (perm_of_zx (zx_of_perm_cast n m f H)) f.
+Proof.
+	subst.
+	apply perm_of_zx_of_perm_cast_eq.
+Qed.
+
+#[export] Hint Rewrite perm_of_zx_of_perm_cast_eq 
+	using solve [auto_perm]: perm_of_zx_cleanup_db.
 
 Lemma perm_of_zx_of_perm_eq_WF n f : 
 	permutation n f -> WF_Perm n f ->
@@ -742,39 +884,72 @@ Qed.
 #[export] Hint Rewrite perm_of_zx_of_perm_eq_WF
 	using (solve [auto with perm_db WF_Perm_db]) : perm_of_zx_cleanup_db.
 
-Lemma zx_of_perm_zxperm n f : 
-	ZXperm n (zx_of_perm n f).
+Lemma perm_of_zx_of_perm_cast_eq_WF n m f H : 
+	permutation n f -> WF_Perm n f -> 
+	(perm_of_zx (zx_of_perm_cast n m f H)) = f.
 Proof.
-	unfold zx_of_perm.
-	auto with zxperm_db.
+	intros Hperm HWF.
+	eq_by_WF_perm_eq n.
+	unfold zx_of_perm_cast.
+	cleanup_perm_of_zx.
 Qed.
 
-#[export] Hint Resolve zx_of_perm_zxperm : zxperm_db.
 
-Lemma zx_of_perm_of_zx {n zx} (H : ZXperm n zx) : 
+
+
+Lemma zx_of_perm_of_zx_square {n} (zx : ZX n n) (H : ZXperm zx) : 
 	zx_of_perm n (perm_of_zx zx) ∝ zx.
 Proof.
 	by_perm_eq.
 Qed.
 
-#[export] Hint Rewrite @zx_of_perm_of_zx 
-	using auto with zxperm_db : perm_of_zx_cleanup_db.
 
-Lemma perm_of_zx_perm_eq_of_proportional {n} {zx0 zx1 : ZX n n} 
-	(Hzx0 : ZXperm n zx0) (Hzx1 : ZXperm n zx1) : 
+Lemma zx_of_perm_of_zx_cast {n m} (zx : ZX n m) (H : ZXperm zx) 
+	prfn prfm : 
+	cast n m prfn prfm (zx_of_perm n (perm_of_zx zx)) ∝ zx.
+Proof.
+	by_perm_eq.
+Qed.
+
+#[export] Hint Rewrite @zx_of_perm_of_zx_square 
+	@zx_of_perm_of_zx_cast
+	using solve [auto_zxperm] : perm_of_zx_cleanup_db.
+
+Lemma zx_of_perm_of_zx_to_cast {n m} (zx : ZX n m) (H : ZXperm zx) : 
+	zx_of_perm n (perm_of_zx zx) ∝
+	cast n n eq_refl (zxperm_square zx H) zx.
+Proof.
+	by_perm_eq.
+Qed.
+
+Lemma zx_of_perm_cast_of_zx {n m} (zx : ZX n m) (H : ZXperm zx) prf : 
+	zx_of_perm_cast n m (perm_of_zx zx) prf ∝ zx.
+Proof.
+	subst.
+	rewrite zx_of_perm_cast_id.
+	now apply zx_of_perm_of_zx_square.
+Qed.
+
+Lemma zxperm_to_zx_of_perm_cast {n m} (zx : ZX n m) (H : ZXperm zx) : 
+	zx ∝ zx_of_perm_cast n m (perm_of_zx zx) (zxperm_square zx H).
+Proof.
+	symmetry; now apply zx_of_perm_cast_of_zx.
+Qed.
+
+Lemma perm_of_zx_perm_eq_of_proportional {n m} {zx0 zx1 : ZX n m} 
+	(Hzx0 : ZXperm zx0) (Hzx1 : ZXperm zx1) : 
 	zx0 ∝ zx1 ->
 	perm_eq n (perm_of_zx zx0) (perm_of_zx zx1).
 Proof.
 	unfold proportional, proportional_general.
-	rewrite (perm_of_zx_permutation_semantics Hzx0).
-	rewrite (perm_of_zx_permutation_semantics Hzx1).
+	rewrite (perm_of_zx_permutation_semantics zx0 Hzx0).
+	rewrite (perm_of_zx_permutation_semantics zx1 Hzx1).
 	intros H.
-	apply perm_to_matrix_perm_eq_of_proportional; 
-	cleanup_perm_inv.
+	apply perm_to_matrix_perm_eq_of_proportional; auto_perm.
 Qed.
 
-Lemma perm_of_zx_proper {n} {zx0 zx1 : ZX n n} 
-	(Hzx0 : ZXperm n zx0) (Hzx1 : ZXperm n zx1) : 
+Lemma perm_of_zx_proper {n m} {zx0 zx1 : ZX n m} 
+	(Hzx0 : ZXperm zx0) (Hzx1 : ZXperm zx1) : 
 	zx0 ∝ zx1 ->
 	perm_of_zx zx0 = perm_of_zx zx1.
 Proof.
@@ -783,26 +958,28 @@ Proof.
 	now apply perm_of_zx_perm_eq_of_proportional.
 Qed.
 
-Lemma perm_of_zx_prop_rw {n} {zx0 zx1} :
+Lemma perm_of_zx_prop_rw {n m} {zx0 zx1 : ZX n m} :
 	zx0 ∝ zx1 ->
-	ZXperm n zx0 -> ZXperm n zx1 ->
+	ZXperm zx0 -> ZXperm zx1 ->
 	perm_of_zx zx0 = perm_of_zx zx1.
 Proof.
 	intros; now apply perm_of_zx_proper.
 Qed.
 
-(* Import Setoid.
+(*
+(* This doesn't work: *)
 
-Add Parametric Morphism n : (@perm_of_zx n n) 
-	with signature 
-	(fun zx0 zx1 => zx0 ∝ zx1 /\ ZXperm n zx0 /\ ZXperm n zx1) ==>
+Add Parametric Morphism n m : (@perm_of_zx n m) 
+	with signature
+	on_predicate_relation_l ZXperm 
+	proportional
+	(* (on_predicate_relation_l ZXperm
+	 proportional) *)
+	==>
 	eq as perm_of_zx_proper_instance.
 Proof.
 	intros zx0 zx1 (? & ? & ?); now apply perm_of_zx_proper.
-Qed.
-
-#[export] Hint Extern 0 (_ ∝ _ /\ ZXperm _ _ /\ ZXperm _ _) =>
-	split; [split|]; [|auto with zxperm_db..] : typeclasses_db. *)
+Qed. *)
 
 (* Section on combining zx_of_perm *)
 
@@ -812,10 +989,9 @@ Lemma compose_zx_of_perm n f g
 	zx_of_perm n f ⟷ zx_of_perm n g ∝ zx_of_perm n (f ∘ g).
 Proof.
 	(* unfold zx_of_perm. *)
-	by_perm_eq.
-	apply (fun H => perm_eq_trans H (perm_eq_sym 
-		(perm_of_zx_of_perm_eq n (f ∘ g) ltac:(auto with perm_db)))).
-	apply perm_eq_compose_proper; cleanup_perm_of_zx.
+	by_perm_eq_nosimpl.
+	cbn.
+	now rewrite 3!perm_of_zx_of_perm_eq by auto_perm.
 Qed.
 
 Lemma stack_zx_of_perm n m f g 
@@ -829,7 +1005,47 @@ Qed.
 
 #[export] Hint Rewrite compose_zx_of_perm
 	stack_zx_of_perm
-	using auto with perm_db zxperm_db : perm_of_zx_cleanup_db.
+	using solve [auto with perm_db zxperm_db] 
+	: perm_of_zx_cleanup_db.
+
+
+Lemma compose_zx_of_perm_cast n m o f g prf1 prf2 
+	(Hf : permutation n f) (Hg : permutation m g) : 
+	zx_of_perm_cast n m f prf1 ⟷ zx_of_perm_cast m o g prf2 ∝
+	zx_of_perm_cast n o (f ∘ g) (eq_trans prf1 prf2).
+Proof.
+	subst; rewrite !zx_of_perm_cast_id.
+	now apply compose_zx_of_perm.
+Qed.
+
+Lemma stack_zx_of_perm_cast n0 m0 n1 m1 f g prf1 prf2 
+	(Hf : permutation n0 f) (Hg : permutation n1 g) : 
+	zx_of_perm_cast n0 m0 f prf1 ↕ zx_of_perm_cast n1 m1 g prf2 ∝
+	zx_of_perm_cast (n0 + n1) (m0 + m1) 
+		(stack_perms n0 n1 f g) (f_equal2 Nat.add prf1 prf2).
+Proof.
+	subst; rewrite !zx_of_perm_cast_id.
+	now apply stack_zx_of_perm.
+Qed.
+
+Lemma compose_zx_of_perm_cast_l n m f g prf 
+	(Hf : permutation n f) (Hg : permutation m g) : 
+	zx_of_perm_cast n m f prf ⟷ zx_of_perm m g ∝
+	zx_of_perm_cast n m (f ∘ g) prf.
+Proof.
+	subst; rewrite !zx_of_perm_cast_id.
+	now apply compose_zx_of_perm.
+Qed.
+
+Lemma compose_zx_of_perm_cast_r n m f g prf 
+	(Hf : permutation n f) (Hg : permutation n g) : 
+	zx_of_perm n f ⟷ zx_of_perm_cast n m g prf ∝
+	zx_of_perm_cast n m (f ∘ g) prf.
+Proof.
+	subst; rewrite !zx_of_perm_cast_id.
+	now apply compose_zx_of_perm.
+Qed.
+
 
 (* TODO: Put somewhere proper *)
 Lemma perm_inv_le_bounded_total n f : 
@@ -903,6 +1119,46 @@ Qed.
 #[export] Hint Resolve zx_of_perm_eq_of_perm_eq 
 	zx_of_perm_prop_of_perm_eq : perm_inv_db.
 
+Import Setoid.
+
+Add Parametric Morphism n : (zx_of_perm n)
+	with signature 
+	perm_eq n ==> eq as zx_of_perm_perm_eq_to_eq_proper.
+Proof.
+	intros f g Hfg.
+	now apply zx_of_perm_eq_of_perm_eq.
+Qed.
+
+(* FIXME: Move *)
+Definition true_rel {A} : relation A := 
+	fun _ _ => True.
+
+Add Parametric Relation A : A true_rel 
+	reflexivity proved by ltac:(easy)
+	symmetry proved by ltac:(easy)
+	transitivity proved by ltac:(easy) 
+	as true_rel_equivalence.
+
+#[export] Hint Unfold true_rel : typeclass_instances.
+
+Add Parametric Morphism n m : (zx_of_perm_cast n m)
+	with signature perm_eq n ==> true_rel ==> eq 
+	as zx_of_perm_cast_perm_eq_to_eq_proper.
+Proof.
+	intros f g Hfg H H' ?.
+	unfold zx_of_perm_cast.
+	rewrite Hfg.
+	subst; now rewrite !cast_id_eq.
+Qed.
+
+Lemma zx_of_perm_cast_prop_of_perm_eq n m f g H H' : 
+	perm_eq n f g -> 
+	zx_of_perm_cast n m f H ∝ zx_of_perm_cast n m g H'.
+Proof.
+	intros ->.
+	now rewrite (Peano_dec.UIP_nat _ _ H H').
+Qed.
+
 Lemma zx_of_perm_idn n : 
 	zx_of_perm n idn ∝ n_wire n.
 Proof.
@@ -910,14 +1166,6 @@ Proof.
 Qed.
 
 #[export] Hint Rewrite zx_of_perm_idn : perm_of_zx_cleanup_db.
-
-#[export] Hint Extern 0 (perm_eq _ (perm_of_zx (zx_of_perm ?n ?f)) _) => 
-	apply (perm_eq_trans (perm_of_zx_of_perm_eq n f 
-		ltac:(auto with perm_db zxperm_db zarith))) : perm_inv_db.
-
-#[export] Hint Extern 0 (perm_eq _ _ (perm_of_zx (zx_of_perm ?n ?f))) => 
-	apply (fun G => perm_eq_trans G (perm_eq_sym (perm_of_zx_of_perm_eq n f 
-		ltac:(auto with perm_db zxperm_db zarith)))) : perm_inv_db.
 
 Lemma zx_of_perm_eq_idn n f : 
 	perm_eq n f idn ->
@@ -927,15 +1175,14 @@ Proof.
 	cleanup_perm_inv.
 Qed.
 
-#[export] Hint Rewrite zx_of_perm_eq_idn
-  using (solve [cleanup_perm_inv]): perm_of_zx_cleanup_db.
+(* #[export] Hint Rewrite zx_of_perm_eq_idn
+  using (solve [cleanup_perm_inv]): perm_of_zx_cleanup_db. *)
 
 Lemma zx_of_perm_eq_idn_prop n f : 
 	perm_eq n f idn ->
 	zx_of_perm n f ∝ zx_of_perm n idn.
 Proof.
-	intros H.
-	now cleanup_perm_of_zx.
+	now intros ->.
 Qed.
 
 Lemma cast_zx_of_perm n n' f (H H' : n = n') :
@@ -947,6 +1194,23 @@ Qed.
 
 #[export] Hint Rewrite cast_zx_of_perm : cast_simpl_db
 	perm_of_zx_cleanup_db.
+
+Lemma cast_zx_of_perm_nonsquare n' m' n f 
+	H H' :
+	cast n' m' H H' (zx_of_perm n f) = 
+	zx_of_perm_cast n' m' f (eq_trans H (eq_sym H')).
+Proof.
+	now subst.
+Qed.
+
+Lemma cast_zx_of_perm_cast n' m' n m f H H' prf : 
+	cast n' m' H H' (zx_of_perm_cast n m f prf) = 
+	zx_of_perm_cast n' m' f (eq_trans H (eq_trans prf (eq_sym H'))).
+Proof.
+	now subst.
+Qed.
+
+#[export] Hint Rewrite cast_zx_of_perm_cast : perm_of_zx_cleanup_db.
 
 Lemma cast_zx_of_perm_natural_l n n' m' f H H' : 
 	cast n' m' H H' (zx_of_perm n f) = 
@@ -968,7 +1232,7 @@ Lemma zx_of_perm_perm_eq_idn_removal_l {n m} f
 	(zx : ZX n m) : perm_eq n f idn ->
 	zx_of_perm n f ⟷ zx ∝ zx.
 Proof.
-	intros H.
+	intros ->.
 	cleanup_perm_of_zx.
 	now cleanup_zx.
 Qed.
@@ -977,15 +1241,15 @@ Lemma zx_of_perm_perm_eq_idn_removal_r {n m} f
 	(zx : ZX n m) : perm_eq m f idn ->
 	zx ⟷ zx_of_perm m f ∝ zx.
 Proof.
-	intros H.
+	intros ->.
 	cleanup_perm_of_zx.
 	now cleanup_zx.
 Qed.
 
-#[export] Hint Rewrite 
+(* #[export] Hint Rewrite 
 	@zx_of_perm_perm_eq_idn_removal_l 
 	@zx_of_perm_perm_eq_idn_removal_r
-	using (solve [cleanup_perm_inv]) : perm_of_zx_cleanup_db.
+	using (solve [cleanup_perm_inv]) : perm_of_zx_cleanup_db. *)
 
 Lemma zx_of_perm_semantics n f : 
 	permutation n f -> 
@@ -998,7 +1262,7 @@ Proof.
 Qed.
 
 #[export] Hint Rewrite zx_of_perm_semantics 
-	using auto with perm_db : perm_of_zx_cleanup_db.
+	using solve [auto_perm] : perm_of_zx_cleanup_db.
 
 Lemma zx_of_perm_casted_semantics f n n' m' 
 	(H : n' = n) (H' : m' = n) : 
@@ -1013,7 +1277,19 @@ Proof.
 Qed.
 
 #[export] Hint Rewrite zx_of_perm_casted_semantics
-	using auto with perm_db : perm_of_zx_cleanup_db.
+	using solve [auto_perm] : perm_of_zx_cleanup_db.
+
+Lemma zx_of_perm_cast_semantics f n m H 
+	(Hf : permutation n f) : 
+	⟦ zx_of_perm_cast n m f H ⟧ = 
+	perm_to_matrix n f.
+Proof.
+	subst.
+	now apply zx_of_perm_semantics.
+Qed.
+
+#[export] Hint Rewrite zx_of_perm_cast_semantics
+	using solve [auto_perm] : perm_of_zx_cleanup_db.
 
 Ltac simpl_zx_of_perm_semantics :=
 	match goal with 
@@ -1031,58 +1307,51 @@ Ltac simpl_zx_of_perm_semantics :=
 
 
 Definition zx_comm p q : (ZX (p + q) (q + p)) :=
-	cast (p+q) (q + p) eq_refl (Nat.add_comm q p)
-		(zx_of_perm (p + q) (rotr (p + q) p)).
+	zx_of_perm_cast (p + q) (q + p) (big_swap_perm q p) (Nat.add_comm p q).
 
 Arguments zx_comm : simpl never.
+
+Lemma zx_comm_zxperm p q : ZXperm (zx_comm p q).
+Proof.
+	unfold zx_comm; auto_zxperm.
+Qed.
+
+#[export] Hint Resolve zx_comm_zxperm : zxperm_db.
 
 Lemma zx_comm_semantics p q : 
 	⟦ zx_comm p q ⟧ = kron_comm (2^q) (2^p).
 Proof.
-	unfold zx_comm.
-	cleanup_perm_of_zx.
+	unfold zx_comm, zx_of_perm_cast.
+	simpl_cast_semantics.
+	rewrite zx_of_perm_semantics by auto_perm.
+	now rewrite kron_comm_pows2_eq_perm_to_matrix_big_swap.
 Qed.
 
 #[export] Hint Rewrite zx_comm_semantics : perm_of_zx_cleanup_db.
 
-Lemma zx_comm_cancel p q : 
-	zx_comm p q ⟷ zx_comm q p ∝ n_wire _.
-Proof.
-	prop_exists_nonzero R1.
-	rewrite Mscale_1_l.
-	simpl.
-	cleanup_perm_of_zx.
-	rewrite n_wire_semantics.
-	restore_dims.
-	rewrite kron_comm_mul_inv.
-	now unify_pows_two.
-Qed.
-
-#[export] Hint Rewrite zx_comm_cancel : perm_of_zx_cleanup_db.
-
 Lemma zx_comm_transpose p q :
 	(zx_comm p q) ⊤ ∝ zx_comm q p.
 Proof.
-	unfold zx_comm.
+	unfold zx_comm, zx_of_perm_cast.
 	simpl_casts.
 	rewrite <- cast_transpose, cast_zx_of_perm.
 	by_perm_eq.
-	rewrite Nat.add_comm.
-	rewrite perm_of_zx_of_perm_eq_WF by cleanup_perm.
-	cleanup_perm.
-	perm_eq_by_inv_inj (rotr (p + q) p) (p + q).
-	cleanup_perm.
-	rewrite Nat.add_comm.
-	cleanup_perm.
 Qed.
 
 #[export] Hint Rewrite zx_comm_transpose : transpose_db.
 
+Lemma zx_comm_cancel p q : 
+	zx_comm p q ⟷ zx_comm q p ∝ n_wire _.
+Proof.
+	rewrite <- zx_comm_transpose.
+	apply zxperm_transpose_left_inverse; auto_zxperm.
+Qed.
+
+#[export] Hint Rewrite zx_comm_cancel : perm_of_zx_cleanup_db.
+
 Lemma zx_comm_colorswap p q : 
 	⊙ (zx_comm p q) ∝ zx_comm p q.
 Proof.
-	unfold zx_comm.
-	simpl_casts.
 	now rewrite zxperm_colorswap_eq by auto with zxperm_db.
 Qed.
 
@@ -1095,10 +1364,10 @@ Proof.
 	prop_exists_nonzero R1.
 	rewrite Mscale_1_l.
 	simpl.
-	cleanup_perm_of_zx.
+	rewrite 2!zx_comm_semantics.
 	restore_dims.
 	apply (kron_comm_commutes_r _ _ _ _ (⟦zx0⟧) (⟦zx1⟧));
-	auto with wf_db.
+	auto_wf.
 Qed.
 
 Lemma zx_comm_commutes_r {n m p q} (zx0 : ZX n m) (zx1 : ZX p q) :
@@ -1108,19 +1377,18 @@ Proof.
 	prop_exists_nonzero R1.
 	rewrite Mscale_1_l.
 	simpl.
-	cleanup_perm_of_zx.
+	rewrite 2!zx_comm_semantics.
 	restore_dims.
 	apply (kron_comm_commutes_l _ _ _ _ (⟦zx0⟧) (⟦zx1⟧));
-	auto with wf_db.
+	auto_wf.
 Qed.
 
 Lemma zx_comm_1_1_swap : 
 	zx_comm 1 1 ∝ ⨉.
 Proof.
 	unfold zx_comm.
-	simpl_permlike_zx.
 	by_perm_eq.
-	intros [| []]; easy.
+	by_perm_cell; reflexivity.
 Qed.
 
 Lemma perm_of_swap : 
@@ -1192,12 +1460,12 @@ Proof.
 	cleanup_perm_of_zx.
 Qed.
 
-#[export] Hint Rewrite zx_of_perm_compose_cast_r
+(* #[export] Hint Rewrite zx_of_perm_compose_cast_r
 	zx_of_perm_compose_cast_l 
 	zx_of_perm_compose_cast_cast
 	using (first [auto with perm_db zxperm_db 
 		| erewrite permutation_change_dims; auto with perm_db zarith ]) :
-		perm_of_zx_cleanup_db.
+		perm_of_zx_cleanup_db. *)
 
 Lemma zx_comm_twice_add_r_join n m o H : 
 	zx_comm n (m + o) ⟷ cast _ _ H eq_refl (zx_comm m (o + n)) ∝
@@ -1205,13 +1473,11 @@ Lemma zx_comm_twice_add_r_join n m o H :
 		 (zx_comm _ _).
 Proof.
 	unfold zx_comm.
-	simpl_casts.
-	rewrite zx_of_perm_compose_cast_cast by auto with perm_db.
-	simpl_casts.
-	apply zx_of_perm_prop_of_perm_eq.
-	replace (n + m + o) with (n + (m + o)) by lia.
-	replace (m + (o + n)) with (n + (m + o)) by lia.
-	cleanup_perm.
+	rewrite 2!cast_zx_of_perm_cast, compose_zx_of_perm_cast by auto_perm.
+	apply zx_of_perm_cast_prop_of_perm_eq.
+	intros k Hk.
+	unfold compose, big_swap_perm.
+	bdestructΩ'_with idtac; lia.
 Qed.
 
 
@@ -1221,18 +1487,14 @@ Lemma zx_comm_twice_add_l_join n m o H :
 		 (zx_comm n (m + o)).
 Proof.
 	unfold zx_comm.
-	simpl_casts.
-	rewrite zx_of_perm_compose_cast_cast by auto with perm_db.
-	simpl_casts.
-	apply zx_of_perm_prop_of_perm_eq.
-	replace (n + m + o) with (n + (m + o)) by lia.
-	replace (o + n + m) with (n + (m + o)) by lia.
-	cleanup_perm.
-	replace (n + m + (o + n)) with (n + (m + o) + n) by lia.
-	cleanup_perm.
+	rewrite 2!cast_zx_of_perm_cast, compose_zx_of_perm_cast by auto_perm.
+	apply zx_of_perm_cast_prop_of_perm_eq.
+	intros k Hk.
+	unfold compose, big_swap_perm.
+	bdestructΩ'_with idtac; lia.
 Qed.
 
-Lemma zx_of_perm_rotr_to_zx_comm n m : 
+(* Lemma zx_of_perm_rotr_to_zx_comm n m : 
 	zx_of_perm (n + m) (rotr (n + m) n) ∝
 	cast _ _ eq_refl (Nat.add_comm _ _)
 	(zx_comm n m).
@@ -1249,7 +1511,7 @@ Proof.
 	unfold zx_comm.
 	simpl_casts.
 	now rewrite (Nat.add_comm m n).
-Qed.	
+Qed.	 *)
 
 Definition zx_gap_comm p m q : (ZX (p + m + q) (q + m + p)) :=
 	cast _ _ eq_refl (eq_sym (Nat.add_assoc _ _ _))
@@ -1257,52 +1519,59 @@ Definition zx_gap_comm p m q : (ZX (p + m + q) (q + m + p)) :=
 
 Arguments zx_gap_comm : simpl never.
 
+Lemma zx_gap_comm_zxperm p m q : ZXperm (zx_gap_comm p m q).
+Proof.
+	unfold zx_gap_comm; auto_zxperm.
+Qed.
+
+#[export] Hint Resolve zx_gap_comm_zxperm : zxperm_db.
+
 Lemma zx_gap_comm_pf p m q : p + m + q = q + m + p.
 Proof. lia. Qed.
 
 Lemma zx_gap_comm_defn p m q : 
 	zx_gap_comm p m q ∝ 
-	cast _ _ eq_refl (zx_gap_comm_pf _ _ _) 
-	(zx_of_perm (p + m + q) (rotr (p + m + q) (p + m) ∘ 
-		stack_perms q (p + m) idn (rotr (p + m) p))).
+	zx_of_perm_cast _ _
+	(big_swap_perm q (p + m) ∘ 
+		stack_perms q (p + m) idn (big_swap_perm m p))
+		(zx_gap_comm_pf _ _ _).
 Proof.
 	unfold zx_gap_comm, zx_comm.
-	rewrite <- zx_of_perm_idn.
-	auto_cast_eqn rewrite cast_stack_r.
-	rewrite stack_zx_of_perm by auto with perm_db.
-	rewrite cast_compose_l, !cast_cast_eq.
-	rewrite cast_zx_of_perm_natural_l.
-	rewrite cast_compose_r, cast_id, compose_zx_of_perm by 
-		(erewrite permutation_change_dims; auto with perm_db zarith).
-	rewrite cast_cast_eq.
-	now apply cast_simplify.
+	rewrite cast_compose_distribute, cast_zx_of_perm_cast.
+	by_perm_eq_nosimpl.
+	cbn [perm_of_zx].
+	now rewrite perm_of_zx_cast, perm_of_zx_of_perm_cast_eq_WF, 
+		perm_of_zx_stack_spec, perm_of_n_wire, 
+		2!perm_of_zx_of_perm_cast_eq_WF by auto_perm.
 Qed.
+
+Lemma perm_of_zx_gap_comm p m q : 
+	perm_of_zx (zx_gap_comm p m q) =
+	big_swap_perm q (p + m) ∘ 
+		stack_perms q (p + m) idn (big_swap_perm m p).
+Proof.
+	rewrite (perm_of_zx_prop_rw (zx_gap_comm_defn p m q)) by auto_zxperm.
+	now rewrite perm_of_zx_of_perm_cast_eq_WF by auto_perm.
+Qed.
+
+#[export] Hint Rewrite perm_of_zx_gap_comm : perm_of_zx_cleanup_db.
 
 Lemma zx_gap_comm_transpose p m q : 
 	(zx_gap_comm p m q) ⊤ ∝ zx_gap_comm q m p.
 Proof.
 	rewrite 2!zx_gap_comm_defn.
-	simpl_casts.
-	rewrite <- cast_transpose, cast_zx_of_perm.
-	by_perm_eq.
-	replace (q + m + p) with (p + m + q) by lia.
-	rewrite perm_of_zx_of_perm_eq_WF by cleanup_perm_inv.
-	perm_eq_by_inv_inj (rotr (p + m + q) (p + m)
-		∘ stack_perms q (p + m) idn (rotr (p + m) p)) (p + m + q).
-	replace (p + m + q) with ((q + m) + p) by lia.
-	rewrite <- stack_perms_rotr_natural by cleanup_perm.
-	replace (q + m + p) with (p + m + q) by lia.
-	rewrite <- stack_perms_rotr_natural by cleanup_perm.
-	cleanup_perm.
-	rewrite 3!rotr_add_l.
-	(* rewrite 3!rotr_add_l_eq. *)
-	replace (p + m + q) with (q + m + p) by lia.
-	rewrite rotr_add_l.
-	rewrite <- !compose_assoc.
+	by_perm_eq_nosimpl.
+	rewrite perm_of_zx_transpose, 2!perm_of_zx_of_perm_cast_eq_WF by auto_perm.
+	rewrite perm_inv'_compose, big_swap_perm_inv'_change_dims by lia + auto_perm.
+	rewrite (Nat.add_comm (p + m) q).
+	rewrite perm_inv'_stack_perms, idn_inv', big_swap_perm_inv'_change_dims
+		by lia + auto_perm.
+	rewrite big_swap_perm_defn, 2!stack_perms_idn_f.
+	unfold compose.
 	intros k Hk.
-	unfold compose at 1.
 	unfold big_swap_perm.
-	repeat (bdestructΩ'; unfold compose at 1).
+	do 2 simplify_bools_lia_one_kernel.
+	bdestructΩ'_with idtac; lia.
 Qed.
 
 #[export] Hint Rewrite zx_gap_comm_transpose : transpose_db.
@@ -1310,10 +1579,7 @@ Qed.
 Lemma zx_gap_comm_colorswap p m q : 
 	⊙ (zx_gap_comm p m q) ∝ zx_gap_comm p m q.
 Proof.
-	unfold zx_gap_comm.
-	simpl_casts.
-	simpl.
-	now autorewrite with colorswap_db.
+	now rewrite zxperm_colorswap_eq by auto_zxperm.
 Qed.
 
 #[export] Hint Rewrite zx_gap_comm_colorswap : colorswap_db.
@@ -1333,7 +1599,7 @@ Proof.
 	rewrite <- (nwire_removal_l zx2) at 1.
 	auto_cast_eqn rewrite stack_compose_distr, stack_assoc_back.
 	rewrite (cast_compose_r _ _ (_ ↕ _)).
-	simpl_casts.
+	auto_cast_eqn rewrite !cast_contract, cast_id.
 	rewrite <- compose_assoc.
 	unfold zx_gap_comm.
 	rewrite cast_compose_distribute, cast_id.
@@ -1356,14 +1622,12 @@ Notation zx_gap_comm_commutes_r := zx_gap_comm_pullthrough_l.
 Lemma zx_gap_comm_1_m_1_a_swap m : 
 	zx_gap_comm 1 m 1 ∝ a_swap (1 + m + 1).
 Proof.
-	rewrite zx_gap_comm_defn, cast_id.
-	by_perm_eq.
-	rewrite Nat.add_sub.
-	rewrite 2!rotr_add_l.
-	rewrite stack_perms_idn_f.
+	by_perm_eq_nosimpl.
+	rewrite perm_of_a_swap, perm_of_zx_gap_comm.
+	rewrite 2!big_swap_perm_defn_alt, stack_perms_idn_f, swap_perm_defn
+		by lia.
 	intros k Hk; unfold compose.
-	unfold big_swap_perm, swap_perm.
-	rewrite (Nat.add_comm 1 m).
+	simplify_bools_lia_one_kernel.
 	bdestructΩ'.
 Qed.
 

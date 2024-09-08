@@ -81,6 +81,14 @@ Lemma X_absolute_fusion : forall {n m o} α β,
 	X n o (α + β).
 Proof. intros. colorswap_of (@Z_absolute_fusion n m o). Qed.
 
+Lemma X_split_left : forall n m α,
+	X n m α ∝ X n 1 α ⟷ X 1 m 0.
+Proof. intros n m α. colorswap_of (Z_split_left n m α). Qed.
+
+Lemma X_split_right : forall n m α,
+	X n m α ∝ X n 1 0 ⟷ X 1 m α.
+Proof. intros n m α. colorswap_of (Z_split_right n m α). Qed.
+
 Lemma dominated_X_spider_fusion_top_right : forall n m0 m1 o α β,
 	(X n (S m0) α ↕ n_wire m1 ⟷ X (S m0 + m1) o β) ∝
 	X (n + m1) o (α + β).
@@ -201,16 +209,17 @@ Lemma X_zx_of_perm_absorbtion_right n m α f :
 	X n m α ⟷ zx_of_perm m f ∝ X n m α.
 Proof. colorswap_of (Z_zx_of_perm_absorbtion_right n m α f). Qed.
 
-Lemma X_zxperm_absorbtion_right n m α (zx : ZX m m) (Hzx : ZXperm m zx) :
-	X n m α ⟷ zx ∝ X n m α.
-Proof. colorswap_of (Z_zxperm_absorbtion_right n m α zx Hzx). Qed.
+Lemma X_zx_of_perm_cast_absorbtion_right n m o α f H : 
+	X n m α ⟷ zx_of_perm_cast m o f H ∝ X n o α.
+Proof. colorswap_of (Z_zx_of_perm_cast_absorbtion_right n m o α f H). Qed.
 
-Lemma X_zxperm_absorbtion_left n m α (zx : ZX n n) (Hzx : ZXperm n zx) : 
-	zx ⟷ X n m α ∝ X n m α.
-Proof.
-	transpose_of (X_zxperm_absorbtion_right m n α 
-		(zx⊤) (transpose_zxperm Hzx)).
-Qed.
+Lemma X_zxperm_absorbtion_right n m o α (zx : ZX m o) (Hzx : ZXperm zx) :
+	X n m α ⟷ zx ∝ X n o α.
+Proof. colorswap_of (Z_zxperm_absorbtion_right n m o α zx Hzx). Qed.
+
+Lemma X_zxperm_absorbtion_left n m o α (zx : ZX n m) (Hzx : ZXperm zx) : 
+	zx ⟷ X m o α ∝ X n o α.
+Proof. colorswap_of (Z_zxperm_absorbtion_left n m o α (zx) (Hzx)). Qed.
 
 End Absorbtion.
 

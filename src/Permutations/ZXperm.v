@@ -5,14 +5,16 @@ Open Scope ZX_scope.
 
 (* @nocheck name *)
 (* Allowing combination of Z and X; will check before push *)
-Inductive ZXperm : forall n, ZX n n -> Prop :=
-  | PermEmpty : ZXperm 0 Empty
-  | PermWire : ZXperm 1 Wire
-  | PermSwap : ZXperm 2 ⨉
-  | PermStack {n0 n1 zx0 zx1} : 
-      (ZXperm n0 zx0) -> (ZXperm n1 zx1) -> ZXperm _ (zx0 ↕ zx1)
-  | PermComp {n zx0 zx1} : 
-      (ZXperm n zx0) -> (ZXperm n zx1) -> ZXperm _ (zx0 ⟷ zx1).
+Inductive ZXperm : forall {n m}, ZX n m -> Prop :=
+  | PermEmpty : ZXperm Empty
+  | PermWire : ZXperm Wire
+  | PermSwap : ZXperm ⨉
+  | PermStack {n0 m0 n1 m1} (zx0 : ZX n0 m0) (zx1 : ZX n1 m1) : 
+      ZXperm zx0 -> ZXperm zx1 -> 
+      ZXperm (zx0 ↕ zx1)
+  | PermComp {n m o} (zx0 : ZX n m) (zx1 : ZX m o) : 
+      ZXperm zx0 -> ZXperm zx1 -> 
+      ZXperm (zx0 ⟷ zx1).
 
 
 
@@ -50,20 +52,20 @@ Definition top_to_bottom_perm (n : nat) : nat -> nat :=
 Definition a_perm (n : nat) : nat -> nat :=
   swap_perm 0 (n-1) n.
 
-Lemma zx_to_bot_helper : forall a n, 
+Lemma zx_to_bot_pf : forall a n, 
   n = (n - a + Init.Nat.min a n)%nat.
 Proof. intros a n; lia. Qed.
 
 Definition zx_to_bot (a n : nat) : ZX n n :=
-  cast _ _ (zx_to_bot_helper (n-a) n) (zx_to_bot_helper (n-a) n) 
+  cast _ _ (zx_to_bot_pf (n-a) n) (zx_to_bot_pf (n-a) n) 
   ((n_wire (n - (n-a))) ↕ a_swap (min (n-a) n)).
 
-Lemma zx_to_bot'_helper a n (H : (a < n)%nat) :
+Lemma zx_to_bot'_pf a n (H : (a < n)%nat) :
   n = (a + (n - a))%nat.
 Proof. lia. Qed.
 
 Definition zx_to_bot' (a n : nat) (H : (a < n)%nat) : ZX n n :=
-  cast _ _ (zx_to_bot'_helper a n H) (zx_to_bot'_helper a n H)
+  cast _ _ (zx_to_bot'_pf a n H) (zx_to_bot'_pf a n H)
   (n_wire a ↕ a_swap (n-a)).
 
 Fixpoint zx_of_swap_list (l : list nat) : ZX (length l) (length l) :=
