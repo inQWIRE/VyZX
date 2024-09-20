@@ -379,29 +379,15 @@ Proof.
   apply comm_4_5.
 Qed.
 
+Ltac fuse_h_use_bihad := rewrite <- (nstack1_1 □); rewrite <- nstack1_split; rewrite compose_assoc; rewrite <- colorswap_is_bihadamard; simpl; easy.
+
 Lemma comm_5 : @RZCNOT 3 1 2; RZCNOT 1 0 ≡u RZCNOT 1 0; RZCNOT 1 2.
 Proof.
   circuit_to_zx_full.
   apply colorswap_diagrams.
   simpl.
-  assert (X 1 2 0 ↕ — ⟷ (— ↕ Z 2 1 0) ∝ □ ↕ □ ⟷ (Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0)) ⟷ (□ ↕ □)).
-  {
-    rewrite <- (nstack1_1 □).
-    rewrite <- nstack1_split.
-    rewrite compose_assoc.
-    rewrite <- colorswap_is_bihadamard.
-    simpl.
-    easy.
-  }
-  assert (□ ↕ □ ⟷ (X 1 2 0 ↕ — ⟷ (— ↕ Z 2 1 0)) ⟷ (□ ↕ □) ∝ (Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0))).
-  {
-    rewrite <- (nstack1_1 □).
-      rewrite <- nstack1_split.
-      rewrite compose_assoc.
-      rewrite <- colorswap_is_bihadamard.
-      simpl.
-      easy.
-  }
+  assert (X 1 2 0 ↕ — ⟷ (— ↕ Z 2 1 0) ∝ □ ↕ □ ⟷ (Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0)) ⟷ (□ ↕ □)) by fuse_h_use_bihad.
+  assert (□ ↕ □ ⟷ (X 1 2 0 ↕ — ⟷ (— ↕ Z 2 1 0)) ⟷ (□ ↕ □) ∝ (Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0))) by fuse_h_use_bihad.
   rewrite H at 1.
   rewrite H0 at 1.
   rewrite comm_4_5.
