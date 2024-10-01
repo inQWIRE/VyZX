@@ -18,6 +18,365 @@ Notation " t1 '≡' t2 'by' eval" :=
 
 (* ZX Proportionality *)
 
+Definition proportional_by {n m} (c : C) (zx0 zx1 : ZX n m) :=
+  c .* ⟦ zx0 ⟧ = ⟦ zx1 ⟧ /\ c <> C0.
+
+Definition proportional_by_1 {n m} (zx0 zx1 : ZX n m) :=
+  ⟦ zx0 ⟧ = ⟦ zx1 ⟧.
+
+Notation "zx0 '∝[' c ']' zx1" := 
+  (proportional_by c%C zx0 zx1) (at level 70) : ZX_scope.
+
+Notation "zx0 '∝=' zx1" := 
+  (proportional_by_1 zx0 zx1) (at level 70) : ZX_scope.
+
+Lemma proportional_by_1_defn {n m} (zx0 zx1 : ZX n m) :
+  zx0 ∝= zx1 <-> zx0 ∝[1] zx1.
+Proof.
+  unfold proportional_by, proportional_by_1.
+  rewrite Mscale_1_l.
+  pose proof C1_nonzero.
+  intuition auto.
+Qed.
+
+Lemma proportional_by_1_refl {n m} (zx0 : ZX n m) :
+  zx0 ∝= zx0.
+Proof. 
+  unfold proportional_by_1.
+  reflexivity.
+Qed.
+
+Lemma proportional_by_1_sym {n m} (zx0 zx1 : ZX n m) :
+  zx0 ∝= zx1 -> zx1 ∝= zx0.
+Proof. 
+  unfold proportional_by_1.
+  now intros ->.
+Qed.
+
+Lemma proportional_by_1_trans {n m} (zx0 zx1 zx2 : ZX n m) :
+  zx0 ∝= zx1 -> zx1 ∝= zx2 -> zx0 ∝= zx2.
+Proof. 
+  unfold proportional_by_1.
+  now intros -> ->.
+Qed.
+
+
+Add Parametric Relation n m : (ZX n m) (proportional_by_1)
+  reflexivity proved by proportional_by_1_refl
+  symmetry proved by proportional_by_1_sym
+  transitivity proved by proportional_by_1_trans
+  as proportional_by_1_setoid.
+
+Add Parametric Morphism n m c : (@proportional_by n m c) with signature
+  proportional_by_1 ==> proportional_by_1 ==> iff 
+  as proportional_by_proper_eq.
+Proof.
+  unfold proportional_by, proportional_by_1.
+  now intros ? ? -> ? ? ->.
+Qed.
+
+(* Add Parametric Morphism n m o c d : (@Compose n m o) with signature
+  proportional_by c ==> proportional_by d ==> proportional_by (c * d)
+  as compose_prop_by_proper.
+Proof.
+  unfold proportional_by, proportional_by_1.
+  cbn [ZX_semantics].
+  intros ? ? [<- ?] ? ? [<- ?].
+  split; [|now apply Cmult_neq_0].
+  distribute_scale.
+  now rewrite Cmult_comm.
+Qed.
+
+Add Parametric Morphism n m o p c d : (@Stack n m o p) with signature
+  proportional_by c ==> proportional_by d ==> proportional_by (c * d)
+  as stack_prop_by_proper.
+Proof.
+  unfold proportional_by, proportional_by_1.
+  cbn [ZX_semantics].
+  intros ? ? [<- ?] ? ? [<- ?].
+  split; [|now apply Cmult_neq_0].
+  distribute_scale.
+  now rewrite Cmult_comm.
+Qed. *)
+
+(* FIXME: Move *)
+Lemma Cdiv_0_l c : 0 / c = 0.
+Proof. apply Cmult_0_l. Qed.
+
+Lemma Cdiv_nonzero_iff (c d : C) : c <> 0 ->
+  d / c <> 0 <-> d <> 0.
+Proof.
+  intros Hc.
+  split.
+  - intros Hdc ->.
+    now rewrite Cdiv_0_l in Hdc.
+  - intros Hd. 
+    now apply Cdiv_nonzero.
+Qed.
+
+Lemma Cmult_nonzero_iff (c d : C) : 
+  c * d <> 0 <-> c <> 0 /\ d <> 0.
+Proof.
+  split.
+  - intros Hcd.
+    split.
+    + intros ->.
+      now rewrite Cmult_0_l in Hcd.
+    + intros ->.
+      now rewrite Cmult_0_r in Hcd.
+  - intros [].
+    now apply Cmult_neq_0.
+Qed.
+
+
+Lemma compose_prop_by_if_l {n m o} (zx0 zx1 : ZX n m) 
+  (zx2 : ZX m o) (zx3 : ZX n o) c d : zx0 ∝[c] zx1 ->
+  zx0 ⟷ zx2 ∝[d] zx3 <-> zx1 ⟷ zx2 ∝[d / c] zx3.
+Proof.
+  unfold proportional_by.
+  cbn [ZX_semantics].
+  intros [<- Hc].
+  distribute_scale.
+  replace (d / c * c) with d by C_field.
+  apply ZifyClasses.and_morph; [reflexivity|].
+  symmetry.
+  now apply Cdiv_nonzero_iff.
+Qed.
+
+Lemma compose_prop_by_if_r {n m o} (zx0 : ZX n m) 
+  (zx1 zx2 : ZX m o) (zx3 : ZX n o) c d : zx1 ∝[c] zx2 ->
+  zx0 ⟷ zx1 ∝[d] zx3 <-> zx0 ⟷ zx2 ∝[d / c] zx3.
+Proof.
+  unfold proportional_by.
+  cbn [ZX_semantics].
+  intros [<- Hc].
+  distribute_scale.
+  replace (d / c * c) with d by C_field.
+  apply ZifyClasses.and_morph; [reflexivity|].
+  symmetry.
+  now apply Cdiv_nonzero_iff.
+Qed.
+
+Lemma stack_prop_by_if_l {n m o p} (zx0 zx1 : ZX n m) 
+  (zx2 : ZX o p) zx3 c d : zx0 ∝[c] zx1 ->
+  zx0 ↕ zx2 ∝[d] zx3 <-> zx1 ↕ zx2 ∝[d / c] zx3.
+Proof.
+  unfold proportional_by.
+  cbn [ZX_semantics].
+  intros [<- Hc].
+  restore_dims.
+  distribute_scale.
+  replace (d / c * c) with d by C_field.
+  apply ZifyClasses.and_morph; [reflexivity|].
+  symmetry.
+  now apply Cdiv_nonzero_iff.
+Qed.
+
+Lemma stack_prop_by_if_r {n m o p} (zx0 : ZX n m) 
+  (zx1 zx2 : ZX o p) zx3 c d : zx1 ∝[c] zx2 ->
+  zx0 ↕ zx1 ∝[d] zx3 <-> zx0 ↕ zx2 ∝[d / c] zx3.
+Proof.
+  unfold proportional_by.
+  cbn [ZX_semantics].
+  intros [<- Hc].
+  restore_dims.
+  distribute_scale.
+  replace (d / c * c) with d by C_field.
+  apply ZifyClasses.and_morph; [reflexivity|].
+  symmetry.
+  now apply Cdiv_nonzero_iff.
+Qed.
+
+
+Lemma compose_prop_by_compat_l {n m o} (zx0 zx1 : ZX n m) 
+  (zx2 : ZX m o) c : zx0 ∝[c] zx1 ->
+  zx0 ⟷ zx2 ∝[c] zx1 ⟷ zx2.
+Proof.
+  unfold proportional_by.
+  cbn [ZX_semantics].
+  intros [<- Hc].
+  distribute_scale.
+  split; [reflexivity|auto].
+Qed.
+
+Lemma compose_prop_by_compat_r {n m o} (zx0 : ZX n m) 
+  (zx1 zx2 : ZX m o) c : zx1 ∝[c] zx2 ->
+  zx0 ⟷ zx1 ∝[c] zx0 ⟷ zx2.
+Proof.
+  unfold proportional_by.
+  cbn [ZX_semantics].
+  intros [<- Hc].
+  distribute_scale.
+  split; [reflexivity|auto].
+Qed.
+
+Lemma stack_prop_by_compat_l {n m o p} (zx0 zx1 : ZX n m) 
+  (zx2 : ZX o p) c : zx0 ∝[c] zx1 ->
+  zx0 ↕ zx2 ∝[c] zx1 ↕ zx2.
+Proof.
+  unfold proportional_by.
+  cbn [ZX_semantics].
+  intros [<- Hc].
+  distribute_scale.
+  split; [reflexivity|auto].
+Qed.
+
+Lemma stack_prop_by_compat_r {n m o p} (zx0 : ZX n m) 
+  (zx1 zx2 : ZX o p) c : zx1 ∝[c] zx2 ->
+  zx0 ↕ zx1 ∝[c] zx0 ↕ zx2.
+Proof.
+  unfold proportional_by.
+  cbn [ZX_semantics].
+  intros [<- Hc].
+  distribute_scale.
+  split; [reflexivity|auto].
+Qed.
+
+Lemma cast_prop_by_compat {n m n' m'} (zx0 zx1 : ZX n m) 
+  prfn prfn' prfm prfm' c : zx0 ∝[c] zx1 -> 
+  cast n' m' prfn prfm zx0 ∝[c] cast n' m' prfn' prfm' zx1.
+Proof.
+  unfold proportional_by.
+  now simpl_cast_semantics.
+Qed.
+
+Lemma transpose_prop_by_compat {n m} (zx0 zx1 : ZX n m) c : 
+  zx0 ∝[c] zx1 -> 
+  zx0 ⊤ ∝[c] zx1 ⊤.
+Proof.
+  unfold proportional_by.
+  rewrite 2!semantics_transpose_comm.
+  intros [<- Hc].
+  now rewrite Mscale_trans.
+Qed.
+
+Lemma colorswap_prop_by_compat {n m} (zx0 zx1 : ZX n m) c : 
+  zx0 ∝[c] zx1 -> 
+  ⊙ zx0 ∝[c] ⊙ zx1.
+Proof.
+  unfold proportional_by.
+  rewrite 2!semantics_colorswap_comm.
+  intros [<- Hc].
+  now distribute_scale.
+Qed.
+
+Lemma adjoint_prop_by_compat {n m} (zx0 zx1 : ZX n m) c : 
+  zx0 ∝[c ^*] zx1 -> 
+  zx0 † ∝[c] zx1 †.
+Proof.
+  unfold proportional_by.
+  rewrite 2!semantics_adjoint_comm.
+  intros [<- Hc].
+  rewrite Mscale_adj.
+  rewrite Cconj_involutive.
+  split; [reflexivity|].
+  rewrite <- (Cconj_involutive c).
+  now apply Cconj_neq_0.
+Qed.
+
+
+Create HintDb zx_prop_by_db discriminated.
+#[export] Hint Resolve 
+  compose_prop_by_compat_l compose_prop_by_compat_r
+  stack_prop_by_compat_l stack_prop_by_compat_r 
+  cast_prop_by_compat 
+  transpose_prop_by_compat 
+  adjoint_prop_by_compat 
+  colorswap_prop_by_compat : zx_prop_by_db.
+
+Lemma eq_sym_iff {A} (a b : A) : a = b <-> b = a.
+Proof. easy. Qed.
+
+Lemma proportional_by_trans_iff_l {n m} (zx0 zx1 zx2 : ZX n m) c d : 
+  zx0 ∝[c] zx1 -> (zx0 ∝[d] zx2 <-> zx1 ∝[d / c] zx2).
+Proof.
+  unfold proportional_by.
+  intros [<- Hc].
+  distribute_scale.
+  replace (d / c * c) with d by C_field.
+  apply ZifyClasses.and_morph; [reflexivity|].
+  rewrite Cdiv_nonzero_iff;
+  intuition auto.
+Qed.
+
+Lemma proportional_by_trans_iff_r {n m} (zx0 zx1 zx2 : ZX n m) c d : 
+  zx1 ∝[c] zx2 -> (zx0 ∝[d] zx1 <-> zx0 ∝[d * c] zx2).
+Proof.
+  unfold proportional_by.
+  intros [<- Hc].
+  distribute_scale.
+  apply ZifyClasses.and_morph.
+  - symmetry.
+    rewrite eq_sym_iff.
+    rewrite Mscale_inv by auto.
+    distribute_scale.
+    replace (/ c * (d * c)) with d by C_field.
+    apply eq_sym_iff.
+  - rewrite Cmult_nonzero_iff.
+    intuition auto.
+Qed.
+
+Ltac zxrw H :=
+  match type of H with
+  | ?rwsrc ∝[ ?rwfac ] ?rwtgt =>
+  let Hrw := fresh "Hrw" in 
+  match goal with 
+  | |- ?zxL ∝[ ?fac ] ?zxR => 
+    let Lpat := eval pattern rwsrc in zxL in 
+    lazymatch Lpat with 
+    | (fun _ => ?P) _ => let r := constr:(P) in fail
+    | (fun x => @?P x) _ => 
+      let rwt := eval cbn beta in (P rwsrc ∝[rwfac] P rwtgt) in 
+      assert (Hrw : rwt) by auto 100 with zx_prop_by_db nocore;
+      apply <- (proportional_by_trans_iff_l _ _ zxR rwfac fac Hrw);
+      clear Hrw
+    end
+  | |- ?zxL ∝[ ?fac ] ?zxR => 
+    let Rpat := eval pattern rwsrc in zxR in 
+    lazymatch Rpat with 
+    | (fun _ => ?P) _ => let r := constr:(P) in fail
+    | (fun x => @?P x) _ => 
+      let rwt := eval cbn beta in (P rwsrc ∝[rwfac] P rwtgt) in 
+      assert (Hrw : rwt) by auto 100 with zx_prop_by_db nocore;
+      apply <- (proportional_by_trans_iff_r zxL _ _ rwfac fac Hrw);
+      clear Hrw
+    end
+  end
+  end.
+
+Lemma proportional_by_refl_iff {n m} (zx0 zx1 : ZX n m) c : 
+  c = C1 ->
+  zx0 ∝[c] zx1 <-> zx0 ∝= zx1.
+Proof.
+  intros ->.
+  now rewrite proportional_by_1_defn.
+Qed.
+
+Ltac zxprop_refl :=
+  apply proportional_by_refl_iff;
+  [(repeat match goal with
+    | H : _ ∝[_] _ |- _ => destruct H as [? ?]
+    end); try (now C_field)
+  | try reflexivity].
+  
+
+Lemma zxprop_test {n m o p} (zxnm0 zxnm1 : ZX n m)
+  (zxop0 zxop1 : ZX o p) (c d : C) : zxnm0 ∝[c] zxnm1 -> 
+  zxop0 ∝[d] zxop1 -> zxnm0 ↕ zxop0 ∝[c * d] zxnm1 ↕ zxop1.
+Proof.
+  intros Hnm Hop.
+  zxrw Hnm.
+  zxrw Hop.
+  zxprop_refl.
+Qed.
+
+
+
+
+
+
+
+
 Definition proportional {n m} 
   (zx_0 : ZX n m) (zx_1 : ZX n m) := zx_0 ≡ zx_1 by ZX_semantics.
 Notation "zx0 ∝ zx1" := (proportional zx0 zx1) (at level 70) : ZX_scope. (* \propto *)

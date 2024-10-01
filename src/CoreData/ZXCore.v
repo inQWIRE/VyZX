@@ -56,7 +56,7 @@ matrices and one based on dirac notation.
 *)
 
 (* @nocheck name *)
-Reserved Notation "⟦ zx ⟧" (at level 68). (* = is 70, need to be below *)
+Reserved Notation "⟦ zx ⟧" (at level 0, zx at level 200). (* = is 70, need to be below *)
 Fixpoint ZX_semantics {n m} (zx : ZX n m) : 
   Matrix (2 ^ m) (2 ^ n) := 
   match zx with
