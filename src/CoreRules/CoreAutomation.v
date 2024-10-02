@@ -20,9 +20,8 @@ match goal with
   | [ |- ?zx1 ∝ ?zx2] => try (wire_to_n_wire_safe_aux zx1); try (wire_to_n_wire_safe_aux zx2); repeat rewrite n_stack_n_wire_1_n_wire
 end.
 
-Tactic Notation "bundle_wires" := wire_to_n_wire_safe; (* change wires to n_wires *)
-                                  repeat rewrite n_wire_stack; (* stack n_wire *)
-                                  repeat rewrite <- wire_to_n_wire. (* restore *)
+Tactic Notation "bundle_wires" := 
+  rewrite ?wire_to_n_wire, ?n_wire_stack, <- 1?wire_to_n_wire.
 
 #[export] Hint Rewrite 
   (fun n => @compose_empty_l n)
@@ -44,21 +43,44 @@ Tactic Notation "cleanup_zx" := auto_cast_eqn (autorewrite with cleanup_zx_db).
 #[export] Hint Rewrite
   (fun n m o p => @cast_colorswap n m o p)
   (fun n => @n_wire_colorswap n)
-  (fun n => @n_stack1_colorswap n)
-  (fun n m o => @n_stack_colorswap n m o)
+  (fun n => @nstack1_colorswap n)
+  (fun n m o => @nstack_colorswap n m o)
   : colorswap_db.
 
 #[export] Hint Rewrite
   (fun n m o p => @cast_transpose n m o p)
   (fun n => @n_wire_transpose n)
-  (fun n => @n_stack1_transpose n)
-  (fun n => @n_stack_transpose n)
+  (fun n => @nstack1_transpose n)
+  (fun n => @nstack_transpose n)
   : transpose_db.
 
 #[export] Hint Rewrite
   (fun n m o p => @cast_adj n m o p)
   : adjoint_db.
 
-Ltac transpose_of H := intros; apply transpose_diagrams; repeat (simpl; autorewrite with transpose_db); apply H.
-Ltac adjoint_of H := intros; apply adjoint_diagrams; repeat (simpl; autorewrite with adjoint_db); apply H.
-Ltac colorswap_of H := intros; apply colorswap_diagrams; repeat (simpl; autorewrite with colorswap_db); apply H.
+Ltac transpose_of H := 
+  intros;
+  first [apply transpose_diagrams
+   | apply transpose_diagrams_by 
+   | apply transpose_diagrams_eq 
+   | apply transpose_zx]; 
+  repeat (simpl; autorewrite with transpose_db); 
+  apply H.
+
+Ltac adjoint_of H := 
+  intros;
+  first [apply adjoint_diagrams
+    | apply adjoint_diagrams_by 
+    | apply adjoint_diagrams_eq 
+    | apply adjoint_zx]; 
+  repeat (simpl; autorewrite with adjoint_db); 
+  apply H.
+
+Ltac colorswap_of H := 
+  intros;
+  first [apply colorswap_diagrams
+   | apply colorswap_diagrams_by 
+   | apply colorswap_diagrams_eq 
+   | apply colorswap_zx]; 
+  repeat (simpl; autorewrite with colorswap_db); 
+  apply H.

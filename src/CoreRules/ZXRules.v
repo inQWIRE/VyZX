@@ -202,7 +202,7 @@ Proof.
 	apply colorswap_diagrams.
 	simpl.
 	rewrite cast_colorswap.
-	rewrite n_stack_colorswap.
+	rewrite nstack_colorswap.
 	simpl.
 	apply Z_copy.
 Qed.

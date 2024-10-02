@@ -24,15 +24,16 @@ Proof.
   all: split; nonzero.
 Qed.
 
-Lemma _H_is_box : _H_ ∝ □.
+Lemma _H_is_box : _H_ ∝[Cexp (PI/4)] □.
 Proof.
-  prop_exists_nonzero (Cexp (PI/4)).
-  simpl.
+  split; [|nonzero].
+  prep_matrix_equivalence; cbn.
   unfold X_semantics, Z_semantics.
+  simpl.
   Msimpl.
-  solve_matrix;
-  field_simplify_eq [Cexp_PI2 Cexp_PI4 Ci2 Csqrt2_sqrt2_inv Csqrt2_inv]; 
-  try apply c_proj_eq; try simpl; try R_field_simplify; try reflexivity; (try split; try apply RtoC_neq; try apply sqrt2_neq_0; try auto).
+  rewrite Cexp_PI2, Cexp_PI4.
+  unfold scale.
+  by_cell; cbn; C_field.
 Qed.
 
 Lemma _Rz_is_Rz : forall α, ⟦ _Rz_ α ⟧ = phase_shift α.
@@ -53,7 +54,7 @@ Proof.
   all: lca.
 Qed.
 
-Lemma cnot_involutive : _CNOT_R ⟷ _CNOT_ ∝ n_wire 2. 
+Lemma cnot_involutive : _CNOT_R ⟷ _CNOT_ ∝[/ C2] n_wire 2. 
 Proof.
   rewrite <- compose_assoc.
   rewrite (compose_assoc (— ↕ (X 1 2 0))).
@@ -71,7 +72,7 @@ Proof.
   simpl_casts.
   bundle_wires.
   rewrite (compose_assoc (— ↕ (⊂ ↕ —))).
-  rewrite wire_to_n_wire at 4.
+  rewrite wire_to_n_wire at 3.
   rewrite (nwire_stack_compose_topleft (X 2 1 0) (Z 2 2 (0 + 0))).
   rewrite <- (nwire_stack_compose_botleft (Z 2 2 (0 + 0)) (X 2 1 0)).
   repeat rewrite <- compose_assoc.
@@ -79,7 +80,7 @@ Proof.
   rewrite <- (stack_compose_distr (n_wire 2) (n_wire (1 + 1)) (X 2 1 0) (X 1 2 0)).
   rewrite X_spider_1_1_fusion.
   rewrite Rplus_0_r.
-  simpl; cleanup_zx; simpl_casts.
+  cbn; cleanup_zx; simpl_casts.
   rewrite (compose_assoc _ (— ↕ — ↕ X 2 2 _)).
   rewrite stack_assoc.
   simpl_casts.
@@ -110,7 +111,7 @@ Proof.
   rewrite <- (stack_compose_distr — — (Z 1 2 0 ↕ —)).
   rewrite <- stack_compose_distr.
   cleanup_zx.
-  rewrite hopf_rule_Z_X.
+  zxrw hopf_rule_Z_X.
   rewrite wire_to_n_wire.
   rewrite stack_nwire_distribute_r.
   rewrite stack_nwire_distribute_l.
@@ -127,19 +128,19 @@ Proof.
   rewrite <- wire_to_n_wire.
   rewrite <- (stack_compose_distr — — — —).
   cleanup_zx.
-  easy.
+  zxrefl.
 Unshelve.
 all: lia.
 Qed.
 
-Lemma cnot_is_cnot_r : _CNOT_ ∝ _CNOT_R.
+Lemma cnot_is_cnot_r : _CNOT_ ∝= _CNOT_R.
 Proof.
   intros.
   remember (— ↕ X 1 2 0 ⟷ (Z 2 1 0 ↕ —)) as RHS.
   rewrite (Z_wrap_under_bot_left 1 1).
   rewrite (X_wrap_over_top_left 1 1).
   simpl_casts.
-  rewrite wire_to_n_wire at 2 3 4 5.
+  rewrite wire_to_n_wire.
   rewrite stack_nwire_distribute_l.
   rewrite stack_nwire_distribute_r.
   repeat rewrite <- compose_assoc.
@@ -161,7 +162,7 @@ Proof.
   rewrite <- (nwire_stack_compose_topleft (⊃ ↕ n_wire 1)).
   rewrite <- compose_assoc.
   rewrite (compose_assoc _ (n_wire 1 ↕ ⊂ ↕ n_wire 2) _).
-  simpl; cleanup_zx; simpl_casts.
+  cbn; cleanup_zx; simpl_casts.
   rewrite 2 stack_assoc; simpl_casts.
   rewrite <- stack_wire_distribute_l.
   rewrite 2 stack_assoc_back; simpl_casts.
@@ -175,16 +176,16 @@ Unshelve.
 all: lia.
 Qed.
 
-Lemma cnot_inv_is_swapped_cnot : _CNOT_inv_ ∝ ⨉ ⟷ _CNOT_ ⟷ ⨉.
+Lemma cnot_inv_is_swapped_cnot : _CNOT_inv_ ∝= ⨉ ⟷ _CNOT_ ⟷ ⨉.
 Admitted.
 
-Lemma notc_is_swapp_cnot : _NOTC_ ∝ ⨉ ⟷ _CNOT_ ⟷ ⨉. 
+Lemma notc_is_swapp_cnot : _NOTC_ ∝= ⨉ ⟷ _CNOT_ ⟷ ⨉. 
 Admitted.
 
-Lemma notc_r_is_swapp_cnot_r : _NOTC_R ∝ ⨉ ⟷ _CNOT_R ⟷ ⨉. 
+Lemma notc_r_is_swapp_cnot_r : _NOTC_R ∝= ⨉ ⟷ _CNOT_R ⟷ ⨉. 
 Admitted.
 
-Lemma notc_is_notc_r : _NOTC_ ∝ _NOTC_R.
+Lemma notc_is_notc_r : _NOTC_ ∝= _NOTC_R.
 Proof.
   rewrite notc_is_swapp_cnot.
   rewrite cnot_is_cnot_r.
