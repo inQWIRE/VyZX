@@ -360,4 +360,6 @@ Proof.
 Qed.
 
 
+Global Tactic Notation "crush_explicit_cast" uconstr(lemma) := unshelve (do 2 eexists; apply lemma); lia.
+
 #[export] Hint Rewrite @cast_n_stack1 @cast_n_wire @cast_n_box : cast_simpl_db.
