@@ -82,129 +82,6 @@ End VyZX_lemmas.
 
 
 
-(* FIXME: Move, probably to Qlib *)
-Lemma forall_lt_iff n (P Q : nat -> Prop) 
-  (HPQ : forall k, k < n -> P k <-> Q k) :
-  (forall k, k < n -> P k) <-> (forall k, k < n -> Q k).
-Proof.
-  apply forall_iff; intros k.
-  apply impl_iff; intros Hk.
-  auto.
-Qed.
-
-Lemma forall_lt_iff_permute n f (Hf : permutation n f) 
-  (P : nat -> Prop) : 
-  (forall k, k < n -> P k) <-> (forall k, k < n -> P (f k)).
-Proof.
-  split; intros HP.
-  - intros k Hk.
-    apply HP.
-    auto with perm_bounded_db.
-  - intros k Hk.
-    generalize (HP (perm_inv n f k) (perm_inv_bounded n f k Hk)).
-    now rewrite perm_inv_is_rinv_of_permutation by easy.
-Qed.
-
-Lemma forall_lt_iff_of_permute_l n f (Hf : permutation n f) 
-  (P Q : nat -> Prop) (HPQ : forall k, k < n -> P (f k) <-> Q k) :
-  (forall k, k < n -> P k) <-> (forall k, k < n -> Q k).
-Proof.
-  rewrite (forall_lt_iff_permute n f Hf).
-  apply forall_iff; intros k.
-  apply impl_iff; intros Hk.
-  now apply HPQ.
-Qed.
-
-Lemma forall_lt_iff_of_permute_r n f (Hf : permutation n f) 
-  (P Q : nat -> Prop) (HPQ : forall k, k < n -> P k <-> Q (f k)) :
-  (forall k, k < n -> P k) <-> (forall k, k < n -> Q k).
-Proof.
-  symmetry.
-  apply (forall_lt_iff_of_permute_l n f Hf).
-  intros k Hk.
-  now rewrite HPQ.
-Qed.
-
-(* FIXME: Move to Qlib.PermutationInstances *)
-Lemma big_swap_perm_ltb_r n m k : 
-  big_swap_perm n m k <? m = ((¬ k <? n) && (k <? n + m)).
-Proof.
-  unfold big_swap_perm.
-  bdestructΩ'.
-Qed.
-
-(* FIXME: Move to Qlib *)
-Lemma nat_to_funbool_add_pow2_split i j n m 
-  (Hi : i < 2 ^ n) (Hj : j < 2 ^ m) : 
-  nat_to_funbool (n + m) (i * 2 ^ m + j) =
-  (fun s => 
-    if s <? n then nat_to_funbool n i s
-    else nat_to_funbool m j (s - n)).
-Proof.
-  apply functional_extensionality; intros s.
-  rewrite !nat_to_funbool_eq.
-  rewrite testbit_add_pow2_split by easy.
-  bdestructΩ'; try (f_equal; lia).
-  - replace n with 0 in * by lia.
-    replace m with 0 in * by lia.
-    destruct i, j; [|cbn in Hi, Hj; lia..].
-    easy.
-  - replace m with 0 in * by lia.
-    destruct j; [|cbn in Hj; lia].
-    easy.
-Qed.
-
-(* FIXME: Move to Qlib *)
-Lemma nat_to_funbool_inj_upto_small i j n (Hi : i < 2^n) (Hj : j < 2^n) :
-  (forall s, s < n -> nat_to_funbool n i s = nat_to_funbool n j s) <->
-  i = j.
-Proof.
-  split; [|now intros ->].
-  intros Hij.
-  rewrite <- (bits_inj_upto_small i j n) by assumption.
-  intros s Hs.
-  generalize (Hij (n - S s) ltac:(lia)).
-  rewrite 2!nat_to_funbool_eq.
-  simplify_bools_lia_one_kernel.
-  now rewrite sub_S_sub_S.
-Qed.
-
-(* FIXME: Move to Qlib *)
-Lemma equal_on_basis_states_implies_equal' : (* FIXME: Replace 
-  equal_on_basis_states_implies_equal with this *)
-  forall {m dim : nat} (A B : Matrix m (2 ^ dim)),
-  WF_Matrix A -> WF_Matrix B ->
-  (forall f : nat -> bool, A × f_to_vec dim f = B × f_to_vec dim f) -> 
-  A = B.
-Proof.
-  intros m dim A B HA HB HAB.
-  prep_matrix_equivalence.
-  intros i j Hi Hj.
-  rewrite 2!(get_entry_with_e_i _ i j) by lia.
-  rewrite 2!Mmult_assoc.
-  rewrite <- (basis_vector_eq_e_i _ j) by assumption.
-  rewrite basis_f_to_vec_alt by assumption.
-  now rewrite HAB.
-Qed.
-
-Lemma equal_on_conj_basis_states_implies_equal {n m} 
-  (A B : Matrix (2 ^ n) (2 ^ m)) : WF_Matrix A -> WF_Matrix B -> 
-  (forall f g, (f_to_vec n g) ⊤%M × (A × f_to_vec m f) = 
-    (f_to_vec n g) ⊤%M × (B × f_to_vec m f)) -> A = B.
-Proof.
-  intros HA HB HAB.
-  apply equal_on_basis_states_implies_equal'; [auto..|].
-  intros f.
-  apply transpose_matrices.
-  apply equal_on_basis_states_implies_equal'; [auto_wf..|].
-  intros g.
-  apply transpose_matrices.
-  rewrite Mmult_transpose, transpose_involutive, HAB.
-  rewrite Mmult_transpose, transpose_involutive.
-  reflexivity.
-Qed.
-
-
 Definition funbool_preserved g f bound :=
   funbool_to_nat bound g =? funbool_to_nat bound (g ∘ f)%prg.
 
@@ -284,10 +161,6 @@ Proof.
   easy.
 Qed.
 
-(* Lemma number_preserved_iff_all_lt_eq ji nm f : 
-  number_preserved ji f nm = true <->
-  forall s, s < nm -> 
-  Nat.testbit ji s = Nat.testbit ji (f s). *)
 Lemma number_preserved_iff_all_lt_eq ji nm f : 
   number_preserved ji f nm = true <->
   forall s, s < nm -> 
@@ -295,31 +168,6 @@ Lemma number_preserved_iff_all_lt_eq ji nm f :
 Proof.
   apply funbool_preserved_iff_all_lt_eq.
 Qed.
-
-(* Lemma number_preserved_iff j i n m (Hi : i < 2^n) f : 
-  number_preserved (j * 2^n + i) f (n + m) = true <->
-  forall s, s < (n + m) -> 
-  if s <? n then
-    if (f s) <? n then 
-      Nat.testbit i s = Nat.testbit i (f s)
-    else 
-      Nat.testbit i s = Nat.testbit j (f s - n)
-  else 
-    if (f s) <? n then 
-      Nat.testbit j (s - n) = Nat.testbit i (f s)
-    else 
-      Nat.testbit j (s - n) = Nat.testbit j (f s - n). *)
-(* Proof.
-  rewrite number_preserved_iff_all_lt_eq.
-  apply forall_iff.
-  intros s. 
-  rewrite impl_iff.
-  intros Hs.
-  rewrite 2!testbit_add_pow2_split by easy.
-  bdestructΩ'; easy.
-Qed. *)
-
-
 
 Lemma number_preserved_iff j i n m 
   (Hi : i < 2 ^ n) (Hj : j < 2 ^ m) f : 
@@ -345,22 +193,13 @@ Proof.
   bdestructΩ'.
 Qed.
 
+Lemma number_preserved_0 f n : 
+  number_preserved 0 f n = true.
+Proof.
+  rewrite number_preserved_iff_all_lt_eq.
+  now rewrite nat_to_funbool_0.
+Qed.
 
-(* Lemma number_preserved_iff' i j n m (Hi : i < 2 ^ n) f : 
-  number_preserved (j * 2 ^ n + i) f (m + n) = true <->
-  (forall s : nat,
-  s < m + n ->
-  if s <? n
-  then if f s <? n
-    then Nat.testbit i s = Nat.testbit i (f s)
-    else Nat.testbit i s = Nat.testbit j (f s - n)
-  else if f s <? n
-    then Nat.testbit j (s - n) = Nat.testbit i (f s)
-    else Nat.testbit j (s - n) = Nat.testbit j (f s - n)). *)
-(* Proof.
-  rewrite (Nat.add_comm m n).
-  now apply number_preserved_iff.
-Qed. *)
 
 
 (* TODO: Do we want to Add Parametric Morphism here? *)
@@ -378,26 +217,6 @@ Proof.
   intros.
   now apply number_preserved_eq_of_perm_eq.
 Qed.
-
-(* Lemma number_preserved_funbool_to_nat f g n 
-  (Hf : perm_bounded n f) : 
-  number_preserved (funbool_to_nat n g) f n =
-  forallb (fun k => eqb (g (n - S k)) (g (n - S (f k)))) (seq 0 n). *)
-(* Proof.
-  apply eq_iff_eq_true.
-  rewrite forallb_seq0, number_preserved_iff_all_lt_eq.
-  setoid_rewrite testbit_funbool_to_nat.
-  setoid_rewrite <- eq_eqb_iff.
-  apply forall_iff; intros s; apply impl_iff.
-  intros Hs.
-  replace_bool_lia (s <? n) true.
-  specialize (Hf s Hs).
-  replace_bool_lia (f s <? n) true.
-  easy.
-Qed. *)
-
-(* Lemma number_preserved_idn (n : nat) {i j} (Hi : i < 2^n) (Hj : j < 2^n) : 
-  number_preserved (j * 2 ^ n + i) (idn_biperm n) (n + n) = (i =? j). *)
 
 
 
@@ -523,7 +342,28 @@ Proof.
   apply Cmult_1_r.
 Qed.
 
-  
+Lemma matrix_of_biperm_entry_0_0 n m f : 
+  matrix_of_biperm m n f 0 0 = C1.
+Proof.
+  rewrite matrix_of_biperm_defn by show_nonzero.
+  rewrite Nat.mul_0_l.
+  now rewrite number_preserved_0.
+Qed.
+
+Lemma matrix_of_biperm_mat_equiv_of_prop n m f g : 
+  matrix_of_biperm m n f [∝] matrix_of_biperm m n g ->
+  matrix_of_biperm m n f ≡ matrix_of_biperm m n g.
+Proof.
+  intros (c & Heq & Hc).
+  assert (Hc' : (matrix_of_biperm m n f 0 0 = 
+    c * matrix_of_biperm m n g 0 0)%C)
+  by now rewrite Heq.
+  rewrite 2!matrix_of_biperm_entry_0_0 in Hc'.
+  Csimpl_in Hc'.
+  rewrite <- Hc' in Heq.
+  rewrite Heq.
+  now rewrite Mscale_1_l.
+Qed.
 
 Lemma matrix_of_biperm_transpose n m f (Hf : bipermutation (n + m) f) : 
   (matrix_of_biperm n m f) ⊤ ≡
@@ -1027,50 +867,6 @@ Proof.
   now apply matrix_of_stack_biperms.
 Qed.
 
-(* FIXME: Move to Qlib *)
-Lemma f_to_vec_transpose_f_to_vec n f g :
-  transpose (f_to_vec n f) × f_to_vec n g = 
-  b2R (forallb (fun k => eqb (f k) (g k)) (seq 0 n)) .* I 1.
-Proof.
-  prep_matrix_equivalence.
-  intros [] []; [|lia..]; intros _ _.
-  rewrite 2!basis_f_to_vec.
-  rewrite basis_trans_basis.
-  simplify_bools_moddy_lia_one_kernel.
-  unfold scale.
-  cbn.
-  rewrite Cmult_1_r.
-  unfold b2R.
-  rewrite (if_dist _ _ _ RtoC).
-  apply f_equal_if; [|easy..].
-  apply eq_iff_eq_true.
-  rewrite Nat.eqb_eq, forallb_seq0, <- funbool_to_nat_eq_iff.
-  now setoid_rewrite eqb_true_iff.
-Qed.
-
-Lemma f_to_vec_transpose_f_to_vec' n f g :
-  transpose (f_to_vec n f) × f_to_vec n g = 
-  (if funbool_to_nat n f =? funbool_to_nat n g then  
-    C1 else C0) .* I 1.
-Proof.
-  rewrite f_to_vec_transpose_f_to_vec.
-  f_equal.
-  unfold b2R.
-  rewrite (if_dist R C).
-  apply f_equal_if; [|easy..].
-  apply eq_iff_eq_true.
-  rewrite forallb_seq0, Nat.eqb_eq.
-  setoid_rewrite eqb_true_iff.
-  apply funbool_to_nat_eq_iff.
-Qed.
-
-Lemma f_to_vec_transpose_self n f :
-  transpose (f_to_vec n f) × f_to_vec n f = 
-  I 1.
-Proof.
-  rewrite f_to_vec_transpose_f_to_vec', Nat.eqb_refl.
-  now Msimpl_light.
-Qed.
 
 Lemma matrix_of_idn_biperm n : 
   matrix_of_biperm n n (idn_biperm n) = I (2 ^ n).
@@ -1093,6 +889,22 @@ Proof.
   intros [] [] Hi Hj; (easy + lia).
 Qed.
 
+Lemma matrix_of_biperm_n_m_cup_cap_1_0 : 
+  matrix_of_biperm 2 0 (n_m_cup_cap 1 0) = 
+  ⟦ ⊃ ⟧.
+Proof.
+  prep_matrix_equivalence.
+  by_cell; reflexivity.
+Qed.
+
+Lemma matrix_of_biperm_n_m_cup_cap_0_1 : 
+  matrix_of_biperm 0 2 (n_m_cup_cap 0 1) = 
+  ⟦ ⊂ ⟧.
+Proof.
+  prep_matrix_equivalence.
+  by_cell; reflexivity.
+Qed.
+
 Lemma matrix_of_biperm_n_m_cup_cap_0_l ncap : 
   matrix_of_biperm 0 (ncap + ncap) (n_m_cup_cap 0 ncap) =
   (ncap ⨂ ⟦⊂⟧).
@@ -1110,24 +922,10 @@ Proof.
   rewrite matrix_of_stack_biperms by auto_biperm.
   change (1 + ncap) with (S ncap).
   rewrite kron_n_assoc by auto_wf.
+  cbn [Nat.add].
+  rewrite matrix_of_biperm_n_m_cup_cap_0_1, IHncap.
   f_equal;
-  [rewrite <- Nat.pow_mul_r; f_equal; lia..| |apply IHncap].
-  prep_matrix_equivalence.
-  by_cell; reflexivity.
-Qed.
-
-(* FIXME: Move *)
-Lemma flip_n_m_cup_cap n m : 
-  flip_biperm (n + n) (m + m) (n_m_cup_cap n m) = n_m_cup_cap m n.
-Proof.
-  eq_by_WF_perm_eq ((m + m) + (n + n));
-  [apply compose_perm_biperm_WF..|].
-  rewrite flip_biperm_defn.
-  rewrite n_m_cup_cap_stack_biperms_decomp'.
-  rewrite compose_assoc, stack_perms_big_swap_natural by 
-    (apply (n_m_cup_cap_bounded 0)).
-  rewrite <- compose_assoc, big_swap_perm_invol.
-  now rewrite (n_m_cup_cap_stack_biperms_decomp' m n).
+  rewrite <- Nat.pow_mul_r; f_equal; lia.
 Qed.
 
 Lemma matrix_of_biperm_n_m_cup_cap_0_r ncup : 
@@ -1137,18 +935,13 @@ Proof.
   apply transpose_matrices.
   rewrite matrix_of_biperm_transpose_eq 
     by (change 0 with (0 + 0) at 1; auto_biperm).
-  simpl_rewrite (flip_n_m_cup_cap ncup 0).
+  simpl_rewrite (flip_biperm_n_m_cup_cap ncup 0).
   symmetry.
   etransitivity; [apply (kron_n_transpose _ _ ncup (⟦ ⊃ ⟧))|].
   rewrite matrix_of_biperm_n_m_cup_cap_0_l.
   rewrite <- semantics_transpose_comm.
   easy.
 Qed.
-
-(* FIXME: Move to Bipermutations.v *)
-#[export] Hint Extern 5 (bipermutation ?nnmm (n_m_cup_cap ?n ?m)) => 
-  apply (bipermutation_change_dims nnmm (n + n + (m + m))
-    (n_m_cup_cap n m) ltac:(lia) (n_m_cup_cap_bipermutation n m)) : biperm_db.
 
 Lemma matrix_of_biperm_n_m_cup_cap_split ncup ncap : 
   matrix_of_biperm (ncup + ncup) (ncap + ncap) (n_m_cup_cap ncup ncap) =
@@ -1256,4 +1049,78 @@ Proof.
   rewrite kron_n_1 by auto with wf_db.
   f_equal.
   apply cap_cup_yank_eq_alt.
+Qed.
+
+Lemma biperm_compose_perm_l_stack n0 m0 n1 m1 f0 f1 g0 g1 
+  (Hf0 : bipermutation (n0 + m0) f0) (Hf1 : bipermutation (n1 + m1) f1)
+  (Hg0 : permutation n0 g0) (Hg1 : permutation n1 g1) : 
+  biperm_compose_perm_l (n0 + n1) (m0 + m1) 
+    (stack_biperms n0 m0 n1 m1 f0 f1) 
+    (stack_perms n0 n1 g0 g1) = 
+  stack_biperms n0 m0 n1 m1
+    (biperm_compose_perm_l n0 m0 f0 g0)
+    (biperm_compose_perm_l n1 m1 f1 g1).
+Proof.
+  eq_by_WF_perm_eq _.
+  apply matrix_of_biperm_inj;
+  [auto_biperm..|].
+  rewrite matrix_of_biperm_compose_perm_l_eq, 
+    2!matrix_of_stack_biperms, perm_to_matrix_of_stack_perms,
+    2!matrix_of_biperm_compose_perm_l_eq
+    by auto_biperm.
+  restore_dims.
+  now rewrite kron_mixed_product.
+Qed.
+
+Lemma biperm_compose_perm_r_stack n0 m0 n1 m1 f0 f1 g0 g1 
+  (Hf0 : bipermutation (n0 + m0) f0) (Hf1 : bipermutation (n1 + m1) f1)
+  (Hg0 : permutation m0 g0) (Hg1 : permutation m1 g1) : 
+  biperm_compose_perm_r (n0 + n1) (m0 + m1) 
+    (stack_biperms n0 m0 n1 m1 f0 f1) 
+    (stack_perms m0 m1 g0 g1) = 
+  stack_biperms n0 m0 n1 m1
+    (biperm_compose_perm_r n0 m0 f0 g0)
+    (biperm_compose_perm_r n1 m1 f1 g1).
+Proof.
+  eq_by_WF_perm_eq _.
+  apply matrix_of_biperm_inj;
+  [auto_biperm..|].
+  rewrite matrix_of_biperm_compose_perm_r_eq, 
+    2!matrix_of_stack_biperms, perm_to_matrix_of_stack_perms,
+    2!matrix_of_biperm_compose_perm_r_eq
+    by auto_biperm.
+  restore_dims.
+  now rewrite kron_mixed_product.
+Qed.
+
+Lemma stack_biperms_assoc n0 m0 n1 m1 n2 m2 f g h
+  (Hf : bipermutation (n0 + m0) f)
+  (Hg : bipermutation (n1 + m1) g)
+  (Hh : bipermutation (n2 + m2) h) : 
+  stack_biperms (n0 + n1) (m0 + m1) n2 m2 
+    (stack_biperms n0 m0 n1 m1 f g) h = 
+  stack_biperms n0 m0 (n1 + n2) (m1 + m2) 
+    f (stack_biperms n1 m1 n2 m2 g h).
+Proof.
+  eq_by_WF_perm_eq _;
+  [eapply WF_Perm_monotone; [auto_perm|lia]..|].
+  apply matrix_of_biperm_inj;
+  [auto_biperm..|].
+  rewrite 2!matrix_of_stack_biperms by auto_biperm.
+  rewrite <- 2!Nat.add_assoc.
+  rewrite 2!matrix_of_stack_biperms by auto_biperm.
+  restore_dims.
+  ereflexivity.
+  apply kron_assoc; auto_wf.
+Qed.
+
+Lemma stack_biperms_idn_idn n m : 
+  stack_biperms n n m m (idn_biperm n) (idn_biperm m) = 
+  idn_biperm (n + m).
+Proof.
+  eq_by_WF_perm_eq _.
+  apply matrix_of_biperm_inj;
+  [auto_biperm..|].
+  rewrite matrix_of_stack_biperms, 3!matrix_of_idn_biperm by auto_biperm.
+  rewrite id_kron; now unify_pows_two.
 Qed.

@@ -1,5 +1,5 @@
 Require Import Setoid.
-Require Import CoreRules.
+Require Import ComposeRules StackRules StackComposeRules CapCupRules.
 Import CoreData CoreAutomation.
 Import CastRules.
 From QuantumLib Require Import Bits.
@@ -8,6 +8,8 @@ Import QuantumLib.VectorStates Modulus Kronecker.
 Require Import ZXpermAutomation ZXpermFacts.
 Require Import NFBiperm.
 
+Import ComposeRules.
+Open Scope nat_scope.
 
 (* NB ncap' and ncup' have inverse interpretations to the diagrams *)
 Definition cap_NF_biperm : NF_biperm := {|
@@ -125,6 +127,19 @@ Inductive ZXbiperm : forall {n m}, ZX n m -> Prop :=
   | BipermStack {n m o p} {zx0 : ZX n m} {zx1 : ZX o p} : 
     ZXbiperm zx0 -> ZXbiperm zx1 -> ZXbiperm (zx0 ↕ zx1).
 
+Lemma zxbiperm_dims_even {n m} (zx : ZX n m) (Hzx : ZXbiperm zx) : 
+  Nat.even (n + m) = true.
+Proof.
+  induction Hzx; [reflexivity..| |].
+  - rewrite Nat.even_add in *.
+    rewrite eqb_true_iff in *.
+    congruence.
+  - rewrite Nat.add_shuffle1.
+    rewrite Nat.even_add.
+    pose proof (eq_refl : eqb true true = true).
+    congruence.
+Qed.
+
 Fixpoint NF_of_zx_rec {n m} (zx : ZX n m) : NF_biperm :=
   match zx with 
   | ⦰ => empty_NF_biperm
@@ -142,9 +157,6 @@ Fixpoint NF_of_zx_rec {n m} (zx : ZX n m) : NF_biperm :=
 
 Definition NF_of_zx {n m} (zx : ZX n m) : NF_biperm :=
   cast_NF_biperm (NF_of_zx_rec zx) n m.
-
-(* FIXME: Move to NFBiperm *)
-#[export] Hint Resolve compose_NF_biperms_WF : WF_NF_biperm_db.
 
 Lemma NF_insize_compose_NF_biperms b c  
   (Hb : WF_NF_biperm b) (Hc : WF_NF_biperm c) 
@@ -192,17 +204,7 @@ Proof. now apply NF_of_zx_rec_size_and_WF. Qed.
 #[export] Hint Resolve NF_of_zx_rec_WF
   insize_NF_of_zx_rec outsize_NF_of_zx_rec : WF_NF_biperm_db.
 
-(* FIXME: Move to by its definition *)
-#[export] Hint Resolve cast_NF_biperm_WF : WF_NF_biperm_db.
 
-Lemma cast_NF_biperm_WF' b insize outsize (Hb : WF_NF_biperm b) 
-  (Hin : insize' b = insize) (Hout : outsize' b = outsize) : 
-  WF_NF_biperm (cast_NF_biperm b insize outsize).
-Proof.
-  auto with WF_NF_biperm_db.
-Qed.
-
-#[export] Hint Resolve cast_NF_biperm_WF' : WF_NF_biperm_db.
 
 Lemma NF_of_zx_defn {n m} (zx : ZX n m) (H : ZXbiperm zx) : 
   NF_of_zx zx = NF_of_zx_rec zx.
@@ -416,6 +418,90 @@ Proof.
   apply n_stack_semantics.
 Qed.
 
+Lemma n_stacked_caps_succ_prf {n} : 
+  S n + S n = 2 + (n + n).
+Proof. lia. Qed.
+
+Lemma n_stacked_caps_succ n : 
+  n_stacked_caps (S n) ∝
+  cast _ _ n_stacked_caps_succ_prf eq_refl
+    (⊃ ↕ n_stacked_caps n).
+Proof.
+  unfold n_stacked_caps.
+  cbn.
+  rewrite cast_stack_r_fwd, cast_contract_eq.
+  cast_irrelevance.
+Qed.
+
+Lemma n_cup_to_n_stacked_caps n : 
+  n_cup n ∝ 
+  zx_of_perm _ (kron_comm_perm 2 n) ⟷ n_stacked_caps n.
+Proof.
+  induction n.
+  - unfold n_cup, n_stacked_caps.
+    cbn.
+    rewrite zx_of_perm_0.
+    now rewrite stack_empty_l, cast_id.
+  - rewrite n_cup_grow_l.
+    rewrite n_stacked_caps_succ.
+    rewrite IHn.
+    rewrite <- (nwire_removal_l ⊃).
+    rewrite stack_compose_distr, <- compose_assoc.
+    apply compose_simplify_casted_abs;
+    [lia|intros H..].
+    + by_perm_eq_nosimpl.
+      rewrite perm_of_zx_cast.
+      cbn -[Nat.add].
+      rewrite perm_of_zx_mid_comm.
+      rewrite perm_of_zx_of_perm_eq_WF by 
+        (replace (n + n) with (2 * n) by lia; auto_perm).
+      rewrite 2!stack_perms_idn_idn.
+      rewrite perm_of_zx_of_perm_eq_WF by 
+        (replace (S n + S n) with (2 * S n) by lia; auto_perm).
+      rewrite (WF_Perm_rw (kron_comm_perm_2_n_succ_alt _)) by auto_perm.
+      replace (2 * n) with (n + n) by apply Nat.double_twice.
+      apply compose_perm_eq_proper_l; [|split; auto_perm].
+      rewrite <- Nat.add_assoc.
+      replace (n + 1) with (S n) by lia.
+      rewrite stack_perms_assoc.
+      now replace (n + S n) with (S n + n) by lia.
+    + rewrite cast_contract_eq, cast_id.
+      now rewrite nwire_removal_l.
+Qed.
+
+Lemma n_stacked_caps_tranpose n : 
+  (n_stacked_caps n) ⊤%ZX ∝ n_stacked_cups n.
+Proof.
+  unfold n_stacked_caps, n_stacked_cups.
+  now rewrite cast_transpose, n_stack_transpose.
+Qed.
+
+Lemma n_stacked_cups_tranpose n : 
+  (n_stacked_cups n) ⊤%ZX ∝ n_stacked_caps n.
+Proof.
+  now rewrite <- n_stacked_caps_tranpose, 
+    Proportional.transpose_involutive.
+Qed.
+
+Lemma n_cap_to_n_stacked_cups n : 
+  n_cap n ∝ 
+  n_stacked_cups n ⟷ 
+  zx_of_perm _ (kron_comm_perm n 2).
+Proof. 
+  unfold n_cap.
+  rewrite n_cup_to_n_stacked_caps.
+  rewrite compose_transpose.
+  rewrite zx_of_perm_transpose by 
+    (replace (n + n) with (2 * n) by lia; auto_perm).
+  replace (perm_inv' (n + n)) with (perm_inv' (2 * n)) 
+    by (f_equal; lia).
+  rewrite kron_comm_perm_inv'.
+  now rewrite n_stacked_caps_tranpose.
+Qed.
+
+
+
+
 Definition zx_of_NF_uncasted (b : NF_biperm) : 
   ZX (NF_insize b) (NF_outsize b) :=
   zx_of_perm (NF_insize b) (lperm' b) ⟷
@@ -456,18 +542,25 @@ Definition zx_of_bipermutation n m f
     (eq_sym (NF_outsize_NF_of_biperm n m f Hf))
     (zx_of_NF_uncasted (NF_of_biperm n m f)).
 
-(* FIXME: Move *)
-Definition true_rel {A} : relation A :=
-  fun _ _ => True.
+(* FIXME: Do we need / use this? *)
 
-Instance true_rel_superrel {A} (R : relation A) : 
+(* Instance true_rel_superrel {A} (R : relation A) : 
   subrelation R true_rel.
 Proof.
   intros x y H.
   constructor.
+Qed. *)
+
+Lemma zx_of_bipermutation_proof_indep n m f Hf Hf' : 
+  zx_of_bipermutation n m f Hf = 
+  zx_of_bipermutation n m f Hf'.
+Proof.
+  unfold zx_of_bipermutation.
+  f_equal; 
+  apply Peano_dec.UIP_nat.
 Qed.
 
-Add Parametric Morphism n m f : (zx_of_bipermutation n m f) 
+(* Add Parametric Morphism n m f : (zx_of_bipermutation n m f) 
   with signature
   true_rel ==> eq as 
   zx_of_bipermutation_proper.
@@ -476,29 +569,11 @@ Proof.
   unfold zx_of_bipermutation.
   f_equal; 
   apply Peano_dec.UIP_nat.
-Qed.
+Qed. *)
 
-Definition bipermutation_dec n f : 
-  {bipermutation n f} + {~ bipermutation n f}.
-Proof.
-  destruct (permutation_dec f n);
-  [|right; rewrite bipermutation_defn_alt; tauto].
-  destruct (perm_eq_dec n (perm_inv n f) f);
-  [|right; rewrite bipermutation_defn_alt; tauto].
-  destruct (bool_dec (forallb (fun k => negb (f k =? k)) 
-    (seq 0 n)) true) as [e | e];
-  rewrite forallb_seq0 in e;
-  setoid_rewrite negb_true_iff in e;
-  setoid_rewrite Nat.eqb_neq in e;
-  [left | right];
-  rewrite bipermutation_defn_alt;
-  tauto.
-Qed.
 
-Definition zx_dummy n m : ZX n m :=
-  Z n m 0.
 
-Global Opaque zx_dummy.
+
 
 Definition zx_of_biperm n m f :=
   match bipermutation_dec (n + m) f with 
@@ -511,7 +586,7 @@ Lemma zx_of_biperm_bipermutation n m f (Hf : bipermutation (n + m) f) :
 Proof.
   unfold zx_of_biperm.
   destruct (bipermutation_dec (n + m) f); [|easy].
-  Morphisms.f_equiv.
+  apply zx_of_bipermutation_proof_indep.
 Qed.
 
 
@@ -542,65 +617,6 @@ Qed.
 
 
 
-Lemma kron_comm_perm_2_n_conj_reflect_perm_eq n : 
-  reflect_perm (n + n) ∘ kron_comm_perm 2 n ∘ reflect_perm (n + n) = 
-  kron_comm_perm 2 n.
-Proof.
-  replace (n + n) with (2 * n) by lia.
-  eq_by_WF_perm_eq (2 * n).
-  do 2 rewrite reflect_perm_defn at 1.
-  rewrite kron_comm_perm_defn.
-  unfold compose.
-  intros k Hk.
-  rewrite Nat.mul_comm.
-  rewrite mod_mul_sub_le by lia.
-  rewrite div_sub by lia.
-  rewrite <- even_eqb, Nat.negb_even, Nat.odd_succ, even_eqb.
-  rewrite mod_2_succ.
-  pose proof (Nat.mod_upper_bound k 2 ltac:(lia)).
-  destruct (ltac:(lia) : k mod 2 = 0 \/ k mod 2 = 1) as [Hk2 | Hk2];
-  rewrite Hk2.
-  - cbn -[Nat.div].
-    replace (S k / 2) with (k / 2).
-    + enough (k / 2 < n) by lia.
-      apply Nat.Div0.div_lt_upper_bound; lia.
-    + change (S k) with (1 + k).
-      rewrite (Nat.div_mod_eq k 2).
-      rewrite Hk2, Nat.add_0_r.
-      rewrite Nat.mul_comm, Nat.div_add by lia.
-      rewrite Nat.div_mul by lia.
-      cbn; lia.
-  - cbn -[Nat.div].
-    replace (S k / 2) with (S (k / 2)).
-    + enough (k / 2 < n) by lia.
-      apply Nat.Div0.div_lt_upper_bound; lia. 
-    + change (S k) with (1 + k).
-      rewrite (Nat.div_mod_eq k 2) at 2.
-      rewrite Hk2.
-      rewrite Nat.add_comm, <- Nat.add_assoc, <- Nat.mul_succ_r.
-      now rewrite Nat.mul_comm, Nat.div_mul by lia.
-Qed.
-
-
-Lemma kron_comm_perm_n_2_conj_reflect_perm_eq n : 
-  reflect_perm (n + n) ∘ kron_comm_perm n 2 ∘ reflect_perm (n + n) = 
-  kron_comm_perm n 2.
-Proof.
-  eq_by_WF_perm_eq (n + n).
-  pose proof (fun f => proj1 (permutation_change_dims 
-    (n * 2) (n + n) ltac:(lia) f)).
-  apply perm_inv_inj;
-  [apply permutation_compose;
-  [apply permutation_compose|]|..];
-  [auto with perm_db..|].
-  rewrite 2!perm_inv_compose by auto with perm_db.
-  do 2 rewrite reflect_perm_inv at 1.
-  pose proof (kron_comm_perm_inv n 2) as Hinv.
-  replace (n * 2) with (n + n) in * by lia.
-  rewrite Hinv.
-  rewrite <- compose_assoc.
-  now rewrite kron_comm_perm_2_n_conj_reflect_perm_eq.
-Qed.
 
 (* Lemma reflect_perm_NF_rep n : 
   is_NF_representative 0 (n + n) 
@@ -825,59 +841,18 @@ Qed.
 
 Open Scope nat.
 
-Lemma number_preserved_0 f n : 
-  number_preserved 0 f n = true.
-Proof.
-  rewrite number_preserved_iff_all_lt_eq.
-  now rewrite nat_to_funbool_0.
-Qed.
 
-Lemma matrix_of_biperm_entry_0_0 n m f : 
-  matrix_of_biperm m n f 0 0 = C1.
-Proof.
-  rewrite matrix_of_biperm_defn by show_nonzero.
-  rewrite Nat.mul_0_l.
-  now rewrite number_preserved_0.
-Qed.
 
-Lemma matrix_of_biperm_mat_equiv_of_prop n m f g : 
-  matrix_of_biperm m n f [∝] matrix_of_biperm m n g ->
-  matrix_of_biperm m n f ≡ matrix_of_biperm m n g.
-Proof.
-  intros (c & Heq & Hc).
-  assert (Hc' : (matrix_of_biperm m n f 0 0 = 
-    c * matrix_of_biperm m n g 0 0)%C)
-  by now rewrite Heq.
-  rewrite 2!matrix_of_biperm_entry_0_0 in Hc'.
-  Csimpl_in Hc'.
-  rewrite <- Hc' in Heq.
-  rewrite Heq.
-  now rewrite Mscale_1_l.
-Qed.
+
+
+
 
 
 (* Lemma matrix_of_biperm_reflect_perm_grow_0_l *)
 
-Lemma compose_NF_biperms_correct' (b c : NF_biperm) n m : 
-  WF_NF_biperm b -> WF_NF_biperm c -> 
-  outsize' b = insize' c ->
-  insize' b = n -> outsize' c = m ->
-  matrix_of_biperm n m (realize_NF_biperm (compose_NF_biperms b c)) [∝]
-  @Mmult (2^m) (2^insize' c) (2^n) 
-    (matrix_of_NF_biperm c) (matrix_of_NF_biperm b).
-Proof.
-  intros Hb Hc Hbc Hn Hm.
-  subst n m.
-  rewrite (compose_NF_biperms_correct c b) by easy.
-  easy.
-Qed.
 
-Lemma fn_cast_eq {A} {n m n' m'} (f : forall {n m}, ZX n m -> A) (zx : ZX n m) 
-  prfn prfm : 
-  f (cast n' m' prfn prfm zx) = f zx.
-Proof.
-  now subst.
-Qed.
+
+
 
 (* FIXME: Check we can remove: *)
 (* #[export] Hint Resolve 
@@ -899,15 +874,7 @@ Create HintDb zxbiperm_cleanup_db.
   NF_outsize_compose_NF_biperms 
   using solve [auto with WF_NF_biperm_db]: zxbiperm_cleanup_db.
 
-(* FIXME: Move *)
-Lemma realize_NF_biperm_bipermutation' n m b : 
-  WF_NF_biperm b -> n = insize' b -> m = outsize' b -> 
-  bipermutation (n + m) (realize_NF_biperm b).
-Proof.
-  intros; subst.
-  auto with biperm_db.
-Qed.
-
+(* FIXME: Move up *)
 Lemma biperm_of_zx_bipermutation {n m} (zx : ZX n m) (Hzx : ZXbiperm zx) : 
   bipermutation (n + m) (biperm_of_zx zx).
 Proof.
@@ -917,7 +884,15 @@ Proof.
 Qed.
 
 #[export] Hint Resolve biperm_of_zx_bipermutation : biperm_db.
-  
+
+Lemma biperm_of_zx_WF {n m} (zx : ZX n m) : 
+  WF_Perm (n + m) (biperm_of_zx zx).
+Proof.
+  exact (realize_NF_biperm_WF (NF_of_zx zx)).
+Qed.
+
+#[export] Hint Resolve biperm_of_zx_WF : WF_Perm_db.
+
 Fixpoint make_n_cup_zxperm n : ZX (n * 2) (n * 2) :=
   match n return ZX (n * 2) (n * 2) with 
   | O => Empty
@@ -928,7 +903,6 @@ Fixpoint make_n_cup_zxperm n : ZX (n * 2) (n * 2) :=
       ltac:(lia) ltac:(lia) ⟷ (n_wire 2 ↕ make_n_cup_zxperm n')
   end.
 
-Import CoreRules.
 
 
 
@@ -990,10 +964,6 @@ Proof.
     now rewrite matrix_of_biperm_of_zx by auto with zxbiperm_db.
 Qed.
 
-(* FIXME: Move *)
-Lemma idn_biperm_eq n : idn_biperm n = big_swap_perm n n.
-Proof. reflexivity. Qed.
-
 Open Scope prg.
 
 Lemma biperm_of_zxperm {n m} (zx : ZX n m) (Hzx : ZXperm zx) : 
@@ -1012,15 +982,30 @@ Proof.
   easy.
 Qed.
 
+Lemma biperm_of_zx_compose {n m o} (zx0 : ZX n m) (zx1 : ZX m o) : 
+  ZXbiperm zx0 -> ZXbiperm zx1 -> 
+  biperm_of_zx (zx0 ⟷ zx1) = 
+  compose_biperms n m o (biperm_of_zx zx0) (biperm_of_zx zx1).
+Proof.
+  intros Hzx0 Hzx1.
+  pose proof (BipermCompose Hzx0 Hzx1).
+  eq_by_WF_perm_eq _.
+  apply matrix_of_biperm_inj;
+  [auto_biperm..|].
+  apply matrix_of_biperm_mat_equiv_of_prop.
+  rewrite matrix_of_biperm_of_zx by auto.
+  rewrite matrix_of_biperm_compose by auto_biperm.
+  now rewrite 2!matrix_of_biperm_of_zx by auto.
+Qed.
 
 Lemma biperm_of_compose_zxperm_l {n m o} (zxp : ZX n m) (zxb : ZX m o) : 
   ZXperm zxp -> ZXbiperm zxb ->
-  perm_eq (n + o) (biperm_of_zx (zxp ⟷ zxb)) 
-    (biperm_compose_perm_l m o (biperm_of_zx zxb) 
-      (perm_of_zx zxp)).
+  biperm_of_zx (zxp ⟷ zxb) =
+  biperm_compose_perm_l m o (biperm_of_zx zxb) (perm_of_zx zxp).
 Proof.
   intros Hp Hb.
   induction (zxperm_square zxp Hp).
+  eq_by_WF_perm_eq (n + o)%nat.
   apply matrix_of_biperm_inj; [auto with biperm_db zxbiperm_db..|].
   apply matrix_of_biperm_mat_equiv_of_prop.
   rewrite matrix_of_biperm_of_zx by auto with zxbiperm_db.
@@ -1030,20 +1015,196 @@ Proof.
   easy.
 Qed.
 
+Lemma biperm_of_compose_zxperm_r {n m o} (zxb : ZX n m) (zxp : ZX m o) : 
+  ZXperm zxp -> ZXbiperm zxb -> 
+  biperm_of_zx (zxb ⟷ zxp) = 
+  biperm_compose_perm_r n m (biperm_of_zx zxb) (perm_of_zx zxp).
+Proof.
+  intros Hzx0 Hzx1.
+  induction Hzx0 as [m zxp] using zxperm_is_square_induction.
+  assert (ZXbiperm (zxb ⟷ zxp)) by auto with zxbiperm_db.
+  eq_by_WF_perm_eq _;
+  [auto_perm..|].
+  apply matrix_of_biperm_inj;
+  [cbn; auto_biperm..|].
+  apply matrix_of_biperm_mat_equiv_of_prop.
+  rewrite matrix_of_biperm_of_zx by auto.
+  rewrite matrix_of_biperm_compose_perm_r_eq by auto_biperm.
+  rewrite matrix_of_biperm_of_zx by auto_biperm.
+  now rewrite <- perm_of_zx_permutation_semantics by auto.
+Qed.
 
 
 
+(* FIXME: Move *)
+
+Lemma NF_of_zx_stack {n0 m0 n1 m1} (zx0 : ZX n0 m0) (zx1 : ZX n1 m1) 
+  (Hzx0 : ZXbiperm zx0) (Hzx1 : ZXbiperm zx1) : 
+  NF_of_zx (zx0 ↕ zx1) =
+  stack_NF_biperms (NF_of_zx zx0) (NF_of_zx zx1).
+Proof.
+  now rewrite 3!NF_of_zx_defn by auto with zxbiperm_db.
+Qed.
+
+Lemma NF_of_zx_compose {n m o} (zx0 : ZX n m) (zx1 : ZX m o) 
+  (Hzx0 : ZXbiperm zx0) (Hzx1 : ZXbiperm zx1) : 
+  NF_of_zx (zx0 ⟷ zx1) =
+  compose_NF_biperms (NF_of_zx zx0) (NF_of_zx zx1).
+Proof.
+  now rewrite 3!NF_of_zx_defn by auto with zxbiperm_db.
+Qed.
+
+Lemma biperm_of_zx_stack {n0 m0 n1 m1} (zx0 : ZX n0 m0) (zx1 : ZX n1 m1) 
+  (Hzx0 : ZXbiperm zx0) (Hzx1 : ZXbiperm zx1) :
+  biperm_of_zx (zx0 ↕ zx1) = stack_biperms n0 m0 n1 m1
+    (biperm_of_zx zx0) (biperm_of_zx zx1).
+Proof.
+  eq_by_WF_perm_eq _;
+  [cbn; now auto_perm..|].
+  rewrite NF_of_zx_stack by auto.
+  now rewrite realize_stack_NF_biperms by auto with WF_NF_biperm_db.
+Qed.
 
 
+Lemma biperm_of_zx_eq_of_proportional {n m} (zx0 zx1 : ZX n m) 
+  (Hzx0 : ZXbiperm zx0) (Hzx1 : ZXbiperm zx1) : zx0 ∝ zx1 ->
+  biperm_of_zx zx0 = biperm_of_zx	zx1.
+Proof.
+  intros Hzxs.
+  eq_by_WF_perm_eq (n + m).
+  apply matrix_of_biperm_inj;
+  [auto_biperm..|].
+  apply matrix_of_biperm_mat_equiv_of_prop.
+  rewrite 2!matrix_of_biperm_of_zx by auto.
+  exact Hzxs.
+Qed.
+
+Lemma biperm_of_zx_eq_of_prop_rw {n m} {zx0 zx1 : ZX n m} (Hzxs : zx0 ∝ zx1)
+  (Hzx0 : ZXbiperm zx0) (Hzx1 : ZXbiperm zx1) : 
+  biperm_of_zx zx0 = biperm_of_zx zx1.
+Proof. now apply biperm_of_zx_eq_of_proportional. Qed.
+
+Lemma biperm_of_zx_cast {n m n' m'} (zx : ZX n m) prfn prfm : 
+  biperm_of_zx (cast n' m' prfn prfm zx) = biperm_of_zx zx.
+Proof. now subst. Qed.
+
+Lemma cap_swap_absorbtion : ⨉ ⟷ ⊃ ∝ ⊃.
+Proof.
+  apply ZXbiperm_prop_by_biperm_eq; [auto with zxbiperm_db..|].
+  by_perm_cell; reflexivity.
+Qed.
+
+Lemma cup_swap_absorbtion : ⊂ ⟷ ⨉ ∝ ⊂.
+Proof.
+  apply ZXbiperm_prop_by_biperm_eq; [auto with zxbiperm_db..|].
+  by_perm_cell; reflexivity.
+Qed.
+
+Lemma loop_alt_wire : — ↕ ⊂ ⟷ (⨉ ↕ —) ⟷ (— ↕ ⊃) ∝ —.
+Proof.
+  apply ZXbiperm_prop_by_biperm_eq; [auto with zxbiperm_db zxperm_db..|].
+  cbn [Nat.add].
+  by_perm_cell; reflexivity.
+Qed.
 
 
+Lemma biperm_of_n_cup n : 
+  biperm_of_zx (n_cup n) = idn_biperm n.
+Proof.
+  eq_by_WF_perm_eq _;
+  [cbn; rewrite Nat.add_0_r; auto_perm..|].
+  assert (ZXbiperm (n_cup n)) by auto with zxbiperm_db.
+  apply matrix_of_biperm_inj;
+  [auto_biperm|cbn; rewrite Nat.add_0_r; auto_biperm|].
+  apply matrix_of_biperm_mat_equiv_of_prop.
+  cbn.
+  rewrite matrix_of_biperm_of_zx by auto.
+  ereflexivity.
+  apply equal_on_conj_basis_states_implies_equal;
+  [auto_wf..|].
+  intros f g.
+  symmetry.
+  rewrite <- Mmult_assoc.
+  prep_matrix_equivalence.
+  intros [] []; [|lia..]; intros _ _.
+  rewrite matrix_of_biperm_funbool_conj by (rewrite Nat.add_0_r; auto_perm).
+  symmetry.
+  cbn [f_to_vec].
+  rewrite id_transpose_eq, Mmult_1_l by auto_wf.
+  rewrite n_cup_f_to_vec.
+  unfold scale.
+  cbn.
+  unfold b2R.
+  rewrite (if_dist R C).
+  rewrite Cmult_1_r.
+  apply f_equal_if; [|reflexivity..].
+  apply eq_iff_eq_true.
+  rewrite funbool_preserved_iff_all_lt_eq, forallb_seq0.
+  setoid_rewrite eqb_true_iff.
+  rewrite Nat.add_0_r.
+  split.
+  - intros Hlow.
+    intros k Hk.
+    assert (idn_biperm n k < n + n) by auto_perm.
+    if_true_lia.
+    if_true_lia.
+    unfold idn_biperm.
+    bdestruct (k <? n).
+    + rewrite big_swap_perm_left by auto.
+      rewrite Hlow by auto.
+      f_equal; lia.
+    + replace k with (n + (k - n)) at 1 by lia.
+      rewrite <- Hlow by lia.
+      now rewrite big_swap_perm_right by lia.
+  - intros Hall k Hk.
+    generalize (Hall k ltac:(lia)).
+    assert (idn_biperm n k < n + n) by auto_perm.
+    if_true_lia.
+    if_true_lia.
+    intros ->.
+    unfold idn_biperm.
+    rewrite big_swap_perm_left by lia.
+    f_equal; lia.
+Qed.
 
+Lemma biperm_of_zx_transpose {n m} (zx : ZX n m) (Hzx : ZXbiperm zx) : 
+  biperm_of_zx (zx ⊤%ZX) = 
+  flip_biperm n m (biperm_of_zx zx).
+Proof.
+  assert (ZXbiperm (zx ⊤%ZX)) by auto with zxbiperm_db.
+  eq_by_WF_perm_eq _.
+  apply matrix_of_biperm_inj;
+  [auto_biperm..|].
+  apply matrix_of_biperm_mat_equiv_of_prop.
+  rewrite matrix_of_biperm_of_zx by auto.
+  rewrite semantics_transpose_comm.
+  rewrite <- matrix_of_biperm_transpose_eq by auto_biperm.
+  now rewrite matrix_of_biperm_of_zx by auto.
+Qed.
 
+Lemma biperm_of_n_cap n : 
+  biperm_of_zx (n_cap n) = idn_biperm n.
+Proof.
+  unfold n_cap.
+  rewrite biperm_of_zx_transpose by auto with zxbiperm_db.
+  rewrite biperm_of_n_cup.
+  eq_by_WF_perm_eq _;
+  [cbn; auto_perm..|].
+  rewrite flip_biperm_defn.
+  now rewrite big_swap_perm_0_l, big_swap_perm_0_r.
+Qed.
 
-
-
-
-
+(* FIXME: Move *)
+Lemma biperm_of_n_wire n : 
+  biperm_of_zx (n_wire n) = idn_biperm n.
+Proof.
+  eq_by_WF_perm_eq _.
+  apply matrix_of_biperm_inj;
+  [auto with zxbiperm_db zxperm_db biperm_db..|].
+  apply matrix_of_biperm_mat_equiv_of_prop.
+  rewrite matrix_of_biperm_of_zx by auto with zxbiperm_db zxperm_db.
+  now rewrite matrix_of_idn_biperm, n_wire_semantics.
+Qed.
 
 
 

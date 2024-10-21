@@ -28,67 +28,7 @@ Open Scope nat_scope.
 Create HintDb biperm_db discriminated.
 
   
-(* FIXME: Move to Qlib *)
-Definition make_WF_Perm n f :=
-  fun k => if n <=? k then k else f k.
 
-Lemma make_WF_Perm_perm_eq n f : 
-  perm_eq n (make_WF_Perm n f) f.
-Proof.
-  intros k Hk.
-  unfold make_WF_Perm.
-  bdestructΩ'.
-Qed.
-
-#[export] Hint Rewrite make_WF_Perm_perm_eq : perm_cleanup_db.
-#[export] Hint Resolve make_WF_Perm_perm_eq : perm_cleanup_db.
-
-Lemma make_WF_Perm_WF n f : WF_Perm n (make_WF_Perm n f).
-Proof.
-  intros k Hk.
-  unfold make_WF_Perm.
-  bdestructΩ'.
-Qed.
-
-#[export] Hint Resolve make_WF_Perm_WF : WF_Perm_db.
-
-Add Parametric Morphism n : (make_WF_Perm n) with signature
-  perm_eq n ==> eq as make_WF_Perm_eq_of_perm_eq.
-Proof.
-  intros f g Hfg.
-  eq_by_WF_perm_eq n.
-  cleanup_perm.
-Qed.
-
-Lemma make_WF_Perm_permutation n f : 
-  permutation n f -> permutation n (make_WF_Perm n f).
-Proof.
-  cleanup_perm.
-Qed.
-
-#[export] Hint Resolve make_WF_Perm_permutation : perm_db.
-
-Lemma make_WF_Perm_bounded n f : 
-  perm_bounded n f -> perm_bounded n (make_WF_Perm n f).
-Proof.
-  intros Hf k Hk.
-  rewrite make_WF_Perm_perm_eq; auto.
-Qed.
-
-#[export] Hint Resolve make_WF_Perm_bounded : perm_bounded_db.
-
-Lemma make_WF_Perm_inv n f : 
-  perm_eq n (perm_inv n (make_WF_Perm n f)) (perm_inv n f).
-Proof.
-  now rewrite make_WF_Perm_perm_eq.
-Qed.
-
-Lemma make_WF_Perm_inv' n f :
-  perm_inv' n (make_WF_Perm n f) = perm_inv' n f.
-Proof.
-  apply perm_inv'_eq_of_perm_eq.
-  cleanup_perm.
-Qed.
 
 
 Ltac auto_biperm_to n := 
@@ -272,6 +212,36 @@ Proof.
   now apply (bipermutation_injective Hg).
 Qed.
 
+Definition bipermutation_dec n f : 
+  {bipermutation n f} + {~ bipermutation n f}.
+Proof.
+  destruct (permutation_dec f n);
+  [|right; rewrite bipermutation_defn_alt; tauto].
+  destruct (perm_eq_dec n (perm_inv n f) f);
+  [|right; rewrite bipermutation_defn_alt; tauto].
+  destruct (bool_dec (forallb (fun k => negb (f k =? k)) 
+    (seq 0 n)) true) as [e | e];
+  rewrite forallb_seq0 in e;
+  setoid_rewrite negb_true_iff in e;
+  setoid_rewrite Nat.eqb_neq in e;
+  [left | right];
+  rewrite bipermutation_defn_alt;
+  tauto.
+Qed.
+
+Definition is_bipermutation n f : bool :=
+  RMicromega.sumboolb (bipermutation_dec n f).
+
+Lemma is_bipermutation_true_iff n f : 
+  is_bipermutation n f = true <-> bipermutation n f.
+Proof.
+  unfold is_bipermutation. 
+  now destruct (bipermutation_dec n f).
+Qed.
+
+
+
+
 Lemma bipermutation_shift_of_eq_swap n f 
   (Hf : bipermutation n f) (Hfsmall : perm_eq 2 f swap_2_perm) : 
   bipermutation (n - 2) (fun k => f (k + 2) - 2).
@@ -366,6 +336,49 @@ Lemma compose_perm_biperm_idn n f :
 Proof.
   rewrite compose_perm_biperm_defn, idn_inv.
   easy.
+Qed.
+
+Lemma biperm_conj_inv_perm_l_bipermutation n f g g' 
+  (Hf : bipermutation n f) (Hg : permutation n g) 
+  (Hg' : perm_eq n g' (perm_inv n g)) : 
+  bipermutation n (g' ∘ f ∘ g).
+Proof.
+  rewrite Hg'.
+  rewrite <- (perm_inv_perm_inv n g Hg) at 2.
+  rewrite <- compose_perm_biperm_defn.
+  auto_biperm.
+Qed.
+
+Lemma biperm_conj_inv_perm_r_bipermutation n f g g' 
+  (Hf : bipermutation n f) (Hg : permutation n g) 
+  (Hg' : perm_eq n g' (perm_inv n g)) : 
+  bipermutation n (g ∘ f ∘ g').
+Proof.
+  rewrite Hg'.
+  rewrite <- compose_perm_biperm_defn.
+  auto_biperm.
+Qed.
+
+Add Parametric Morphism n : (compose_perm_biperm n) with signature
+  on_predicate_relation_l (fun f => perm_bounded n f)
+    (perm_eq n) ==> 
+  (perm_eq n) ==> eq as compose_perm_biperm_perm_eq_bounded_to_eq.
+Proof.
+  intros f f' [Hfbdd Hf] g g' Hg. 
+  eq_by_WF_perm_eq n.
+  rewrite 2!compose_perm_biperm_defn.
+  rewrite Hg at 2.
+  rewrite <- Hf.
+  now rewrite Hg.
+Qed.
+
+Add Parametric Morphism n : (compose_perm_biperm n) with signature
+  perm_eq n ==> eq ==> eq as compose_perm_biperm_perm_eq_eq_to_eq.
+Proof.
+  intros f f' Hf g.
+  eq_by_WF_perm_eq n.
+  rewrite 2!compose_perm_biperm_defn.
+  now rewrite Hf.
 Qed.
 
 
@@ -573,6 +586,27 @@ Proof.
     by auto_perm.
 Qed.
 
+Lemma biperm_compose_perm_l_0_r n f g (Hf : perm_bounded n f) : 
+  biperm_compose_perm_l n 0 f g = compose_perm_biperm n f g.
+Proof.
+  eq_by_WF_perm_eq (n + 0);
+  [rewrite Nat.add_0_r; now auto_perm..|].
+  rewrite biperm_compose_perm_l_defn.
+  rewrite stack_perms_0_r, Nat.add_0_r.
+  do 2 rewrite make_WF_Perm_perm_eq at 1.
+  now rewrite compose_perm_biperm_defn.
+Qed.
+
+Lemma biperm_compose_perm_r_0_l m f g (Hf : perm_bounded m f) : 
+  biperm_compose_perm_r 0 m f g = compose_perm_biperm m f (perm_inv m g).
+Proof.
+  eq_by_WF_perm_eq _.
+  rewrite biperm_compose_perm_r_defn.
+  rewrite stack_perms_0_l.
+  do 2 rewrite make_WF_Perm_perm_eq at 1.
+  now rewrite compose_perm_biperm_defn.
+Qed.
+
 (* Lemma biperm_compose_perm_r_lt_small n m f g : 
   forall k, k < n ->
   biperm_compose_perm_r n m f g k < n <-> f k < n.
@@ -676,7 +710,7 @@ Proof.
   apply compose_perm_biperm_idn.
 Qed.
 
-(* TODO: Fix this definition to have the right order of arguments *)
+
 Definition stack_biperms (n0 m0 n1 m1 : nat) (f g : nat -> nat) : nat -> nat :=
   compose_perm_biperm (n0 + n1 + (m0 + m1)) 
     (stack_perms (n0 + m0) (n1 + m1) f g)
@@ -768,6 +802,19 @@ Qed.
 
 #[export] Hint Resolve stack_biperms_WF : WF_Perm_db.
 
+Lemma stack_biperms_bounded n0 m0 n1 m1 f g : 
+  perm_bounded (n0 + m0) f -> perm_bounded (n1 + m1) g ->
+  perm_bounded (n0 + n1 + (m0 + m1)) (stack_biperms n0 m0 n1 m1 f g).
+Proof.
+  intros Hf Hg k Hk.
+  rewrite stack_biperms_defn by auto.
+  revert k Hk.
+  rewrite Combinators.compose_assoc.
+  now auto_perm.
+Qed.
+
+#[export] Hint Resolve stack_biperms_bounded : perm_bounded_db.
+
 Lemma stack_biperms_eq_of_perm_eq 
   {n0 m0 f f'} (Hf : perm_eq (n0 + m0) f f') 
   {n1 m1 g g'} (Hg : perm_eq (n1 + m1) g g')
@@ -816,16 +863,47 @@ Proof.
 Qed.
 
 #[export] Hint Resolve stack_biperms_bipermutation : biperm_db.
+#[export] Hint Extern 5 (bipermutation ?nm 
+  (stack_biperms ?n0 ?m0 ?n1 ?m1 ?f ?g)) =>
+  apply (bipermutation_change_dims nm (n0 + n1 + (m0 + m1)) 
+    (stack_biperms n0 m0 n1 m1 f g) ltac:(lia));
+  apply stack_biperms_bipermutation : biperm_db.
 
-(* Lemma stack_biperms_bipermutation_alt {n0 n1 m0 m1} {f g} 
-  (Hf : bipermutation (m0 + n0) f) (Hg : bipermutation (m1 + n1) g) :
-  bipermutation ((m0 + m1) + (n0 + n1)) (stack_biperms n0 m0 n1 m1 f g).
+#[export] Hint Extern 3 (WF_Perm ?nm 
+  (stack_biperms ?n0 ?m0 ?n1 ?m1 ?f ?g)) =>
+  apply (WF_Perm_change_dims nm (n0 + n1 + (m0 + m1)) 
+    (stack_biperms n0 m0 n1 m1 f g) ltac:(lia));
+  apply stack_biperms_WF : WF_Perm_db.
+
+#[export] Hint Extern 3 (perm_bounded ?nm 
+  (stack_biperms ?n0 ?m0 ?n1 ?m1 ?f ?g)) =>
+  apply (perm_bounded_change_dims nm (n0 + n1 + (m0 + m1)) 
+    ltac:(lia) (stack_biperms n0 m0 n1 m1 f g));
+  apply stack_biperms_bounded : perm_bounded_db.
+
+
+
+Lemma stack_biperms_0_out n0 n1 m1 f g : 
+  stack_biperms n0 0 n1 m1 f g = 
+  stack_perms n0 (n1 + m1) f g.
 Proof.
-  eapply bipermutation_change_dims;
-  [|apply stack_biperms_bipermutation;
-    (eapply bipermutation_change_dims; 
-    [|eassumption])]; lia.
-Qed. *)
+  eq_by_WF_perm_eq (n0 + n1 + (0 + m1)).
+  rewrite stack_biperms_defn.
+  rewrite big_swap_perm_0_l, big_swap_perm_0_r.
+  rewrite !stack_perms_idn_idn, Nat.add_0_r.
+  easy.
+Qed.
+
+Lemma stack_biperms_0_in n0 m0 m1 f g : 
+  stack_biperms n0 m0 0 m1 f g = 
+  stack_perms (n0 + m0) m1 f g.
+Proof.
+  eq_by_WF_perm_eq (n0 + 0 + (m0 + m1)).
+  rewrite stack_biperms_defn.
+  rewrite big_swap_perm_0_l, big_swap_perm_0_r.
+  rewrite !stack_perms_idn_idn.
+  easy.
+Qed.
 
 Definition idn_biperm (n : nat) : nat -> nat :=
   big_swap_perm n n.
@@ -854,6 +932,9 @@ Proof.
 Qed.
 
 #[export] Hint Resolve idn_biperm_WF : WF_Perm_db.
+
+Lemma idn_biperm_eq n : idn_biperm n = big_swap_perm n n.
+Proof. reflexivity. Qed.
 
 Definition flip_biperm n m (f : nat -> nat) : nat -> nat :=
   compose_perm_biperm (m + n) f (big_swap_perm n m).
@@ -893,6 +974,140 @@ Proof.
   auto_biperm.
 Qed.
 
+#[export] Hint Resolve flip_biperm_bipermutation : biperm_db.
+
+Lemma flip_biperm_WF n m f : 
+  WF_Perm (m + n) (flip_biperm n m f).
+Proof.
+  apply compose_perm_biperm_WF.
+Qed.
+
+#[export] Hint Resolve flip_biperm_WF : WF_Perm_db.
+
+Add Parametric Morphism n m : (flip_biperm n m) with signature 
+  perm_eq (n + m) ==> eq as flip_biperm_eq_of_perm_eq.
+Proof.
+  unfold flip_biperm.
+  rewrite Nat.add_comm.
+  now intros f g ->.
+Qed.
+
+Lemma flip_biperm_stack_biperms n0 m0 n1 m1 f g 
+  (Hf : perm_bounded (n0 + m0) f) (Hg : perm_bounded (n1 + m1) g) : 
+  flip_biperm (n0 + n1) (m0 + m1) (stack_biperms n0 m0 n1 m1 f g) =
+  stack_biperms m0 n0 m1 n1 (flip_biperm n0 m0 f) (flip_biperm n1 m1 g).
+Proof.
+  eq_by_WF_perm_eq (m0 + m1 + (n0 + n1)).
+  symmetry.
+  rewrite stack_biperms_defn.
+  symmetry.
+  rewrite flip_biperm_defn, Nat.add_comm, stack_biperms_defn.
+  rewrite 2!flip_biperm_defn.
+  rewrite <- stack_perms_compose by auto_perm.
+  symmetry.
+  rewrite <- compose_assoc, compose_assoc.
+  symmetry.
+  rewrite <- compose_perm_inv_r by auto_perm.
+  rewrite perm_inv_compose by auto_perm.
+  rewrite 2!(perm_inv_stack_perms_change_dims (n0 + n1 + (m0 + m1))) 
+    by (lia + auto_perm).
+  etransitivity.
+  1: {
+    apply compose_perm_eq_proper_r.
+    rewrite (perm_inv_stack_perms_change_dims) by lia + auto_perm.
+    rewrite idn_inv, 2!big_swap_perm_inv.
+    rewrite big_swap_perm_inv_change_dims by lia.
+    reflexivity.
+  }
+  rewrite !compose_assoc.
+  pose proof (big_swap_perm_pair_mid_l m0 m1 n0 n1).
+  replace (n0 + m0 + n1) with (m0 + n0 + n1) by lia.
+  rewrite_compose_assoc_r big_swap_perm_pair_mid_l.
+  replace (m0 + n0 + m1) with (m0 + m1 + n0) by lia.
+  rewrite_compose_assoc_r @stack_perms_compose; [|auto_perm..].
+  rewrite (Nat.add_comm n0 m1).
+  rewrite stack_perms_compose by auto_perm.
+  rewrite big_swap_perm_invol.
+  rewrite !compose_idn_l, idn_inv.
+  rewrite !stack_perms_idn_idn, compose_idn_l.
+  rewrite stack_perms_compose by auto_perm.
+  rewrite 2!big_swap_perm_invol, stack_perms_idn_idn, compose_idn_r.
+  rewrite <- !compose_assoc.
+  rewrite big_swap_perm_pair_mid_r.
+  rewrite (Nat.add_comm m0 n0), (Nat.add_comm m1 n1).
+  rewrite <- stack_perms_compose, <- compose_assoc by auto_perm.
+  easy.
+Qed.
+
+Lemma flip_biperm_compose_perm_l n m f g 
+  (Hg : permutation n g) : 
+  flip_biperm n m (biperm_compose_perm_l n m f g) = 
+  biperm_compose_perm_r m n (flip_biperm n m f) (perm_inv n g).
+Proof.
+  eq_by_WF_perm_eq (m + n).
+  rewrite flip_biperm_defn.
+  rewrite biperm_compose_perm_r_defn, flip_biperm_defn.
+  rewrite Nat.add_comm, biperm_compose_perm_l_defn.
+  rewrite perm_inv_perm_inv by auto.
+  rewrite perm_inv_stack_perms, perm_inv_stack_perms_change_dims by 
+    (lia + auto_perm).
+  rewrite !compose_assoc.
+  rewrite stack_perms_big_swap_natural by auto_perm.
+  rewrite <- !compose_assoc.
+  now rewrite stack_perms_big_swap_natural by auto_perm.
+Qed.
+
+Lemma flip_biperm_compose_perm_r n m f g 
+  (Hg : permutation m g) : 
+  flip_biperm n m (biperm_compose_perm_r n m f g) = 
+  biperm_compose_perm_l m n (flip_biperm n m f) (perm_inv m g).
+Proof.
+  eq_by_WF_perm_eq (m + n).
+  rewrite flip_biperm_defn.
+  rewrite biperm_compose_perm_l_defn, flip_biperm_defn.
+  rewrite Nat.add_comm, biperm_compose_perm_r_defn.
+  rewrite !compose_assoc.
+  rewrite perm_inv_stack_perms, perm_inv_stack_perms_change_dims by 
+    (lia + auto_perm).
+  rewrite stack_perms_big_swap_natural by auto_perm.
+  rewrite <- !compose_assoc.
+  now rewrite stack_perms_big_swap_natural by auto_perm.
+Qed.
+
+Lemma flip_biperm_invol n m f : 
+  perm_eq (n + m) (flip_biperm m n (flip_biperm n m f)) f.
+Proof.
+  (rewrite_strat innermost flip_biperm_defn).
+  rewrite flip_biperm_defn.
+  rewrite !compose_assoc.
+  rewrite big_swap_perm_invol, compose_idn_r.
+  rewrite <- compose_assoc.
+  now rewrite big_swap_perm_invol.
+Qed.
+
+Lemma flip_biperm_idn n : 
+  flip_biperm n n (idn_biperm n) = 
+  idn_biperm n.
+Proof.
+  eq_by_WF_perm_eq (n + n).
+  unfold idn_biperm.
+  rewrite flip_biperm_defn.
+  now rewrite big_swap_perm_invol.
+Qed.
+
+Lemma flip_biperm_0_l m f : 
+  perm_eq (m + 0) (flip_biperm 0 m f) f.
+Proof.
+  rewrite flip_biperm_defn.
+  now rewrite big_swap_perm_0_l, big_swap_perm_0_r.
+Qed.
+
+Lemma flip_biperm_0_r n f : 
+  perm_eq (0 + n) (flip_biperm n 0 f) f.
+Proof.
+  rewrite flip_biperm_defn.
+  now rewrite big_swap_perm_0_l, big_swap_perm_0_r.
+Qed.
 
 Definition contract_biperm k l f :=
   if (k <? l) then 
@@ -929,6 +1144,8 @@ Proof.
   repeat apply contract_perm_bounded; lia + auto.
 Qed.
 
+#[export] Hint Resolve contract_biperm_bounded : perm_bounded_db.
+
 Lemma contract_biperm_permutation n f 
   (Hf : permutation n f) k l (Hk : k < n) (Hl : l < n) (Hkl : k <> l) : 
   permutation (n - 2) (contract_biperm k l f).
@@ -939,6 +1156,8 @@ Proof.
   repeat apply contract_perm_permutation; 
   auto with perm_bounded_db zarith.
 Qed.
+
+#[export] Hint Resolve contract_biperm_permutation : perm_db.
 
 Lemma contract_biperm_inv n f 
   (Hf : permutation n f) k l (Hk : k < n) (Hl : l < n) (Hkl : k <> l) : 
@@ -1037,6 +1256,15 @@ Proof.
   erewrite contract_biperm_perm_eq_proper;
   [|easy..|apply (perm_inv_bipermutation n f Hf)].
   easy.
+Qed.
+
+Lemma contract_biperm_to_min_max k l f : 
+  contract_biperm k l f = 
+  contract_perm (contract_perm f (max k l)) (min k l).
+Proof.
+  unfold contract_biperm.
+  rewrite max_ltb, min_ltb.
+  now destruct (k <? l).
 Qed.
 
 
@@ -1142,6 +1370,10 @@ Qed. *)
 
 Hint Resolve n_m_cup_cap_bipermutation
   (* n_m_cup_cap_bipermutation' *) : biperm_db.
+
+#[export] Hint Extern 5 (bipermutation ?nnmm (n_m_cup_cap ?n ?m)) => 
+  apply (bipermutation_change_dims nnmm (n + n + (m + m))
+    (n_m_cup_cap n m) ltac:(lia) (n_m_cup_cap_bipermutation n m)) : biperm_db.
 
 Lemma n_m_cup_cap_bounded n m : 
   perm_bounded (n + n + (m + m)) (n_m_cup_cap n m).
@@ -1274,73 +1506,9 @@ Proof.
   now rewrite n_m_cup_cap_eqb'.
 Qed.
 
-(* TODO: Move *)
-Lemma stack_biperms_0_out n0 n1 m1 f g : 
-  stack_biperms n0 0 n1 m1 f g = 
-  stack_perms n0 (n1 + m1) f g.
-Proof.
-  eq_by_WF_perm_eq (n0 + n1 + (0 + m1)).
-  rewrite stack_biperms_defn.
-  rewrite big_swap_perm_0_l, big_swap_perm_0_r.
-  rewrite !stack_perms_idn_idn, Nat.add_0_r.
-  easy.
-Qed.
 
-Lemma stack_biperms_0_in n0 m0 m1 f g : 
-  stack_biperms n0 m0 0 m1 f g = 
-  stack_perms (n0 + m0) m1 f g.
-Proof.
-  eq_by_WF_perm_eq (n0 + 0 + (m0 + m1)).
-  rewrite stack_biperms_defn.
-  rewrite big_swap_perm_0_l, big_swap_perm_0_r.
-  rewrite !stack_perms_idn_idn.
-  easy.
-Qed.
 
-(* FIXME: Move to Modulus *)
-Lemma sub_mul_div x y z : y * z <= x -> 
-  (x - y * z) / z = x / z - y.
-Proof.
-  intros H.
-  bdestruct (z =? 0).
-  - subst.
-    now rewrite !Nat.div_0_r.
-  - assert (y <= x / z) by (apply Nat.div_le_lower_bound; lia).
-    pose proof (Nat.div_mod_eq x z) as Hxz.
-    replace (x - y * z) with ((x / z - y) * z + x mod z) by nia.
-    rewrite Nat.div_add_l by auto.
-    rewrite mod_div.
-    lia.
-Qed.
 
-(* FIXME: Move, likely to Qlib *)
-(* TODO: version for idn_r *)
-Lemma tensor_perms_stack_l_split n0 n1 m f0 f1 g : 
-  tensor_perms (n0 + n1) m (stack_perms n0 n1 f0 f1) g =
-  stack_perms (n0 * m) (n1 * m)
-    (tensor_perms n0 m f0 g)
-    (tensor_perms n1 m f1 g).
-Proof.
-  eq_by_WF_perm_eq ((n0 + n1) * m).
-  rewrite (stack_perms_defn n0 n1).
-  rewrite !tensor_perms_defn, Nat.mul_add_distr_r, stack_perms_defn.
-  intros k HK.
-  pose proof (Nat.Div0.div_lt_upper_bound k m n0).
-  pose proof (Nat.div_le_lower_bound k m n0 ltac:(lia)).
-  bdestructΩ'.
-  rewrite sub_mul_mod by lia.
-  rewrite sub_mul_div by lia.
-  lia.
-Qed.
-
-Lemma tensor_perms_idn_l_split n0 n1 m f :
-  tensor_perms (n0 + n1) m idn f =
-  stack_perms (n0 * m) (n1 * m) 
-  (tensor_perms n0 m idn f)
-  (tensor_perms n1 m idn f).
-Proof.
-  now rewrite <- tensor_perms_stack_l_split, stack_perms_idn_idn.
-Qed.
 
 Lemma n_m_cup_cap_stack_biperms_decomp' ncup ncap :
   n_m_cup_cap ncup ncap = 
@@ -1397,6 +1565,19 @@ Proof.
       at 1 by lia.
     rewrite n_m_cup_cap_double_plus by lia.
     rewrite 2!n_m_cup_cap_eqb; bdestructΩ'.
+Qed.
+
+Lemma flip_biperm_n_m_cup_cap n m : 
+  flip_biperm (n + n) (m + m) (n_m_cup_cap n m) = n_m_cup_cap m n.
+Proof.
+  eq_by_WF_perm_eq ((m + m) + (n + n));
+  [apply compose_perm_biperm_WF..|].
+  rewrite flip_biperm_defn.
+  rewrite n_m_cup_cap_stack_biperms_decomp'.
+  rewrite compose_assoc, stack_perms_big_swap_natural by 
+    (apply (n_m_cup_cap_bounded 0)).
+  rewrite <- compose_assoc, big_swap_perm_invol.
+  now rewrite (n_m_cup_cap_stack_biperms_decomp' m n).
 Qed.
 
 (* TODO: Change to perm_eq *)
@@ -1743,7 +1924,7 @@ Qed.
   biperm_compose_perm_l_biperm biperm_compose_perm_r_biperm
   : biperm_db_alt. *)
 
-(* FIXME: Test these replacements *)
+(* TODO: Test these replacements *)
 (* Hint Extern 0 (permutation _ _) => auto with perm_db : biperm_db biperm_db_alt. *)
 
 Hint Extern 100 (permutation _ _) => solve [auto with perm_db] 

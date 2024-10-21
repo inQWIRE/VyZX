@@ -14,7 +14,8 @@ Definition proportional_general {T_0 m_0 n_0 T_1 m_1 n_1}
   (t_0 : T_0) (t_1 : T_1) := 
     exists (c : C), eval_0 t_0 = c .* eval_1 t_1 /\ c <> 0.
 Notation " t1 '≡' t2 'by' eval" := 
-  (proportional_general eval eval t1 t2) (at level 70). (* \equiv *)
+  (proportional_general eval eval t1 t2) (at level 70)
+  : ZX_scope. (* \equiv *)
 
 (* ZX Proportionality *)
 
@@ -23,7 +24,7 @@ Definition proportional {n m}
 Notation "zx0 ∝ zx1" := (proportional zx0 zx1) (at level 70) : ZX_scope. (* \propto *)
 
 Ltac prop_exists_nonzero c := 
-  exists c; split; try apply nonzero_div_nonzero; try nonzero.
+  exists c; split; [|try apply nonzero_div_nonzero; try nonzero].
 Ltac prep_proportional := unfold proportional; intros; split; [split; lia | ].
 Ltac solve_prop c := 
 	prop_exists_nonzero c; simpl; Msimpl; 

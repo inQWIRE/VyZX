@@ -62,6 +62,93 @@ Proof.
   easy.
 Qed.
 
+Lemma n_cup_unswapped_colorswap : forall n, ⊙ (n_cup_unswapped n) ∝ n_cup_unswapped n.
+Proof. 
+  intros.
+  induction n; [ easy | ].
+  simpl.
+  apply compose_simplify; [ | easy ].
+  rewrite cast_colorswap.
+  simpl.
+  rewrite IHn.
+  easy.
+Qed.
+
+Lemma n_cup_colorswap : forall n, ⊙ (n_cup n) ∝ n_cup n.
+Proof. 
+  intros.
+  unfold n_cup.
+  simpl.
+  rewrite n_wire_colorswap.
+  rewrite n_swap_colorswap.
+  rewrite n_cup_unswapped_colorswap.
+  easy.
+Qed.
+
+Lemma n_cap_unswapped_colorswap : forall n, ⊙ (n_cap_unswapped n) ∝ n_cap_unswapped n.
+Proof.
+  intros.
+  unfold n_cap_unswapped.
+  rewrite colorswap_transpose_commute.
+  rewrite n_cup_unswapped_colorswap.
+  easy.
+Qed.
+
+Lemma n_cap_colorswap : forall n, ⊙ (n_cap n) ∝ n_cap n.
+Proof. 
+  intros.
+  unfold n_cap.
+  rewrite colorswap_transpose_commute.
+  rewrite n_cup_colorswap.
+  easy.
+Qed.
+
+#[export] Hint Rewrite
+  (fun n => @n_cup_colorswap n)
+  (fun n => @n_cap_colorswap n)
+  (fun n => @n_cup_unswapped_colorswap n)
+  (fun n => @n_cap_unswapped_colorswap n)
+  : colorswap_db.
+
+Local Open Scope ZX_scope.
+
+Lemma n_cup_unswapped_transpose : forall n, (n_cup_unswapped n)⊤ ∝ n_cap_unswapped n.
+Proof.
+  intros.
+  unfold n_cap_unswapped.
+  easy.
+Qed.
+
+Lemma n_cap_unswapped_transpose : forall n, (n_cap_unswapped n)⊤ ∝ n_cup_unswapped n.
+Proof.
+  intros.
+  unfold n_cap_unswapped.
+  rewrite Proportional.transpose_involutive.
+  easy.
+Qed.
+
+Lemma n_cup_transpose : forall n, (n_cup n)⊤ ∝ n_cap n.
+Proof.
+  intros.
+  unfold n_cap.
+  easy.
+Qed.
+
+Lemma n_cap_transpose : forall n, (n_cap n)⊤ ∝ n_cup n.
+Proof.
+  intros.
+  unfold n_cap.
+  rewrite Proportional.transpose_involutive.
+  easy.
+Qed.
+
+#[export] Hint Rewrite
+  (fun n => @n_cup_unswapped_transpose n)
+  (fun n => @n_cap_unswapped_transpose n)
+  (fun n => @n_cup_transpose n)
+  (fun n => @n_cap_transpose n)
+  : transpose_db.
+
 Local Open Scope nat_scope.
 
 Lemma cap_f_to_vec f : 
@@ -463,10 +550,10 @@ Proof.
   now rewrite kron_1_l by auto_wf.
 Qed.
 
-Lemma big_yank_r n prf0 prf1 prf2 : 
+Lemma big_yank_r n prf0 prf1 : 
   (n_wire n ↕ n_cap n) ⟷
   cast _ _ prf0 prf1
-    (n_cup n ↕ n_wire n) ∝ cast _ _ prf2 eq_refl (n_wire n).
+    (n_cup n ↕ n_wire n) ∝ cast _ _ (Nat.add_0_r _) eq_refl (n_wire n).
 Proof.
   apply transpose_diagrams.
   cbn [ZXCore.transpose].
@@ -565,6 +652,118 @@ Qed.
 
 Global Open Scope ZX_scope.
 
+Lemma n_cup_split_add n m : 
+  n_cup (n + m) ∝
+  zx_mid_comm n m n m ⟷
+  (n_cup n ↕ n_cup m).
+Proof.
+  prop_exists_nonzero 1%R.
+  rewrite Mscale_1_l.
+  unfold zx_mid_comm.
+  rewrite zx_compose_spec.
+  simpl_cast_semantics.
+  rewrite 2!zx_stack_spec.
+  rewrite n_wire_semantics.
+  apply equal_on_basis_states_implies_equal; [now auto_wf..|].
+  intros f.
+  rewrite n_cup_f_to_vec.
+  rewrite Mmult_assoc.
+  rewrite (@zx_mid_comm_prf n m n m).
+  restore_dims.
+  rewrite kron_f_to_vec_eq by auto_wf.
+  rewrite zx_stack_spec.
+  rewrite n_wire_semantics.
+  restore_dims.
+  rewrite kron_f_to_vec_eq by auto_wf.
+  rewrite 2!Mmult_1_l by auto_wf.
+  rewrite zx_comm_semantics.
+  rewrite f_to_vec_split'_eq.
+  restore_dims.
+  rewrite Kronecker.kron_comm_commutes_l by auto_wf.
+  rewrite Kronecker.kron_comm_1_l, Mmult_1_r by auto_wf.
+  rewrite f_to_vec_merge.
+  restore_dims.
+  rewrite f_to_vec_merge.
+  restore_dims.
+  rewrite f_to_vec_merge.
+  rewrite <- (@zx_mid_comm_prf n n m m).
+  rewrite f_to_vec_split'_eq.
+  restore_dims.
+  rewrite kron_mixed_product.
+  rewrite 2!n_cup_f_to_vec.
+  restore_dims.
+  distribute_scale.
+  rewrite id_kron.
+  f_equal.
+  rewrite <- RtoC_mult, b2R_mult.
+  do 2 f_equal.
+  apply eq_iff_eq_true.
+  rewrite andb_true_iff, 3!forallb_seq0.
+  setoid_rewrite eqb_true_iff.
+  rewrite forall_nat_lt_add.
+  apply ZifyClasses.and_morph.
+  - apply forall_lt_iff.
+    intros k Hk.
+    do 5 simplify_bools_lia_one_kernel.
+    now rewrite add_sub', Nat.add_assoc.
+  - apply forall_lt_iff.
+    intros k Hk.
+    cbn.
+    do 4 simplify_bools_lia_one_kernel.
+    replace (n + n + k - n - n) with k by lia.
+    replace (n + n + (m + k) - (n + (n + m))) with k by lia.
+    now rewrite 2!Nat.add_assoc.
+Qed.
+
+Lemma n_cup_grow_l n : 
+  n_cup (S n) ∝
+  zx_mid_comm 1 n 1 n ⟷
+  (⊃ ↕ n_cup n).
+Proof.
+  change (S n) with (1 + n).
+  rewrite n_cup_split_add.
+  now rewrite n_cup_1_cup.
+Qed.
+
+Lemma n_cap_split_add n m : 
+  n_cap (n + m) ∝
+  (n_cap n ↕ n_cap m) ⟷
+  zx_mid_comm n n m m.
+Proof.
+  unfold n_cap.
+  rewrite n_cup_split_add.
+  rewrite compose_transpose. 
+  now rewrite zx_mid_comm_transpose.
+Qed.
+
+Lemma n_cup_add_natural {n0 n1 n2 n3 m0 m1} 
+  (zx0 : ZX n0 m0) (zx1 : ZX n1 m1)
+  (zx2 : ZX n2 m0) (zx3 : ZX n3 m1) : 
+  zx0 ↕ zx1 ↕ (zx2 ↕ zx3) ⟷ n_cup (m0 + m1) ∝
+  zx_mid_comm _ _ _ _ ⟷
+  ((zx0 ↕ zx2 ⟷ n_cup m0) ↕ (zx1 ↕ zx3 ⟷ n_cup m1)).
+Proof.
+  rewrite stack_compose_distr.
+  rewrite n_cup_split_add.
+  rewrite <- 2!compose_assoc.
+  now rewrite zx_mid_comm_commutes_r.
+Qed.
+
+Lemma n_cap_add_natural {n0 n1 m0 m1 m2 m3} 
+  (zx0 : ZX n0 m0) (zx1 : ZX n1 m1)
+  (zx2 : ZX n0 m2) (zx3 : ZX n1 m3) : 
+  n_cap (n0 + n1) ⟷ (zx0 ↕ zx1 ↕ (zx2 ↕ zx3)) ∝
+  ((n_cap n0 ⟷ (zx0 ↕ zx2)) ↕ (n_cap n1 ⟷ (zx1 ↕ zx3))) ⟷
+  zx_mid_comm _ _ _ _.
+Proof.
+  apply transpose_diagrams.
+  rewrite 2!compose_transpose, 3!stack_transpose, n_cap_transpose.
+  rewrite n_cup_add_natural.
+  rewrite zx_mid_comm_transpose.
+  rewrite (@stack_transpose 0 _ 0), 2!compose_transpose, 2!n_cap_transpose.
+  reflexivity.
+Qed.
+
 Lemma n_cup_unswapped_grow_l : forall n prfn prfm, 
   n_cup_unswapped (S n) ∝ cast _ _ prfn prfm (n_wire n ↕ ⊃ ↕ n_wire n) ⟷ n_cup_unswapped n.
 Proof.
@@ -603,88 +802,3 @@ Proof.
 Unshelve.
   all: lia.
 Qed.
-
-Lemma n_cup_unswapped_colorswap : forall n, ⊙ (n_cup_unswapped n) ∝ n_cup_unswapped n.
-Proof. 
-  intros.
-  induction n; [ easy | ].
-  simpl.
-  apply compose_simplify; [ | easy ].
-  rewrite cast_colorswap.
-  simpl.
-  rewrite IHn.
-  easy.
-Qed.
-
-Lemma n_cup_colorswap : forall n, ⊙ (n_cup n) ∝ n_cup n.
-Proof. 
-  intros.
-  unfold n_cup.
-  simpl.
-  rewrite n_wire_colorswap.
-  rewrite n_swap_colorswap.
-  rewrite n_cup_unswapped_colorswap.
-  easy.
-Qed.
-
-Lemma n_cap_unswapped_colorswap : forall n, ⊙ (n_cap_unswapped n) ∝ n_cap_unswapped n.
-Proof.
-  intros.
-  unfold n_cap_unswapped.
-  rewrite colorswap_transpose_commute.
-  rewrite n_cup_unswapped_colorswap.
-  easy.
-Qed.
-
-Lemma n_cap_colorswap : forall n, ⊙ (n_cap n) ∝ n_cap n.
-Proof. 
-  intros.
-  unfold n_cap.
-  rewrite colorswap_transpose_commute.
-  rewrite n_cup_colorswap.
-  easy.
-Qed.
-
-#[export] Hint Rewrite
-  (fun n => @n_cup_colorswap n)
-  (fun n => @n_cap_colorswap n)
-  (fun n => @n_cup_unswapped_colorswap n)
-  (fun n => @n_cap_unswapped_colorswap n)
-  : colorswap_db.
-
-Lemma n_cup_unswapped_transpose : forall n, (n_cup_unswapped n)⊤ ∝ n_cap_unswapped n.
-Proof.
-  intros.
-  unfold n_cap_unswapped.
-  easy.
-Qed.
-
-Lemma n_cap_unswapped_transpose : forall n, (n_cap_unswapped n)⊤ ∝ n_cup_unswapped n.
-Proof.
-  intros.
-  unfold n_cap_unswapped.
-  rewrite Proportional.transpose_involutive.
-  easy.
-Qed.
-
-Lemma n_cup_transpose : forall n, (n_cup n)⊤ ∝ n_cap n.
-Proof.
-  intros.
-  unfold n_cap.
-  easy.
-Qed.
-
-Lemma n_cap_transpose : forall n, (n_cap n)⊤ ∝ n_cup n.
-Proof.
-  intros.
-  unfold n_cap.
-  rewrite Proportional.transpose_involutive.
-  easy.
-Qed.
-
-#[export] Hint Rewrite
-  (fun n => @n_cup_unswapped_transpose n)
-  (fun n => @n_cap_unswapped_transpose n)
-  (fun n => @n_cup_transpose n)
-  (fun n => @n_cap_transpose n)
-  : transpose_db.

@@ -114,7 +114,7 @@ Proof.
 		easy.
 Qed.
 
-Lemma n_stack_transpose : forall n (zx : ZX 1 1), (n ⇑ zx)⊤ ∝ (n ⇑ zx⊤).
+Lemma n_stack_transpose : forall n {n' m'} (zx : ZX n' m'), (n ⇑ zx)⊤ ∝ (n ⇑ zx⊤).
 Proof.
 	intros.
 	induction n.

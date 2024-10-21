@@ -44,6 +44,17 @@ Proof.
     auto.
 Qed.
 
+Lemma zxperm_is_square_induction (P : forall n m, ZX n m -> Prop) : 
+  (forall n (zx : ZX n n), ZXperm zx -> P n n zx) ->
+  forall n m (zx : ZX n m), ZXperm zx -> P n m zx.
+Proof.
+  intros HP n m zx Hzx.
+  pose proof (zxperm_square zx Hzx) as Heq.
+  revert zx Hzx.
+  subst m.
+  auto.
+Qed.
+
 Lemma perm_of_zx_permutation {n m} (zx : ZX n m) : 
   ZXperm zx -> permutation n (perm_of_zx zx).
 Proof.
