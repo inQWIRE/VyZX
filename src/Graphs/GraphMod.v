@@ -1,78 +1,104 @@
 Require Import Proportional.
 Require Import ZXCore.
 Require Import List.
+Require Import Nat.
 
-Module ZXGraph.
-  
-  (* Graph definitions *)
+Module Type ZXGModule.
+
   Parameter ZXG : nat -> nat -> Type.
+
   Parameter VertexType : Type. (* Allows for flexible types of graph nodes *)
-  Definition VertexIdx  : Type := nat. (* Indexing vertices with nats *)
-  Definition EdgeType  : Type := (VertexIdx * VertexIdx). (* Edges are therefore two indices *)
   Parameter proportional : forall {n m : nat}, ZXG n m -> ZXG n m -> Prop.
-  Notation "A '∝' B" := (proportional A B).
 
   Parameter VertexZ : R -> VertexType.
   Parameter VertexX : R -> VertexType.
-  Notation "'Z' α" := (VertexZ α) (at level 20).
-  Notation "'X' α" := (VertexX α) (at level 20).
 
+  Parameter empty_graph : ZXG 0 0. 
 
-  (* Low level graph manipulations *)
-  Parameter empty_graph : ZXG 0 0. (* Could also be a scalar, maybe have some extra guarantee here? Probably won't matter, as ∝ will be defined up to scalars anyways. *)
-  Notation "∅" := empty_graph.
+  Definition VertexIdx  : Type := nat. (* Indexing vertices with nats *)
+  Definition EdgeType  : Type := (VertexIdx * VertexIdx). (* Edges are therefore two indices *)
+
+  Parameter vertices : forall {n m : nat}, 
+    ZXG n m -> list (VertexIdx * VertexType).
+  Parameter edges    : forall {n m : nat}, 
+    ZXG n m -> list (VertexIdx * VertexIdx).
+
   Parameter add_vertex : forall {n m : nat}, 
     VertexType -> VertexIdx -> ZXG n m -> ZXG n m.
-  Notation "vt '@' vidx '+v' G" := (add_vertex vt vidx G) (at level 41, right associativity).
   Parameter add_internal_edge : forall {n m : nat}, 
     ZXG n m -> (VertexIdx * VertexIdx) -> ZXG n m.
-  Notation "idx0 '<=>' idx1 '+e' G" := (add_internal_edge G (idx0, idx1)) (at level 41, right associativity).
   Parameter add_input_edge : forall {n m : nat}, 
     ZXG n m -> VertexIdx -> ZXG (S n) m.
-  Notation "'<=>' idx '+e' G" := (add_input_edge G idx) (at level 41, right associativity).
   Parameter add_output_edge : forall {n m : nat}, 
     ZXG n m -> VertexIdx -> ZXG n (S m).
-  Notation "idx '<=>' '+e' G" := (add_output_edge G idx) (at level 41, right associativity).
+
+  Parameter compose : forall {n m o : nat}, 
+    ZXG n m -> ZXG m o -> ZXG n o.
+  Parameter stack   : forall {n m o p : nat}, 
+    ZXG n m -> ZXG o p -> ZXG (n + m) (o + p).
+
+End ZXGModule.
+
+Module ZXGraph (GraphInstance :  ZXGModule).
+
+  Include GraphInstance.
+
+  (* Graph Notations *)
+  Notation "A '∝' B" := (proportional A B).
+  Notation "'Z' α" := (VertexZ α) (at level 20).
+  Notation "'X' α" := (VertexX α) (at level 20).
+  Notation "∅" := empty_graph.
+
+  (* Low level graph manipulation notations *)
+  Notation "vt '@' vidx '+v' G" := 
+    (add_vertex vt vidx G) (at level 41, right associativity).
+  Notation "idx0 '<=>' idx1 '+e' G" := 
+    (add_internal_edge G (idx0, idx1)) (at level 41, right associativity).
+  Notation "'<=>' idx '+e' G" := 
+    (add_input_edge G idx) (at level 41, right associativity).
+  Notation "idx '<=>' '+e' G" := 
+    (add_output_edge G idx) (at level 41, right associativity).
 
   (* Repeated addition of vertices *)
-  Fixpoint add_n_input_edges {n m : nat} (zx : ZXG n m) (idx : VertexIdx) (iter : nat) : ZXG (iter + n) m :=
+  Fixpoint add_n_input_edges {n m : nat} (zx : ZXG n m) 
+                         (idx : VertexIdx) (iter : nat) : 
+    ZXG (iter + n) m :=
     match iter with
     | 0 => zx
     | S k => <=> idx +e (add_n_input_edges zx idx k)
     end.
-  Notation "'<=>' idx '^e' n '+e' zxg" := (add_n_input_edges zxg idx n) (at level 41, right associativity).
+  Notation "'<=>' idx '^e' n '+e' zxg" := 
+    (add_n_input_edges zxg idx n) (at level 41, right associativity).
 
-  Fixpoint add_n_output_edges {n m : nat} (zx : ZXG n m) (idx : VertexIdx) (iter : nat) : ZXG n (iter + m) :=
+  Fixpoint add_n_output_edges {n m : nat} (zx : ZXG n m) 
+                          (idx : VertexIdx) (iter : nat) : 
+    ZXG n (iter + m) :=
     match iter with
     | 0 => zx
     | S k => idx <=> +e (add_n_output_edges zx idx k)
     end.
-  Notation "idx '<=>' '^e' n '+e' zxg" := (add_n_output_edges zxg idx n) (at level 41, right associativity).
+  Notation "idx '<=>' '^e' n '+e' zxg" := 
+    (add_n_output_edges zxg idx n) (at level 41, right associativity).
 
-  Fixpoint add_n_internal_edges {n m : nat} (zx : ZXG n m) (idxl idxr : VertexIdx) (iter : nat) : ZXG n m :=
+  Fixpoint add_n_internal_edges {n m : nat} (zx : ZXG n m) 
+                      (idxl idxr : VertexIdx) (iter : nat) : 
+    ZXG n m :=
     match iter with
     | 0 => zx
     | S k => idxl <=> idxr +e (add_n_internal_edges zx idxl idxr k)
     end.
-  Notation "idxl '<=>' idxr '^e' n '+e' zxg" := (add_n_internal_edges zxg idxl idxr n) (at level 41, right associativity).
-  
+  Notation "idxl '<=>' idxr '^e' n '+e' zxg" := 
+    (add_n_internal_edges zxg idxl idxr n) (at level 41, right associativity).
 
   (* Ways to combine graphs *)
-  Parameter compose : forall {n m o : nat}, ZXG n m -> ZXG m o -> ZXG n o.
   Notation "A '+' B" := (compose A B).
-  Parameter stack   : forall {n m o p : nat}, ZXG n m -> ZXG o p -> ZXG (n + m) (o + p).
   Notation "A '⊗' B" := (stack A B).
 
   (* Access elements of the graph *)
-  Parameter vertices : forall {n m : nat}, 
-    ZXG n m -> list VertexIdx.
-  Parameter edges    : forall {n m : nat}, 
-    ZXG n m -> list (VertexIdx * VertexIdx).
 
   (* Testing properties of the graph *)
   Definition connected_vertices {n m : nat} (zxg : ZXG n m) 
-    (l : VertexIdx) 
-    (r : VertexIdx) : bool :=
+    (l : VertexIdx) (r : VertexIdx) : bool :=
     let gv := edges zxg in
       (existsb (fun p => 
                 orb (andb (fst p =? l) (snd p =? r))
@@ -82,16 +108,92 @@ Module ZXGraph.
 
   (* High level graph rewriting through induced subgraphs *)
   Parameter induced_subgraph : forall {n m o p : nat}, 
-      ZXG n m -> list VertexIdx -> ZXG o p.
-  Notation "zxa '|_' vertices" := 
-      (induced_subgraph zxa vertices) (at level 40).
+    ZXG n m -> list VertexIdx -> list VertexIdx -> ZXG o p.
+
+  Fixpoint list_minus (data remover : list nat) : list nat.
+  Proof.
+    intros.
+    destruct remover.
+    - exact data.
+    - exact (list_minus (remove Nat.eq_dec n data) remover).
+  Defined.
+
+  Fixpoint add_list_vertices {n m} (verts : list (VertexIdx * VertexType)) : ZXG n m -> ZXG n m.
+  Proof.
+    intros zx.
+    destruct verts.
+    - exact zx.
+    - destruct p as [lbl rog].
+      exact ((add_list_vertices _ _ verts) (rog @ lbl +v zx)).
+  Defined.
+
+  Fixpoint satisfy {A} (P : A -> bool) (lst : list A) : option A.
+  Proof.
+    destruct lst.
+    - exact None.
+    - case (P a).
+      + exact (Some a).
+      + exact (satisfy A P lst).
+  Defined.
+
+  Fixpoint get_vertices {n m} (verts : list VertexIdx) : ZXG n m -> list (VertexIdx * VertexType).
+  Proof.
+    intros zxg.
+    specialize (vertices zxg) as gverts.
+    exact (fold_left (fun acc nxt => acc)
+                     gverts []).
+  Defined.
+
+  Definition isolate_subgraph : forall {n m o p : nat},
+    ZXG n m -> list VertexIdx -> list (VertexIdx * VertexType) -> ZXG o p.
+  Proof.
+    intros n m o p graph inputs internal.
+    specialize (vertices graph) as all_vertices.
+    specialize (edges graph) as all_edges.
+    specialize (map fst all_vertices) as all_vertices_idx.
+    specialize (map fst internal) as internal_idx.
+    specialize (filter 
+                    (fun e => 
+                      (0 <? (count_occ Nat.eq_dec internal_idx (fst e)))
+                   || (0 <? (count_occ Nat.eq_dec internal_idx (snd e)))) 
+                    all_edges) 
+      as connected_to_internal.
+    specialize (filter
+                    (fun e =>
+                      (0 <? (count_occ Nat.eq_dec inputs (fst e)))
+                   || (0 <? (count_occ Nat.eq_dec inputs (snd e))))
+                connected_to_internal)
+      as input_connected_to_internal.
+    specialize (filter
+                    (fun e =>
+                      (0 =? (count_occ Nat.eq_dec inputs (fst e)))
+                   || (0 =? (count_occ Nat.eq_dec inputs (snd e))))
+                connected_to_internal)
+      as output_connected_to_internal.
+    specialize 0%nat as x.
+    specialize (add_list_vertices internal empty_graph) as subgraph.
+  Admitted.
+
+  Definition induce_subgraph : forall {n m o p : nat},
+    ZXG n m -> list VertexIdx -> list (VertexIdx * VertexType) -> ZXG o p.
+  Proof.
+    intros n m o p big_graph inputs internal.
+    specialize (vertices big_graph) as all_vertices.
+    specialize (edges big_graph) as all_edges.
+    specialize (list_minus (list_minus (map fst all_vertices) inputs) (map fst internal)) as remainder.
+    specialize (add_list_vertices internal empty_graph) as subgraph.
+
+  Admitted.
+
+  Notation "zxa '|_' inputs '#' vertices" := 
+      (induced_subgraph zxa inputs vertices) (at level 40).
   Parameter replace_subgraph : forall {n m o p : nat} 
   (G : ZXG n m) (S : list VertexIdx) 
   (H : ZXG o p), ZXG n m.
-  Notation "G '|_{' S '>=>' H '}'" := 
-    (replace_subgraph G S H) (at level 40).
+  Notation "G '|_{' S '>=>' H '}'" := (replace_subgraph G S H) (at level 40).
   Parameter gen_rewrite : forall {n m o p : nat} 
-    (G : ZXG n m) (S : list VertexIdx) (H : ZXG o p) (P : H ∝ G |_ S), 
+    (G : ZXG n m) (S : list VertexIdx) (I : list VertexIdx) 
+    (H : ZXG o p) (P : H ∝ G |_ I # S), 
       G ∝ G |_{ S >=> H }.
 
   (* Parameter permute_inputs *)
