@@ -896,18 +896,196 @@ Proof.
   eauto using mat_equiv_refl.
 Qed.
 
-
+Lemma mat_last_nonzero_val_zero_iff_WF {n m} (A : Matrix n m) 
+  (HA : WF_Matrix A) : 
+  mat_last_nonzero_val A = C0 <-> A = Zero.
+Proof.
+  split.
+  - unfold mat_last_nonzero_val.
+    destruct (last_nonzero_spec (fun i : nat => A (i mod n) (i / n)) (n * m)) 
+      as [[Hsm HF] | [Ha HZ]].
+    + now intros H%HF.
+    + intros _.
+      apply mat_equiv_eq; [auto_wf..|].
+      intros i j Hi Hj.
+      specialize (HZ (j * n + i) ltac:(Modulus.show_moddy_lt)).
+      rewrite Modulus.mod_add_l, Nat.mod_small, 
+        Nat.div_add_l, Nat.div_small, Nat.add_0_r in HZ by lia.
+      exact HZ.
+  - intros ->.
+    reflexivity.
+Qed.
 
 End ConcreteProp.
 
 Import ConcreteProp.
 
 
-Definition zxquot {n m} (zx0 zx1 : ZX n m) : C :=
-  mat_last_nonzero_val ⟦zx0⟧ / mat_last_nonzero_val ⟦zx1⟧.
 
-Lemma prop_by_of_prop {n m} (zx0 zx1 : ZX n m) : 
+
+Local Open Scope C_scope.
+
+Lemma Cinv_eq_0_iff (a : C) : / a = C0 <-> a = 0.
+Proof.
+  split.
+  - destruct (Ceq_dec a C0) as [? | H%nonzero_div_nonzero]; easy.
+  - intros ->.
+    lca.
+Qed.
+
+Lemma Cmult_integral_iff (a b : C) : 
+  a * b = 0 <-> (a = 0 \/ b = 0).
+Proof.
+  split; [apply Cmult_integral|].
+  intros [-> | ->]; lca.
+Qed.
+
+Lemma Cdiv_integral (a b : C) : 
+  a / b = C0 <-> (a = C0 \/ b = C0).
+Proof.
+  unfold Cdiv.
+  rewrite Cmult_integral_iff, Cinv_eq_0_iff.
+  reflexivity.
+Qed.
+
+Lemma Cdiv_integral_dec (a b : C) : 
+  a / b = C0 -> ({a = C0} + {b = C0}).
+Proof.
+  intros H%Cdiv_integral.
+  destruct (Ceq_dec a 0); [now left |].
+  destruct (Ceq_dec b 0); [now right |].
+  exfalso.
+  destruct H; easy.
+Defined.
+
+Lemma eq_zero_of_prop {n m} (zx0 zx1 : ZX n m) 
+  (H : zx0 ∝ zx1) : ⟦zx0⟧ = Zero -> ⟦zx1⟧ = Zero.
+Proof.
+  destruct H as (c & HAB & Hc).
+  intros HZ; rewrite HZ in HAB.
+  apply mat_equiv_eq; [auto_wf..|].
+  intros i j _ _.
+  pose proof (equal_f (equal_f HAB i) j) as H.
+  unfold scale, Zero in H.
+  symmetry in H.
+  rewrite Cmult_integral_iff in H.
+  destruct H; easy.
+Qed.
+
+Lemma eq_zero_iff_of_prop {n m} {zx0 zx1 : ZX n m }
+  (H : zx0 ∝ zx1) : ⟦zx0⟧ = Zero <-> ⟦zx1⟧ = Zero.
+Proof.
+  split; apply eq_zero_of_prop; easy.
+Qed.
+
+
+
+Definition zxquot {n m} (zx0 zx1 : ZX n m) : C :=
+  if Ceq_dec (mat_last_nonzero_val ⟦zx0⟧ / mat_last_nonzero_val ⟦zx1⟧) C0 then
+  C1 else mat_last_nonzero_val ⟦zx0⟧ / mat_last_nonzero_val ⟦zx1⟧.
+
+Lemma prop_by_quot_of_prop {n m} (zx0 zx1 : ZX n m) : 
   zx0 ∝ zx1 -> zx0 ∝[zxquot zx0 zx1] zx1.
 Proof.
-  intros H%prop_by_val_of_strict_prop_WF. 
-  Abort.
+  intros H.
+  pose proof H as Hstr%prop_by_val_of_strict_prop_WF; [|auto_wf..].
+  unfold zxquot.
+  destruct (Ceq_dec (mat_last_nonzero_val ⟦zx0⟧ / mat_last_nonzero_val ⟦zx1⟧) C0)
+    as [[H0 | H1]%Cdiv_integral_dec | Hnz].
+  - apply mat_last_nonzero_val_zero_iff_WF in H0; [|auto_wf].
+    pose proof H0 as H1%(eq_zero_iff_of_prop H).
+    split; [|nonzero].
+    rewrite H0, H1, Mscale_1_l.
+    reflexivity.
+  - apply mat_last_nonzero_val_zero_iff_WF in H1; [|auto_wf].
+    pose proof H1 as H0%(eq_zero_iff_of_prop H).
+    split; [|nonzero].
+    rewrite H0, H1, Mscale_1_l.
+    reflexivity.
+  - easy.
+Qed.
+
+Lemma prop_by_iff_by_quot {n m} (zx0 zx1 : ZX n m) : 
+  zx0 ∝ zx1 <-> zx0 ∝[zxquot zx0 zx1] zx1.
+Proof.
+  split; [apply prop_by_quot_of_prop|].
+  unfold proportional.
+  eauto.
+Qed.
+
+Definition prop_by_sig {n m} (zx0 zx1 : ZX n m) : 
+  zx0 ∝ zx1 -> {c | zx0 ∝[c] zx1} :=
+  fun H => 
+  exist _ (zxquot zx0 zx1) (prop_by_quot_of_prop zx0 zx1 H).
+
+(* Lemma mat_eq_dec_strong {n m} {A B : Matrix n m} 
+  (HA : WF_Matrix A) (HB : WF_Matrix B) :
+  (A = B) + {'(i, j) : nat * nat | A i j <> B i j}. *)
+
+Lemma mat_eq_dec_WF {n m} {A B : Matrix n m} 
+  (HA : WF_Matrix A) (HB : WF_Matrix B) :
+  {A = B} + {A <> B}.
+Proof.
+  destruct (mat_equiv_dec A B) as [Heq | Hneq].
+  - left.
+    apply mat_equiv_eq; assumption.
+  - right.
+    intros ->.
+    apply Hneq.
+    reflexivity.
+(* Opaque because mat_equiv_dec is *)
+Qed.
+
+Local Notation "'Decidable' P" := ({P} + {~ P}) 
+  (at level 10, P at level 9) : type_scope.
+
+Lemma dec_and {P Q} (HP : Decidable P) (HQ : Decidable Q) :
+  Decidable (P /\ Q).
+Proof.
+  destruct HP, HQ; [left|right..]; tauto.
+Defined.
+
+Lemma dec_not {P} (HP : Decidable P) :
+  Decidable (~ P).
+Proof.
+  destruct HP; [right|left]; tauto.
+Defined.
+
+Lemma dec_iff {P Q} (HP : Decidable P) (H : P <-> Q) : 
+  Decidable Q.
+Proof.
+  destruct HP; [left | right]; tauto.
+Defined.
+
+Lemma dec_iff' {P Q} (HP : Decidable P) (H : Q <-> P) : 
+  Decidable Q.
+Proof.
+  destruct HP; [left | right]; tauto.
+Defined.
+
+
+
+Lemma proportional_by_1_dec {n m} (zx0 zx1 : ZX n m) :
+  Decidable (zx0 ∝= zx1).
+Proof.
+  apply mat_eq_dec_WF; auto_wf.
+Qed.
+
+Lemma proportional_by_dec {n m} (zx0 zx1 : ZX n m) (c : C) : 
+  Decidable (zx0 ∝[c] zx1).
+Proof.
+  apply dec_and.
+  - apply mat_eq_dec_WF; auto_wf.
+  - apply dec_not, Ceq_dec.
+Qed.
+
+Lemma proportional_dec {n m} (zx0 zx1 : ZX n m) : 
+  Decidable (zx0 ∝ zx1).
+Proof.
+  refine (dec_iff' (proportional_by_dec _ _ _) (prop_by_iff_by_quot zx0 zx1)).
+Qed.
+
+
+
+
+
