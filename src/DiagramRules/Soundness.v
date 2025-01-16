@@ -494,6 +494,47 @@ Proof.
   - apply prop_equation, Hnz.
 Qed.
 
+
+
+
+
+
+
+
+Lemma Cinv_eq_0_iff (a : C) : / a = C0 <-> a = 0.
+Proof.
+  split.
+  - destruct (Ceq_dec a C0) as [? | H%nonzero_div_nonzero]; easy.
+  - intros ->.
+    lca.
+Qed.
+
+Lemma Cmult_integral_iff (a b : C) : 
+  a * b = 0 <-> (a = 0 \/ b = 0).
+Proof.
+  split; [apply Cmult_integral|].
+  intros [-> | ->]; lca.
+Qed.
+
+Lemma Cdiv_integral (a b : C) : 
+  a / b = C0 <-> (a = C0 \/ b = C0).
+Proof.
+  unfold Cdiv.
+  rewrite Cmult_integral_iff, Cinv_eq_0_iff.
+  reflexivity.
+Qed.
+
+Lemma Cdiv_integral_dec (a b : C) : 
+  a / b = C0 -> ({a = C0} + {b = C0}).
+Proof.
+  intros H%Cdiv_integral.
+  destruct (Ceq_dec a 0); [now left |].
+  destruct (Ceq_dec b 0); [now right |].
+  exfalso.
+  destruct H; easy.
+Defined.
+
+
 End SoundnessC.
 
 Import SoundnessC.
@@ -925,38 +966,6 @@ Import ConcreteProp.
 
 Local Open Scope C_scope.
 
-Lemma Cinv_eq_0_iff (a : C) : / a = C0 <-> a = 0.
-Proof.
-  split.
-  - destruct (Ceq_dec a C0) as [? | H%nonzero_div_nonzero]; easy.
-  - intros ->.
-    lca.
-Qed.
-
-Lemma Cmult_integral_iff (a b : C) : 
-  a * b = 0 <-> (a = 0 \/ b = 0).
-Proof.
-  split; [apply Cmult_integral|].
-  intros [-> | ->]; lca.
-Qed.
-
-Lemma Cdiv_integral (a b : C) : 
-  a / b = C0 <-> (a = C0 \/ b = C0).
-Proof.
-  unfold Cdiv.
-  rewrite Cmult_integral_iff, Cinv_eq_0_iff.
-  reflexivity.
-Qed.
-
-Lemma Cdiv_integral_dec (a b : C) : 
-  a / b = C0 -> ({a = C0} + {b = C0}).
-Proof.
-  intros H%Cdiv_integral.
-  destruct (Ceq_dec a 0); [now left |].
-  destruct (Ceq_dec b 0); [now right |].
-  exfalso.
-  destruct H; easy.
-Defined.
 
 Lemma eq_zero_of_prop {n m} (zx0 zx1 : ZX n m) 
   (H : zx0 ∝ zx1) : ⟦zx0⟧ = Zero -> ⟦zx1⟧ = Zero.
@@ -1022,6 +1031,8 @@ Definition prop_by_sig {n m} (zx0 zx1 : ZX n m) :
   (HA : WF_Matrix A) (HB : WF_Matrix B) :
   (A = B) + {'(i, j) : nat * nat | A i j <> B i j}. *)
 
+Module ProportionalDec.
+
 Lemma mat_eq_dec_WF {n m} {A B : Matrix n m} 
   (HA : WF_Matrix A) (HB : WF_Matrix B) :
   {A = B} + {A <> B}.
@@ -1085,7 +1096,4 @@ Proof.
   refine (dec_iff' (proportional_by_dec _ _ _) (prop_by_iff_by_quot zx0 zx1)).
 Qed.
 
-
-
-
-
+End ProportionalDec.
