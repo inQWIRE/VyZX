@@ -45,9 +45,10 @@ Proof.
   destruct n; [ easy | ].
   induction n.
   - easy.
-  - simpl.
+  - cbn.
     simpl in IHn.
     rewrite <- IHn.
+    fold (n_wire n).
     rewrite n_wire_semantics.
     rewrite kron_n_I.
     rewrite 2 id_kron.
@@ -76,12 +77,21 @@ Proof.
   easy.
 Qed.
 
+Lemma swap_spec' : swap = ((ket 0 × bra 0)  ⊗ (ket 0 × bra 0) .+ (ket 0 × bra 1)  ⊗ (ket 1 × bra 0)
+  .+ (ket 1 × bra 0)  ⊗ (ket 0 × bra 1) .+ (ket 1 × bra 1)  ⊗ (ket 1 × bra 1)).
+Proof.
+  prep_matrix_equivalence.
+  by_cell; lazy; lca.
+Qed.
+
 Lemma top_to_bottom_grow_l : forall n, 
-  top_to_bottom (S (S n)) ∝ (⨉ ↕ n_wire n) ⟷ (— ↕ top_to_bottom (S n)).
-Proof. easy. Qed.
+  top_to_bottom (S (S n)) = (⨉ ↕ n_wire n) ⟷ (— ↕ top_to_bottom (S n)).
+Proof. reflexivity. Qed.
 
 Lemma top_to_bottom_grow_r : forall n prf prf', 
-  top_to_bottom (S (S n)) ∝ cast _ _ prf' prf' (top_to_bottom (S n) ↕ —) ⟷ (cast _ _ prf prf (n_wire n ↕ ⨉)).
+  top_to_bottom (S (S n)) ∝= 
+  cast _ _ prf' prf' (top_to_bottom (S n) ↕ —) ⟷ 
+    (cast _ _ prf prf (n_wire n ↕ ⨉)).
 Proof.
   intros.
   by_perm_eq_nosimpl.
@@ -104,7 +114,7 @@ Qed.
 
 
 Lemma offset_swaps_comm_top_left : 
-  ⨉ ↕ — ⟷ (— ↕ ⨉) ∝ 
+  ⨉ ↕ — ⟷ (— ↕ ⨉) ∝=
   — ↕ ⨉ ⟷ (⨉ ↕ —) ⟷ (— ↕ ⨉) ⟷ (⨉ ↕ —).
 Proof.
   by_perm_eq_nosimpl.
@@ -112,15 +122,17 @@ Proof.
 Qed.
 
 Lemma offset_swaps_comm_bot_right : 
- — ↕ ⨉ ⟷ (⨉ ↕ —)  ∝ 
+ — ↕ ⨉ ⟷ (⨉ ↕ —)  ∝=
  ⨉ ↕ — ⟷ (— ↕ ⨉) ⟷ (⨉ ↕ —) ⟷ (— ↕ ⨉). 
 Proof. 
   by_perm_eq_nosimpl.
   by_perm_cell; reflexivity.
 Qed.
 
-Lemma bottom_wire_to_top_ind : forall n, bottom_wire_to_top (S (S n)) = 
-@Mmult _ (2 ^ (S (S n))) _ (swap ⊗ (I (2 ^ n))) ((I 2) ⊗ bottom_wire_to_top (S n)).
+Lemma bottom_wire_to_top_ind : forall n, 
+  bottom_wire_to_top (S (S n)) = 
+  @Mmult _ (2 ^ (S (S n))) _ (swap ⊗ (I (2 ^ n))) 
+    ((I 2) ⊗ bottom_wire_to_top (S n)).
 Proof.
   intros.
   apply transpose_matrices.
@@ -141,7 +153,7 @@ Proof.
 Qed.
 
 Lemma bottom_to_top_grow_r : forall n, 
-  bottom_to_top (S (S n)) ∝ (— ↕ bottom_to_top (S n)) ⟷ (⨉ ↕ n_wire n).
+  bottom_to_top (S (S n)) = (— ↕ bottom_to_top (S n)) ⟷ (⨉ ↕ n_wire n).
 Proof.
   intros.
   unfold bottom_to_top.
@@ -152,7 +164,7 @@ Qed.
 
 
 Lemma bottom_to_top_grow_l : forall n prf prf', 
-  bottom_to_top (S (S n)) ∝ cast _ _ prf' prf'((cast _ _ prf prf (n_wire n ↕ ⨉)) ⟷ (bottom_to_top (S n) ↕ —)).
+  bottom_to_top (S (S n)) ∝= cast _ _ prf' prf'((cast _ _ prf prf (n_wire n ↕ ⨉)) ⟷ (bottom_to_top (S n) ↕ —)).
 Proof.
   intros.
   by_perm_eq_nosimpl.
@@ -173,22 +185,21 @@ Proof.
     bdestructΩ'.
 Qed.
 
-Lemma top_to_bottom_transpose : forall n, (top_to_bottom n)⊤ ∝ bottom_to_top n.
+Lemma top_to_bottom_transpose : forall n, (top_to_bottom n)⊤ = bottom_to_top n.
+Proof.
+  reflexivity.
+Qed.
+
+Lemma bottom_to_top_transpose : forall n, (bottom_to_top n)⊤ = top_to_bottom n.
 Proof.
   intros.
   unfold bottom_to_top.
+  rewrite Proportional.transpose_involutive_eq.
   easy.
 Qed.
 
-Lemma bottom_to_top_transpose : forall n, (bottom_to_top n)⊤ ∝ top_to_bottom n.
-Proof.
-  intros.
-  unfold bottom_to_top.
-  rewrite Proportional.transpose_involutive.
-  easy.
-Qed.
-
-Lemma a_swap_grow : forall n, a_swap (S (S (S n))) ∝ (⨉ ↕ n_wire (S n)) ⟷ (— ↕ a_swap (S (S n))) ⟷ (⨉ ↕ n_wire (S n)). 
+Lemma a_swap_grow : forall n, a_swap (S (S (S n))) ∝= 
+  (⨉ ↕ n_wire (S n)) ⟷ (— ↕ a_swap (S (S n))) ⟷ (⨉ ↕ n_wire (S n)). 
 Proof.
   intros.
   by_perm_eq_nosimpl.
@@ -203,14 +214,15 @@ Proof.
   bdestructΩ'; unfold compose; bdestructΩ'.
 Qed.
 
-Lemma a_swap_2_is_swap : a_swap 2 ∝ ⨉.
+Lemma a_swap_2_is_swap : a_swap 2 ∝= ⨉.
 Proof.
   by_perm_eq_nosimpl; by_perm_cell; reflexivity.
 Qed.
 
 
 Lemma a_swap_3_order_indep :
-  I 2 ⊗ swap × (swap ⊗ I 2) × (I 2 ⊗ swap) = (swap ⊗ I 2) × (I 2 ⊗ swap) × (swap ⊗ I 2).
+  I 2 ⊗ swap × (swap ⊗ I 2) × (I 2 ⊗ swap) = 
+  (swap ⊗ I 2) × (I 2 ⊗ swap) × (swap ⊗ I 2).
 Proof.
   rewrite swap_eq_kron_comm.
   change 2%nat with (2^1)%nat.
@@ -224,7 +236,8 @@ Proof.
   by_perm_cell; reflexivity.
 Qed.
 
-Lemma a_swap_semantics_ind : forall n, a_swap_semantics (S (S (S n))) = swap ⊗ (I (2 ^ (S n))) × (I 2 ⊗ a_swap_semantics (S (S n))) × (swap ⊗ (I (2 ^ (S n)))).
+Lemma a_swap_semantics_ind : forall n, a_swap_semantics (S (S (S n))) = 
+  swap ⊗ (I (2 ^ (S n))) × (I 2 ⊗ a_swap_semantics (S (S n))) × (swap ⊗ (I (2 ^ (S n)))).
 Proof.
   intros n.
   rewrite <- a_swap_correct.
@@ -260,7 +273,7 @@ Proof.
 Qed. 
 
 Lemma a_swap_transpose : forall n,
-  (a_swap n) ⊤ ∝ a_swap n.
+  (a_swap n) ⊤ ∝= a_swap n.
 Proof.
   by_perm_eq_nosimpl.
   rewrite perm_of_zx_transpose by auto with zxperm_db.
@@ -278,25 +291,24 @@ Proof.
   by_perm_cell; reflexivity.
 Qed.
 
-Lemma n_swap_1_is_wire : n_swap 1 ∝ —.
+Lemma n_swap_1_is_wire : n_swap 1 ∝= —.
 Proof.
   by_perm_eq_nosimpl.
   by_perm_cell; reflexivity.
 Qed.
 
 Lemma n_swap_grow_l : forall n,
-  n_swap (S n) ∝ bottom_to_top (S n) ⟷ (— ↕ n_swap n).
+  n_swap (S n) ∝= bottom_to_top (S n) ⟷ (— ↕ n_swap n).
 Proof.
   induction n.
   - simpl.
     cleanup_zx.
     easy.
-  - simpl.
-    easy.
+  - reflexivity.
 Qed.
 
 Lemma n_swap_grow_r : forall n,
-  n_swap (S n) ∝ (— ↕ n_swap n) ⟷ top_to_bottom (S n).
+  n_swap (S n) ∝= (— ↕ n_swap n) ⟷ top_to_bottom (S n).
 Proof.
   by_perm_eq.
   rewrite !reflect_perm_defn, stack_perms_defn.
@@ -308,7 +320,7 @@ Proof.
 Qed.
 
 Lemma n_swap_transpose : forall n,
-  (n_swap n) ⊤ ∝ n_swap n.
+  (n_swap n) ⊤ ∝= n_swap n.
 Proof.
   intros.
   by_perm_eq.
@@ -322,28 +334,28 @@ Qed.
   : transpose_db.
 
 Lemma top_to_bottom_colorswap : forall n,
-  ⊙ (top_to_bottom n) ∝ top_to_bottom n.
+  ⊙ (top_to_bottom n) = top_to_bottom n.
 Proof.
   intros n.
   now rewrite zxperm_colorswap_eq by auto with zxperm_db.
 Qed.
 
 Lemma bottom_to_top_colorswap : forall n,
-  ⊙ (bottom_to_top n) ∝ bottom_to_top n.
+  ⊙ (bottom_to_top n) = bottom_to_top n.
 Proof.
   intros n.
   now rewrite zxperm_colorswap_eq by auto with zxperm_db.
 Qed.
 
 Lemma a_swap_colorswap : forall n,
-  ⊙ (a_swap n) ∝ a_swap n.
+  ⊙ (a_swap n) = a_swap n.
 Proof.
   intros n.
   now rewrite zxperm_colorswap_eq by auto with zxperm_db.
 Qed.
 
 Lemma n_swap_colorswap : forall n,
-  ⊙ (n_swap n) ∝ n_swap n.
+  ⊙ (n_swap n) = n_swap n.
 Proof.
   intros n.
   now rewrite zxperm_colorswap_eq by auto with zxperm_db.
@@ -364,6 +376,7 @@ Proof.
 Qed.
 
 
-Lemma swap_pullthrough_top_right_X_1_1 : forall α, (X 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (X 1 1 α)).
+Lemma swap_pullthrough_top_right_X_1_1 : forall α, 
+  (X 1 1 α) ↕ — ⟷ ⨉ ∝= ⨉ ⟷ (— ↕ (X 1 1 α)).
 Proof. intros. colorswap_of swap_pullthrough_top_right_Z_1_1. Qed.
 

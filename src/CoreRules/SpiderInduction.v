@@ -9,66 +9,37 @@ Open Scope ZX_scope.
    the others follow through transposes *)
 
 Lemma grow_Z_left_2_1 : forall {n} α,
-  Z (S (S n)) 1 α ∝ 
+  Z (S (S n)) 1 α ∝= 
   (Z 2 1 0 ↕ n_wire n) ⟷ Z (S n) 1 α.
 Proof.
   assert ( pow2Pos : forall n, exists m, (2^n = S m)%nat ).
-  { induction n;
-    [ simpl; exists 0%nat; reflexivity |
-      destruct IHn; simpl; rewrite H; exists (S (x + x)); lia ]. }
+  { intros n. 
+    enough (2 ^ n <> O)%nat.
+    + destruct (2 ^ n)%nat; [easy | eexists; easy].
+    + apply Modulus.pow2_nonzero. }
   assert ( eqb_succ_f : forall j, (j =? S j)%nat = false ).
-  { induction j; auto. }
+  { intros. Modulus.bdestructΩ'. }
   assert ( div_1_comp : forall i, ((S (i + i) / S i) = 1)%nat).
   { intros.
-    replace (S (i + i))%nat with (2 * (S i) - 1)%nat by lia.
-    assert (S i <> 0)%nat by easy.
-    assert (2 * S i - 1 < S i * 2)%nat by lia.
-    specialize (Nat.Div0.div_lt_upper_bound (2 * S i - 1) (S i) (2) H0).
-    intros.
-    assert (0 < S i <= 2 * S i - 1)%nat by lia.
-    specialize (Nat.div_str_pos (2 * S i - 1) (S i) H2).
-    intros.
-    destruct((2 * S i - 1) / S i)%nat.
-    - contradict H3; lia.
-    - destruct n; auto.
-      contradict H1; lia. }
+    rewrite Kronecker.div_eq_iff; lia. }
   assert ( div_3_comp : forall i, 
                         ((S (S (S (i + i + (i + i)))) / S i) = 3)%nat).
   { intros.
-    replace (S (S (S (i + i + (i + i)))))%nat with (4 * (S i) - 1)%nat by lia.
-    assert (S i <> 0)%nat by easy.
-    assert (4 * S i - 1 < S i * 4)%nat by lia.
-    specialize (Nat.Div0.div_lt_upper_bound (4 * S i - 1) (S i) (4) H0).
-    intros.
-    assert (S i * 3 <= 4 * S i - 1)%nat by lia.
-    specialize (Nat.div_le_lower_bound (4 * S i - 1) (S i) 3 H H2).
-    intros.
-    destruct ((4 * S i - 1) / S i)%nat; [ contradict H3; lia | ];
-    destruct n; [ contradict H3; lia | ];
-    destruct n; [ contradict H3; lia | ];
-    destruct n; [ auto | contradict H1; lia ]. }
+    rewrite Kronecker.div_eq_iff; lia. }
   assert ( mod_2_comp : forall i, ((S (i + i)) mod (S i) = i)%nat ).
   { intros. 
     rewrite plus_n_Sm.
-    rewrite Nat.Div0.add_mod by lia.
-    rewrite Nat.Div0.mod_same by lia.
-    rewrite Nat.add_0_r.
-    rewrite Nat.Div0.mod_mod by lia.
+    rewrite Modulus.mod_add_n_r.
     apply Nat.mod_small; lia. }
   assert ( mod_4_comp : forall i, 
                         ((S (S (S (i + i + (i + i))))) mod (S i) = i)%nat ).
   { intros. 
     replace (S (S (S (i + i + (i + i))))) 
-      with ((S i) + ((S i) + ((S i) + i)))%nat by lia.
-    repeat (rewrite Nat.Div0.add_mod by lia;
-            rewrite Nat.Div0.mod_same by lia;
-            rewrite Nat.add_0_l).
-    repeat rewrite Nat.Div0.mod_mod by lia.
+      with (i + S i + S i + S i)%nat by lia.
+    rewrite !Modulus.mod_add_n_r.
     apply Nat.mod_small; lia. }
   intros.
-  simpl.
-  prop_exists_nonzero 1.
-  Msimpl.
+  unfold proportional_by_1.
   simpl.
   rewrite n_wire_semantics.
   unfold Mmult.
@@ -167,7 +138,9 @@ Proof.
       * destruct (S (S y) / (S (S m)))%nat eqn:E; try lca.
         rewrite Nat.div_small_iff in E by auto.
         rewrite (Nat.mod_small (S (S y))) by auto.
-        repeat rewrite Nat.Div0.mod_0_l.
+        cbn.
+        rewrite Nat.sub_diag.
+        cbn.
         lca.
       * lca.
       * lca.
@@ -184,24 +157,24 @@ Proof.
     with ((Z_Spider (S (S n))%nat 1 α)⊤) by reflexivity.
   rewrite grow_Z_left_2_1.
   simpl.
-  rewrite nstack1_transpose.
-  rewrite transpose_wire.
+  rewrite n_wire_transpose.
   reflexivity.
 Qed.
 
 Lemma grow_Z_right_bot_1_2_base : forall α,
-  Z 1 3 α ∝ Z 1 2 α ⟷ (— ↕ Z 1 2 0).
+  Z 1 3 α ∝= Z 1 2 α ⟷ (— ↕ Z 1 2 0).
 Proof. 
-  intros. prop_exists_nonzero 1.
-  rewrite Mscale_1_l.
-  prep_matrix_equivalence.
-  cbn [ZX_semantics].
-  match goal with |- ?A ≡ ?B => compute_matrix A; compute_matrix B end.
-  now rewrite Cexp_0, Cmult_1_l.
+  intros.
+  unfold proportional_by_1.
+  lma'. 
+  unfold Z_semantics, kron;
+  cbn.
+  rewrite Cexp_0.
+  lca.
 Qed.
 
 Lemma Z_wrap_over_top_right_base : forall n α,
-  (— ↕ Z n 2 α) ⟷ (Cap ↕ —) ∝ Z (S n) 1 α.
+  (— ↕ Z n 2 α) ⟷ (Cap ↕ —) ∝= Z (S n) 1 α.
 Proof.
   intros.
   prop_exists_nonzero 1.
@@ -278,11 +251,11 @@ Proof.
 Qed.
 
 Lemma Z_wrap_over_top_right_0 : forall n α,
-  (— ↕ Z n 1 α) ⟷ Cap ∝ Z (S n) 0 α.
+  (— ↕ Z n 1 α) ⟷ Cap ∝= Z (S n) 0 α.
 Proof.
   intros.
-  prop_exists_nonzero 1.
-  simpl; Msimpl.
+  unfold proportional_by_1.
+  cbn.
   unfold Z_semantics, kron, Mmult.
   prep_matrix_equality.
   replace (2 ^ S n)%nat with (2 ^ n + 2 ^ n)%nat by (simpl; lia).
@@ -402,10 +375,10 @@ Proof.
 Qed.
 
 Lemma Z_wrap_over_top_left_0 : forall n α,
-  Cup ⟷ (— ↕ Z 1 n α) ∝ Z 0 (S n) α.
+  Cup ⟷ (— ↕ Z 1 n α) ∝= Z 0 (S n) α.
 Proof.
   intros.
-  apply transpose_diagrams.
+  apply transpose_diagrams_eq.
   simpl.
   apply Z_wrap_over_top_right_0.
 Qed.

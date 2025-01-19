@@ -56,7 +56,7 @@ matrices and one based on dirac notation.
 *)
 
 (* @nocheck name *)
-Reserved Notation "⟦ zx ⟧" (at level 68). (* = is 70, need to be below *)
+Reserved Notation "⟦ zx ⟧" (at level 0, zx at level 200). (* = is 70, need to be below *)
 Fixpoint ZX_semantics {n m} (zx : ZX n m) : 
   Matrix (2 ^ m) (2 ^ n) := 
   match zx with
@@ -175,18 +175,17 @@ Proof.
     apply WF_ZX.
 Qed.
 
-(* Definition n_wire := fun n => n ↑ Wire. *)
+Definition n_wire := fun n => n ↑ Wire.
 Definition n_box := fun n => n ↑ Box.
-
-Notation "'n_wire' n" := (n ↑ —) (at level 35).
 
 Lemma n_wire_semantics {n} : ⟦ n_wire n ⟧ = I (2^n).
 Proof.
   induction n; auto.
   simpl.
+  unfold n_wire in IHn.
   rewrite IHn.
   rewrite id_kron.
-  auto.
+  reflexivity. 
 Qed.
 
 Lemma n_box_semantics {n} : ⟦ n_box n ⟧ = n ⨂ hadamard.
@@ -196,7 +195,7 @@ Proof.
   unfold n_box in IHn.
   rewrite IHn.
   rewrite <- kron_n_assoc by auto with wf_db.
-  auto.
+  reflexivity.
 Qed.
 
 #[export] Hint Rewrite @n_wire_semantics @n_box_semantics : zx_sem_db.
@@ -218,13 +217,6 @@ Fixpoint transpose {nIn nOut} (zx : ZX nIn nOut) : ZX nOut nIn :=
   | other => other
   end
   where "zx ⊤" := (transpose zx) : ZX_scope.
-
-Lemma transpose_involutive_eq : forall {nIn nOut} (zx : ZX nIn nOut),
-  zx = (zx ⊤)⊤.
-Proof.
-  intros; induction zx; try auto.
-  1,2: simpl; rewrite <- IHzx1, <- IHzx2; try rewrite eq_sym_involutive; auto.
-Qed.
 
 (* Negating the angles of a diagram, complex conjugate *)
 
@@ -277,6 +269,21 @@ Proof.
                      rewrite <- kron_adjoint; reflexivity.
   - simpl; fold (zx1†); fold(zx2†); rewrite IHzx1, IHzx2; 
         restore_dims; rewrite Mmult_adjoint; reflexivity.
+Qed.
+
+Lemma conjugate_decomp {n m} (zx : ZX n m) : 
+  zx ⊼ = zx † ⊤.
+Proof.
+  induction zx; [reflexivity.. | |];
+  unfold adjoint in *; cbn; congruence.
+Qed.
+
+Lemma semantics_conjugate_comm {nIn nOut} : forall (zx : ZX nIn nOut),
+  ⟦ zx ⊼ ⟧ = (⟦ zx ⟧) †%M ⊤%M.
+Proof.
+  intros zx.
+  rewrite conjugate_decomp.
+  now rewrite semantics_transpose_comm, semantics_adjoint_comm.
 Qed.
 
 Opaque adjoint.

@@ -4,60 +4,50 @@ Require Import CastRules.
 
 Local Open Scope ZX_scope.
 
-Lemma Z_0_is_wire : Z 1 1 0 ∝ —.
+Lemma Z_0_is_wire : Z 1 1 0 ∝= —.
 Proof.
-  intros.
-  prop_exists_nonzero 1.
-  rewrite Mscale_1_l.
   lma'.
-  apply Cexp_0.
+  now rewrite Cexp_0.
 Qed.
 
-Lemma Z_2_0_0_is_cap : Z 2 0 0 ∝ ⊃.
+Lemma Z_2_0_0_is_cap : Z 2 0 0 ∝= ⊃.
 Proof.
-  prop_exists_nonzero 1.
-  rewrite Mscale_1_l.
   lma'.
-  apply Cexp_0.
+  now rewrite Cexp_0.
 Qed.
 
-Lemma Z_0_2_0_is_cup : Z 0 2 0 ∝ ⊂.
+Lemma Z_0_2_0_is_cup : Z 0 2 0 ∝= ⊂.
 Proof.
-  prop_exists_nonzero 1.
-  rewrite Mscale_1_l.
   lma'.
-  apply Cexp_0.
+  now rewrite Cexp_0.
 Qed.
 
 Lemma yank_r : 
-  (⊂ ↕ —) ⟷ (— ↕ ⊃) ∝ —.
+  (⊂ ↕ —) ⟷ (— ↕ ⊃) ∝= —.
 Proof.
-  prop_exists_nonzero 1.
-  rewrite Mscale_1_l.
   lma'.
 Qed.
 
 Lemma yank_l : 
-  (— ↕ ⊂) ⟷ (⊃ ↕ —) ∝ —.
+  (— ↕ ⊂) ⟷ (⊃ ↕ —) ∝= —.
 Proof.
-  prop_exists_nonzero 1.
-  rewrite Mscale_1_l.
   lma'.
 Qed.
 
-Lemma n_wire_stack : forall n m, n_wire n ↕ n_wire m ∝ n_wire (n + m).
-Proof. 
-  prop_exists_nonzero 1. 
-  simpl. 
-  rewrite 3 n_wire_semantics, id_kron.
-  Msimpl.
-  rewrite Nat.pow_add_r.
-  easy.
+Lemma n_wire_stack : forall n m, 
+  n_wire n ↕ n_wire m ∝= n_wire (n + m).
+Proof.
+  intros n m.
+  unfold proportional_by_1.
+  cbn.
+  rewrite 3!n_wire_semantics.
+  rewrite id_kron.
+  now unify_pows_two.
 Qed.
 
-Lemma X_0_is_wire : X 1 1 0 ∝ —.
+Lemma X_0_is_wire : X 1 1 0 ∝= —.
 Proof.
-  apply colorswap_diagrams.
+  apply colorswap_diagrams_eq.
   simpl.
   apply Z_0_is_wire.
 Qed.
@@ -75,67 +65,45 @@ Proof.
 Qed.
 
 Lemma wire_to_n_wire : 
-  — ∝ n_wire 1.
+  — ∝= n_wire 1.
 Proof.
-  simpl.
-  auto_cast_eqn (rewrite stack_empty_r).
-  now rewrite cast_id.
+  symmetry.
+  apply nstack1_1.
 Qed.
 
-Lemma wire_transpose : —⊤ ∝ —.
-Proof. easy. Qed.
-
-Lemma n_wire_transpose : forall n, (n_wire n)⊤ = n_wire n.
-Proof.
-  intros.
-  induction n.
-  - easy.
-  - simpl.
-    rewrite IHn.
-    easy.
-Qed. 
+Lemma wire_transpose : —⊤ = —.
+Proof. reflexivity. Qed.
 
 Lemma n_wire_colorswap : forall n, ⊙ (n_wire n) = n_wire n.
 Proof.
   intros.
-  induction n.
-  - easy.
-  - simpl.
-    rewrite IHn.
-    easy.
+  apply nstack1_colorswap.
 Qed.
 
-Lemma wire_loop : — ∝ (⊂ ↕ —) ⟷ (— ↕ ⨉) ⟷ (⊃ ↕ —).
+Lemma wire_loop : — ∝= (⊂ ↕ —) ⟷ (— ↕ ⨉) ⟷ (⊃ ↕ —).
 Proof.
-  prop_exists_nonzero 1.
-  rewrite Mscale_1_l.
+  unfold proportional_by_1.
   prep_matrix_equivalence.
   cbn.
-  rewrite <- (make_WF_equiv _ _ (list2D_to_matrix _)).
-  rewrite <- (make_WF_equiv _ _ (list2D_to_matrix (_ :: _ :: _))).
-  match goal with |- _ ≡ ?B => compute_matrix B end.
-  now by_cell.
+  rewrite 2!Kronecker.kron_I_r, Kronecker.kron_I_l.
+  by_cell; cbn; lca.
 Qed.
 
-Lemma n_stack_n_wire_1_n_wire : forall n, n ↑ (n_wire 1) ∝ n_wire n.
+Lemma n_stack_n_wire_1_n_wire : forall n, n ↑ (n_wire 1) ∝= n_wire n.
 Proof.
-  intros. rewrite <- wire_to_n_wire. easy.
+  intros. rewrite <- wire_to_n_wire. reflexivity.
 Qed.
 
-Lemma n_wire_grow_r : forall n prfn prfm, n_wire (S n) ∝ cast _ _ prfn prfm (n_wire n ↕ —).
+Lemma n_wire_grow_r : forall n prfn prfm, n_wire (S n) ∝= 
+  cast _ _ prfn prfm (n_wire n ↕ —).
 Proof.
   intros.
-  rewrite wire_to_n_wire at 3.
+  rewrite wire_to_n_wire.
   rewrite n_wire_stack.
-  rewrite (@cast_n_wire (n + 1) (S n) prfn prfm).
-  easy.
+  now rewrite cast_n_wire.
 Qed.
 
-Lemma box_compose : □ ⟷ □ ∝ —.
+Lemma box_compose : □ ⟷ □ ∝= —.
 Proof.
-  prop_exists_nonzero 1.
-  Msimpl.
-  simpl.
-  rewrite MmultHH.
-  easy.
+  apply MmultHH.
 Qed.

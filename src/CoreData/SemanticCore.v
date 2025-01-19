@@ -561,7 +561,7 @@ Proof.
   now autorewrite with C_db.
 Qed.
 
-Lemma X_2_1_PI_semantics : X_semantics 2 1 PI = 
+Lemma X_2_1_pi_semantics : X_semantics 2 1 PI = 
   @make_WF (2^1) (2^2) (list2D_to_matrix
 		[[C0; / √ 2; / √ 2; C0]; [/ √ 2; C0; C0; / √ 2]]).
 Proof.
