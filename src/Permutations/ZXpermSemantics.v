@@ -126,26 +126,24 @@ Qed.
 
 (* ... which enables the main result: *)
 
-Lemma proportional_of_equal_perm {n m} {zx0 zx1 : ZX n m}
+Lemma prop_eq_of_equal_perm {n m} {zx0 zx1 : ZX n m}
 	(Hzx0 : ZXperm zx0) (Hzx1 : ZXperm zx1)
 	(Hperm : perm_of_zx zx0 = perm_of_zx zx1) :
-	zx0 ∝ zx1.
+	zx0 ∝= zx1.
 Proof.
-	prop_exists_nonzero (RtoC 1).
-	rewrite Mscale_1_l.
+  hnf.
 	rewrite (perm_of_zx_permutation_semantics zx0 Hzx0),
 		(perm_of_zx_permutation_semantics zx1 Hzx1).
 	f_equal; easy.
 Qed.
 
-Lemma proportional_of_perm_eq {n m} {zx0 zx1 : ZX n m}
+Lemma prop_eq_of_perm_eq {n m} {zx0 zx1 : ZX n m}
 	(Hzx0 : ZXperm zx0) (Hzx1 : ZXperm zx1)
 	(Hperm : perm_eq n (perm_of_zx zx0) (perm_of_zx zx1)) :
-	zx0 ∝ zx1.
+	zx0 ∝= zx1.
 Proof.
   pose proof (zxperm_square zx0 Hzx0); subst.
-	prop_exists_nonzero (RtoC 1).
-	rewrite Mscale_1_l.
+  hnf.
 	rewrite (perm_of_zx_permutation_semantics zx0 Hzx0),
 		(perm_of_zx_permutation_semantics zx1 Hzx1).
   now apply perm_to_matrix_eq_of_perm_eq. 
@@ -153,42 +151,55 @@ Qed.
 
 (* TODO: split intro prop_perm_eq and prop_perm_eqΩ *)
 
-Ltac prop_perm_eq_nosimpl :=
+Ltac to_prop_eq_then tac :=
+  lazymatch goal with 
+  | |- _ ∝ _ => 
+    apply proportional_of_by_1; tac
+  | |- _ ∝[_] _ =>
+    zxrefl; only 1: tac
+  | |- _ ∝= _ => tac
+  | |- _ => tac
+  end.
+
+Ltac prop_perm_eq_nosimpl_base :=
   intros;
-  (* simpl_casts; *)
-  (* simpl_permlike_zx; *)
-  (* __cast_prop_sides_to_square; *)
-  (* Goal: zx0 ∝ zx1 *)
-  apply proportional_of_equal_perm; [
+  (* Goal: zx0 ∝= zx1 *)
+  apply prop_eq_of_equal_perm; [
   (* New goals: *)
     (*1: ZXperm _ zx0 *) auto 10 with zxperm_db |
     (*2: ZXperm _ zx1*) auto 10 with zxperm_db |
     (*3: perm_of_zx zx0 = perm_of_zx zx1*) 
   ].
 
-Ltac prop_perm_eq :=
+Ltac prop_perm_eq_nosimpl :=
+  to_prop_eq_then prop_perm_eq_nosimpl_base.
+
+Ltac prop_perm_eq_base :=
   intros;
   autounfold with zxperm_db;
   simpl_casts;
   simpl_permlike_zx;
   (* __cast_prop_sides_to_square; *)
   (* Goal: zx0 ∝ zx1 *)
-  apply proportional_of_equal_perm; [
+  apply prop_eq_of_equal_perm; [
   (* New goals: *)
     (*1: ZXperm _ zx0 *) auto 10 with zxperm_db |
     (*2: ZXperm _ zx1*) auto 10 with zxperm_db |
     (*3: perm_of_zx zx0 = perm_of_zx zx1*) cleanup_perm_of_zx; try easy; try lia
   ].
 
+Ltac prop_perm_eq :=
+  to_prop_eq_then prop_perm_eq_base.
+
 (* TODO: switch all over to this: *)
-Ltac by_perm_eq :=
+Ltac by_perm_eq_base :=
   intros;
   autounfold with zxperm_db;
   simpl_casts;
   simpl_permlike_zx;
   (* __cast_prop_sides_to_square; *)
   (* Goal: zx0 ∝ zx1 *)
-  apply proportional_of_perm_eq; [
+  apply prop_eq_of_perm_eq; [
   (* New goals: *)
     (*1: ZXperm _ zx0 *) auto 100 with zxperm_db |
     (*2: ZXperm _ zx1*) auto 100 with zxperm_db |
@@ -196,13 +207,18 @@ Ltac by_perm_eq :=
     cleanup_perm_of_zx; try easy; try lia
   ].
 
-Ltac by_perm_eq_nosimpl :=
+Ltac by_perm_eq := to_prop_eq_then by_perm_eq_base.
+
+Ltac by_perm_eq_nosimpl_base :=
   intros;
   autounfold with zxperm_db;
   (* Goal: zx0 ∝ zx1 *)
-  apply proportional_of_perm_eq; [
+  apply prop_eq_of_perm_eq; [
   (* New goals: *)
     (*1: ZXperm _ zx0 *) auto 100 with zxperm_db |
     (*2: ZXperm _ zx1*) auto 100 with zxperm_db |
     
   ].
+
+Ltac by_perm_eq_nosimpl := to_prop_eq_then by_perm_eq_nosimpl_base.
+

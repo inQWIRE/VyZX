@@ -50,7 +50,7 @@ Proof.
   easy.
 Qed.
 
-Lemma n_cap_1_cap : n_cap 1 ∝ ⊂.
+Lemma n_cap_1_cap : n_cap 1 ∝= ⊂.
 Proof.
   unfold n_cap.
   rewrite n_cup_1_cup.
@@ -331,11 +331,10 @@ Qed.
 Open Scope ZX_scope.
 
 Lemma n_cup_pullthrough_top {n m} (zx : ZX n m) : 
-  zx ↕ n_wire m ⟷ n_cup m ∝
+  zx ↕ n_wire m ⟷ n_cup m ∝=
   n_wire n ↕ zx ⊤ ⟷ n_cup n.
 Proof.
-  prop_exists_nonzero 1%R.
-  rewrite Mscale_1_l.
+  hnf.
   cbn [ZX_semantics].
   rewrite semantics_transpose_comm, 2!n_wire_semantics.
   apply n_cup_matrix_pullthrough_top.
@@ -343,7 +342,7 @@ Proof.
 Qed.
 
 Lemma n_cup_pullthrough_bot {n m} (zx : ZX n m) : 
-  n_wire m ↕ zx ⟷ n_cup m ∝  
+  n_wire m ↕ zx ⟷ n_cup m ∝=  
   zx ⊤ ↕ n_wire n ⟷ n_cup n.
 Proof.
   rewrite n_cup_pullthrough_top, Proportional.transpose_involutive.
@@ -351,10 +350,10 @@ Proof.
 Qed.
 
 Lemma n_cap_pullthrough_top {n m} (zx : ZX n m) : 
-  n_cap n ⟷ (zx ↕ n_wire n) ∝
+  n_cap n ⟷ (zx ↕ n_wire n) ∝=
   n_cap m ⟷ (n_wire m ↕ zx ⊤).
 Proof. 
-  apply transpose_diagrams.
+  apply transpose_diagrams_eq.
   cbn -[n_cup].
   unfold n_cap.
   rewrite !Proportional.transpose_involutive, !n_wire_transpose.
@@ -362,35 +361,35 @@ Proof.
 Qed.
 
 Lemma n_cap_pullthrough_bot {n m} (zx : ZX n m) : 
-  n_cap n ⟷ (n_wire n ↕ zx) ∝
+  n_cap n ⟷ (n_wire n ↕ zx) ∝=
   n_cap m ⟷ (zx ⊤ ↕ n_wire m).
 Proof.
   now rewrite n_cap_pullthrough_top, Proportional.transpose_involutive.
 Qed.
 
-Lemma n_cup_inv_n_swap_n_wire : forall n, n_cup n ∝ n_wire n ↕ n_swap n ⟷ n_cup_unswapped n.
+Lemma n_cup_inv_n_swap_n_wire : forall n, n_cup n ∝= n_wire n ↕ n_swap n ⟷ n_cup_unswapped n.
 Proof.
   intros n.
-  rewrite compose_zxperm_l' by auto_zxperm.
+  rewrite compose_zxperm_l_eq' by auto_zxperm.
   cbn.
   rewrite n_wire_transpose.
   rewrite n_cup_pullthrough_bot, n_swap_transpose.
-  rewrite compose_zxperm_l by auto_zxperm.
+  rewrite compose_zxperm_l_eq by auto_zxperm.
   cbn.
   rewrite n_wire_transpose.
   now rewrite 2!n_swap_transpose.
 Qed.
 
 Lemma n_cup_unswapped_to_n_cup_n_swap_top n : 
-	n_cup_unswapped n ∝ 
+	n_cup_unswapped n ∝= 
 	n_swap n ↕ n_wire n ⟷ n_cup n.
 Proof.
-	rewrite compose_zxperm_l' by auto_zxperm.
+	rewrite compose_zxperm_l_eq' by auto_zxperm.
 	now rewrite stack_transpose, n_swap_transpose, n_wire_transpose.
 Qed.
 
 Lemma n_cup_unswapped_pullthrough_top {n m} (zx : ZX n m) : 
-	zx ↕ n_wire m ⟷ n_cup_unswapped m ∝
+	zx ↕ n_wire m ⟷ n_cup_unswapped m ∝=
 	n_wire n ↕ (n_swap m ⟷ zx ⊤ ⟷ n_swap n) ⟷ n_cup_unswapped n.
 Proof.
 	rewrite n_cup_unswapped_to_n_cup_n_swap_top.
@@ -403,7 +402,7 @@ Proof.
 Qed.
 
 Lemma n_cup_unswapped_pullthrough_bot {n m} (zx : ZX n m) : 
-	n_wire m ↕ zx ⟷ n_cup_unswapped m ∝
+	n_wire m ↕ zx ⟷ n_cup_unswapped m ∝=
 	(n_swap m ⟷ zx ⊤ ⟷ n_swap n) ↕ n_wire n ⟷ n_cup_unswapped n.
 Proof.
 	rewrite n_cup_unswapped_to_n_cup_n_swap_top.
@@ -417,13 +416,13 @@ Qed.
 Lemma big_yank_l n prf0 prf1 :   
   (n_cap n ↕ n_wire n) ⟷
   cast _ _ prf0 prf1
-    (n_wire n ↕ n_cup n) ∝ n_wire n.
+    (n_wire n ↕ n_cup n) ∝= n_wire n.
 Proof.
-  prop_exists_nonzero 1%R.
+  hnf.
   cbn -[n_cup n_cap].
   simpl_cast_semantics.
   cbn -[n_cup n_cap].
-  rewrite Mscale_1_l, n_wire_semantics.
+  rewrite n_wire_semantics.
   apply equal_on_basis_states_implies_equal; [auto_wf..|].
   intros f.
   rewrite Mmult_1_l by auto_wf.
@@ -449,9 +448,9 @@ Qed.
 Lemma big_yank_r n prf0 prf1 prf2 : 
   (n_wire n ↕ n_cap n) ⟷
   cast _ _ prf0 prf1
-    (n_cup n ↕ n_wire n) ∝ cast _ _ prf2 eq_refl (n_wire n).
+    (n_cup n ↕ n_wire n) ∝= cast _ _ prf2 eq_refl (n_wire n).
 Proof.
-  apply transpose_diagrams.
+  apply transpose_diagrams_eq.
   cbn [ZXCore.transpose].
   rewrite 2!cast_transpose.
   cbn [ZXCore.transpose].
@@ -460,7 +459,7 @@ Proof.
   fold (n_cap n).
   rewrite n_wire_transpose.
   rewrite cast_compose_l.
-  clean_eqns eapply (cast_diagrams n n).
+  clean_eqns eapply (cast_diagrams_eq n n).
   clean_eqns rewrite cast_contract, 
     cast_compose_distribute, cast_contract, cast_id.
   rewrite (big_yank_l n).
@@ -525,7 +524,7 @@ Qed.
 Lemma n_cap_n_cup_pullthrough n m (A : ZX m n) prf1 prf2 : 
   (n_cap m ↕ n_wire n) ⟷ 
   (n_wire m ↕ A ↕ n_wire n) ⟷
-  cast _ _ prf1 prf2 (n_wire m ↕ n_cup n) ∝
+  cast _ _ prf1 prf2 (n_wire m ↕ n_cup n) ∝=
   A ⊤.
 Proof.
   rewrite <- stack_nwire_distribute_r.
@@ -564,8 +563,9 @@ Proof.
     rewrite IHn at 1.
     rewrite stack_wire_distribute_l.
     rewrite stack_wire_distribute_r.
+    fold (n_wire n).
     bundle_wires.
-    erewrite <- (@cast_n_wire (n + 1) (S n)).
+    erewrite <- (@cast_n_wire (n + 1) (1 + n)).
     rewrite <- ComposeRules.compose_assoc.
     apply compose_simplify_eq; [ | easy].
     erewrite (cast_compose_mid (S (n + S n))).
@@ -577,7 +577,7 @@ Proof.
     simpl_casts.
     rewrite 3 stack_assoc_back.
     simpl_casts.
-    erewrite <- (@cast_n_wire (n + 1) (S n)) at 2.
+    erewrite <- (@cast_n_wire (n + 1) (1 + n)) at 2.
     rewrite cast_stack_r.
     simpl.
     rewrite (stack_assoc (— ↕ n_wire n ↕ ⊃) (n_wire n) —).
@@ -656,7 +656,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma n_cap_transpose : forall n, (n_cap n)⊤ ∝ n_cup n.
+Lemma n_cap_transpose : forall n, (n_cap n)⊤ ∝= n_cup n.
 Proof.
   intros.
   unfold n_cap.

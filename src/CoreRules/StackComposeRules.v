@@ -25,13 +25,13 @@ Proof.
 Qed.
 
 Lemma stack_split_diag {n m o p} (zx0 : ZX n m) (zx1 : ZX o p) : 
-  zx0 ↕ zx1 ∝ zx0 ↕ n_wire o ⟷ (n_wire m ↕ zx1).
+  zx0 ↕ zx1 ∝= zx0 ↕ n_wire o ⟷ (n_wire m ↕ zx1).
 Proof.
   now rewrite <- stack_compose_distr, nwire_removal_l, nwire_removal_r.
 Qed.
 
 Lemma stack_split_antidiag {n m o p} (zx0 : ZX n m) (zx1 : ZX o p) : 
-  zx0 ↕ zx1 ∝ (n_wire n ↕ zx1) ⟷ (zx0 ↕ n_wire p).
+  zx0 ↕ zx1 ∝= (n_wire n ↕ zx1) ⟷ (zx0 ↕ n_wire p).
 Proof.
   now rewrite <- stack_compose_distr, nwire_removal_l, nwire_removal_r.
 Qed.

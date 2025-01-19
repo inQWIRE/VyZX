@@ -53,11 +53,10 @@ Proof.
 Qed.
 
 Lemma stack_nwire_distribute_r : forall {n m o p} (zx0 : ZX n m) (zx1 : ZX m o),
-(zx0 ⟷ zx1) ↕ n_wire p ∝ (zx0 ↕ n_wire p) ⟷ (zx1 ↕ n_wire p).
+(zx0 ⟷ zx1) ↕ n_wire p ∝= (zx0 ↕ n_wire p) ⟷ (zx1 ↕ n_wire p).
 Proof.
   intros.
-  prop_exists_nonzero 1.
-  rewrite Mscale_1_l.
+  hnf.
   cbn.
   rewrite n_wire_semantics.
   restore_dims.

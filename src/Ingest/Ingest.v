@@ -289,10 +289,10 @@ Proof.
   destruct n0; easy.
 Qed.
 
-Lemma unpadded_cnot_simpl_args : forall n m cnot base_cnot, (unpadded_cnot base_cnot cnot 0 (m - n)) ∝ cast _ _ (Nat.sub_0_r _) (Nat.sub_0_r _) (unpadded_cnot base_cnot cnot n m).
+Lemma unpadded_cnot_simpl_args : forall n m cnot base_cnot, (unpadded_cnot base_cnot cnot 0 (m - n)) ∝= cast _ _ (Nat.sub_0_r _) (Nat.sub_0_r _) (unpadded_cnot base_cnot cnot n m).
 Proof.
   intros.
-  prop_exists_nonzero 1%C; Msimpl.
+  hnf; Msimpl.
   simpl_cast_semantics.
   apply unpadded_cnot_simpl_args_sem.
 Qed.

@@ -2,26 +2,22 @@ Require Import CoreData.
 Require Import CoreRules.
 Require Import Gates.
 
+Require Import ZXpermFacts.
+
 Local Open Scope ZX.
 
-Lemma swap_self_inverse : ⨉ ⟷ ⨉ ∝ n_wire 2.
+Lemma swap_self_inverse : ⨉ ⟷ ⨉ ∝= n_wire 2.
 Proof.
   intros.
-  prop_exists_nonzero 1.
-  Msimpl.
-  simpl.
-  restore_dims.
-  rewrite swap_swap.
-  rewrite 2 id_kron.
-  easy.
+  by_perm_eq.
 Qed.
 
 (* Needs to be diagrammatic *)
-Lemma _3_cnot_swap_is_swap : _3_CNOT_SWAP_ ∝ ⨉.
+Lemma _3_cnot_swap_is_swap : _3_CNOT_SWAP_ ∝= ⨉.
 Proof.
 Abort.
 
-Lemma n_stack_1_n_stack : forall {n} (zx : ZX 1 1), (n ↑ zx) ∝ (cast _ _ (eq_sym (Nat.mul_1_r _)) (eq_sym (Nat.mul_1_r _)) (n ⇑ zx)).
+Lemma n_stack_1_n_stack : forall {n} (zx : ZX 1 1), (n ↑ zx) ∝= (cast _ _ (eq_sym (Nat.mul_1_r _)) (eq_sym (Nat.mul_1_r _)) (n ⇑ zx)).
 Proof.
   intros.
   unfold eq_rect.
@@ -33,7 +29,7 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma n_stack_n_stack_1 : forall {n} (zx : ZX 1 1), (n ⇑ zx) ∝ (cast _ _ (Nat.mul_1_r _) (Nat.mul_1_r _) (n ↑ zx)).
+Lemma n_stack_n_stack_1 : forall {n} (zx : ZX 1 1), (n ⇑ zx) ∝= (cast _ _ (Nat.mul_1_r _) (Nat.mul_1_r _) (n ↑ zx)).
 Proof.
   intros.
   symmetry.
@@ -48,7 +44,7 @@ Proof.
 Qed. 
 
 Lemma n_stack1_compose : forall (zx0 zx1 : ZX 1 1) {n}, 
-  n ↑ (zx0 ⟷ zx1) ∝ (n ↑ zx0) ⟷ (n ↑ zx1).
+  n ↑ (zx0 ⟷ zx1) ∝= (n ↑ zx0) ⟷ (n ↑ zx1).
 Proof.
   intros.
   induction n.
@@ -62,16 +58,16 @@ Proof.
     reflexivity.
 Qed. 
 
-Lemma H_H_is_wire : □ ⟷ □ ∝ —.
+Lemma H_H_is_wire : □ ⟷ □ ∝= —.
 Proof.
-  prop_exists_nonzero 1.
+  hnf.
   simpl.
   rewrite MmultHH.
   lma.
 Qed.
 
 Lemma n_H_composition : forall {n}, 
-  (n ↑ □) ⟷ (n ↑ □) ∝ n ↑ —.
+  (n ↑ □) ⟷ (n ↑ □) ∝= n ↑ —.
 Proof.
   intros.
   rewrite <- n_stack1_compose.
@@ -80,17 +76,17 @@ Proof.
 Qed.
 
 Theorem trivial_cap_cup : 
-  ⊂ ⟷ ⊃ ∝ ⦰.
+  ⊂ ⟷ ⊃ ∝[2] ⦰.
 Proof.
-  prop_exists_nonzero 2.
+  split; [|nonzero].
   lma'.
 Qed.
 
 Lemma cap_passthrough : forall (zx : ZX 1 1),  
-  (⊂ ⟷ (zx ↕ —)) ∝ (⊂ ⟷ (— ↕ zx⊤)).
+  (⊂ ⟷ (zx ↕ —)) ∝= (⊂ ⟷ (— ↕ zx⊤)).
 Proof.
   intros.
-  prop_exists_nonzero 1.
+  hnf.
   simpl.
   rewrite semantics_transpose_comm.
   Msimpl; simpl.
@@ -117,11 +113,11 @@ Proof.
 Qed.
 
 Lemma cup_passthrough : forall (zx : ZX 1 1),
-  (zx ↕ —) ⟷ ⊃ ∝ (— ↕ zx⊤) ⟷ ⊃.
+  (zx ↕ —) ⟷ ⊃ ∝= (— ↕ zx⊤) ⟷ ⊃.
 Proof. transpose_of cap_passthrough. Qed.
 
 Lemma swap_passthrough_1_1 : forall (zx0 : ZX 1 1) (zx1 : ZX 1 1),
-  (zx0 ↕ zx1) ⟷ ⨉ ∝ ⨉ ⟷ (zx1 ↕ zx0).
+  (zx0 ↕ zx1) ⟷ ⨉ ∝= ⨉ ⟷ (zx1 ↕ zx0).
 Proof.
   intros. 
   rewrite <- ZXpermFacts.zx_comm_1_1_swap.
@@ -129,7 +125,7 @@ Proof.
 Qed.
 
 Lemma Z_commutes_through_swap_t : forall α, 
-  ((Z_Spider 1 1 α) ↕ —) ⟷ ⨉ ∝ 
+  ((Z_Spider 1 1 α) ↕ —) ⟷ ⨉ ∝= 
   ⨉ ⟷ (— ↕ (Z_Spider 1 1 α)).
 Proof.
   intros.
@@ -138,9 +134,9 @@ Proof.
 Qed.  
 
 Lemma spiders_commute_through_swap_b : forall (zx0 zx1 : ZX 1 1),
-  (— ↕ zx0) ⟷ ⨉ ∝ ⨉ ⟷ (zx0 ↕ —) ->      
-  (— ↕ zx1) ⟷ ⨉ ∝ ⨉ ⟷ (zx1 ↕ —) ->
-  (— ↕ (zx0 ⟷ zx1)) ⟷ ⨉ ∝ ⨉ ⟷ ((zx0 ⟷ zx1) ↕ —).
+  (— ↕ zx0) ⟷ ⨉ ∝= ⨉ ⟷ (zx0 ↕ —) ->      
+  (— ↕ zx1) ⟷ ⨉ ∝= ⨉ ⟷ (zx1 ↕ —) ->
+  (— ↕ (zx0 ⟷ zx1)) ⟷ ⨉ ∝= ⨉ ⟷ ((zx0 ⟷ zx1) ↕ —).
 Proof.
   intros.
   rewrite swap_passthrough_1_1.
@@ -148,9 +144,9 @@ Proof.
 Qed.
 
 Lemma spiders_commute_through_swap_t : forall (zx0 zx1 : ZX 1 1),
-  (zx0 ↕ —) ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ zx0) ->      
-  (zx1 ↕ —) ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ zx1) ->
-  ((zx0 ⟷ zx1) ↕ —) ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (zx0 ⟷ zx1)).
+  (zx0 ↕ —) ⟷ ⨉ ∝= ⨉ ⟷ (— ↕ zx0) ->      
+  (zx1 ↕ —) ⟷ ⨉ ∝= ⨉ ⟷ (— ↕ zx1) ->
+  ((zx0 ⟷ zx1) ↕ —) ⟷ ⨉ ∝= ⨉ ⟷ (— ↕ (zx0 ⟷ zx1)).
 Proof.
   intros.
   rewrite swap_passthrough_1_1.
@@ -158,10 +154,10 @@ Proof.
 Qed.
 
 Lemma n_box_passthrough :forall {nIn nOut} (zx : ZX nIn nOut),
-  (n_box nIn) ⟷ zx ∝ (⊙ zx ⟷ (n_box nOut)).
+  (n_box nIn) ⟷ zx ∝= (⊙ zx ⟷ (n_box nOut)).
 Proof.
   intros.
-  prop_exists_nonzero 1.
+  hnf.
   Msimpl.
   simpl.
   rewrite semantics_colorswap_comm.
@@ -175,10 +171,10 @@ Proof.
   easy.
 Qed.
 
-Lemma Z_spider_angle_2pi : forall {nIn nOut} α k, Z_Spider nIn nOut α ∝ (Z_Spider nIn nOut (α + IZR (2 * k) * PI)).
+Lemma Z_spider_angle_2pi : forall {nIn nOut} α k, Z_Spider nIn nOut α ∝= (Z_Spider nIn nOut (α + IZR (2 * k) * PI)).
 Proof.
   intros.
-  prop_exists_nonzero 1.
+  hnf.
   unfold ZX_semantics, Z_semantics.
   rewrite Cexp_add.
   rewrite Cexp_2nPI.
@@ -187,5 +183,5 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma X_spider_angle_2pi : forall {nIn nOut} α k, X_Spider nIn nOut α ∝ (X_Spider nIn nOut (α + IZR (2 * k) * PI)).
+Lemma X_spider_angle_2pi : forall {nIn nOut} α k, X_Spider nIn nOut α ∝= (X_Spider nIn nOut (α + IZR (2 * k) * PI)).
 Proof. intros. colorswap_of (@Z_spider_angle_2pi nIn nOut). Qed.

@@ -457,6 +457,7 @@ Qed.
 Lemma perm_of_n_wire n :
 	perm_of_zx (n_wire n) = idn.
 Proof.
+	unfold n_wire.
 	induction n; simpl; 
 	rewrite ?IHn; cleanup_perm_of_zx.
 Qed.
@@ -464,18 +465,111 @@ Qed.
 #[export] Hint Rewrite perm_of_n_wire : perm_of_zx_cleanup_db.
 
 Lemma zxperm_transpose_right_inverse {n m} (zx : ZX n m) (H : ZXperm zx) : 
-	zx ⟷ zx ⊤ ∝ n_wire n.
+	zx ⟷ zx ⊤ ∝= n_wire n.
 Proof.
 	by_perm_eq.
 Qed.
 
 Lemma zxperm_transpose_left_inverse {n m} (zx : ZX n m) (H : ZXperm zx) : 
-	zx ⊤ ⟷ zx ∝ n_wire m.
+	zx ⊤ ⟷ zx ∝= n_wire m.
 Proof.
 	by_perm_eq.
 Qed.
 
 Open Scope ZX_scope.
+
+
+Lemma compose_zxperm_l_eq {n m o} (zxp : ZX n m) (zx0 : ZX m o) 
+	zx1 (H : ZXperm zxp) :
+	zxp ⟷ zx0 ∝= zx1 <-> zx0 ∝= zxp ⊤ ⟷ zx1.
+Proof.
+	split; [intros <- | intros ->];
+	rewrite <- compose_assoc, 
+		?zxperm_transpose_left_inverse, ?zxperm_transpose_right_inverse
+		by auto;
+	now cleanup_zx.
+Qed.
+
+Lemma compose_zxperm_l_eq' {n m o} (zxp : ZX n m) (zx0 : ZX m o) 
+	zx1 (H : ZXperm zxp) :
+	zx1 ∝= zxp ⟷ zx0 <-> zxp ⊤ ⟷ zx1 ∝= zx0.
+Proof.
+	symmetry.
+	split; [intros <- | intros ->];
+	rewrite <- compose_assoc, 
+		?zxperm_transpose_left_inverse, ?zxperm_transpose_right_inverse
+		by auto;
+	now cleanup_zx.
+Qed.
+
+Lemma compose_zxperm_r_eq {n m o} (zxp : ZX m o) (zx0 : ZX n m) 
+	zx1 (H : ZXperm zxp) :
+	zx0 ⟷ zxp ∝= zx1 <-> zx0 ∝= zx1 ⟷ zxp ⊤.
+Proof.
+	split; [intros <- | intros ->];
+	rewrite compose_assoc, 
+		?zxperm_transpose_left_inverse, ?zxperm_transpose_right_inverse
+		by auto;
+	now cleanup_zx.
+Qed.
+
+Lemma compose_zxperm_r_eq' {n m o} (zxp : ZX m o) (zx0 : ZX n m) 
+	zx1 (H : ZXperm zxp) :
+	zx1 ∝= zx0 ⟷ zxp <-> zx1 ⟷ zxp ⊤ ∝= zx0.
+Proof.
+	symmetry.
+	split; [intros <- | intros ->];
+	rewrite compose_assoc, 
+		?zxperm_transpose_left_inverse, ?zxperm_transpose_right_inverse
+		by auto;
+	now cleanup_zx.
+Qed.
+
+Lemma compose_zxperm_l_by {n m o} (zxp : ZX n m) (zx0 : ZX m o) 
+	zx1 c (H : ZXperm zxp) :
+	zxp ⟷ zx0 ∝[c] zx1 <-> zx0 ∝[c] zxp ⊤ ⟷ zx1.
+Proof.
+	split; intros H'; [zxrewrite <- H' | zxrewrite H'];
+	rewrite <- compose_assoc, 
+		?zxperm_transpose_left_inverse, ?zxperm_transpose_right_inverse
+		by auto;
+	now cleanup_zx; zxrefl.
+Qed.
+
+Lemma compose_zxperm_l_by' {n m o} (zxp : ZX n m) (zx0 : ZX m o) 
+	zx1 c (H : ZXperm zxp) :
+	zx1 ∝[c] zxp ⟷ zx0 <-> zxp ⊤ ⟷ zx1 ∝[c] zx0.
+Proof.
+	symmetry.
+	split; intros H'; [zxrewrite <- H' | zxrewrite H'];
+	rewrite <- compose_assoc, 
+		?zxperm_transpose_left_inverse, ?zxperm_transpose_right_inverse
+		by auto;
+	now cleanup_zx; zxrefl.
+Qed.
+
+Lemma compose_zxperm_r_by {n m o} (zxp : ZX m o) (zx0 : ZX n m) 
+	zx1 c (H : ZXperm zxp) :
+	zx0 ⟷ zxp ∝[c] zx1 <-> zx0 ∝[c] zx1 ⟷ zxp ⊤.
+Proof.
+	split; intros H'; [zxrewrite <- H' | zxrewrite H'];
+	rewrite compose_assoc, 
+		?zxperm_transpose_left_inverse, ?zxperm_transpose_right_inverse
+		by auto;
+	now cleanup_zx; zxrefl.
+Qed.
+
+Lemma compose_zxperm_r_by' {n m o} (zxp : ZX m o) (zx0 : ZX n m) 
+	zx1 c (H : ZXperm zxp) :
+	zx1 ∝[c] zx0 ⟷ zxp <-> zx1 ⟷ zxp ⊤ ∝[c] zx0.
+Proof.
+	symmetry.
+	split; intros H'; [zxrewrite <- H' | zxrewrite H'];
+	rewrite compose_assoc, 
+		?zxperm_transpose_left_inverse, ?zxperm_transpose_right_inverse
+		by auto;
+	now cleanup_zx; zxrefl.
+Qed.
 
 Lemma compose_zxperm_l {n m o} (zxp : ZX n m) (zx0 : ZX m o) 
 	zx1 (H : ZXperm zxp) :
@@ -748,7 +842,7 @@ Qed.
 (* #[export] Hint Rewrite perm_of_zx_to_bot_eq_zx_to_bot' : perm_of_zx_cleanup_db. *)
 
 Lemma zx_to_bot_propto_zx_to_bot' {a n} H : 
-	zx_to_bot a n ∝ zx_to_bot' a n H.
+	zx_to_bot a n ∝= zx_to_bot' a n H.
 Proof.
 	by_perm_eq.
 	rewrite (perm_of_zx_to_bot_eq_zx_to_bot' _ _ H).
@@ -784,13 +878,13 @@ Qed.
 	using solve [auto_perm] : perm_of_zx_cleanup_db.
 
 Lemma colorswap_zx_to_bot a m : 
-	⊙ (zx_to_bot a m) ∝ zx_to_bot a m.
+	⊙ (zx_to_bot a m) ∝= zx_to_bot a m.
 Proof.
 	now rewrite zxperm_colorswap_eq by auto_zxperm.
 Qed.
 
 Lemma colorswap_zx_of_swap_list l : 
-	⊙ (zx_of_swap_list l) ∝ zx_of_swap_list l.
+	⊙ (zx_of_swap_list l) ∝= zx_of_swap_list l.
 Proof.
 	now rewrite zxperm_colorswap_eq by auto_zxperm.
 Qed.
@@ -898,7 +992,7 @@ Qed.
 
 
 Lemma zx_of_perm_of_zx_square {n} (zx : ZX n n) (H : ZXperm zx) : 
-	zx_of_perm n (perm_of_zx zx) ∝ zx.
+	zx_of_perm n (perm_of_zx zx) ∝= zx.
 Proof.
 	by_perm_eq.
 Qed.
@@ -906,7 +1000,7 @@ Qed.
 
 Lemma zx_of_perm_of_zx_cast {n m} (zx : ZX n m) (H : ZXperm zx) 
 	prfn prfm : 
-	cast n m prfn prfm (zx_of_perm n (perm_of_zx zx)) ∝ zx.
+	cast n m prfn prfm (zx_of_perm n (perm_of_zx zx)) ∝= zx.
 Proof.
 	by_perm_eq.
 Qed.
@@ -923,7 +1017,7 @@ Proof.
 Qed.
 
 Lemma zx_of_perm_cast_of_zx {n m} (zx : ZX n m) (H : ZXperm zx) prf : 
-	zx_of_perm_cast n m (perm_of_zx zx) prf ∝ zx.
+	zx_of_perm_cast n m (perm_of_zx zx) prf ∝= zx.
 Proof.
 	subst.
 	rewrite zx_of_perm_cast_id.
@@ -931,7 +1025,7 @@ Proof.
 Qed.
 
 Lemma zxperm_to_zx_of_perm_cast {n m} (zx : ZX n m) (H : ZXperm zx) : 
-	zx ∝ zx_of_perm_cast n m (perm_of_zx zx) (zxperm_square zx H).
+	zx ∝= zx_of_perm_cast n m (perm_of_zx zx) (zxperm_square zx H).
 Proof.
 	symmetry; now apply zx_of_perm_cast_of_zx.
 Qed.
@@ -941,11 +1035,29 @@ Lemma perm_of_zx_perm_eq_of_proportional {n m} {zx0 zx1 : ZX n m}
 	zx0 ∝ zx1 ->
 	perm_eq n (perm_of_zx zx0) (perm_of_zx zx1).
 Proof.
-	unfold proportional, proportional_general.
+	unfold proportional, proportional_by.
 	rewrite (perm_of_zx_permutation_semantics zx0 Hzx0).
 	rewrite (perm_of_zx_permutation_semantics zx1 Hzx1).
 	intros H.
 	apply perm_to_matrix_perm_eq_of_proportional; auto_perm.
+Qed.
+
+Lemma perm_of_zx_perm_eq_of_prop_eq {n m} {zx0 zx1 : ZX n m} 
+	(Hzx0 : ZXperm zx0) (Hzx1 : ZXperm zx1) : 
+	zx0 ∝= zx1 ->
+	perm_eq n (perm_of_zx zx0) (perm_of_zx zx1).
+Proof.
+	intros Heq.
+	apply perm_of_zx_perm_eq_of_proportional; [auto..|now rewrite Heq].
+Qed.
+
+Lemma perm_of_zx_perm_eq_of_proportional_by {n m} {zx0 zx1 : ZX n m} 
+	{c} (Hzx0 : ZXperm zx0) (Hzx1 : ZXperm zx1) : 
+	zx0 ∝[c] zx1 ->
+	perm_eq n (perm_of_zx zx0) (perm_of_zx zx1).
+Proof.
+	intros Heq.
+	apply perm_of_zx_perm_eq_of_proportional; [auto..|now rewrite Heq].
 Qed.
 
 Lemma perm_of_zx_proper {n m} {zx0 zx1 : ZX n m} 
@@ -958,6 +1070,26 @@ Proof.
 	now apply perm_of_zx_perm_eq_of_proportional.
 Qed.
 
+Lemma perm_of_zx_proper_eq {n m} {zx0 zx1 : ZX n m} 
+	(Hzx0 : ZXperm zx0) (Hzx1 : ZXperm zx1) : 
+	zx0 ∝= zx1 ->
+	perm_of_zx zx0 = perm_of_zx zx1.
+Proof.
+	intros Hprop.
+	eq_by_WF_perm_eq n.
+	now apply perm_of_zx_perm_eq_of_prop_eq.
+Qed.
+
+Lemma perm_of_zx_proper_by {n m} {zx0 zx1 : ZX n m} 
+	{c} (Hzx0 : ZXperm zx0) (Hzx1 : ZXperm zx1) : 
+	zx0 ∝[c] zx1 ->
+	perm_of_zx zx0 = perm_of_zx zx1.
+Proof.
+	intros Hprop.
+	eq_by_WF_perm_eq n.
+	now apply (perm_of_zx_perm_eq_of_proportional_by Hzx0 Hzx1 Hprop).
+Qed.
+
 Lemma perm_of_zx_prop_rw {n m} {zx0 zx1 : ZX n m} :
 	zx0 ∝ zx1 ->
 	ZXperm zx0 -> ZXperm zx1 ->
@@ -965,6 +1097,23 @@ Lemma perm_of_zx_prop_rw {n m} {zx0 zx1 : ZX n m} :
 Proof.
 	intros; now apply perm_of_zx_proper.
 Qed.
+
+Lemma perm_of_zx_prop_eq_rw {n m} {zx0 zx1 : ZX n m} :
+	zx0 ∝= zx1 ->
+	ZXperm zx0 -> ZXperm zx1 ->
+	perm_of_zx zx0 = perm_of_zx zx1.
+Proof.
+	intros; now apply perm_of_zx_proper_eq.
+Qed.
+
+Lemma perm_of_zx_prop_by_rw {n m} {zx0 zx1 : ZX n m} {c} :
+	zx0 ∝[c] zx1 ->
+	ZXperm zx0 -> ZXperm zx1 ->
+	perm_of_zx zx0 = perm_of_zx zx1.
+Proof.
+	intros; eauto using perm_of_zx_proper_by.
+Qed.
+
 
 (*
 (* This doesn't work: *)
@@ -986,7 +1135,7 @@ Qed. *)
 Lemma compose_zx_of_perm n f g 
 	(Hf : permutation n f)
 	(Hg : permutation n g) : 
-	zx_of_perm n f ⟷ zx_of_perm n g ∝ zx_of_perm n (f ∘ g).
+	zx_of_perm n f ⟷ zx_of_perm n g ∝= zx_of_perm n (f ∘ g).
 Proof.
 	(* unfold zx_of_perm. *)
 	by_perm_eq_nosimpl.
@@ -997,7 +1146,7 @@ Qed.
 Lemma stack_zx_of_perm n m f g 
 	(Hf : permutation n f)
 	(Hg : permutation m g) : 
-	zx_of_perm n f ↕ zx_of_perm m g ∝ 
+	zx_of_perm n f ↕ zx_of_perm m g ∝= 
 	zx_of_perm (n + m) (stack_perms n m f g).
 Proof.
 	by_perm_eq.
@@ -1011,7 +1160,7 @@ Qed.
 
 Lemma compose_zx_of_perm_cast n m o f g prf1 prf2 
 	(Hf : permutation n f) (Hg : permutation m g) : 
-	zx_of_perm_cast n m f prf1 ⟷ zx_of_perm_cast m o g prf2 ∝
+	zx_of_perm_cast n m f prf1 ⟷ zx_of_perm_cast m o g prf2 ∝=
 	zx_of_perm_cast n o (f ∘ g) (eq_trans prf1 prf2).
 Proof.
 	subst; rewrite !zx_of_perm_cast_id.
@@ -1020,7 +1169,7 @@ Qed.
 
 Lemma stack_zx_of_perm_cast n0 m0 n1 m1 f g prf1 prf2 
 	(Hf : permutation n0 f) (Hg : permutation n1 g) : 
-	zx_of_perm_cast n0 m0 f prf1 ↕ zx_of_perm_cast n1 m1 g prf2 ∝
+	zx_of_perm_cast n0 m0 f prf1 ↕ zx_of_perm_cast n1 m1 g prf2 ∝=
 	zx_of_perm_cast (n0 + n1) (m0 + m1) 
 		(stack_perms n0 n1 f g) (f_equal2 Nat.add prf1 prf2).
 Proof.
@@ -1030,7 +1179,7 @@ Qed.
 
 Lemma compose_zx_of_perm_cast_l n m f g prf 
 	(Hf : permutation n f) (Hg : permutation m g) : 
-	zx_of_perm_cast n m f prf ⟷ zx_of_perm m g ∝
+	zx_of_perm_cast n m f prf ⟷ zx_of_perm m g ∝=
 	zx_of_perm_cast n m (f ∘ g) prf.
 Proof.
 	subst; rewrite !zx_of_perm_cast_id.
@@ -1039,7 +1188,7 @@ Qed.
 
 Lemma compose_zx_of_perm_cast_r n m f g prf 
 	(Hf : permutation n f) (Hg : permutation n g) : 
-	zx_of_perm n f ⟷ zx_of_perm_cast n m g prf ∝
+	zx_of_perm n f ⟷ zx_of_perm_cast n m g prf ∝=
 	zx_of_perm_cast n m (f ∘ g) prf.
 Proof.
 	subst; rewrite !zx_of_perm_cast_id.
@@ -1087,7 +1236,7 @@ Qed.
 
 Lemma zx_of_perm_prop_of_perm_eq n f g : 
 	perm_eq n f g -> 
-	zx_of_perm n f ∝ zx_of_perm n g.
+	zx_of_perm n f ∝= zx_of_perm n g.
 Proof.
 	intros Hperm.
 	unfold zx_of_perm.
@@ -1129,10 +1278,6 @@ Proof.
 	now apply zx_of_perm_eq_of_perm_eq.
 Qed.
 
-(* FIXME: Move *)
-Definition true_rel {A} : relation A := 
-	fun _ _ => True.
-
 Add Parametric Relation A : A true_rel 
 	reflexivity proved by ltac:(easy)
 	symmetry proved by ltac:(easy)
@@ -1153,14 +1298,14 @@ Qed.
 
 Lemma zx_of_perm_cast_prop_of_perm_eq n m f g H H' : 
 	perm_eq n f g -> 
-	zx_of_perm_cast n m f H ∝ zx_of_perm_cast n m g H'.
+	zx_of_perm_cast n m f H ∝= zx_of_perm_cast n m g H'.
 Proof.
 	intros ->.
 	now rewrite (Peano_dec.UIP_nat _ _ H H').
 Qed.
 
 Lemma zx_of_perm_idn n : 
-	zx_of_perm n idn ∝ n_wire n.
+	zx_of_perm n idn ∝= n_wire n.
 Proof.
 	by_perm_eq.
 Qed.
@@ -1180,7 +1325,7 @@ Qed.
 
 Lemma zx_of_perm_eq_idn_prop n f : 
 	perm_eq n f idn ->
-	zx_of_perm n f ∝ zx_of_perm n idn.
+	zx_of_perm n f ∝= zx_of_perm n idn.
 Proof.
 	now intros ->.
 Qed.
@@ -1230,7 +1375,7 @@ Qed.
 
 Lemma zx_of_perm_perm_eq_idn_removal_l {n m} f
 	(zx : ZX n m) : perm_eq n f idn ->
-	zx_of_perm n f ⟷ zx ∝ zx.
+	zx_of_perm n f ⟷ zx ∝= zx.
 Proof.
 	intros ->.
 	cleanup_perm_of_zx.
@@ -1239,7 +1384,7 @@ Qed.
 
 Lemma zx_of_perm_perm_eq_idn_removal_r {n m} f
 	(zx : ZX n m) : perm_eq m f idn ->
-	zx ⟷ zx_of_perm m f ∝ zx.
+	zx ⟷ zx_of_perm m f ∝= zx.
 Proof.
 	intros ->.
 	cleanup_perm_of_zx.
@@ -1330,7 +1475,7 @@ Qed.
 #[export] Hint Rewrite zx_comm_semantics : perm_of_zx_cleanup_db.
 
 Lemma zx_comm_transpose p q :
-	(zx_comm p q) ⊤ ∝ zx_comm q p.
+	(zx_comm p q) ⊤ ∝= zx_comm q p.
 Proof.
 	unfold zx_comm, zx_of_perm_cast.
 	simpl_casts.
@@ -1341,7 +1486,7 @@ Qed.
 #[export] Hint Rewrite zx_comm_transpose : transpose_db.
 
 Lemma zx_comm_cancel p q : 
-	zx_comm p q ⟷ zx_comm q p ∝ n_wire _.
+	zx_comm p q ⟷ zx_comm q p ∝= n_wire _.
 Proof.
 	rewrite <- zx_comm_transpose.
 	apply zxperm_transpose_left_inverse; auto_zxperm.
@@ -1350,7 +1495,7 @@ Qed.
 #[export] Hint Rewrite zx_comm_cancel : perm_of_zx_cleanup_db.
 
 Lemma zx_comm_colorswap p q : 
-	⊙ (zx_comm p q) ∝ zx_comm p q.
+	⊙ (zx_comm p q) ∝= zx_comm p q.
 Proof.
 	now rewrite zxperm_colorswap_eq by auto with zxperm_db.
 Qed.
@@ -1358,11 +1503,10 @@ Qed.
 #[export] Hint Rewrite zx_comm_colorswap : colorswap_db.
 
 Lemma zx_comm_commutes_l {n m p q} (zx0 : ZX n m) (zx1 : ZX p q) :
-	zx_comm p n ⟷ (zx0 ↕ zx1) ∝
+	zx_comm p n ⟷ (zx0 ↕ zx1) ∝=
 	(zx1 ↕ zx0) ⟷ zx_comm q m.
 Proof.
-	prop_exists_nonzero R1.
-	rewrite Mscale_1_l.
+	hnf.
 	simpl.
 	rewrite 2!zx_comm_semantics.
 	restore_dims.
@@ -1371,11 +1515,10 @@ Proof.
 Qed.
 
 Lemma zx_comm_commutes_r {n m p q} (zx0 : ZX n m) (zx1 : ZX p q) :
-	(zx0 ↕ zx1) ⟷ zx_comm m q ∝
+	(zx0 ↕ zx1) ⟷ zx_comm m q ∝=
 	zx_comm n p ⟷ (zx1 ↕ zx0).
 Proof.
-	prop_exists_nonzero R1.
-	rewrite Mscale_1_l.
+	hnf.
 	simpl.
 	rewrite 2!zx_comm_semantics.
 	restore_dims.
@@ -1384,7 +1527,7 @@ Proof.
 Qed.
 
 Lemma zx_comm_1_1_swap : 
-	zx_comm 1 1 ∝ ⨉.
+	zx_comm 1 1 ∝= ⨉.
 Proof.
 	unfold zx_comm.
 	by_perm_eq.
@@ -1400,7 +1543,7 @@ Qed.
 #[export] Hint Rewrite perm_of_swap : perm_of_zx_cleanup_db.
 
 Lemma swap_pullthrough_l {n m} (zx0 : ZX n 1) (zx1 : ZX m 1) : 
-	(zx0 ↕ zx1) ⟷ ⨉ ∝
+	(zx0 ↕ zx1) ⟷ ⨉ ∝=
 	zx_comm n m ⟷ (zx1 ↕ zx0).
 Proof.
 	rewrite <- zx_comm_1_1_swap.
@@ -1408,7 +1551,7 @@ Proof.
 Qed.
 
 Lemma swap_pullthrough_r {n m} (zx0 : ZX 1 n) (zx1 : ZX 1 m) : 
-	⨉ ⟷ (zx0 ↕ zx1) ∝
+	⨉ ⟷ (zx0 ↕ zx1) ∝=
 	(zx1 ↕ zx0) ⟷ zx_comm m n.
 Proof.
 	rewrite <- zx_comm_1_1_swap.
@@ -1433,7 +1576,7 @@ Qed.
 
 Lemma zx_of_perm_compose_cast_r n n' m' Hn Hm f g 
 	(Hf : permutation n f) (Hg : permutation n' g) :
-	zx_of_perm n f ⟷ cast n m' Hn Hm (zx_of_perm n' g) ∝
+	zx_of_perm n f ⟷ cast n m' Hn Hm (zx_of_perm n' g) ∝=
 	cast n m' Hn Hm (zx_of_perm n' (f ∘ g)).
 Proof.
 	subst.
@@ -1442,7 +1585,7 @@ Qed.
 
 Lemma zx_of_perm_compose_cast_l m n' m' Hn Hm f g 
 	(Hf : permutation m' f) (Hg : permutation m g) :
-	cast n' m Hn Hm (zx_of_perm m' f) ⟷ zx_of_perm m g ∝
+	cast n' m Hn Hm (zx_of_perm m' f) ⟷ zx_of_perm m g ∝=
 	cast n' m Hn Hm (zx_of_perm m' (f ∘ g)).
 Proof.
 	subst.
@@ -1452,7 +1595,7 @@ Qed.
 Lemma zx_of_perm_compose_cast_cast n m n' m' o' Hn Hm Hm' Ho f g 
 	(Hf : permutation n f) (Hg : permutation m g) :
 	cast n' m' Hn Hm (zx_of_perm n f) ⟷ 
-	cast m' o' Hm' Ho (zx_of_perm m g) ∝
+	cast m' o' Hm' Ho (zx_of_perm m g) ∝=
 	cast n' o' (eq_trans Hn (eq_trans (eq_sym Hm) Hm')) Ho
 	(zx_of_perm m (f ∘ g)).
 Proof.
@@ -1468,7 +1611,7 @@ Qed.
 		perm_of_zx_cleanup_db. *)
 
 Lemma zx_comm_twice_add_r_join n m o H : 
-	zx_comm n (m + o) ⟷ cast _ _ H eq_refl (zx_comm m (o + n)) ∝
+	zx_comm n (m + o) ⟷ cast _ _ H eq_refl (zx_comm m (o + n)) ∝=
 	cast _ _ (Nat.add_assoc _ _ _) (eq_sym (Nat.add_assoc _ _ _)) 
 		 (zx_comm _ _).
 Proof.
@@ -1482,7 +1625,7 @@ Qed.
 
 
 Lemma zx_comm_twice_add_l_join n m o H : 
-	zx_comm (n + m) o ⟷ cast _ _ H eq_refl (zx_comm (o + n) m) ∝
+	zx_comm (n + m) o ⟷ cast _ _ H eq_refl (zx_comm (o + n) m) ∝=
 	cast _ _ (eq_sym (Nat.add_assoc _ _ _)) (Nat.add_assoc _ _ _) 
 		 (zx_comm n (m + o)).
 Proof.
@@ -1495,7 +1638,7 @@ Proof.
 Qed.
 
 (* Lemma zx_of_perm_rotr_to_zx_comm n m : 
-	zx_of_perm (n + m) (rotr (n + m) n) ∝
+	zx_of_perm (n + m) (rotr (n + m) n) ∝=
 	cast _ _ eq_refl (Nat.add_comm _ _)
 	(zx_comm n m).
 Proof.
@@ -1504,7 +1647,7 @@ Proof.
 Qed.
 
 Lemma zx_of_perm_rotr_to_zx_comm_rev n m : 
-	zx_of_perm (n + m) (rotr (n + m) m) ∝
+	zx_of_perm (n + m) (rotr (n + m) m) ∝=
 	cast _ _ (Nat.add_comm _ _) eq_refl
 	(zx_comm m n).
 Proof.
@@ -1530,7 +1673,7 @@ Lemma zx_gap_comm_pf p m q : p + m + q = q + m + p.
 Proof. lia. Qed.
 
 Lemma zx_gap_comm_defn p m q : 
-	zx_gap_comm p m q ∝ 
+	zx_gap_comm p m q ∝= 
 	zx_of_perm_cast _ _
 	(big_swap_perm q (p + m) ∘ 
 		stack_perms q (p + m) idn (big_swap_perm m p))
@@ -1550,14 +1693,14 @@ Lemma perm_of_zx_gap_comm p m q :
 	big_swap_perm q (p + m) ∘ 
 		stack_perms q (p + m) idn (big_swap_perm m p).
 Proof.
-	rewrite (perm_of_zx_prop_rw (zx_gap_comm_defn p m q)) by auto_zxperm.
+	rewrite (perm_of_zx_prop_eq_rw (zx_gap_comm_defn p m q)) by auto_zxperm.
 	now rewrite perm_of_zx_of_perm_cast_eq_WF by auto_perm.
 Qed.
 
 #[export] Hint Rewrite perm_of_zx_gap_comm : perm_of_zx_cleanup_db.
 
 Lemma zx_gap_comm_transpose p m q : 
-	(zx_gap_comm p m q) ⊤ ∝ zx_gap_comm q m p.
+	(zx_gap_comm p m q) ⊤ ∝= zx_gap_comm q m p.
 Proof.
 	rewrite 2!zx_gap_comm_defn.
 	by_perm_eq_nosimpl.
@@ -1577,7 +1720,7 @@ Qed.
 #[export] Hint Rewrite zx_gap_comm_transpose : transpose_db.
 
 Lemma zx_gap_comm_colorswap p m q : 
-	⊙ (zx_gap_comm p m q) ∝ zx_gap_comm p m q.
+	⊙ (zx_gap_comm p m q) ∝= zx_gap_comm p m q.
 Proof.
 	now rewrite zxperm_colorswap_eq by auto_zxperm.
 Qed.
@@ -1588,7 +1731,7 @@ Import ComposeRules StackComposeRules CastRules.
 
 Lemma zx_gap_comm_pullthrough_l {n m r s p q} 
 	(zx0 : ZX n m) (zx1 : ZX r s) (zx2 : ZX p q) :
-	zx0 ↕ zx1 ↕ zx2 ⟷ zx_gap_comm m s q ∝
+	zx0 ↕ zx1 ↕ zx2 ⟷ zx_gap_comm m s q ∝=
 	zx_gap_comm n r p ⟷ (zx2 ↕ zx1 ↕ zx0).
 Proof.
 	unfold zx_gap_comm at 1.
@@ -1603,12 +1746,12 @@ Proof.
 	rewrite <- compose_assoc.
 	unfold zx_gap_comm.
 	rewrite cast_compose_distribute, cast_id.
-	auto using compose_simplify, cast_simplify, proportional_refl.
+	auto using compose_simplify_eq, cast_simplify_eq, proportional_by_1_refl.
 Qed.
 
 Lemma zx_gap_comm_pullthrough_r {n m r s p q} 
 	(zx0 : ZX n m) (zx1 : ZX r s) (zx2 : ZX p q) :
-	zx_gap_comm n r p ⟷ (zx2 ↕ zx1 ↕ zx0) ∝
+	zx_gap_comm n r p ⟷ (zx2 ↕ zx1 ↕ zx0) ∝=
 	zx0 ↕ zx1 ↕ zx2 ⟷ zx_gap_comm m s q.
 Proof.
 	symmetry. 
@@ -1620,7 +1763,7 @@ Notation zx_gap_comm_commutes_l := zx_gap_comm_pullthrough_r.
 Notation zx_gap_comm_commutes_r := zx_gap_comm_pullthrough_l.
 
 Lemma zx_gap_comm_1_m_1_a_swap m : 
-	zx_gap_comm 1 m 1 ∝ a_swap (1 + m + 1).
+	zx_gap_comm 1 m 1 ∝= a_swap (1 + m + 1).
 Proof.
 	by_perm_eq_nosimpl.
 	rewrite perm_of_a_swap, perm_of_zx_gap_comm.
@@ -1633,7 +1776,7 @@ Qed.
 
 Lemma a_swap_pullthrough_l {n m o p} 
 	(zx0 : ZX n 1) (zx1 : ZX m o) (zx2 : ZX p 1) : 
-	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + o + 1) ∝
+	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + o + 1) ∝=
 	zx_gap_comm n m p ⟷ (zx2 ↕ zx1 ↕ zx0).
 Proof.
 	rewrite <- zx_gap_comm_1_m_1_a_swap.
@@ -1642,7 +1785,7 @@ Qed.
 
 Lemma a_swap_pullthrough_r {n m o p} 
 	(zx0 : ZX 1 n) (zx1 : ZX m o) (zx2 : ZX 1 p) : 
-	a_swap (1 + m + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	a_swap (1 + m + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝=
 	zx2 ↕ zx1 ↕ zx0 ⟷ zx_gap_comm p o n .
 Proof.
 	rewrite <- zx_gap_comm_1_m_1_a_swap.
@@ -1658,7 +1801,7 @@ Notation a_swap_commutes_r := a_swap_pullthrough_l.
 
 Lemma zx_comm_nat_bot_l {p q n m} 
 	(zxBot : ZX m q) (zxTop : ZX n p) :
-	zxTop ↕ zxBot ⟷ zx_comm p q ∝
+	zxTop ↕ zxBot ⟷ zx_comm p q ∝=
 	zxTop ↕ n_wire m ⟷ zx_comm p m 
 	⟷ (zxBot ↕ n_wire p).
 Proof.
@@ -1669,7 +1812,7 @@ Qed.
 
 Lemma zx_comm_nat_top_l {p q n m} 
 	(zxTop : ZX n p) (zxBot : ZX m q) :
-	zxTop ↕ zxBot ⟷ zx_comm p q ∝
+	zxTop ↕ zxBot ⟷ zx_comm p q ∝=
 	n_wire n ↕ zxBot ⟷ zx_comm n q 
 	⟷ (n_wire q ↕ zxTop).
 Proof.
@@ -1680,7 +1823,7 @@ Qed.
 
 Lemma zx_comm_nat_bot_r {p q n m} 
 	(zxBot : ZX m q) (zxTop : ZX n p) :
-	zx_comm m n ⟷ (zxTop ↕ zxBot) ∝
+	zx_comm m n ⟷ (zxTop ↕ zxBot) ∝=
 	zxBot ↕ n_wire n ⟷ zx_comm q n 
 	⟷ (zxTop ↕ n_wire q).
 Proof.
@@ -1691,7 +1834,7 @@ Qed.
 
 Lemma zx_comm_nat_top_r {p q n m} 
   (zxTop : ZX n p) (zxBot : ZX m q) :
-	zx_comm m n ⟷ (zxTop ↕ zxBot) ∝
+	zx_comm m n ⟷ (zxTop ↕ zxBot) ∝=
 	n_wire m ↕ zxTop ⟷ zx_comm m p 
 	⟷ (n_wire p ↕ zxBot).
 Proof.
@@ -1704,7 +1847,7 @@ Qed.
 
 Lemma swap_nat_bot_l {n m} 
 	(zxBot : ZX m 1) (zxTop : ZX n 1) :
-	zxTop ↕ zxBot ⟷ ⨉ ∝
+	zxTop ↕ zxBot ⟷ ⨉ ∝=
 	zxTop ↕ n_wire m ⟷ zx_comm 1 m 
 	⟷ (zxBot ↕ n_wire 1).
 Proof.
@@ -1715,7 +1858,7 @@ Qed.
 
 Lemma swap_nat_top_l {n m} 
 	(zxTop : ZX n 1) (zxBot : ZX m 1) :
-	zxTop ↕ zxBot ⟷ ⨉ ∝
+	zxTop ↕ zxBot ⟷ ⨉ ∝=
 	n_wire n ↕ zxBot ⟷ zx_comm n 1 
 	⟷ (n_wire 1 ↕ zxTop).
 Proof.
@@ -1726,7 +1869,7 @@ Qed.
 
 Lemma swap_nat_bot_r {p q} 
 	(zxBot : ZX 1 q) (zxTop : ZX 1 p) :
-	⨉ ⟷ (zxTop ↕ zxBot) ∝
+	⨉ ⟷ (zxTop ↕ zxBot) ∝=
 	zxBot ↕ n_wire 1 ⟷ zx_comm q 1 
 	⟷ (zxTop ↕ n_wire q).
 Proof.
@@ -1738,7 +1881,7 @@ Qed.
 
 Lemma swap_nat_top_r {p q} 
   (zxTop : ZX 1 p) (zxBot : ZX 1 q) :
-	⨉ ⟷ (zxTop ↕ zxBot) ∝
+	⨉ ⟷ (zxTop ↕ zxBot) ∝=
 	n_wire 1 ↕ zxTop ⟷ zx_comm 1 p 
 	⟷ (n_wire p ↕ zxBot).
 Proof.
@@ -1752,7 +1895,7 @@ Qed.
 
 Lemma swap_nat_bot_l_1 {n} 
 	(zxBot : ZX 1 1) (zxTop : ZX n 1) :
-	zxTop ↕ zxBot ⟷ ⨉ ∝
+	zxTop ↕ zxBot ⟷ ⨉ ∝=
 	zxTop ↕ n_wire 1 ⟷ ⨉
 	⟷ (zxBot ↕ n_wire 1).
 Proof.
@@ -1764,7 +1907,7 @@ Qed.
 
 Lemma swap_nat_top_l_1 {m} 
 	(zxTop : ZX 1 1) (zxBot : ZX m 1) :
-	zxTop ↕ zxBot ⟷ ⨉ ∝
+	zxTop ↕ zxBot ⟷ ⨉ ∝=
 	n_wire 1 ↕ zxBot ⟷ ⨉ 
 	⟷ (n_wire 1 ↕ zxTop).
 Proof.
@@ -1776,7 +1919,7 @@ Qed.
 
 Lemma swap_nat_bot_r_1 {p} 
 	(zxBot : ZX 1 1) (zxTop : ZX 1 p) :
-	⨉ ⟷ (zxTop ↕ zxBot) ∝
+	⨉ ⟷ (zxTop ↕ zxBot) ∝=
 	zxBot ↕ n_wire 1 ⟷ ⨉
 	⟷ (zxTop ↕ n_wire 1).
 Proof.
@@ -1787,7 +1930,7 @@ Qed.
 
 Lemma swap_nat_top_r_1 {q} 
   (zxTop : ZX 1 1) (zxBot : ZX 1 q) :
-	⨉ ⟷ (zxTop ↕ zxBot) ∝
+	⨉ ⟷ (zxTop ↕ zxBot) ∝=
 	n_wire 1 ↕ zxTop ⟷ ⨉
 	⟷ (n_wire 1 ↕ zxBot).
 Proof.
@@ -1800,7 +1943,7 @@ Qed.
 
 Lemma zx_gap_comm_nat_top_l {n m o q r s}
 	(zx0 : ZX n q) (zx1 : ZX m r) (zx2 : ZX o s) : 
-	zx0 ↕ zx1 ↕ zx2 ⟷ zx_gap_comm q r s ∝
+	zx0 ↕ zx1 ↕ zx2 ⟷ zx_gap_comm q r s ∝=
 	n_wire n ↕ zx1 ↕ zx2 ⟷ zx_gap_comm n r s 
 	⟷ (n_wire s ↕ n_wire r ↕ zx0).
 Proof.
@@ -1810,7 +1953,7 @@ Qed.
 
 Lemma zx_gap_comm_nat_mid_l {n m o q r s}
 	(zx1 : ZX m r) (zx0 : ZX n q) (zx2 : ZX o s) : 
-	zx0 ↕ zx1 ↕ zx2 ⟷ zx_gap_comm q r s ∝
+	zx0 ↕ zx1 ↕ zx2 ⟷ zx_gap_comm q r s ∝=
 	zx0 ↕ n_wire m ↕ zx2 ⟷ zx_gap_comm q m s 
 	⟷ (n_wire s ↕ zx1 ↕ n_wire q).
 Proof.
@@ -1820,7 +1963,7 @@ Qed.
 
 Lemma zx_gap_comm_nat_bot_l {n m o q r s}
 	(zx2 : ZX o s) (zx0 : ZX n q) (zx1 : ZX m r) : 
-	zx0 ↕ zx1 ↕ zx2 ⟷ zx_gap_comm q r s ∝
+	zx0 ↕ zx1 ↕ zx2 ⟷ zx_gap_comm q r s ∝=
 	zx0 ↕ zx1 ↕ n_wire o ⟷ zx_gap_comm q r o
 	⟷ (zx2 ↕ n_wire r ↕ n_wire q).
 Proof.
@@ -1830,7 +1973,7 @@ Qed.
 
 Lemma zx_gap_comm_nat_top_r {n m o q r s}
 	(zx0 : ZX n q) (zx1 : ZX m r) (zx2 : ZX o s) : 
-	zx_gap_comm _ _ _ ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	zx_gap_comm _ _ _ ⟷ (zx0 ↕ zx1 ↕ zx2) ∝=
 	n_wire _ ↕ n_wire _ ↕ zx0 ⟷ zx_gap_comm _ _ _
 	⟷ (n_wire _ ↕ zx1 ↕ zx2).
 Proof.
@@ -1841,7 +1984,7 @@ Qed.
 
 Lemma zx_gap_comm_nat_mid_r {n m o q r s}
 	(zx1 : ZX m r) (zx0 : ZX n q) (zx2 : ZX o s) : 
-	zx_gap_comm _ _ _ ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	zx_gap_comm _ _ _ ⟷ (zx0 ↕ zx1 ↕ zx2) ∝=
 	n_wire _ ↕ zx1 ↕ n_wire _ ⟷ zx_gap_comm _ _ _
 	⟷ (zx0 ↕ n_wire _ ↕ zx2).
 Proof.
@@ -1852,7 +1995,7 @@ Qed.
 
 Lemma zx_gap_comm_nat_bot_r {n m o q r s}
 	(zx2 : ZX o s) (zx0 : ZX n q) (zx1 : ZX m r) : 
-	zx_gap_comm _ _ _ ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	zx_gap_comm _ _ _ ⟷ (zx0 ↕ zx1 ↕ zx2) ∝=
 	zx2 ↕ n_wire _ ↕ n_wire _ ⟷ zx_gap_comm _ _ _
 	⟷ (zx0 ↕ zx1 ↕ n_wire _).
 Proof.
@@ -1865,7 +2008,7 @@ Qed.
 
 Lemma a_swap_nat_top_l {n m o r}
 	(zx0 : ZX n 1) (zx1 : ZX m r) (zx2 : ZX o 1) : 
-	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + r + 1) ∝
+	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + r + 1) ∝=
 	n_wire n ↕ zx1 ↕ zx2 ⟷ zx_gap_comm n r 1 
 	⟷ (n_wire 1 ↕ n_wire r ↕ zx0).
 Proof.
@@ -1876,7 +2019,7 @@ Qed.
 
 Lemma a_swap_nat_mid_l {n m o r}
 	(zx0 : ZX n 1) (zx1 : ZX m r) (zx2 : ZX o 1) : 
-	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + r + 1) ∝
+	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + r + 1) ∝=
 	zx0 ↕ n_wire m ↕ zx2 ⟷ a_swap (1 + m + 1)
 	⟷ (n_wire 1 ↕ zx1 ↕ n_wire 1).
 Proof.
@@ -1886,7 +2029,7 @@ Qed.
 
 Lemma a_swap_nat_bot_l {n m o r}
 	(zx0 : ZX n 1) (zx1 : ZX m r) (zx2 : ZX o 1) : 
-	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + r + 1) ∝
+	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + r + 1) ∝=
 	zx0 ↕ zx1 ↕ n_wire o ⟷ zx_gap_comm 1 r o
 	⟷ (zx2 ↕ n_wire r ↕ n_wire 1).
 Proof.
@@ -1897,7 +2040,7 @@ Qed.
 
 Lemma a_swap_nat_top_r {m q r s}
 	(zx0 : ZX 1 q) (zx1 : ZX m r) (zx2 : ZX 1 s) : 
-	a_swap (1 + _ + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	a_swap (1 + _ + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝=
 	n_wire _ ↕ n_wire _ ↕ zx0 ⟷ zx_gap_comm _ _ _
 	⟷ (n_wire _ ↕ zx1 ↕ zx2).
 Proof.
@@ -1908,7 +2051,7 @@ Qed.
 
 Lemma a_swap_nat_mid_r {m q r s}
 	(zx0 : ZX 1 q) (zx1 : ZX m r) (zx2 : ZX 1 s) : 
-	a_swap (1 + _ + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	a_swap (1 + _ + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝=
 	n_wire _ ↕ zx1 ↕ n_wire _ ⟷ a_swap (1 + _ + 1)
 	⟷ (zx0 ↕ n_wire _ ↕ zx2).
 Proof.
@@ -1919,7 +2062,7 @@ Qed.
 
 Lemma a_swap_nat_bot_r {m q r s}
 	(zx0 : ZX 1 q) (zx1 : ZX m r) (zx2 : ZX 1 s) : 
-	a_swap (1 + _ + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	a_swap (1 + _ + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝=
 	zx2 ↕ n_wire _ ↕ n_wire _ ⟷ zx_gap_comm _ _ _
 	⟷ (zx0 ↕ zx1 ↕ n_wire _).
 Proof.
@@ -1932,7 +2075,7 @@ Qed.
 
 Lemma a_swap_nat_top_l_1 {m o r}
 	(zx0 : ZX 1 1) (zx1 : ZX m r) (zx2 : ZX o 1) : 
-	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + r + 1) ∝
+	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + r + 1) ∝=
 	n_wire 1 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + _ + 1)
 	⟷ (n_wire 1 ↕ n_wire r ↕ zx0).
 Proof.
@@ -1942,7 +2085,7 @@ Qed.
 
 Lemma a_swap_nat_bot_l_1 {n m r}
 	(zx0 : ZX n 1) (zx1 : ZX m r) (zx2 : ZX 1 1) : 
-	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + r + 1) ∝
+	zx0 ↕ zx1 ↕ zx2 ⟷ a_swap (1 + r + 1) ∝=
 	zx0 ↕ zx1 ↕ n_wire 1 ⟷ a_swap (1 + _ + 1)
 	⟷ (zx2 ↕ n_wire r ↕ n_wire 1).
 Proof.
@@ -1952,7 +2095,7 @@ Qed.
 
 Lemma a_swap_nat_top_r_1 {m r s}
 	(zx0 : ZX 1 1) (zx1 : ZX m r) (zx2 : ZX 1 s) : 
-	a_swap (1 + _ + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	a_swap (1 + _ + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝=
 	n_wire _ ↕ n_wire _ ↕ zx0 ⟷ a_swap (1 + _ + 1)
 	⟷ (n_wire _ ↕ zx1 ↕ zx2).
 Proof.
@@ -1963,7 +2106,7 @@ Qed.
 
 Lemma a_swap_nat_bot_r_1 {m q r}
 	(zx0 : ZX 1 q) (zx1 : ZX m r) (zx2 : ZX 1 1) : 
-	a_swap (1 + _ + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝
+	a_swap (1 + _ + 1) ⟷ (zx0 ↕ zx1 ↕ zx2) ∝=
 	zx2 ↕ n_wire _ ↕ n_wire _ ⟷ a_swap (1 + _ + 1)
 	⟷ (zx0 ↕ zx1 ↕ n_wire _).
 Proof.

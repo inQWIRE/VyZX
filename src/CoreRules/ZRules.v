@@ -40,9 +40,8 @@ Lemma grow_Z_bot_left : forall n {m o α},
 	(n_wire n ↕ Z m 1 0) ⟷ Z (n + 1) o α.
 Proof.
 	intros n m o α.
-	prop_exists_nonzero 1.
+	hnf.
 	cbn.
-	rewrite Mscale_1_l.
 	rewrite !Z_semantics_equiv, n_wire_semantics.
 	simpl.
 	rewrite Cexp_0.
@@ -75,8 +74,8 @@ Proof.
 Qed.
 
 Lemma Z_rot_passthrough : forall α β, 
-	(Z 1 1 α ↕ — ⟷ Z 2 1 β) ∝ Z 2 1 β ⟷ Z 1 1 α.
-Proof. intros ? ?; prop_exists_nonzero 1; lma'. Qed.
+	(Z 1 1 α ↕ — ⟷ Z 2 1 β) ∝= Z 2 1 β ⟷ Z 1 1 α.
+Proof. intros ? ?; lma'. Qed.
 
 Lemma Z_rot_l : forall n m α β,
 	Z (S n) m (α + β) ∝= Z 1 1 α ↕ n_wire n ⟷ Z (S n) m β.
@@ -113,10 +112,10 @@ Proof.
 Qed.
 
 Lemma Z_appendix_base : forall α β,
-	(Z 0 1 α ↕ — ⟷ Z 2 1 β) ∝ Z 1 1 (α + β).
+	(Z 0 1 α ↕ — ⟷ Z 2 1 β) ∝= Z 1 1 (α + β).
 Proof. 
 	intros. 
-	prop_exists_nonzero 1. 
+	hnf.
 	Msimpl.
 	prep_matrix_equivalence. 
 	cbn; unfold Z_semantics.
@@ -247,6 +246,8 @@ Proof.
 			simpl.
 			bundle_wires.
 			rewrite compose_assoc.
+			change (1 + 0)%nat with 1%nat.
+			bundle_wires.
 			rewrite <- stack_wire_distribute_l.
 			rewrite Z_spider_1_1_fusion.
 			rewrite <- (Z_wrap_over_top_right n o).
@@ -308,7 +309,7 @@ Proof.
 Qed.
 
 Lemma Z_split_left : forall n m α,
-	Z n m α ∝ Z n 1 α ⟷ Z 1 m 0.
+	Z n m α ∝= Z n 1 α ⟷ Z 1 m 0.
 Proof.
 	intros n m α.
 	rewrite Z_absolute_fusion.
@@ -316,7 +317,7 @@ Proof.
 Qed.
 
 Lemma Z_split_right : forall n m α,
-	Z n m α ∝ Z n 1 0 ⟷ Z 1 m α.
+	Z n m α ∝= Z n 1 0 ⟷ Z 1 m α.
 Proof.
 	intros n m α.
 	rewrite Z_absolute_fusion.
@@ -629,7 +630,8 @@ Proof.
 		replace ⦰ with (n_wire 0) by easy.
 		rewrite cast_id.
 		rewrite Z_self_swap_absorbtion_right.
-		apply cast_Z.
+		rewrite cast_Z.
+		reflexivity.
 Unshelve.
 	all: lia.
 Qed.
@@ -698,7 +700,7 @@ Unshelve.
 Qed.
 
 Lemma Z_stacked_a_swap_absorbtion_right n m0 m1 m2 α : 
-	Z n (m0 + m1 + m2) α ⟷ (n_wire m0 ↕ a_swap m1 ↕ n_wire m2) ∝
+	Z n (m0 + m1 + m2) α ⟷ (n_wire m0 ↕ a_swap m1 ↕ n_wire m2) ∝=
 	Z n (m0 + m1 + m2) α.
 Proof.
 	rewrite 2!Z_add_r_base_rot, compose_assoc.
@@ -711,7 +713,7 @@ Proof.
 Qed.
 
 Lemma Z_zx_to_bot_absorbtion_right n m α a : 
-	Z n m α ⟷ zx_to_bot a m ∝
+	Z n m α ⟷ zx_to_bot a m ∝=
 	Z n m α.
 Proof.
 	unfold zx_to_bot.
@@ -723,7 +725,7 @@ Proof.
 Qed.
 
 Lemma Z_zx_of_swap_list_absorbtion_right n α l : 
-	Z n (length l) α ⟷ zx_of_swap_list l ∝
+	Z n (length l) α ⟷ zx_of_swap_list l ∝=
 	Z n (length l) α.
 Proof.
 	revert n α;
@@ -742,7 +744,7 @@ Proof.
 Qed.
 
 Lemma Z_zx_of_perm_absorbtion_right n m α f : 
-	Z n m α ⟷ zx_of_perm m f ∝
+	Z n m α ⟷ zx_of_perm m f ∝=
 	Z n m α.
 Proof.
 	unfold zx_of_perm.
@@ -753,7 +755,7 @@ Proof.
 Qed.
 
 Lemma Z_zx_of_perm_cast_absorbtion_right n m o α f H : 
-	Z n m α ⟷ zx_of_perm_cast m o f H ∝
+	Z n m α ⟷ zx_of_perm_cast m o f H ∝=
 	Z n o α.
 Proof.
 	subst.
@@ -762,7 +764,7 @@ Qed.
 
 Lemma Z_zxperm_absorbtion_right n m o α 
 	(zx : ZX m o) (Hzx : ZXperm zx) :
-	Z n m α ⟷ zx ∝ 
+	Z n m α ⟷ zx ∝= 
 	Z n o α.
 Proof.
 	rewrite (zxperm_to_zx_of_perm_cast zx Hzx).
@@ -771,7 +773,7 @@ Qed.
 
 Lemma Z_zxperm_absorbtion_left n m o α 
 	(zx : ZX n m) (Hzx : ZXperm zx) : 
-	zx ⟷ Z m o α ∝
+	zx ⟷ Z m o α ∝=
 	Z n o α.
 Proof.
 	transpose_of (Z_zxperm_absorbtion_right o m n α 
@@ -779,38 +781,38 @@ Proof.
 Qed.
 
 Lemma Z_zx_comm_absorbtion_right n p q α : 
-	Z n (p + q) α ⟷ zx_comm p q ∝
+	Z n (p + q) α ⟷ zx_comm p q ∝=
 	Z n (q + p) α.
 Proof.
 	apply Z_zxperm_absorbtion_right; auto_zxperm.
 Qed.
 
 Lemma Z_zx_comm_absorbtion_left p q m α :
-	zx_comm p q ⟷ Z (q + p) m α ∝
+	zx_comm p q ⟷ Z (q + p) m α ∝=
 	Z (p + q) m α.
 Proof. transpose_of (Z_zx_comm_absorbtion_right m q p α). Qed.
 
 Lemma Z_zx_gap_comm_absorbtion_right n p m q α : 
-	Z n (p + m + q) α ⟷ zx_gap_comm p m q ∝
+	Z n (p + m + q) α ⟷ zx_gap_comm p m q ∝=
 	Z n (q + m + p) α.
 Proof.
 	apply Z_zxperm_absorbtion_right; auto_zxperm.
 Qed.
 
 Lemma Z_zx_gap_comm_absorbtion_left p n q m α : 
-	zx_gap_comm p n q ⟷ Z (q + n + p) m α ∝
+	zx_gap_comm p n q ⟷ Z (q + n + p) m α ∝=
 	Z (p + n + q) m α.
 Proof. transpose_of (Z_zx_gap_comm_absorbtion_right m q n p α). Qed.
 
 Lemma Z_swap_pullthrough_top_right : forall n α prfn prfm, 
-	((Z (S n) 1 α) ↕ —) ⟷ ⨉ ∝ 
+	((Z (S n) 1 α) ↕ —) ⟷ ⨉ ∝= 
 	cast _ _ prfn prfm (n_swap _ ⟷ (— ↕ (Z (S n) 1 α))).
 Proof.
   intros.
   rewrite swap_commutes_r.
-  auto_cast_eqn rewrite (cast_compose_mid_contract _ (1 + (1 + n))%nat).
+  auto_cast_eqn erewrite (cast_compose_mid_contract _ (1 + (1 + n))%nat).
 	rewrite n_swap_grow_l.
-  auto_cast_eqn rewrite (cast_compose_mid_contract _ (1 + (1 + n))%nat).
+  auto_cast_eqn erewrite (cast_compose_mid_contract _ (1 + (1 + n))%nat).
 	rewrite cast_id.
   (* rewrite cast_fn_eq_dim. *)
   change (S n) with (1 + n)%nat.
@@ -820,7 +822,7 @@ Proof.
 	rewrite compose_assoc.
 	rewrite <- stack_wire_distribute_l.
 	rewrite Z_zxperm_absorbtion_left by auto with zxperm_db.
-	apply compose_simplify; [|easy].
+	apply compose_simplify_eq; [|easy].
 	unfold zx_comm, zx_of_perm_cast.
 	simpl_casts.
 	by_perm_eq_nosimpl.
@@ -832,13 +834,13 @@ Proof.
 	now rewrite rotl_add_r.
 Qed.
 
-Lemma Z_n_swap_absorbtion_right_base : forall n m α, Z n m α ⟷ n_swap m ∝ Z n m α.
+Lemma Z_n_swap_absorbtion_right_base : forall n m α, Z n m α ⟷ n_swap m ∝= Z n m α.
 Proof.
 	intros.
 	apply Z_zxperm_absorbtion_right; auto_zxperm.
 Qed.
 
-Lemma Z_n_wrap_under_r_base_unswapped : forall n m α, Z (n + m) 0 α ∝ (Z n m α ↕ n_wire m) ⟷ n_cup_unswapped m.
+Lemma Z_n_wrap_under_r_base_unswapped : forall n m α, Z (n + m) 0 α ∝= (Z n m α ↕ n_wire m) ⟷ n_cup_unswapped m.
 Proof.
 	intros n m α.
 	rewrite (Z_split_left n m), stack_nwire_distribute_r.

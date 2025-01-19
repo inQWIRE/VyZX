@@ -186,7 +186,7 @@ Proof.
   now apply zx_of_perm_eq_of_perm_eq.
 Qed.
 
-Lemma cnot_inv_is_swapped_cnot : _CNOT_inv_ ∝ ⨉ ⟷ _CNOT_ ⟷ ⨉.
+Lemma cnot_inv_is_swapped_cnot : _CNOT_inv_ ∝= ⨉ ⟷ _CNOT_ ⟷ ⨉.
 Proof.
   symmetry.
   rewrite <- compose_assoc.
@@ -206,8 +206,7 @@ Proof.
   rewrite <- (compose_assoc _ _ (2 ↑ □)).
   rewrite <- colorswap_is_bihadamard.
   simpl.
-  prop_exists_nonzero 1.
-  rewrite Mscale_1_l.
+  hnf.
   simpl.
   rewrite zx_of_perm_semantics by auto with perm_db.
   simpl_rewrite' (kron_comm_pows2_eq_perm_to_matrix_big_swap 2 1).
@@ -260,7 +259,7 @@ Proof.
   by_cell; cbv; lca.
 Qed.
 
-Lemma notc_is_swapp_cnot : _NOTC_ ∝ ⨉ ⟷ _CNOT_ ⟷ ⨉.
+Lemma notc_is_swapp_cnot : _NOTC_ ∝= ⨉ ⟷ _CNOT_ ⟷ ⨉.
 Proof.
   symmetry.
   rewrite <- compose_assoc.
@@ -277,7 +276,7 @@ Proof.
     by (by_perm_cell; reflexivity).
   rewrite H.
   clear H.
-  assert (H : zx_of_perm (1 + 2) (big_swap_perm 1 2) ∝ — ↕ ⨉ ⟷ (⨉ ↕ —)). 1: {
+  assert (H : zx_of_perm (1 + 2) (big_swap_perm 1 2) ∝= — ↕ ⨉ ⟷ (⨉ ↕ —)). 1: {
     by_perm_eq_nosimpl.
     rewrite perm_of_zx_of_perm_eq by auto with perm_db. 
     by_perm_cell; reflexivity.
@@ -289,7 +288,7 @@ Proof.
   now rewrite X_zxperm_absorbtion_left by constructor.
 Qed.
 
-Lemma notc_r_is_swapp_cnot_r : _NOTC_R ∝ ⨉ ⟷ _CNOT_R ⟷ ⨉. 
+Lemma notc_r_is_swapp_cnot_r : _NOTC_R ∝= ⨉ ⟷ _CNOT_R ⟷ ⨉. 
 Proof.
   symmetry.
   rewrite <- compose_assoc.
@@ -306,7 +305,7 @@ Proof.
     by (by_perm_cell; reflexivity).
   rewrite H.
   clear H.
-  assert (H : zx_of_perm (2 + 1) (big_swap_perm 2 1) ∝ (⨉ ↕ —) ⟷ (— ↕ ⨉)). 
+  assert (H : zx_of_perm (2 + 1) (big_swap_perm 2 1) ∝= (⨉ ↕ —) ⟷ (— ↕ ⨉)). 
   1: {
     by_perm_eq_nosimpl.
     rewrite perm_of_zx_of_perm_eq by auto with perm_db. 

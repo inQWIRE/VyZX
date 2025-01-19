@@ -7,7 +7,7 @@ Require Import CastRules.
 Require Import ZXpermFacts.
 
 Lemma swap_compose :
-  ⨉ ⟷ ⨉ ∝ n_wire 2.
+  ⨉ ⟷ ⨉ ∝= n_wire 2.
 Proof. 
   by_perm_eq_nosimpl; by_perm_cell; reflexivity.
 Qed.
@@ -285,7 +285,7 @@ Qed.
 
 (* n_swap proofs *)
 
-Lemma n_swap_2_is_swap : n_swap 2 ∝ ⨉.
+Lemma n_swap_2_is_swap : n_swap 2 ∝= ⨉.
 Proof.
   by_perm_eq_nosimpl.
   by_perm_cell; reflexivity.
@@ -368,7 +368,7 @@ Qed.
   (fun n => @n_swap_colorswap n)
   : colorswap_db.
 
-Lemma swap_pullthrough_top_right_Z_1_1 : forall α, (Z 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (Z 1 1 α)).
+Lemma swap_pullthrough_top_right_Z_1_1 : forall α, (Z 1 1 α) ↕ — ⟷ ⨉ ∝= ⨉ ⟷ (— ↕ (Z 1 1 α)).
 Proof. 
   intros.
   rewrite <- zx_comm_1_1_swap.

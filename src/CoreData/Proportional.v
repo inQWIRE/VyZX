@@ -672,8 +672,13 @@ Notation "zx0 ∝ zx1" := (proportional zx0 zx1) (at level 70) : ZX_scope. (* \p
 Ltac prop_exists_nonzero c := 
   exists c; split; [|repeat (apply nonzero_div_nonzero +
     apply Cmult_neq_0); try nonzero; auto].
+
+Ltac prop_try_exists_nonzero c := 
+  (try exists c); split; [|repeat (apply nonzero_div_nonzero +
+    apply Cmult_neq_0); try nonzero; auto].
+
 Ltac solve_prop c := 
-	prop_exists_nonzero c; simpl; Msimpl; 
+	prop_try_exists_nonzero c; simpl; Msimpl; 
 	unfold X_semantics; unfold Z_semantics; simpl; solve_matrix; 
 	autorewrite with Cexp_db; lca.
 

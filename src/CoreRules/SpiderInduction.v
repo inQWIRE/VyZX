@@ -149,7 +149,7 @@ Proof.
 Qed.
 
 Lemma grow_Z_right_1_2 : forall {n} α,
-  Z 1 (S (S n)) α ∝ 
+  Z 1 (S (S n)) α ∝= 
   Z 1 (S n) α ⟷ (Z 1 2 0 ↕ n_wire n).
 Proof.
   intros.
@@ -177,8 +177,6 @@ Lemma Z_wrap_over_top_right_base : forall n α,
   (— ↕ Z n 2 α) ⟷ (Cap ↕ —) ∝= Z (S n) 1 α.
 Proof.
   intros.
-  prop_exists_nonzero 1.
-  rewrite Mscale_1_l.
   prep_matrix_equivalence.
   cbn [ZX_semantics].
   rewrite Kronecker.kron_I_l, Kronecker.kron_I_r.

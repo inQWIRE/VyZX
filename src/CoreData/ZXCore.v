@@ -178,6 +178,11 @@ Qed.
 Definition n_wire := fun n => n ↑ Wire.
 Definition n_box := fun n => n ↑ Box.
 
+#[global]
+Arguments n_wire !_%nat_scope /. 
+#[global]
+Arguments n_box !_%nat_scope /. 
+
 Lemma n_wire_semantics {n} : ⟦ n_wire n ⟧ = I (2^n).
 Proof.
   induction n; auto.
