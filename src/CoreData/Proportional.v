@@ -160,36 +160,6 @@ Proof.
   now intros ? ? -> ? ? ->.
 Qed.
 
-(* FIXME: Move *)
-Lemma Cdiv_0_l c : 0 / c = 0.
-Proof. apply Cmult_0_l. Qed.
-
-Lemma Cdiv_nonzero_iff (c d : C) : c <> 0 ->
-  d / c <> 0 <-> d <> 0.
-Proof.
-  intros Hc.
-  split.
-  - intros Hdc ->.
-    now rewrite Cdiv_0_l in Hdc.
-  - intros Hd. 
-    now apply Cdiv_nonzero.
-Qed.
-
-Lemma Cmult_nonzero_iff (c d : C) : 
-  c * d <> 0 <-> c <> 0 /\ d <> 0.
-Proof.
-  split.
-  - intros Hcd.
-    split.
-    + intros ->.
-      now rewrite Cmult_0_l in Hcd.
-    + intros ->.
-      now rewrite Cmult_0_r in Hcd.
-  - intros [].
-    now apply Cmult_neq_0.
-Qed.
-
-
 Lemma compose_prop_by_if_l {n m o} (zx0 zx1 : ZX n m) 
   (zx2 : ZX m o) (zx3 : ZX n o) c d : zx0 ∝[c] zx1 ->
   zx0 ⟷ zx2 ∝[d] zx3 <-> zx1 ⟷ zx2 ∝[d / c] zx3.
@@ -202,7 +172,7 @@ Proof.
   distribute_scale.
   apply ZifyClasses.and_morph; [now rewrite Cmult_comm|].
   symmetry.
-  now apply Cdiv_nonzero_iff.
+  now apply Cdiv_nonzero_iff_r.
 Qed.
 
 Lemma compose_prop_by_if_r {n m o} (zx0 : ZX n m) 
@@ -217,7 +187,7 @@ Proof.
   distribute_scale.
   apply ZifyClasses.and_morph; [now rewrite Cmult_comm|].
   symmetry.
-  now apply Cdiv_nonzero_iff.
+  now apply Cdiv_nonzero_iff_r.
 Qed.
 
 Lemma stack_prop_by_if_l {n m o p} (zx0 zx1 : ZX n m) 
@@ -234,7 +204,7 @@ Proof.
   distribute_scale.
   apply ZifyClasses.and_morph; [now rewrite Cmult_comm|].
   symmetry.
-  now apply Cdiv_nonzero_iff.
+  now apply Cdiv_nonzero_iff_r.
 Qed.
 
 Lemma stack_prop_by_if_r {n m o p} (zx0 : ZX n m) 
@@ -251,7 +221,7 @@ Proof.
   distribute_scale.
   apply ZifyClasses.and_morph; [now rewrite Cmult_comm|].
   symmetry.
-  now apply Cdiv_nonzero_iff.
+  now apply Cdiv_nonzero_iff_r.
 Qed.
 
 
@@ -372,7 +342,7 @@ Proof.
   rewrite Mscale_inv by auto.
   distribute_scale.
   apply ZifyClasses.and_morph; [now rewrite Cmult_comm|].
-  rewrite Cdiv_nonzero_iff;
+  rewrite Cdiv_nonzero_iff_r;
   intuition auto.
 Qed.
 
@@ -387,7 +357,32 @@ Proof.
   intuition auto.
 Qed.
 
+Lemma proportional_by_sym {n m} {zx0 zx1 : ZX n m} {c} : 
+  zx0 ∝[c] zx1 -> zx1 ∝[/c] zx0.
+Proof.
+  intros [Heq Hc].
+  split.
+  - rewrite <- Mscale_inv by auto.
+    easy.
+  - rewrite Cinv_eq_0_iff.
+    apply Hc.
+Qed.
 
+Lemma proportional_by_sym_iff {n m} {zx0 zx1 : ZX n m} {c} : 
+  zx0 ∝[c] zx1 <-> zx1 ∝[/c] zx0.
+Proof.
+  split; [apply proportional_by_sym|].
+  intros H%proportional_by_sym.
+  rewrite Cinv_inv in H.
+  exact H.
+Qed.
+
+Lemma proportional_by_sym_div_iff {n m} {zx0 zx1 : ZX n m} {c d} : 
+  zx0 ∝[c / d] zx1 <-> zx1 ∝[d / c] zx0.
+Proof.
+  rewrite proportional_by_sym_iff, Cinv_div.
+  reflexivity.
+Qed.
 
 
 
@@ -605,6 +600,33 @@ Ltac zxrefl :=
     end); try (now C_field)
   | try reflexivity].
 
+Ltac zxsymmetry :=
+  lazymatch goal with
+  | |- proportional_by (Cinv _) _ _ => refine (proportional_by_sym _)
+  | |- proportional_by (Cdiv _ _) _ _ =>
+    refine (proj1 proportional_by_sym_div_iff _)
+  | |- proportional_by _ _ _ => 
+    refine (proj2 proportional_by_sym_iff _)
+  | |- _ => fail 0 "Goal is not of form '_ ∝[_] _'"
+  end.
+
+Ltac zxsymmetry_in H :=
+  lazymatch type of H with
+  | proportional_by (Cinv _) _ _ => 
+    apply (proj2 proportional_by_sym_iff) in H
+  | proportional_by (Cdiv _ _) _ _ =>
+    apply (proj1 proportional_by_sym_div_iff) in H
+  | proportional_by _ _ _ => 
+    apply (proj2 proportional_by_sym_iff) in H
+  | _ => fail 0 "Hypothesis is not of form '_ ∝[_] _'"
+  end.
+
+Tactic Notation "zxsymmetry" "in" hyp(H) :=
+  zxsymmetry_in H.
+
+Tactic Notation "zxsymmetry" :=
+  zxsymmetry.
+
 Tactic Notation "zxrw" constr(Hs) :=
   lazymatch type of Hs with
   | boxlist => 
@@ -614,6 +636,24 @@ Tactic Notation "zxrw" constr(Hs) :=
     let lem := fill_lem_args Hs in 
     zxrw_one_open lem
   end.
+
+Ltac zxrw_prep H :=
+  lazymatch type of H with 
+  | _ ∝[_] _ => open_constr:(H)
+  | forall _, _ => zxrw_prep open_constr:(H _)
+  | ?T => fail 0 "Couldn't see lemma of type '" T
+    "' as a lemma of shape '_ ∝[_] _'"
+  end.
+
+Tactic Notation "zxrewrite" open_constr(H) :=
+  let H' := zxrw_prep H in 
+  zxrw_one_open H'.
+
+Tactic Notation "zxrewrite" "<-" open_constr(H) :=
+  let H' := zxrw_prep H in 
+  zxrw_one_open (proportional_by_sym H).
+
+
 
 
 
@@ -650,7 +690,7 @@ Ltac zxprop_by_1 :=
 
 Lemma proportional_refl : forall {n m} (zx : ZX n m), 
   zx ∝ zx.
-Proof. intros; exists C1; apply proportional_by_1_defn; reflexivity. Qed.
+Proof. intros; zxprop_by_1; reflexivity. Qed.
 
 Lemma proportional_symm : forall {n m} (zx_0 : ZX n m) (zx_1 : ZX n m),
   zx_0 ∝ zx_1 -> zx_1 ∝ zx_0.
@@ -1133,12 +1173,3 @@ Proof.
   simpl.
   apply Z_spider_1_1_fusion.
 Qed.
-
-Lemma proportional_sound : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut),
-  zx0 ∝ zx1 -> exists (zxConst : ZX 0 0), ⟦ zx0 ⟧ = ⟦ zxConst ↕ zx1 ⟧.
-Proof.
-  intros.
-  simpl; unfold proportional, proportional_general in H.
-  destruct H as [c [H cneq0]].
-  rewrite H.
-Abort.

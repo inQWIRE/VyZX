@@ -1,10 +1,8 @@
+From QuantumLib Require Complex Matrix RealAux Polar.
 
 Module SoundnessC.
 
-Require QuantumLib.Complex QuantumLib.Matrix QuantumLib.RealAux.
-
-Require Import QuantumLib.Polar.
-Import Modulus.
+Import Polar Modulus.
 
 Definition prop_lb (z : C) : nat := 
   (BinInt.Z.to_nat (Int_part (ln (Cmod z / 2) / ln (√2))%R%C) + 1)%nat.
@@ -16,210 +14,7 @@ Definition small_decomp (z : C) : R * R :=
 
 Definition prop_decomp (z : C) : nat * (R * R) :=
   (prop_lb z, small_decomp (z / (√2 ^ prop_lb z))).
-
-
-
-Definition Cexp' (c : C) :=
-  exp (Re c) * Cexp (Im c).
-
-Lemma Cexp'_def (c : C) : 
-  Cexp' c = exp (Re c) * Cexp (Im c).
-Proof. reflexivity. Qed.
-
-Lemma Cexp'_add (c d : C) : 
-  Cexp' (c + d) = Cexp' c * Cexp' d.
-Proof.
-  unfold Cexp', Im, Re.
-  cbn.
-  rewrite exp_plus, Cexp_add.
-  lca.
-Qed.
-
-Lemma Cexp'_zero : Cexp' 0 = 1.
-Proof.
-  unfold Cexp'.
-  cbn.
-  rewrite exp_0, Cexp_0.
-  lca.
-Qed.
-
-Lemma Cmod_Cexp' c : Cmod (Cexp' c) = exp (Re c).
-Proof.
-  unfold Cexp'.
-  rewrite Cmod_mult, Cmod_Cexp, Rmult_1_r.
-  apply Cmod_real; [cbn | reflexivity].
-  pose proof (exp_pos (Re c)).
-  lra.
-Qed.
-
-
-Definition Clog (c : C) :=
-  (ln (Cmod c), get_arg c).
-
-Lemma Cexp'_Clog (c : C) (Hc : c <> 0) : 
-  Cexp' (Clog c) = c.
-Proof.
-  unfold Clog, Cexp'.
-  cbn.
-  rewrite exp_ln.
-  - exact (rect_to_polar_to_rect c Hc).
-  - apply Cmod_gt_0, Hc.
-Qed.
-
-
-Lemma if_sumbool {A P Q} (x y : A) (c : {P} + {Q}) : 
-  (if c then x else y) = if RMicromega.sumboolb c then x else y.
-Proof.
-  destruct c; reflexivity.
-Qed.
-
-Section get_arg.
-
-Local Open Scope R_scope.
-
-Lemma get_arg_R_pos (r : R) (Hr : 0 < r) : get_arg r = 0.
-Proof.
-  unfold get_arg.
-  simpl.
-  destruct (Rcase_abs 0) as [Hfalse | Hge0]; [lra|].
-  rewrite Cmod_R, Rabs_pos_eq, Rdiv_diag, acos_1 by lra.
-  reflexivity.
-Qed.
-
-Lemma get_arg_R_neg (r : R) (Hr : r < 0) : get_arg r = PI.
-Proof.
-  unfold get_arg.
-  simpl.
-  destruct (Rcase_abs 0) as [Hfalse | Hge0]; [lra|].
-  rewrite Cmod_R, Rabs_left, Rdiv_opp_r, Rdiv_diag, 
-    acos_opp, acos_1 by lra.
-  lra.
-Qed.
-
-Lemma Rdiv_le_iff a b c (Hb : 0 < b) : 
-  a / b <= c <-> a <= b * c.
-Proof.
-  split.
-  - intros Hle.
-    replace a with (b * (a / b)).
-    2: {
-      unfold Rdiv.
-      rewrite <- Rmult_assoc, (Rmult_comm b a), Rmult_assoc.
-      rewrite Rmult_inv_r; lra.
-    }
-    apply Rmult_le_compat_l; lra.
-  - intros Hle.
-    apply Rle_trans with (b * c / b).
-    + apply Rmult_le_compat_r.
-      * enough (0 < / b) by lra.
-        now apply Rinv_0_lt_compat.
-      * easy.
-    + rewrite Rmult_comm.
-      unfold Rdiv.
-      rewrite Rmult_assoc, Rmult_inv_r; lra.
-Qed.
-
-End get_arg.
-
-Section Rpower.
-
-Local Open Scope R_scope.
-
-Lemma Rpower_pos (b c : R) : 
-  0 < Rpower b c.
-Proof.
-  apply exp_pos.
-Qed.
-
-Lemma ln_nondecreasing x y : 0 < x ->
-  x <= y -> ln x <= ln y.
-Proof.
-  intros Hx [Hlt | ->]; [|right; reflexivity].
-  left.
-  apply ln_increasing; auto.
-Qed.
-
-Lemma ln_le_inv x y : 0 < x -> 0 < y ->
-  ln x <= ln y -> x <= y.
-Proof.
-  intros Hx Hy [Hlt | Heq];
-  [left; apply ln_lt_inv; auto|].
-  right.
-  apply ln_inv; auto.
-Qed.
-
-
-Lemma div_Rpower_le_of_le (r b c d : R) : 
-  0 < r -> 1 < b -> 0 < c -> 0 < d ->
-  ln (r / d) / ln b <= c ->
-  r / (Rpower b c) <= d.
-Proof.
-  intros Hr Hb Hc Hd Hle.
-  assert (0 < Rpower b c) by apply Rpower_pos.
-  rewrite Rdiv_le_iff, Rmult_comm, 
-    <- Rdiv_le_iff by auto.
-  apply ln_le_inv;
-  [apply Rdiv_lt_0_compat; lra|auto|].
-  unfold Rpower.
-  rewrite ln_exp.
-  rewrite Rmult_comm.
-  rewrite <- Rdiv_le_iff; [auto|].
-  rewrite <- ln_1.
-  apply ln_increasing; lra.
-Qed.
-
-End Rpower.
-
-
-Lemma get_arg_Rmult (r : R) c (Hr : 0 < r) : 
-  get_arg (r * c) = get_arg c.
-Proof.
-  unfold get_arg.
-  cbn.
-  rewrite 2!Rmult_0_l, Rplus_0_r, Rminus_0_r.
-  rewrite 2!if_sumbool.
-  apply f_equal_if.
-  - destruct (Rcase_abs (snd c)) as [Hlt0 | Hgt0], 
-      (Rcase_abs (r * snd c)) as [Hlt0' | Hgt0'];
-    [reflexivity | | | reflexivity].
-    + exfalso.
-      revert Hgt0'.
-      apply Rgt_not_ge.
-      apply Rlt_gt.
-      apply Rmult_pos_neg; lra.
-    + exfalso.
-      revert Hlt0'.
-      apply Rle_not_lt.
-      apply Rmult_le_pos; lra.
-  - f_equal.
-    f_equal.
-    rewrite Cmod_mult, Cmod_R, Rabs_pos_eq by lra.
-    apply Rdiv_mult_l_l; lra.
-  - f_equal.
-    rewrite Cmod_mult, Cmod_R, Rabs_pos_eq by lra.
-    apply Rdiv_mult_l_l; lra.
-Qed.
-
-Lemma RtoC_exp (x : R) : 
-  RtoC (exp x) = Cexp' x.
-Proof.
-  apply c_proj_eq; simpl;
-  autorewrite with trig_db; lra.
-Qed.
-
-Lemma Cmod_1_plus_Cexp (r : R) : 
-  Cmod (1 + Cexp r) = √ (2 + 2 * cos r)%R.
-Proof.
-  unfold Cmod.
-  f_equal.
-  simpl.
-  pose proof sin2_cos2 r as H.
-  rewrite 2!Rsqr_pow2 in H.
-  field_simplify.
-  rewrite (Rplus_comm _ (_ ^ 2)), <- Rplus_assoc.
-  rewrite H.
-  lra.
-Qed.
+  
 
 Lemma prop_step_1 (r : R) (Hr : 0 < r <= 2) : 
   √ (2 + 2 * cos (acos (r^2 / 2 - 1))) = r.
@@ -235,28 +30,6 @@ Proof.
   apply sqrt_lem_1; [lra.. | ].
   rewrite <- Rsqr_pow2, Rsqr_def.
   lra.
-Qed.
-
-Lemma Cexp_Cexp' (r : R) : 
-  Cexp r = Cexp' (0, r).
-Proof.
-  unfold Cexp'.
-  cbn.
-  rewrite exp_0.
-  lca.
-Qed.
-
-Lemma Cexp_get_arg_unit (z : C) : Cmod z = 1 ->
-  Cexp (get_arg z) = z.
-Proof.
-  intros Hmod.
-  rewrite <- (Cexp'_Clog z) at 2 by 
-    (intros H; rewrite H, Cmod_0 in Hmod; lra).
-  rewrite Cexp_Cexp'.
-  f_equal.
-  unfold Clog.
-  rewrite Hmod, ln_1.
-  reflexivity.
 Qed.
 
 Lemma small_decomp_correct (z : C) : z <> 0 -> Cmod z <= 2 ->
@@ -283,108 +56,6 @@ Proof.
     rewrite Cmod_eq_0_iff.
     auto.
 Qed.
-
-
-
-
-Lemma pos_IZR (p : positive) : IZR (Z.pos p) = INR (Pos.to_nat p).
-Proof.
-  induction p.
-  - rewrite IZR_POS_xI.
-    rewrite Pos2Nat.inj_xI.
-    rewrite IHp.
-    rewrite S_INR, mult_INR, S_INR, INR_1.
-    lra.
-  - rewrite IZR_POS_xO.
-    rewrite Pos2Nat.inj_xO.
-    rewrite IHp.
-    rewrite mult_INR, S_INR, INR_1.
-    lra.
-  - reflexivity.
-Qed.
-
-Lemma INR_to_nat (z : Z) : (0 <= z)%Z ->
-  INR (Z.to_nat z) = IZR z.
-Proof.
-  intros Hz.
-  destruct z; [reflexivity| | ].
-  - simpl.
-    rewrite pos_IZR.
-    reflexivity.
-  - lia.
-Qed.
-
-
-Lemma lt_S_Int_part r : r < IZR (1 + Int_part r).
-Proof.
-  rewrite (Rplus_Int_part_frac_part r) at 1.
-  rewrite Z.add_comm, plus_IZR.
-  pose proof (base_fp r).
-  lra.
-Qed.
-
-Lemma lt_Int_part (r s : R) : (Int_part r < Int_part s)%Z -> r < s.
-Proof.
-  intros Hlt.
-  apply Rlt_le_trans with (IZR (Int_part s));
-  [apply Rlt_le_trans with (IZR (1 + Int_part r))|].
-  - apply lt_S_Int_part.
-  - apply IZR_le.
-    lia.
-  - apply base_Int_part.
-Qed.
-
-
-Lemma Int_part_le (r s : R) : r <= s -> (Int_part r <= Int_part s)%Z.
-Proof.
-  intros Hle.
-  rewrite <- Z.nlt_ge.
-  intros H%lt_Int_part.
-  lra.
-Qed.
-
-Lemma IZR_le_iff (z y : Z) : IZR z <= IZR y <-> (z <= y)%Z.
-Proof.
-  split.
-  - apply le_IZR.
-  - apply IZR_le.
-Qed.
-
-Lemma IZR_lt_iff (z y : Z) : IZR z < IZR y <-> (z < y)%Z.
-Proof.
-  split.
-  - apply lt_IZR.
-  - apply IZR_lt.
-Qed.
-
-Lemma Int_part_IZR (z : Z) : Int_part (IZR z) = z.
-Proof.
-  symmetry.
-  apply Int_part_spec.
-  change 1 with (INR (Pos.to_nat 1)).
-  rewrite <- pos_IZR, <- minus_IZR.
-  rewrite IZR_le_iff, IZR_lt_iff.
-  lia.
-Qed.
-
-
-#[local]
-Instance Rle_trans_instance : RelationClasses.Transitive Rle := Rle_trans.
-
-Lemma Int_part_ge_iff (r : R) (z : Z) : 
-  (z <= Int_part r)%Z <-> (IZR z <= r).
-Proof.
-  split.
-  - intros Hle.
-    transitivity (IZR (Int_part r)).
-    + apply IZR_le, Hle.
-    + apply base_Int_part.
-  - intros Hle.
-    rewrite <- (Int_part_IZR z).
-    apply Int_part_le, Hle.
-Qed.
-
-
 
 Lemma prop_lb_correct (z : C) : z <> 0 -> Cmod (z / (√2 ^ prop_lb z)) <= 2.
 Proof.
@@ -415,15 +86,17 @@ Proof.
   - apply Cmod_gt_0; auto.
   - rewrite <- sqrt_1.
     apply sqrt_lt_1; lra.
-  - rewrite plus_INR, INR_1.
+  - rewrite plus_INR.
+    simpl.
     enough (0 <= INR (Z.to_nat (Int_part (ln (Cmod z / 2) / ln (√ 2))))) by lra.
     apply pos_INR.
   - lra.
   - rewrite plus_INR.
-    transitivity (IZR (1 + (Int_part (ln (Cmod z / 2) / ln (√ 2)))));
+    apply Rle_trans with (IZR (1 + (Int_part (ln (Cmod z / 2) / ln (√ 2)))));
     [apply Rlt_le, lt_S_Int_part|].
     rewrite Z.add_comm.
-    rewrite plus_IZR, INR_1.
+    rewrite plus_IZR.
+    simpl.
     apply Rplus_le_compat_r.
     generalize (Int_part (ln (Cmod z / 2) / ln (√2))).
     intros w.
@@ -501,38 +174,6 @@ Qed.
 
 
 
-Lemma Cinv_eq_0_iff (a : C) : / a = C0 <-> a = 0.
-Proof.
-  split.
-  - destruct (Ceq_dec a C0) as [? | H%nonzero_div_nonzero]; easy.
-  - intros ->.
-    lca.
-Qed.
-
-Lemma Cmult_integral_iff (a b : C) : 
-  a * b = 0 <-> (a = 0 \/ b = 0).
-Proof.
-  split; [apply Cmult_integral|].
-  intros [-> | ->]; lca.
-Qed.
-
-Lemma Cdiv_integral (a b : C) : 
-  a / b = C0 <-> (a = C0 \/ b = C0).
-Proof.
-  unfold Cdiv.
-  rewrite Cmult_integral_iff, Cinv_eq_0_iff.
-  reflexivity.
-Qed.
-
-Lemma Cdiv_integral_dec (a b : C) : 
-  a / b = C0 -> ({a = C0} + {b = C0}).
-Proof.
-  intros H%Cdiv_integral.
-  destruct (Ceq_dec a 0); [now left |].
-  destruct (Ceq_dec b 0); [now right |].
-  exfalso.
-  destruct H; easy.
-Defined.
 
 
 End SoundnessC.
@@ -695,17 +336,6 @@ Fixpoint last_nonzero (f : nat -> C) (n : nat) : nat :=
 
 Definition last_nonzero_val (f : nat -> C) (n : nat) : C :=
   f (last_nonzero f n).
-
-Lemma UIPC {c d : C} (h g : c = d) : h = g.
-Proof.
-  apply Eqdep_dec.UIP_dec, Ceq_dec.
-Qed.
-
-Lemma Ceq_dec_eq {c d : C} (h : c = d) :
-  Ceq_dec c d = left h.
-Proof.
-  destruct (Ceq_dec c d); [f_equal; apply UIPC|easy].
-Qed.
 
 
 Lemma last_nonzero_correct f n (Hn : exists (m : nat), (m < n)%nat /\ f m <> C0) :
