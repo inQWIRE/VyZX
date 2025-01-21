@@ -726,6 +726,7 @@ Add Parametric Relation (n m : nat) : (ZX n m) (proportional)
   transitivity proved by proportional_trans
   as zx_prop_equiv_rel.
 
+#[export]
 Instance proportional_by_subrel n m c : 
   subrelation (@proportional_by n m c) (@proportional n m).
 Proof.
