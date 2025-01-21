@@ -358,7 +358,7 @@ Lemma a_swap_transpose : forall n,
   (a_swap n) ⊤ ∝= a_swap n.
 Proof.
   intros.
-  induction n using (Nat.measure_induction nat idn).
+  induction n using strong_induction.
   destruct n; [ easy | ].
   destruct n; [ simpl; cleanup_zx; simpl_casts; easy | ].
   destruct n; [ rewrite a_swap_2_is_swap; easy | ].
