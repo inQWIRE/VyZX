@@ -1,77 +1,101 @@
+Require Import ZXpermFacts.
 Require Import CoreData.
 Require Import CoreRules.
 
-Definition bi_alg_Z_X := ((Z_Spider 1 2 0) ↕ (Z_Spider 1 2 0) ⟷ (— ↕ ⨉ ↕ —) ⟷ ((X_Spider 2 1 0) ↕ (X_Spider 2 1 0))).
-Definition bi_alg_X_Z := ((X_Spider 1 2 0) ↕ (X_Spider 1 2 0) ⟷ (— ↕ ⨉ ↕ —) ⟷ ((Z_Spider 2 1 0) ↕ (Z_Spider 2 1 0))).
+Definition bi_alg_Z_X := ((Z_Spider 1 2 0) ↕ (Z_Spider 1 2 0) 
+  ⟷ (— ↕ ⨉ ↕ —) ⟷ ((X_Spider 2 1 0) ↕ (X_Spider 2 1 0))).
+Definition bi_alg_X_Z := ((X_Spider 1 2 0) ↕ (X_Spider 1 2 0) 
+  ⟷ (— ↕ ⨉ ↕ —) ⟷ ((Z_Spider 2 1 0) ↕ (Z_Spider 2 1 0))).
 
 Theorem bi_algebra_rule_Z_X : 
- (X_Spider 2 1 0) ⟷ (Z_Spider 1 2 0) ∝ bi_alg_Z_X.
+ (X_Spider 2 1 0) ⟷ (Z_Spider 1 2 0) ∝[(√2)%R] bi_alg_Z_X.
 Proof.
-  prop_exists_nonzero 1.
+  split; [|nonzero].
   simpl.
-  rewrite X_semantics_equiv, Z_semantics_equiv.
-  unfold_dirac_spider.
-  autorewrite with Cexp_db.
+  unfold X_semantics.
+  cbn [kron_n].
   Msimpl.
-  repeat rewrite kron_plus_distr_l.
-  repeat rewrite kron_plus_distr_r.
-  repeat rewrite kron_plus_distr_l.
-  repeat rewrite Mmult_plus_distr_l.
-  repeat rewrite Mmult_plus_distr_r.
-  repeat rewrite Mmult_plus_distr_l.
-  assert (forall (ket0 : Matrix 2 1) (bra0 : Matrix 1 2) (ket1 : Matrix 2 1) (bra1 : Matrix 1 2), 
-  WF_Matrix ket0 -> WF_Matrix ket1 ->
-  ket0⊤ = bra0 -> ket1⊤ = bra1 ->
-  (ket0 × (bra0 ⊗ bra0)) ⊗ (ket1 × (bra1 ⊗ bra1)) × (I 2 ⊗ swap ⊗ I 2) 
-  = (ket0 × (bra0 ⊗ bra1) ⊗ (ket1 × (bra0 ⊗ bra1))))%M.
-  {
-    intros.
-    subst bra0 bra1.
-    rewrite kron_assoc; try auto with wf_db.
-    rewrite <- 2 kron_mixed_product.
-    rewrite Mmult_assoc.
-    apply Mmult_simplify; [ easy | ].
-    restore_dims.
-    repeat rewrite kron_assoc by auto with wf_db.
-    rewrite (kron_mixed_product (ket0⊤) (ket0⊤ ⊗ (ket1⊤ ⊗ ket1⊤)) (I 2) _)%M.
-    Msimpl.
-    apply kron_simplify; [ easy | ].
-    rewrite <- 2 kron_assoc by auto with wf_db.
-    rewrite (kron_mixed_product (ket0⊤ ⊗ ket1⊤) (ket1⊤) swap _)%M.
-    Msimpl.
-    apply kron_simplify; [ | easy].
-    apply transpose_matrices.
-    rewrite Mmult_transpose.
-    rewrite swap_transpose.
-    rewrite <- 2 kron_transpose.
-    rewrite 2 Matrix.transpose_involutive.
-    rewrite swap_spec by auto with wf_db.
-    easy.
-  }
-  repeat rewrite <- Mmult_assoc.
   restore_dims.
-  rewrite bra0_equiv, bra1_equiv, ket0_equiv, ket1_equiv.
-  repeat rewrite H; try auto with wf_db.
-  2-9: apply transpose_matrices; try rewrite braplus_transpose_ketplus; try rewrite braminus_transpose_ketminus; rewrite Matrix.transpose_involutive; easy.
+  Import ZXpermAutomation.
+  compute_matrix (hadamard × Z_semantics 2 1 0 × (hadamard ⊗ hadamard)).
+  rewrite Cexp_0, 2!Cmult_1_r.
+  group_radicals.
+  autorewrite with C_db.
+  rewrite Cmult_comm, <- Cmult_assoc.
+  autorewrite with C_db.
+  change (2)%nat with (2^1)%nat.
+  rewrite <- perm_to_matrix_idn.
+  replace swap with (perm_to_matrix 2 (swap_perm 0 1 2)) by 
+    (prep_matrix_equivalence; by_cell; reflexivity).
   restore_dims.
-  repeat rewrite (kron_mixed_product (xbasis_plus × (_ ⊗ _)) (xbasis_plus × (_ ⊗ _))  ((ket _ ⊗ ket _) × bra _) ((ket _ ⊗ ket _) × bra _)).
-  repeat rewrite (kron_mixed_product (xbasis_minus × (_ ⊗ _)) (xbasis_minus × (_ ⊗ _))  ((ket _ ⊗ ket _) × bra _) ((ket _ ⊗ ket _) × bra _)).
-  repeat rewrite Mmult_assoc.
-Admitted.
+  rewrite <- perm_to_matrix_of_stack_perms by auto with perm_db.
+  restore_dims.
+  rewrite <- perm_to_matrix_of_stack_perms by auto with perm_db.
+  cbn.
+  restore_dims.
+  compute_matrix (Z_semantics 1 2 0 ⊗ Z_semantics 1 2 0).
+  unfold perm_to_matrix.
+  rewrite perm_mat_permutes_matrix_r_eq by auto with wf_db perm_db.
+  unfold perm_inv;
+  simpl;
+  match goal with |- context[@make_WF ?n ?m ?A] =>
+    match A with 
+    | list2D_to_matrix _ => fail
+    | _ => compute_matrix (@make_WF n m A)
+    end
+  end.
+  rewrite Cexp_0; Csimpl.
+  symmetry.
+  rewrite Mscale_inv by nonzero.
+  match goal with |- ?A = ?B => compute_matrix B end.
+  match goal with |- context [?A ⊗ ?B] => compute_matrix (A ⊗ B) end.
+  group_radicals.
+  rewrite Cexp_0.
+  Csimpl.
+  prep_matrix_equivalence.
+  rewrite !make_WF_equiv.
+  unfold Mmult.
+  by_cell; cbn; lca.
+Qed.
 
 Theorem bi_algebra_rule_X_Z : 
- (Z_Spider 2 1 0) ⟷ (X_Spider 1 2 0) ∝ bi_alg_X_Z.
+ (Z_Spider 2 1 0) ⟷ (X_Spider 1 2 0) ∝[(√2)%R] bi_alg_X_Z.
 Proof.
   colorswap_of bi_algebra_rule_Z_X.
 Qed.
 
 
 Theorem hopf_rule_Z_X : 
-  (Z_Spider 1 2 0) ⟷ (X_Spider 2 1 0) ∝ (Z_Spider 1 0 0) ⟷ (X_Spider 0 1 0).
+  (Z_Spider 1 2 0) ⟷ (X_Spider 2 1 0) ∝[/C2] (Z_Spider 1 0 0) ⟷ (X_Spider 0 1 0).
 Proof.
+  (* Faster, semantic proof: 
+  
+  prop_exists_nonzero (/2).
+  prep_matrix_equivalence.
+  simpl.
+  unfold X_semantics.
+  cbn [kron_n].
+  rewrite kron_1_l, Mmult_1_r by (auto using WF_Matrix_dim_change with wf_db).
+  rewrite (Z_semantics_comm 1 2 0), (Z_semantics_comm 1 0 0), Ropp_0.
+  restore_dims.
+  compute_matrix (hadamard × Z_semantics 2 1 0 × (hadamard ⊗ hadamard)).
+  compute_matrix (hadamard × Z_semantics 0 1 0).
+  rewrite Cexp_0.
+  rewrite 2!Cmult_1_r.
+  group_radicals.
+  rewrite Copp_involutive, 2!Cplus_opp_r. 
+  rewrite <- Cmult_plus_distr_l, Cplus_div2, Cmult_1_r, <- Cdouble.
+  compute_matrix (Z_semantics 2 1 0).
+  compute_matrix (Z_semantics 0 1 0).
+  rewrite !make_WF_equiv.
+  rewrite Cexp_0.
+  replace (C2 * /√2) with (√2 : C) by C_field.
+  unfold adjoint, Mmult, scale.
+  by_cell; cbn; rewrite ?Cconj_R; try lca; C_field.
+  *)
   intros.
   rewrite <- (@nwire_removal_r 2).
-  simpl.
+  cbv delta [n_wire]; simpl.
   rewrite stack_empty_r.
   simpl_casts.
   rewrite wire_loop at 1.
@@ -94,7 +118,7 @@ Opaque n_stack1.
   simpl.
   repeat rewrite <- compose_assoc.
   rewrite <- (push_out_top (Z 0 1 0)).
-  assert (Hl : (Z 0 1 0 ↕ Z 1 2 0) ⟷ ((Z) 1 2 0 ↕ n_wire 2) ∝ Z 0 1 0 ↕ n_wire 1 ⟷ (Z 1 2 0 ↕ Z 1 2 0)).
+  assert (Hl : (Z 0 1 0 ↕ Z 1 2 0) ⟷ ((Z) 1 2 0 ↕ n_wire 2) ∝= Z 0 1 0 ↕ n_wire 1 ⟷ (Z 1 2 0 ↕ Z 1 2 0)).
   {
     rewrite <- stack_compose_distr.
     rewrite nwire_removal_r.
@@ -105,7 +129,7 @@ Opaque n_stack1.
   rewrite Hl.
   repeat rewrite compose_assoc.
   rewrite <- (pull_out_top (X 1 0 0)).
-  assert (Hr : X 2 1 0 ↕ n_wire 2 ⟷ (X 1 0 0 ↕ X 2 1 0) ∝ X 2 1 0 ↕ (X) 2 1 0 ⟷ ((X) 1 0 0 ↕ n_wire 1)).
+  assert (Hr : X 2 1 0 ↕ n_wire 2 ⟷ (X 1 0 0 ↕ X 2 1 0) ∝= X 2 1 0 ↕ (X) 2 1 0 ⟷ ((X) 1 0 0 ↕ n_wire 1)).
   {
     rewrite <- stack_compose_distr.
     rewrite nwire_removal_l.
@@ -115,7 +139,7 @@ Opaque n_stack1.
   }
   rewrite Hr.
   repeat rewrite <- compose_assoc.
-  assert (HBiAlgAssoc : (Z) 0 1 0 ↕ n_wire 1 ⟷ ((Z) 1 2 0 ↕ (Z) 1 2 0) ⟷ (n_wire 1 ↕ ⨉ ↕ n_wire 1) ⟷ ((X) 2 1 0 ↕ (X) 2 1 0) ⟷ ((X) 1 0 0 ↕ n_wire 1) ∝ 
+  assert (HBiAlgAssoc : (Z) 0 1 0 ↕ n_wire 1 ⟷ ((Z) 1 2 0 ↕ (Z) 1 2 0) ⟷ (n_wire 1 ↕ ⨉ ↕ n_wire 1) ⟷ ((X) 2 1 0 ↕ (X) 2 1 0) ⟷ ((X) 1 0 0 ↕ n_wire 1) ∝= 
     (Z) 0 1 0 ↕ n_wire 1 ⟷ (((Z) 1 2 0 ↕ (Z) 1 2 0) ⟷ (n_wire 1 ↕ ⨉ ↕ n_wire 1) ⟷ ((X) 2 1 0 ↕ (X) 2 1 0)) ⟷ ((X) 1 0 0 ↕ n_wire 1)).
   {
     repeat rewrite compose_assoc.
@@ -126,8 +150,8 @@ Opaque n_stack1.
   rewrite <- wire_to_n_wire.
 Transparent n_stack1.
   fold bi_alg_Z_X.
-  rewrite <- bi_algebra_rule_Z_X.
-  assert (X_Wrap_Under_L_base : forall α, X 2 1 α ∝ (X 1 2 α ↕ —) ⟷ (— ↕ ⊃)).
+  zxrewrite <- bi_algebra_rule_Z_X.
+  assert (X_Wrap_Under_L_base : forall α, X 2 1 α ∝= (X 1 2 α ↕ —) ⟷ (— ↕ ⊃)).
   {
     intros.
     rewrite (X_wrap_under_bot_right 1).
@@ -138,14 +162,14 @@ Transparent n_stack1.
   rewrite X_Wrap_Under_L_base.
   repeat rewrite <- compose_assoc.
   rewrite <- stack_wire_distribute_r.
-  rewrite Z_state_0_copy.
+  zxrewrite Z_state_0_copy.
   simpl_casts.
   simpl.
   cleanup_zx; simpl_casts.
   rewrite (stack_assoc (Z 0 1 0) ((Z) (0 + 0) (1 + 0) 0) —).
   simpl_casts.
   rewrite <- (stack_compose_distr ((Z) 0 1 0) — ((Z) (0 + 0) (1 + 0) 0 ↕ —) ⊃).
-  assert (Hl: (Z) (0 + 0) (1 + 0) 0 ↕ — ⟷ ⊃ ∝ Z 1 0 0). (* Todo : pull out lemma *)
+  assert (Hl: (Z) (0 + 0) (1 + 0) 0 ↕ — ⟷ ⊃ ∝= Z 1 0 0). (* Todo : pull out lemma *)
   {
     rewrite cup_Z.
     rewrite <- Z_0_is_wire.
@@ -155,7 +179,7 @@ Transparent n_stack1.
   }
   rewrite Hl.
   cleanup_zx.
-  rewrite (stack_empty_r_rev (Z 1 2 0)).
+  rewrite (stack_empty_r_back (Z 1 2 0)).
   simpl_casts.
   rewrite <- (stack_compose_distr (Z 0 1 0) (Z 1 2 0) (Z 1 0 0) ⦰).
   cleanup_zx.
@@ -164,7 +188,7 @@ Transparent n_stack1.
   rewrite <- cap_Z.
   rewrite (disconnected_stack_compose_r).
   simpl_casts.
-  assert (Hr : ⊂ ⟷ ((X) 1 0 0 ↕ —) ∝ X 0 1 0).
+  assert (Hr : ⊂ ⟷ ((X) 1 0 0 ↕ —) ∝= X 0 1 0).
   {
     rewrite cap_X.
     rewrite <- X_0_is_wire.
@@ -174,13 +198,14 @@ Transparent n_stack1.
   }
   rewrite compose_assoc.
   rewrite Hr.
-  easy.
+  zxrefl.
+  autorewrite with RtoC_db; C_field.
 Unshelve.
-all: lia.
+all: reflexivity.
 Qed.
 
 Theorem hopf_rule_X_Z : 
-  (X_Spider 1 2 0) ⟷ (Z_Spider 2 1 0) ∝ (X_Spider 1 0 0) ⟷ (Z_Spider 0 1 0).
+  (X_Spider 1 2 0) ⟷ (Z_Spider 2 1 0) ∝[/ 2] (X_Spider 1 0 0) ⟷ (Z_Spider 0 1 0).
 Proof.
   colorswap_of hopf_rule_Z_X.
 Qed.

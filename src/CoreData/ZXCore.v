@@ -1,9 +1,9 @@
 Require Import QuantumLib.Quantum.
 Require Import QuantumLib.Proportional.
 Require Import QuantumLib.VectorStates.
+Require Import QuantumLib.Kronecker.
 
 Require Export SemanticCore.
-Require Export QlibTemp.
 
 (* 
 Base constructions for the ZX calculus, lets us build every diagram inductively.
@@ -56,7 +56,7 @@ matrices and one based on dirac notation.
 *)
 
 (* @nocheck name *)
-Reserved Notation "⟦ zx ⟧" (at level 68). (* = is 70, need to be below *)
+Reserved Notation "⟦ zx ⟧" (at level 0, zx at level 200). (* = is 70, need to be below *)
 Fixpoint ZX_semantics {n m} (zx : ZX n m) : 
   Matrix (2 ^ m) (2 ^ n) := 
   match zx with
@@ -99,7 +99,9 @@ Proof.
   apply cast_semantics.
 Qed.
 
-Tactic Notation "simpl_cast_semantics" := try repeat rewrite cast_semantics; try repeat (rewrite cast_semantics_dim; unfold cast_semantics_dim_eqn).
+Ltac simpl_cast_semantics := 
+  try repeat rewrite cast_semantics; 
+  try repeat (rewrite cast_semantics_dim; unfold cast_semantics_dim_eqn).
 (* @nocheck name *)
 
 Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) : 
@@ -173,18 +175,22 @@ Proof.
     apply WF_ZX.
 Qed.
 
-(* Definition n_wire := fun n => n ↑ Wire. *)
+Definition n_wire := fun n => n ↑ Wire.
 Definition n_box := fun n => n ↑ Box.
 
-Notation "'n_wire' n" := (n ↑ —) (at level 35).
+#[global]
+Arguments n_wire !_%nat_scope /. 
+#[global]
+Arguments n_box !_%nat_scope /. 
 
 Lemma n_wire_semantics {n} : ⟦ n_wire n ⟧ = I (2^n).
 Proof.
   induction n; auto.
   simpl.
+  unfold n_wire in IHn.
   rewrite IHn.
   rewrite id_kron.
-  auto.
+  reflexivity. 
 Qed.
 
 Lemma n_box_semantics {n} : ⟦ n_box n ⟧ = n ⨂ hadamard.
@@ -194,7 +200,7 @@ Proof.
   unfold n_box in IHn.
   rewrite IHn.
   rewrite <- kron_n_assoc by auto with wf_db.
-  auto.
+  reflexivity.
 Qed.
 
 #[export] Hint Rewrite @n_wire_semantics @n_box_semantics : zx_sem_db.
@@ -216,13 +222,6 @@ Fixpoint transpose {nIn nOut} (zx : ZX nIn nOut) : ZX nOut nIn :=
   | other => other
   end
   where "zx ⊤" := (transpose zx) : ZX_scope.
-
-Lemma transpose_involutive_eq : forall {nIn nOut} (zx : ZX nIn nOut),
-  zx = (zx ⊤)⊤.
-Proof.
-  intros; induction zx; try auto.
-  1,2: simpl; rewrite <- IHzx1, <- IHzx2; try rewrite eq_sym_involutive; auto.
-Qed.
 
 (* Negating the angles of a diagram, complex conjugate *)
 
@@ -246,8 +245,8 @@ Lemma semantics_transpose_comm {nIn nOut} : forall (zx : ZX nIn nOut),
 Proof.
   induction zx.
   - Msimpl; reflexivity.
-  - simpl; solve_matrix.
-  - simpl; solve_matrix.
+  - lma'.
+  - lma'.
   - simpl; lma.
   - simpl; rewrite id_transpose_eq; reflexivity.
   - simpl; rewrite hadamard_st; reflexivity.
@@ -264,8 +263,8 @@ Proof.
   intros.
   induction zx.
   - simpl; Msimpl; reflexivity.
-  - simpl; solve_matrix.
-  - simpl; solve_matrix.
+  - lma'. 
+  - lma'. 
   - simpl; lma.
   - simpl; Msimpl; reflexivity.
   - simpl; lma.
@@ -275,6 +274,21 @@ Proof.
                      rewrite <- kron_adjoint; reflexivity.
   - simpl; fold (zx1†); fold(zx2†); rewrite IHzx1, IHzx2; 
         restore_dims; rewrite Mmult_adjoint; reflexivity.
+Qed.
+
+Lemma conjugate_decomp {n m} (zx : ZX n m) : 
+  zx ⊼ = zx † ⊤.
+Proof.
+  induction zx; [reflexivity.. | |];
+  unfold adjoint in *; cbn; congruence.
+Qed.
+
+Lemma semantics_conjugate_comm {nIn nOut} : forall (zx : ZX nIn nOut),
+  ⟦ zx ⊼ ⟧ = (⟦ zx ⟧) †%M ⊤%M.
+Proof.
+  intros zx.
+  rewrite conjugate_decomp.
+  now rewrite semantics_transpose_comm, semantics_adjoint_comm.
 Qed.
 
 Opaque adjoint.
@@ -295,11 +309,34 @@ Lemma semantics_colorswap_comm {nIn nOut} : forall (zx : ZX nIn nOut),
 Proof.
   induction zx.
   - simpl; Msimpl; reflexivity.
-  - solve_matrix.
-  - solve_matrix.
-  - simpl.
+  - cbn.
+    apply mat_equiv_eq; 
+    [auto using show_WF_list2D_to_matrix with wf_db..|].
+    rewrite kron_1_l_mat_equiv.
+    rewrite Mmult_assoc, Mmult_1_r by now apply show_WF_list2D_to_matrix.
+    compute_matrix (hadamard ⊗ hadamard).
+    group_radicals.
+    rewrite make_WF_equiv.
+    unfold Mmult.
+    by_cell; lca.
+  - cbn.
+    apply mat_equiv_eq; 
+    [auto using show_WF_list2D_to_matrix with wf_db..|].
+    rewrite kron_1_l_mat_equiv.
+    rewrite Mmult_1_l by now apply show_WF_list2D_to_matrix.
+    compute_matrix (hadamard ⊗ hadamard).
+    group_radicals.
+    rewrite make_WF_equiv.
+    unfold Mmult.
+    by_cell; lca.
+  - cbn.
     Msimpl.
-    solve_matrix.
+    restore_dims.
+    rewrite swap_eq_kron_comm.
+    rewrite kron_comm_commutes_r by auto_wf.
+    rewrite Mmult_assoc.
+    rewrite kron_mixed_product, MmultHH, id_kron.
+    now rewrite Mmult_1_r by auto_wf.
   - simpl; Msimpl; restore_dims; rewrite MmultHH; reflexivity.
   - simpl; Msimpl; restore_dims; rewrite MmultHH; Msimpl; reflexivity.
   - simpl. unfold X_semantics.
@@ -377,14 +414,20 @@ Qed.
 
 Lemma z_1_1_pi_σz :
 	⟦ Z 1 1 PI ⟧ = σz.
-Proof. solve_matrix. autorewrite with Cexp_db. lca. Qed.
+Proof. lma'. autorewrite with Cexp_db. lca. Qed.
 
 Lemma x_1_1_pi_σx :
 	⟦ X 1 1 PI ⟧ = σx.
-Proof. 
-	simpl. 
-	unfold X_semantics. simpl; Msimpl. solve_matrix; autorewrite with Cexp_db. 
-	all: C_field_simplify; [lca | C_field].
+Proof.
+  prep_matrix_equivalence.
+  cbn [ZX_semantics].
+  unfold X_semantics.
+  rewrite kron_n_1 by auto_wf.
+  simpl_rewrite z_1_1_pi_σz.
+  restore_dims.
+  compute_matrix (hadamard × σz × hadamard).
+  autorewrite with C_db.
+  by_cell; reflexivity.
 Qed.
 
 Definition zx_triangle : ZX 1 1 :=
