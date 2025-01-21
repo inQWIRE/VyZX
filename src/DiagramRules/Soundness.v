@@ -52,7 +52,7 @@ Proof.
   - C_field.
   - rewrite Cmod_div by auto.
     rewrite Hmod.
-    rewrite Rdiv_diag; [reflexivity|].
+    apply Rinv_r.
     rewrite Cmod_eq_0_iff.
     auto.
 Qed.

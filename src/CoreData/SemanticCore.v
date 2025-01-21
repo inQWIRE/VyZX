@@ -256,7 +256,7 @@ Proof.
     rewrite kron_n_assoc; [| auto with wf_db].
     unfold kron.
     destruct (S j mod 2 ^S n) eqn:En.
-    + destruct (Nat.Div0.mod_divides (S j) (2 ^ S n)).
+    + destruct (Nat.mod_divides (S j) (2 ^ S n) (pow2_nonzero _)).
       destruct (H En).
       rewrite H1.
       replace (2 ^ S n * x / 2 ^ S n)%nat with x.
@@ -324,7 +324,7 @@ Proof.
     rewrite Nat.mod_1_r.
     rewrite Nat.div_1_r.
     destruct (S i mod 2 ^ S n) eqn:En.
-    + destruct (Nat.Div0.mod_divides (S i) (2^S n)).
+    + destruct (Nat.mod_divides (S i) (2^S n) (pow2_nonzero _)).
       destruct H; [assumption |].
       rewrite H.
       rewrite Nat.mul_comm.

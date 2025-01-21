@@ -108,7 +108,7 @@ Proof.
 	replace (0)%R with (0 * PI)%R at 1 by lra.
 	replace (0)%R with (INR 0)%R by reflexivity.
 	zxrewrite X_state_copy.
-	rewrite INR_0, Rmult_0_l.
+	rewrite Rmult_0_l.
 	zxrefl.
 Qed.
 
@@ -131,7 +131,7 @@ Proof.
 	replace (0)%R with (0 * PI)%R at 1 by lra.
 	replace (0)%R with (INR 0)%R by reflexivity.
 	zxrewrite Z_state_copy.
-	rewrite INR_0, Rmult_0_l.
+	rewrite Rmult_0_l.
 	zxrefl.
 Qed.
 

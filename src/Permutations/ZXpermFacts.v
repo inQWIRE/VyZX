@@ -896,6 +896,8 @@ Lemma zx_of_perm_zxperm n f :
 	ZXperm (zx_of_perm n f).
 Proof.
 	unfold zx_of_perm.
+	rewrite zxperm_iff_cast'.
+	unfold zx_of_perm_uncast.
 	auto_zxperm.
 Qed.
 

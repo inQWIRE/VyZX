@@ -14,7 +14,7 @@ Proof.
 	rewrite X_2_1_0_semantics.
 	compute_matrix (Z_semantics 0 1 α ⊗ Z_semantics 0 1 (α + PI)).
 	compute_matrix (Z_semantics 0 2 (2 * α + PI)).
-	rewrite <- Cexp_add, <- Rplus_assoc, 3!Cexp_plus_PI, Rplus_diag.
+	rewrite <- Cexp_add, <- Rplus_assoc, 3!Cexp_plus_PI, <- double.
 	prep_matrix_equivalence.
 	by_cell; lca.
 Qed.  
