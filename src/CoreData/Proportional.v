@@ -322,12 +322,16 @@ Create HintDb zx_prop_by_db discriminated.
   colorswap_prop_by_compat : zx_prop_by_db.
 
 (* For concrete examples with bad sizes *)
+#[export]
 Hint Extern 0 (?x ⟷ ?y ∝[?c] ?x ⟷ ?z) =>
   apply (compose_prop_by_compat_r x y z) : zx_prop_by_db.
+#[export]
 Hint Extern 0 (?x ⟷ ?y ∝[?c] ?z ⟷ ?y) =>
   apply (compose_prop_by_compat_l x z y) : zx_prop_by_db.
+#[export]
 Hint Extern 0 (?x ↕ ?y ∝[?c] ?x ↕ ?z) =>
   apply (stack_prop_by_compat_r x y z) : zx_prop_by_db.
+#[export]
 Hint Extern 0 (?x ↕ ?y ∝[?c] ?z ↕ ?y) =>
   apply (stack_prop_by_compat_l x z y) : zx_prop_by_db.
   
