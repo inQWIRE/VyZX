@@ -391,106 +391,33 @@ Qed.
 
 
 
-Declare Custom Entry rwlist.
 
-Inductive boxlist : Type :=
-  | boxnil : boxlist
-  | boxcons {A} (a : A) (l : boxlist) : boxlist.
+(** Taken from stdpp:
 
-Fixpoint boxapp (l l' : boxlist) : boxlist :=
-  match l with 
-  | boxnil => l'
-  | boxcons a ls => boxcons a (boxapp ls l')
-  end.
+The tactic [eunify x y] succeeds if [x] and [y] can be unified, and fails
+otherwise. If it succeeds, it will instantiate necessary evars in [x] and [y].
 
-Fixpoint boxrep (n : nat) (l : boxlist) : boxlist :=
-  match n with
-  | O => boxnil
-  | S n' => boxapp l (boxrep n' l)
-  end.
-
-Definition boxrep_maybe (n : nat) (l : boxlist) : boxlist :=
-  boxnil.
-
-Opaque boxrep_maybe.
-
-Notation "'#[' e ']'" := 
-  (e)
-  (at level 0, e custom rwlist at level 200, only parsing) : ZX_scope.
-
-Notation "'#(' e ')'" := (e) (in custom rwlist at level 0, 
-  e custom rwlist at level 200).
-
-Notation "e ',' g" := (boxapp e g)
-  (in custom rwlist at level 100, (* e custom rwlist at level 90, 
-  g custom rwlist at level 90, *) right associativity).
-
-Notation "e" := (boxcons e boxnil) (in custom rwlist at level 10, e constr).
-
-Notation "'!' n e" := (boxrep n%nat e) (in custom rwlist at level 20, 
-  n constr at level 0, e custom rwlist at level 20, right associativity).
-
-Notation "'?' n e" := (boxrep_maybe n%nat e) (in custom rwlist at level 20, 
-  n constr at level 0, e custom rwlist at level 20, right associativity).
-
-
-
-
-
-Ltac tac_iter_simpl lst :=
-  let lst' := eval cbn [boxapp boxrep] in lst in constr:(lst').
-
-Ltac do_upto_nat n tac :=
-  lazymatch n with 
-  | O => idtac
-  | S ?n' => tryif tac then do_upto_nat n' tac else idtac
-  end.
-
-Ltac tac_iter tac lst :=
-  let rec tacit lst :=
-    lazymatch lst with 
-    | boxnil => idtac
-    | boxcons ?a ?l => tac a; tacit l
-    | boxapp ?ls ?ms => tacit ls; tacit ms
-    | boxrep ?n ?l => 
-        do_nat n ltac:(tacit l)
-    | boxrep_maybe ?n ?l =>
-        do_upto_nat n ltac:(tacit l)
-    end in 
-  tacit lst.
-
-
-Ltac tac_map tac lst :=
-  let rec tacmap lst :=
-    lazymatch lst with 
-    | boxnil => constr:(boxnil)
-    | boxcons ?a ?l => 
-      let r := tac a in 
-      let rs := tacmap l in 
-      constr:(boxcons r rs)
-    | boxapp ?ls ?ms => 
-      let rs := tacmap ls in 
-      let rs' := tacmap ms in 
-      constr:(boxapp rs rs')
-    | boxrep ?n ?l => 
-        let r := tacmap l in 
-        constr:(boxrep n r)
-    | boxrep_maybe ?n ?l =>
-        let r := tacmap l in 
-        constr:(boxrep_maybe n r)
-    end in 
-  let r := tacmap lst in 
-  constr:(r).
-
-
+Contrary to Coq's standard [unify] tactic, which uses [constr] for the arguments
+[x] and [y], [eunify] uses [open_constr] so that one can use holes (i.e., [_]s).
+For example, it allows one to write [eunify x (S _)], which will test if [x]
+unifies a successor. *)
 Tactic Notation "eunify" uconstr(x) uconstr(y) :=
   unify x y.
 
+(** Given a term [dom], an open term [tgt], and a tactic [test],
+  attempt to find a subterm of [dom] that unifies with [tgt]. 
+  May fill evars of [tgt]. If such a subterm is found, 
+  return a function mapping a term [x] with the type of [tgt] to
+  the term replacing the matched subterm of [dom] with [x].
+  [test] is used to filter matched subterms: when a subterm [y] is 
+  found to match [tgt], [test] is called with argument [y]. If [test] 
+  raises an error, this match is discarded and another tried.
+  *)
 Ltac epat_func_test dom tgt test :=
   let rec epat dom tgt :=
   match dom with
   | ?x => 
-    let _ := match goal with _ => 
+    let _ := lazymatch goal with _ => 
       (* idtac "1:" x tgt; *) 
       eunify x tgt; test x 
       (* ;idtac "PASS" *) end in
@@ -511,11 +438,26 @@ Ltac epat_func_test dom tgt test :=
   end in 
   epat dom tgt.
 
+(** Given a term [dom] and an open term [tgt], attempt to find a 
+  subterm of [dom] that unifies with [tgt]. May fill evars of [tgt]. 
+  If such a subterm is found, return a function mapping a term [x] 
+  with the type of [tgt] to the term replacing the matched subterm 
+  of [dom] with [x]. See [epat_func_test] for a version that filters
+  matched subterms. *)
 Ltac epat_func dom tgt :=
   let r := epat_func_test dom tgt ltac:(fun k => idtac) in 
   let r' := eval cbn beta in r in 
   constr:(r').
 
+(** Given a lemma statement [lem], give an [open_constr] which 
+  fills in all dependent arguments before the first non-dependent 
+  argument with [evar]s. 
+  For example, think of [lem] as having type 
+  [forall (x : A) (y : B) ..., Q x y ... -> ... -> P x y ...].
+  In this example, it would return a term (lem _ _ ...) of type
+  [Q ?[x] ?[y] ... -> ... -> P ?[x] ?[y] ...].
+  NB that any depending arguments after [Q] would not be filled. 
+*)
 Ltac fill_lem_args_dep lem :=
   match type of lem with
   | ?A -> ?B => constr:(lem)
@@ -526,6 +468,14 @@ Ltac fill_lem_args_dep lem :=
   | ?T => constr:(lem)
   end.
 
+(** Given a lemma statement [lem], give an [open_constr] 
+  which fills in all arguments with [evar]s. 
+  For example, think of [lem] as having type 
+  [forall (x : A) (y : B) ..., Q x y ... -> 
+    ... -> forall ... -> ... -> P x y ...])
+  In that case, it would return a term (lem _ _ ...) of type
+  [P ?[x] ?[y] ...], having filled in [Q] and all other arguments. 
+*)
 Ltac fill_lem_args lem :=
   match type of lem with
   | forall a : ?A, _ => 
@@ -536,7 +486,12 @@ Ltac fill_lem_args lem :=
   end.
 
 
-
+(** Given a [constr] [H] of type [rwsrc ∝[c] rwtgt], rewrites [H] 
+  in a goal [LHS ∝[d] RHS]. It matches topdown, trying first to match
+  [rwsrc] with a subterm of [LHS], then of [RHS]. Given a match, 
+  it reconstructs a statement reducing the goal to a goal replacing
+  the subterm with [rwtgt] (and necessarily changing the constant [d]) 
+  using [auto with zx_prop_by_db]. *)
 Ltac zxrw_one H :=
   match type of H with
   | ?rwsrc ∝[ ?rwfac ] ?rwtgt =>
@@ -565,6 +520,12 @@ Ltac zxrw_one H :=
   end
   end.
 
+(** Given an [open_constr] [H] of type [rwsrc ∝[c] rwtgt], possibly
+  containing [evar] holes, rewrites [H] in a goal [LHS ∝[d] RHS]. 
+  It matches topdown, trying first to match [rwsrc] with a subterm 
+  of [LHS], then of [RHS]. Given a match, it reconstructs a statement 
+  reducing the goal to a goal replacing the subterm with [rwtgt] (and 
+  necessarily changing the constant [d]) using [auto with zx_prop_by_db]. *)
 Ltac zxrw_one_open H :=
   lazymatch type of H with
   | ?rwsrc ∝[ ?rwfac ] ?rwtgt =>
@@ -597,13 +558,27 @@ Proof.
   now rewrite proportional_by_1_defn.
 Qed.
 
+(** The tactic used by [zxrefl] to solve the [c = 1] side-condition,
+  by default [try (now C_field)]. 
+  Redefine ([Ltac zxrefl_tac ::= ...]) to change behavior. *)
+Ltac zxrefl_tac := try (now C_field). 
+
+(** On a goal of type [LHS ∝[c] RHS], replaces it with two goals,
+  [c = 1] and [LHS ∝= RHS]. It attempts to solve the first with
+  [zxrefl_tac] (by default, [try (now C_field)]) and attempts to
+  solve the second with reflexivity. *)
 Ltac zxrefl :=
   apply proportional_by_refl_iff;
   [(repeat match goal with
     | H : _ ∝[_] _ |- _ => destruct H as [? ?]
-    end); try (now C_field)
+    end); zxrefl_tac
   | try reflexivity].
 
+(** On a goal of type [LHS ∝[c] RHS], replace this by symmetry with
+  [RHS ∝[d] LHS], where [d] is chosen somewhat intelligently. 
+  Specifically, if [c = / c0] then we take [d = c0], 
+  if [c = c0 / c1] then we take [d = c1 / c0], and 
+  otherwise we take [d = / c]. *)
 Ltac zxsymmetry :=
   lazymatch goal with
   | |- proportional_by (Cinv _) _ _ => refine (proportional_by_sym _)
@@ -614,6 +589,12 @@ Ltac zxsymmetry :=
   | |- _ => fail 0 "Goal is not of form '_ ∝[_] _'"
   end.
 
+(** Given a hypothesis [H] of type [LHS ∝[c] RHS], replace this 
+  by symmetry with [RHS ∝[d] LHS], where [d] is chosen 
+  somewhat intelligently. 
+  Specifically, if [c = / c0] then we take [d = c0], 
+  if [c = c0 / c1] then we take [d = c1 / c0], and 
+  otherwise we take [d = / c]. *)
 Ltac zxsymmetry_in H :=
   lazymatch type of H with
   | proportional_by (Cinv _) _ _ => 
@@ -625,22 +606,19 @@ Ltac zxsymmetry_in H :=
   | _ => fail 0 "Hypothesis is not of form '_ ∝[_] _'"
   end.
 
+(** Apply symmetry to the hypothesis [H] using [zxsymmetry_in]. 
+  See [zxsymmetry_in] documentation for details. *)
 Tactic Notation "zxsymmetry" "in" hyp(H) :=
   zxsymmetry_in H.
 
+(** Apply symmetry to the goal using [zxsymmetry]. See
+  [zxsymmetry] documentation for details. *)
 Tactic Notation "zxsymmetry" :=
   zxsymmetry.
 
-Tactic Notation "zxrw" constr(Hs) :=
-  lazymatch type of Hs with
-  | boxlist => 
-    let lems := tac_map fill_lem_args Hs in 
-    tac_iter zxrw_one_open lems
-  | _ => 
-    let lem := fill_lem_args Hs in 
-    zxrw_one_open lem
-  end.
-
+(** Prepare a lemma [H] to be rewritten with by filling 
+  all arguments with holes, and failing if [H] is not 
+   seen to be of type [_ ∝[_] _] (after arguments are filled). *)
 Ltac zxrw_prep H :=
   lazymatch type of H with 
   | _ ∝[_] _ => open_constr:(H)
@@ -649,10 +627,18 @@ Ltac zxrw_prep H :=
     "' as a lemma of shape '_ ∝[_] _'"
   end.
 
+(** Given a lemma [H : forall (...), rwsrc ∝[d] rwtgt], rewrite [H] 
+  left-to-right in a goal of type [LHS ∝[c] RHS] using [zxrw_one_open], 
+  having first checked it has the correct type and filled its arguments 
+  with [evar] holes using [zxrw_prep]. *)
 Tactic Notation "zxrewrite" open_constr(H) :=
   let H' := zxrw_prep H in 
   zxrw_one_open H'.
 
+(** Given a lemma [H : forall (...), rwsrc ∝[d] rwtgt], rewrite [H] 
+  right-to-left in a goal of type [LHS ∝[c] RHS] using [zxrw_one_open], 
+  having first checked it has the correct type and filled its arguments 
+  with [evar] holes using [zxrw_prep]. *)
 Tactic Notation "zxrewrite" "<-" open_constr(H) :=
   let H' := zxrw_prep H in 
   zxrw_one_open (proportional_by_sym H).
@@ -673,9 +659,19 @@ Definition proportional {n m}
   (zx_0 : ZX n m) (zx_1 : ZX n m) := exists c, zx_0 ∝[c] zx_1.
 Notation "zx0 ∝ zx1" := (proportional zx0 zx1) (at level 70) : ZX_scope. (* \propto *)
 
+(** On a goal [exists c : C, ?P /\ c <> 0], give [c] as witness and try to 
+  solve the [c <> 0] side-condition. For instance, [prop_exists_nonzero c] 
+  on a goal [zx0 ∝ zx1] reduces the goal to [⟦zx0⟧ = c .* ⟦zx1⟧], 
+  along with [c <> 0] if this is not solved automatically. *)
 Ltac prop_exists_nonzero c := 
   exists c; split; [|repeat (apply nonzero_div_nonzero +
     apply Cmult_neq_0); try nonzero; auto].
+
+(** On a goal [zx0 ∝ zx1], replace this goal with 
+  [⟦zx0⟧ = c .* ⟦zx1⟧] and try to solve that goal by brute force. 
+  Specifically, simplify with [Msimpl] and unfolding Z/X semantics, 
+  then use [solve_matrix] to brute-force a solution, and finally
+  [autorewrite with Cexp_db; lca] to solve any remaining goals. *)
 Ltac solve_prop c := 
 	prop_exists_nonzero c; simpl; Msimpl; 
 	unfold X_semantics; unfold Z_semantics; simpl; solve_matrix; 
@@ -688,6 +684,8 @@ Proof.
   now exists 1.
 Qed.
 
+(** Reduces a goal [zx0 ∝ zx1] to [zx0 ∝= zx1]. Acts somewhat like
+  a refined version of [prop_exists_nonzero C1]. *)
 Ltac zxprop_by_1 := 
   apply proportional_of_by_1.
 

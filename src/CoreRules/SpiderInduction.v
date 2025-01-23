@@ -13,6 +13,8 @@ Open Scope ZX_scope.
   Cmult_1_l
   : cleanup_C_db.
 
+(** Abbreviates [autorewrite with cleanup_C_db], which contains the most basic 
+  simplification lemmas for multiplication and addition of complex numbers. *)
 Ltac cleanup_C := autorewrite with cleanup_C_db.
 
 (* The first part that is necessary to prove spider edge count induction is the 
@@ -433,4 +435,7 @@ Proof.
   apply Z_wrap_over_top_right_0.
 Qed.
 
+(** Inducts on [n] and specializes the case where [n = 1]. Useful for 
+  induction on spiders where both the [n = 0] and [n = 1] cases are 
+  special, whereas normal induction has only [n = 0] as base case. *)
 Ltac spider_induction n := induction n; [ | destruct n ].

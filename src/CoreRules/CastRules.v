@@ -55,27 +55,87 @@ Proof.
   now rewrite 2!cast_id.
 Qed.
 
+Lemma cast_simplify_zx_rev :
+  forall {n n' m m'} prfn0 prfm0 prfn1 prfm1  (zx0 zx1 : ZX n m),
+  cast n' m' prfn0 prfm0 zx0 = cast n' m' prfn1 prfm1 zx1 ->
+  zx0 = zx1.
+Proof.
+  intros.
+  now subst; rewrite 2!cast_id_eq in *.
+Qed.
+
+Lemma cast_simplify_eq_rev :
+  forall {n n' m m'} prfn0 prfm0 prfn1 prfm1  (zx0 zx1 : ZX n m),
+  cast n' m' prfn0 prfm0 zx0 ∝= cast n' m' prfn1 prfm1 zx1 ->
+  zx0 ∝= zx1.
+Proof.
+  intros.
+  now subst; rewrite 2!cast_id in *.
+Qed.
+
+Lemma cast_simplify_by_rev  :
+  forall {n n' m m'} prfn0 prfm0 prfn1 prfm1  (zx0 zx1 : ZX n m) c,
+  cast n' m' prfn0 prfm0 zx0 ∝[c] cast n' m' prfn1 prfm1 zx1 ->
+  zx0 ∝[c] zx1.
+Proof.
+  intros.
+  now subst; rewrite 2!cast_id_eq in *.
+Qed.
+
+Lemma cast_simplify_rev :
+  forall {n n' m m'} prfn0 prfm0 prfn1 prfm1  (zx0 zx1 : ZX n m),
+  cast n' m' prfn0 prfm0 zx0 ∝ cast n' m' prfn1 prfm1 zx1 ->
+  zx0 ∝ zx1.
+Proof.
+  intros.
+  now subst; rewrite 2!cast_id in *.
+Qed.
+
+(** On a goal [$ n', m' ::: zx0 $ (R) $ n', m' ::: zx1 $] where 
+  [zx0] and [zx1] have the same dimensions, replace the goal 
+  with [zx0 (R) zx1]. 
+  Here, [(R)] is one of [=], [∝=], [∝[c]], and [∝]. *)
 Ltac cast_irrelevance := 
   first [apply cast_simplify 
     | apply cast_simplify_by 
     | apply cast_simplify_eq 
     | apply cast_simplify_zx]; try easy.
 
+(** Given a hypothesis [H : $ n', m' ::: zx0 $ (R) $ n', m' ::: zx1 $] where 
+  [zx0] and [zx1] have the same dimensions, 
+  replace the type of [H] with [zx0 (R) zx1]. 
+  Here, [(R)] is one of [=], [∝=], [∝[c]], and [∝]. *)
 Ltac cast_irrelevance_in H := 
   first [apply cast_simplify in H 
     | apply cast_simplify_by in H
     | apply cast_simplify_eq in H
     | apply cast_simplify_zx in H].
 
+(** Run a tactic [tac], solving as many side-conditions as possible with [lia]
+  and shelving any others. *)
 Ltac auto_cast_eqn tac :=
   unshelve tac; try lia; shelve_unifiable.
 
+(** Run a tactic [tac], solving as many side-conditions as possible with [lia]
+  and shelving any others. *)
 Tactic Notation "auto_cast_eqn" tactic3(tac) := 
   auto_cast_eqn tac.
 
 #[export] Hint Rewrite @cast_id : cast_simpl_db.
+
+(** Simplify casts in the goal by [autorewrite with cast_simpl_db],
+  solving as many side conditions as possible with [lia], finally
+  removing as many outer casts as possible with [cast_irrelevance]. 
+  NB if [cast_simpl_db] is not maintained carefully, this tactic may
+  leave unsolvable side-conditions. *)
 Ltac simpl_casts := 
   auto_cast_eqn (autorewrite with cast_simpl_db); repeat cast_irrelevance.
+
+(** Simplify casts in [H] by [autorewrite with cast_simpl_db],
+  solving as many side conditions as possible with [lia], finally
+  removing as many outer casts as possible with [cast_irrelevance_in]. 
+  NB if [cast_simpl_db] is not maintained carefully, this tactic may
+  leave unsolvable side-conditions. *)
 Tactic Notation "simpl_casts_in" hyp(H) := 
   auto_cast_eqn (autorewrite with cast_simpl_db in H); 
   cast_irrelevance_in H.
