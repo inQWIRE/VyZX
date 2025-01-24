@@ -1002,7 +1002,7 @@ Lemma colorswap_diagrams_by : forall {n m} (zx0 zx1 : ZX n m) c,
 Proof.
   intros.
   rewrite <- colorswap_involutive.
-  zxrw H.
+  zxrewrite H.
   rewrite colorswap_involutive.
   zxrefl.
 Qed.
@@ -1039,7 +1039,7 @@ Lemma transpose_diagrams_by : forall {n m} (zx0 zx1 : ZX n m) c,
 Proof.
   intros.
   rewrite <- transpose_involutive.
-  zxrw H.
+  zxrewrite H.
   rewrite transpose_involutive.
   zxrefl.
 Qed.
@@ -1076,7 +1076,7 @@ Lemma adjoint_diagrams_by : forall {n m} (zx0 zx1 : ZX n m) c,
 Proof.
   intros.
   rewrite <- adjoint_involutive.
-  zxrw H.
+  zxrewrite H.
   rewrite adjoint_involutive.
   zxrefl.
   enough (c <> 0) by C_field.

@@ -111,7 +111,7 @@ Proof.
   rewrite <- (stack_compose_distr — — (Z 1 2 0 ↕ —)).
   rewrite <- stack_compose_distr.
   cleanup_zx.
-  zxrw hopf_rule_Z_X.
+  zxrewrite hopf_rule_Z_X.
   rewrite wire_to_n_wire.
   rewrite stack_nwire_distribute_r.
   rewrite stack_nwire_distribute_l.
