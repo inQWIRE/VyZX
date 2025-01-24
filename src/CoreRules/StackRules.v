@@ -169,8 +169,43 @@ Lemma stack_nwire_distribute_r : forall {n m o p} (zx0 : ZX n m) (zx1 : ZX m o),
 	(zx0 ⟷ zx1) ↕ n_wire p ∝= (zx0 ↕ n_wire p) ⟷ (zx1 ↕ n_wire p).
 Proof.
 	intros.
-	unfold proportional_by_1.
-	cbn; rewrite n_wire_semantics; Msimpl; reflexivity.
+	induction p.
+	- repeat rewrite stack_empty_r.
+		eapply (cast_diagrams_eq n o).
+		repeat rewrite cast_contract.
+		rewrite cast_id.
+		rewrite cast_compose_distribute.
+		simpl_casts.
+		erewrite (cast_compose_mid m _ _ ($ n, m + 0 ::: zx0 $)).
+		simpl_casts.
+		easy.
+		Unshelve.
+		all: lia.
+	- unfold n_wire. 
+		rewrite n_stack1_succ_r.
+		repeat rewrite cast_stack_r.
+		eapply (cast_diagrams_eq (n + (p + 1)) (o + (p + 1))).
+		rewrite cast_contract.
+		rewrite cast_id.
+		rewrite cast_compose_distribute.
+		simpl_casts.
+		erewrite (cast_compose_mid (m + (p + 1)) _ _
+									($ n + (p + 1), m + (S p) ::: zx0 ↕ (n_wire p ↕ —)$)).
+		simpl_casts.
+		rewrite 3 stack_assoc_back.
+		eapply (cast_diagrams_eq (n + p + 1) (o + p + 1)).
+		rewrite cast_contract.
+		rewrite cast_id.
+		rewrite cast_compose_distribute.
+		rewrite 2 cast_contract.
+		erewrite (cast_compose_mid (m + p + 1) _ _
+									($ n + p + 1, m + (p + 1) ::: zx0 ↕ n_wire p ↕ — $)).
+		simpl_casts.
+		rewrite <- stack_wire_distribute_r.
+		rewrite <- IHp.
+		easy.
+		Unshelve.
+		all: lia.
 Qed.
 
 (* Lemma n_wire_collapse_r : forall {n0 n1 m1} (zx0 : ZX n0 0) (zx1 : ZX n1 m1),
