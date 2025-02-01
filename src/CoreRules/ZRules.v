@@ -34,23 +34,6 @@ Proof.
 	apply grow_Z_top_left.
 Qed.
 
-Lemma grow_Z_bot_left : forall n {m o α},
-	Z (n + m) o α ∝=
-	(n_wire n ↕ Z m 1 0) ⟷ Z (n + 1) o α.
-Proof.
-Admitted.
-
-Lemma grow_Z_bot_right : forall {n m} o {α},
-	Z n (m + o) α ∝=
-	Z n (m + 1) α ⟷ (n_wire m ↕ Z 1 o 0).
-Proof.
-	intros.
-	apply transpose_diagrams_eq.
-	simpl.
-	rewrite n_wire_transpose.
-	apply grow_Z_bot_left.
-Qed.
-
 
 Lemma Z_rot_l : forall n m α β,
 	Z (S n) m (α + β) ∝= Z 1 1 α ↕ n_wire n ⟷ Z (S n) m β.
@@ -688,6 +671,11 @@ Unshelve.
   all: lia.
 Qed.
 
+Lemma Z_n_swap_absorbtion_left_base : forall n m α, n_swap n ⟷ Z n m α ∝= Z n m α.
+Proof.
+	transpose_of Z_n_swap_absorbtion_right_base.
+Qed.
+
 Lemma Z_n_wrap_under_r_base_unswapped : forall n m α, 
 	Z (n + m) 0 α ∝= (Z n m α ↕ n_wire m) ⟷ n_cup_unswapped m.
 Proof.
@@ -833,11 +821,21 @@ Lemma Z_n_wrap_over_r_base : forall n m α,
 	Z (m + n) 0 α ∝= (n_wire m ↕ Z n m α) ⟷ n_cup m.
 Proof.
 	intros.
-	rewrite n_cup_inv_n_swap_n_wire.
+	unfold n_cup.
 	rewrite <- compose_assoc.
-	rewrite <- stack_nwire_distribute_l.
-	rewrite Z_n_swap_absorbtion_right_base.
-	rewrite Z_n_wrap_over_r_base_unswapped.
+	rewrite <- stack_compose_distr.
+	cleanup_zx.
+	rewrite <- (nwire_removal_l (Z n m α)).
+	rewrite <- (nwire_removal_r (n_swap m)).
+	rewrite stack_compose_distr.
+	rewrite compose_assoc.
+	rewrite <- Z_n_wrap_over_r_base_unswapped.
+	rewrite Z_add_l_base_rot.
+	rewrite <- compose_assoc.
+	rewrite <- stack_compose_distr.
+	cleanup_zx.
+	rewrite Z_n_swap_absorbtion_left_base.
+	rewrite <- Z_add_l_base_rot.
 	easy.
 Qed.
 
@@ -869,4 +867,40 @@ Proof.
 	rewrite Cexp_2_PI.
 	rewrite Cexp_0.
 	easy.
+Qed.
+
+
+Lemma grow_Z_bot_left : forall n {m o α},
+	Z (n + m) o α ∝=
+	(n_wire n ↕ Z m 1 0) ⟷ Z (n + 1) o α.
+Proof.
+	induction n; intros.
+	- simpl.
+		cleanup_zx.
+		rewrite Z_absolute_fusion.
+		rewrite Rplus_0_l.
+		easy.
+	- simpl. 
+		rewrite  (Z_wrap_over_top_left ((n + 1))).
+		rewrite <- compose_assoc.
+		rewrite (stack_assoc — (n ↑ —)).
+		simpl_casts.
+		rewrite <- (stack_compose_distr — —).
+		rewrite <- IHn.
+		cleanup_zx.
+		rewrite <- Z_wrap_over_top_left.
+		easy.
+	Unshelve.
+	all: lia.
+Qed.
+
+Lemma grow_Z_bot_right : forall {n m} o {α},
+	Z n (m + o) α ∝=
+	Z n (m + 1) α ⟷ (n_wire m ↕ Z 1 o 0).
+Proof.
+	intros.
+	apply transpose_diagrams_eq.
+	simpl.
+	rewrite n_wire_transpose.
+	apply grow_Z_bot_left.
 Qed.
