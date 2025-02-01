@@ -5,10 +5,11 @@ Require Import CompletenessComp.
 
 (* @nocheck name *)
 (* Conventional name *)
-Lemma completeness_SUP : forall α, ((Z 0 1 α) ↕ (Z 0 1 (α + PI))) ⟷ (X 2 1 0) ∝ Z 0 2 (2 *α + PI) ⟷ X 2 1 0.
+Lemma completeness_SUP : forall α, 
+	((Z 0 1 α) ↕ (Z 0 1 (α + PI))) ⟷ (X 2 1 0) ∝= Z 0 2 (2 *α + PI) ⟷ X 2 1 0.
 Proof.
 	intros.
-	prop_exists_nonzero 1;
+	unfold proportional_by_1.
 	simpl;
 	unfold X_semantics.
 	solve_matrix.
@@ -37,7 +38,7 @@ Qed.
 (* Conventional name *)
 Lemma completeness_C : forall (α β γ : R),
 	(Z 1 2 0) ⟷ (((Z 0 1 β ↕ —) ⟷ X 2 1 PI) ↕ ((Z 0 1 α ↕ —) ⟷ X 2 1 0)) ⟷ ((Z 1 2 β ↕ Z 1 2 α) ⟷ (— ↕ X 2 1 γ ↕ —)) ⟷ (((— ↕ Z 1 2 0) ⟷ (X 2 1 (-γ) ↕ —)) ↕ —)
-	∝ 
+	∝= 
 	(Z 1 2 0) ⟷ (((Z 0 1 α ↕ —) ⟷ X 2 1 0) ↕ ((Z 0 1 β ↕ —) ⟷ X 2 1 PI)) ⟷ ((Z 1 2 α ↕ Z 1 2 β) ⟷ (— ↕ X 2 1 (-γ) ↕ —)) ⟷ (— ↕ ((Z 1 2 0 ↕ —) ⟷ (— ↕ X 2 1 γ))).
 Proof. (* solve matrix takes forever *)
 	intros.
@@ -47,14 +48,14 @@ Proof. (* solve matrix takes forever *)
 	remember (((Z 1 2 α ↕ Z 1 2 β) ⟷ (— ↕ X 2 1 (-γ) ↕ —))) as cs2n.
 	remember ((Z 1 2 0 ↕ —) ⟷ (— ↕ X 2 1 γ)) as cs3.
 	remember (((— ↕ Z 1 2 0) ⟷ (X 2 1 (-γ) ↕ —))) as cs3f.
-	prop_exists_nonzero 1.
+	unfold proportional_by_1.
 	simpl.
 	rewrite Heqcs1.
 	rewrite Heqcs1pi.
 	clear Heqcs1; clear Heqcs1pi; clear cs1; clear cs1pi.
 	rewrite c_step_1, c_step_1_pi.
 	autorewrite with scalar_move_db.
-	rewrite Cmult_1_l.
+	rewrite 1?Cmult_1_l.
 	apply Mscale_simplify; [| C_field].
 	replace ((Cexp β .* ∣0⟩⟨0∣ .+ ∣0⟩⟨1∣ .+ ∣1⟩⟨0∣ .+ Cexp β .* ∣1⟩⟨1∣)) with (Cexp β .* (I 2) .+ ∣0⟩⟨1∣ .+ ∣1⟩⟨0∣) by (rewrite <- Mplus01; lma).
 	replace ((∣0⟩⟨0∣ .+ Cexp α .* ∣0⟩⟨1∣ .+ Cexp α .* ∣1⟩⟨0∣ .+ ∣1⟩⟨1∣)) with (I 2 .+ Cexp α .* (∣0⟩⟨1∣ .+ ∣1⟩⟨0∣)) by (rewrite <- Mplus01; lma).
@@ -430,9 +431,9 @@ Qed.
 (* @nocheck name *)
 (* Conventional name *)
 Lemma completeness_BW :
-	◁ ⟷ Z 1 1 PI ⟷ ▷ ∝ ▷ ⟷ X 1 1 PI.
+	◁ ⟷ Z 1 1 PI ⟷ ▷ ∝= ▷ ⟷ X 1 1 PI.
 Proof. 
-	prop_exists_nonzero 1.
+	unfold proportional_by_1.
 	remember (Z 1 1 PI) as z.
 	remember (X 1 1 PI) as x.
 	simpl.
@@ -467,7 +468,7 @@ Qed.
 (* Conventional name *)
 Lemma completeness_N : forall α β θ_1 θ_2 γ θ_3,
 	2 * Cexp (θ_3) * cos(γ) = Cexp (θ_1) * cos(α) + Cexp (θ_2) * cos(β) ->
-	(((Z 0 1 α ↕ Z 0 1 (-α) ⟷ X 2 1 0) ⟷ Z 1 1 θ_1) ↕ ((Z 0 1 β ↕ Z 0 1 (-β) ⟷ X 2 1 0) ⟷ Z 1 1 θ_2)) ⟷ ((— ↕ (X 0 1 (PI/2) ⟷ Z 1 2 0) ↕ —) ⟷ (X 2 1 0 ↕ X 2 1 0)) ⟷ (Z 1 1 (PI/4) ↕ Z 1 1 (PI/4)) ⟷ X 2 1 0 ∝ 
+	(((Z 0 1 α ↕ Z 0 1 (-α) ⟷ X 2 1 0) ⟷ Z 1 1 θ_1) ↕ ((Z 0 1 β ↕ Z 0 1 (-β) ⟷ X 2 1 0) ⟷ Z 1 1 θ_2)) ⟷ ((— ↕ (X 0 1 (PI/2) ⟷ Z 1 2 0) ↕ —) ⟷ (X 2 1 0 ↕ X 2 1 0)) ⟷ (Z 1 1 (PI/4) ↕ Z 1 1 (PI/4)) ⟷ X 2 1 0 ∝= 
 	((Z 0 1 γ ↕ Z 0 1 (-γ) ⟷ X 2 1 0) ↕ (Z 0 1 (PI/4) ↕ Z 0 1 (PI/4) ⟷ X 2 1 0)) ⟷ (Z 2 1 θ_3).
 Proof. 
 	intros.
@@ -482,8 +483,7 @@ Proof.
 	remember (Z 2 1 θ_3) as final_step_2.
 	remember (Z 1 1 θ_1) as step_1_5.
 	remember (Z 1 1 θ_2) as step_1_6.
-	prop_exists_nonzero 1.
-	Msimpl.
+	unfold proportional_by_1.
 	simpl.
 	rewrite Heqstep_1_1, Heqstep_1_2.
 	rewrite Heqfinal_step.
@@ -546,15 +546,11 @@ Proof.
 	autorewrite with scalar_move_db.
 	Msimpl.
 	autorewrite with scalar_move_db.
-	rewrite Heqfinal_step at 1.
-	rewrite Heqfinal_step at 1.
-	rewrite Heqfinal_step at 1.
-	rewrite Heqfinal_step at 1.
-	rewrite ZX_semantic_equiv at 1.
-	rewrite ZX_semantic_equiv at 1.
-	rewrite ZX_semantic_equiv at 1.
-	rewrite ZX_semantic_equiv at 1.
+	match goal with |- _ = ?A => set (temp := A) end.
+	rewrite Heqfinal_step.
+	rewrite ZX_semantic_equiv.
 	unfold_dirac_spider.
+	subst temp.
 	rewrite Cexp_0.
 	Msimpl.
 	repeat rewrite Mmult_plus_distr_r.
