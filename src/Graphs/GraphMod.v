@@ -21,48 +21,47 @@ Module Type ZXGModule.
   Definition Vertex     : Type := (VertexIdx * VertexType).
   Definition IEdge      : Type := (VertexIdx * VertexIdx).
 
-(* Typed aliases for the different types of boundary cases we may see *)
-  Definition BoundaryType : Type := nat.
-  Definition LEdge        : Type := (BoundaryType * VertexIdx).
-  Definition REdge        : Type := (VertexIdx * BoundaryType).
-  Definition BEdge        : Type := (BoundaryType * BoundaryType).
-  Definition Edge         : Type := (nat * nat).
+(* Different types of boundary cases we may see *)
+  Inductive Identifier : Type :=
+    | Left (idx : nat) : Identifier
+    | Right (idx : nat) : Identifier
+    | Internal (idx : nat) : Identifier.
+
+  Definition Edge : Type := (Identifier * Identifier).
+
+  Definition count_inputs (edge : Edge) : nat :=
+    match edge with
+    | (Left _, Left _) => 2
+    | (Left _, _ )     => 1
+    | (_, Left _)      => 1
+    | _                => 0
+    end.
+
+  Definition count_outputs (edge : Edge) : nat :=
+    match edge with
+    | (Right _, Right _) => 2
+    | (Right _, _ )      => 1
+    | (_, Right _)       => 1
+    | _                  => 0
+    end.
 
   (* Accessing different parts of graph *)
   Parameter vertices : forall {n m : nat}, 
     ZXG n m -> list Vertex.
-  Parameter iedges   : forall {n m : nat},
-    ZXG n m -> list IEdge.
-  Parameter ledges   : forall {n m : nat},
-    ZXG n m -> list LEdge.
-  Parameter redges   : forall {n m : nat},
-    ZXG n m -> list REdge.
-  Parameter bedges   : forall {n m : nat},
-    ZXG n m -> list BEdge.
+  Parameter edges : forall {n m : nat},
+    ZXG n m -> list Edge.
 
   (* Building graphs incrementally *)
   Parameter add_vertex : forall {n m : nat}, 
     Vertex -> ZXG n m -> ZXG n m.
-  Parameter add_internal_edge : forall {n m : nat}, 
-    ZXG n m -> IEdge -> ZXG n m.
-  Parameter add_input_edge : forall {n m : nat}, 
-    ZXG n m -> LEdge -> ZXG (S n) m.
-  Parameter add_output_edge : forall {n m : nat}, 
-    ZXG n m -> REdge -> ZXG n (S m).
-  Parameter add_boundary_edge : forall {n m : nat},
-    ZXG n m -> BEdge -> ZXG (S n) (S m).
+  Parameter add_edge : forall {n m : nat} (e :Edge), 
+    ZXG n m -> ZXG (count_inputs e + n) (count_outputs e + m).
 
   (* Destructing graphs incrementally *)
   Parameter remove_vertex : forall {n m : nat}, 
-    ZXG n m -> Vertex -> ZXG n m.
-  Parameter remove_internal_edge : forall {n m : nat}, 
-    ZXG n m -> IEdge -> ZXG n m.
-  Parameter remove_input_edge : forall {n m : nat}, 
-    ZXG (S n) m -> LEdge -> ZXG n m.
-  Parameter remove_output_edge : forall {n m : nat}, 
-    ZXG n (S m) -> REdge -> ZXG n m.
-  Parameter remove_boundary_edge : forall {n m : nat},
-    ZXG (S n) (S m) -> BEdge -> ZXG n m.
+    Vertex  -> ZXG n m -> ZXG n m.
+  Parameter remove_edge : forall {n m : nat} (e : Edge),
+    ZXG n m -> ZXG (n - (count_inputs e)) (m - (count_inputs e)).
 
   (* Algebraic constructors for graphs (might define) *)
   Parameter compose : forall {n m o : nat}, 
@@ -74,15 +73,11 @@ Module Type ZXGModule.
   Parameter add_vertex_commutes : forall {n m : nat} (G : ZXG n m) (v0 v1 : Vertex),
     add_vertex v1 (add_vertex v0 G) = add_vertex v0 (add_vertex v1 G).
   Parameter remove_add_vertex : forall {n m : nat} (G : ZXG n m) (v : Vertex),
-    remove_vertex (add_vertex v G) v = G.
-  Parameter remove_add_iedge : forall {n m : nat} (G : ZXG n m) (e : Edge),
-    remove_internal_edge (add_internal_edge G e) e = G.
-  Parameter remove_add_ledge : forall {n m : nat} (G : ZXG n m) (e : Edge),
-    remove_input_edge (add_input_edge G e) e = G.
-  Parameter remove_add_redge : forall {n m : nat} (G : ZXG n m) (e : Edge),
-    remove_output_edge (add_output_edge G e) e = G.
-  Parameter remove_add_bedge : forall {n m : nat} (G : ZXG n m) (e : Edge),
-    remove_boundary_edge (add_boundary_edge G e) e = G.
+    remove_vertex v (add_vertex v G) = G.
+  (* Parameter add_edge_commutes : forall {n m : nat} (G : ZXG n m) (e0 e1 : Edge),  *)
+  (*   add_edge e0 (add_edge e1 G) = add_edge e1 (add_edge e0 G). *)
+  (* Parameter remove_add_edge : forall {n m : nat} (G : ZXG n m) (e : Edge), *)
+  (*   remove_edge e (add_edge e G) = G. *)
 
 End ZXGModule.
 
