@@ -5,79 +5,60 @@ Require Import Nat.
 
 Module Type ZXGModule.
 
-  Parameter ZXG : nat -> nat -> Type.
+  Parameter ZXG : Type.
+  Parameter proportional : ZXG -> ZXG -> Prop.
 
   (* Allows for flexible types of graph nodes *)
   Parameter VertexType : Type. 
-  Parameter proportional : forall {n m : nat}, ZXG n m -> ZXG n m -> Prop.
-
   Parameter VertexZ : R -> VertexType.
   Parameter VertexX : R -> VertexType.
 
-  Parameter empty_graph : ZXG 0 0.
+  Parameter empty_graph : ZXG.
 
 (* Typed aliases for indexing internal graphs *)
-  Definition VertexIdx  : Type := nat. 
-  Definition Vertex     : Type := (VertexIdx * VertexType).
-  Definition IEdge      : Type := (VertexIdx * VertexIdx).
+  Definition Idx    : Type := nat. 
+  Definition Vertex : Type := (Idx * VertexType).
 
-(* Different types of boundary cases we may see *)
-  Inductive Identifier : Type :=
-    | Left (idx : nat) : Identifier
-    | Right (idx : nat) : Identifier
-    | Internal (idx : nat) : Identifier.
+(* Different types of edges we may see *)
+  Inductive EdgeType : Type :=
+    | Boundary : Idx -> EdgeType
+    | Internal : Idx -> EdgeType.
 
-  Definition Edge : Type := (Identifier * Identifier).
+  Definition Edge : Type := (EdgeType * EdgeType).
 
-  Definition count_inputs (edge : Edge) : nat :=
-    match edge with
-    | (Left _, Left _) => 2
-    | (Left _, _ )     => 1
-    | (_, Left _)      => 1
-    | _                => 0
-    end.
-
-  Definition count_outputs (edge : Edge) : nat :=
-    match edge with
-    | (Right _, Right _) => 2
-    | (Right _, _ )      => 1
-    | (_, Right _)       => 1
-    | _                  => 0
-    end.
-
+(*  autosubst                                                    *)
+(*  Rework edges to be end - ver ver - ver end - end ver - end   *)
+(*  Hadamard Edges                                               *)
+(*  Phase gadgets                                                *)
+(*  Sum of diagrams                                              *)
+(*  Arbitrary Scalars                                            *)
+(*  Flow and Flow Conditions - eventual circuit extraction       *)
   (* Accessing different parts of graph *)
-  Parameter vertices : forall {n m : nat}, 
-    ZXG n m -> list Vertex.
-  Parameter edges : forall {n m : nat},
-    ZXG n m -> list Edge.
+  Parameter vertices : ZXG -> list Vertex.
+  Parameter edges : ZXG -> list Edge.
 
   (* Building graphs incrementally *)
-  Parameter add_vertex : forall {n m : nat}, 
-    Vertex -> ZXG n m -> ZXG n m.
-  Parameter add_edge : forall {n m : nat} (e :Edge), 
-    ZXG n m -> ZXG (count_inputs e + n) (count_outputs e + m).
+  Parameter add_vertex : Vertex -> ZXG -> ZXG.
+  Parameter add_edge : Edge -> ZXG -> ZXG.
 
   (* Destructing graphs incrementally *)
-  Parameter remove_vertex : forall {n m : nat}, 
-    Vertex  -> ZXG n m -> ZXG n m.
-  Parameter remove_edge : forall {n m : nat} (e : Edge),
-    ZXG n m -> ZXG (n - (count_inputs e)) (m - (count_inputs e)).
+  Parameter remove_vertex : Vertex  -> ZXG -> ZXG.
+  Parameter remove_edge : Edge ->
+    ZXG -> ZXG.
 
   (* Algebraic constructors for graphs (might define) *)
   Parameter compose : forall {n m o : nat}, 
-    ZXG n m -> ZXG m o -> ZXG n o.
+    ZXG -> ZXG -> ZXG.
   Parameter stack   : forall {n m o p : nat}, 
-    ZXG n m -> ZXG o p -> ZXG (n + m) (o + p).
+    ZXG -> ZXG -> ZXG.
 
   (* Axioms for well behaved adding and removal of vertices and edges *)
-  Parameter add_vertex_commutes : forall {n m : nat} (G : ZXG n m) (v0 v1 : Vertex),
+  Parameter add_vertex_commutes : forall (G : ZXG) (v0 v1 : Vertex),
     add_vertex v1 (add_vertex v0 G) = add_vertex v0 (add_vertex v1 G).
-  Parameter remove_add_vertex : forall {n m : nat} (G : ZXG n m) (v : Vertex),
+  Parameter remove_add_vertex : forall (G : ZXG) (v : Vertex),
     remove_vertex v (add_vertex v G) = G.
-  (* Parameter add_edge_commutes : forall {n m : nat} (G : ZXG n m) (e0 e1 : Edge),  *)
-  (*   add_edge e0 (add_edge e1 G) = add_edge e1 (add_edge e0 G). *)
-  (* Parameter remove_add_edge : forall {n m : nat} (G : ZXG n m) (e : Edge), *)
-  (*   remove_edge e (add_edge e G) = G. *)
+  Parameter remove_add_edge : forall (G : ZXG) (e : Edge),
+    remove_edge e (add_edge e G) = G.
 
 End ZXGModule.
 
@@ -94,118 +75,118 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   (* Low level graph construction notations *)
   Notation "vt '@' vidx '+v' G" := 
     (add_vertex (vidx, vt) G) (at level 41, right associativity).
-  Notation "idx0 '<i>' idx1 '+e' G" := 
-    (add_internal_edge G (idx0, idx1)) (at level 41, right associativity).
-  Notation "idx0 '<l>' idx1 '+e' G" := 
-    (add_input_edge G (idx0, idx1)) (at level 41, right associativity).
-  Notation "idx0 '<r>' idx1 '+e' G" := 
-    (add_output_edge G (idx0, idx1)) (at level 41, right associativity).
-  Notation "idx0 '<b>' idx1 '+e' G" := 
-    (add_boundary_edge G (idx0, idx1)) (at level 41, right associativity).
+  Notation "idx0 '-' idx1 '+e' G" := 
+    (add_edge (idx0, idx1) G) (at level 41, right associativity).
 
   (* Low level graph deconstruction notations *)
   Notation "vt '@' vidx '-v' G" := 
-    (remove_vertex G (vidx, vt)) (at level 41, right associativity).
-  Notation "idx0 '<i>' idx1 '-e' G" := 
-    (remove_internal_edge G (idx0, idx1)) (at level 41, right associativity).
-  Notation "idx0 '<l>' idx1 '-e' G" := 
-    (remove_input_edge G (idx0, idx1)) (at level 41, right associativity).
-  Notation "idx0 '<r>' idx1 '-e' G" := 
-    (remove_output_edge G (idx0, idx1)) (at level 41, right associativity).
-  Notation "idx0 '<b>' idx1 '-e' G" := 
-    (remove_boundary_edge G (idx0, idx1)) (at level 41, right associativity).
+    (remove_vertex (vidx, vt) G) (at level 41, right associativity).
+  Notation "idx0 '-' idx1 '-e' G" := 
+    (remove_edge (idx0, idx1) G) (at level 41, right associativity).
+
+  Definition inputb (edge : Edge) : bool :=
+    match edge with
+    | (Boundary _, _) => true
+    | _               => false
+    end.
+
+  Definition outputb (edge : Edge) : bool :=
+    match edge with
+    | (_, Boundary _) => true
+    | _               => false
+    end.
+
+  Definition internalb (edge : Edge) : bool :=
+    match edge with
+    |(Internal _, Internal _) => true
+    | _ => false
+    end.
+
+  Notation "'input?' e" := (inputb e) (at level 20).
+  Notation "'output?' e" := (outputb e) (at level 20).
+  Notation "'internal?' e" := (internalb e) (at level 20).
+
+  Definition ledges (graph : ZXG) : list Edge := filter (inputb) (edges graph).
+
+  Definition redges (graph : ZXG) : list Edge := filter (outputb) (edges graph).
+
+  Definition edgetype_idx (e : EdgeType) : nat :=
+    match e with
+    | Boundary x | Internal x => x
+    end.
+  
+  Definition vertex_idx (v : Vertex) : nat :=
+    match v with
+    | (id, vt) => id
+    end.
+
+  Definition left_et (e : Edge) : EdgeType :=
+    match e with
+    | (l, r) => l
+    end.
+
+  Definition right_et (e : Edge) : EdgeType :=
+    match e with
+    | (l, r) => r
+    end.
+
+  Definition left_idx (e : Edge) : nat := edgetype_idx (left_et e).
+  Definition right_idx (e : Edge) : nat := edgetype_idx (right_et e).
+
+  Definition edges_idx (graph : ZXG) : list nat :=
+    match (split (edges graph)) with
+    | (l, r) => map edgetype_idx (l ++ r)
+    end.
 
   (* Get a fresh index for the purposes of graph isolation, 
      they have arbitrary space above them *)
-  Definition fresh_idx {n m} (graph : ZXG n m) : nat :=
-    S (list_max (map fst (ledges graph) ++ 
-                 map snd (redges graph) ++ 
-                 map fst (vertices graph))).
-
-  (* Repeated addition of vertices and edges *)
-  Reserved Notation "bidx '<l>' idx '^e' n '+e' zxg" 
-    (at level 41, right associativity).
-  Fixpoint add_n_input_edges {n m : nat} (zx : ZXG n m) 
-                         (bidx : BoundaryType) (idx : VertexIdx) (iter : nat) : 
-    ZXG (iter + n) m :=
-    match iter as k return (ZXG (k + n) m) with
-    | 0 => zx
-    | S k => bidx <l> idx +e (S bidx) <l> idx ^e k +e zx
-    end
-  where "bidx '<l>' idx '^e' n '+e' zxg" := 
-    (add_n_input_edges zxg bidx idx n).
-
-  Reserved Notation "idx '<r>' bidx '^e' n '+e' zxg" 
-    (at level 41, right associativity).
-  Fixpoint add_n_output_edges {n m : nat} (zx : ZXG n m) 
-                          (idx : VertexIdx) (bidx : BoundaryType) (iter : nat) : 
-    ZXG n (iter + m) :=
-    match iter as k return (ZXG n (k + m)) with
-    | 0 => zx
-    | S k => idx <r> bidx +e idx <r> (S bidx) ^e k +e zx
-    end
-    where "idx '<r>' bidx '^e' n '+e' zxg" := 
-      (add_n_output_edges zxg idx bidx n).
-
-  Reserved Notation "idxl '<i>' idxr '^e' n '+e' zxg" 
-    (at level 41, right associativity).
-  Fixpoint add_n_internal_edges {n m : nat} (zx : ZXG n m) 
-                      (idxl idxr : VertexIdx) (iter : nat) : 
-    ZXG n m :=
-    match iter with
-    | 0 => zx
-    | S k => idxl <i> idxr +e idxl <i> idxr ^e k +e zx
-    end
-    where "idxl '<i>' idxr '^e' n '+e' zxg" := 
-      (add_n_internal_edges zxg idxl idxr n).
+  Definition fresh_idx (graph : ZXG) : nat :=
+    S (list_max (edges_idx graph ++ map fst (vertices graph))).
   
-  Reserved Notation "idxl '<b>' idxr '^e' n '+e' zxg" 
+  (* Repeated addition of vertices and edges *)
+  Reserved Notation "bidx '-' idx '^e' n '+e' zxg"
     (at level 41, right associativity).
-  Fixpoint add_n_boundary_edges {n m : nat} (zx : ZXG n m) 
-                      (idxl idxr : BoundaryType) (iter : nat) : 
-                      ZXG (iter + n) (iter + m) :=
-    match iter as k return (ZXG (k + n) (k + m)) with
-    | 0 => zx
-    | S k => idxl <b> idxr +e idxl <b> idxr ^e k +e zx
-    end
-    where "idxl '<b>' idxr '^e' n '+e' zxg" := 
-      (add_n_boundary_edges zxg idxl idxr n).
-
+  Fixpoint add_n_edges (zx : ZXG) (idx0 : EdgeType) 
+    (idx1 : EdgeType) (iter : nat) : ZXG :=
+      match iter with
+      | 0 => zx
+      | S k => idx0 - idx1 +e idx0 - idx1 ^e k +e zx
+      end
+      where "bidx '-' idx '^e' n '+e' zxg" :=
+      (add_n_edges zxg bidx idx n).
+    
   (* Ways to combine graphs *)
   Notation "A '+' B" := (compose A B).
   Notation "A '⊗' B" := (stack A B).
   
-  (* Testing properties of the graph *)
-  Definition connected_vertices {n m : nat} (zxg : ZXG n m) 
-    (l : Vertex) (r : Vertex) : bool :=
-    let gv := iedges zxg in
-      (existsb (fun p => 
-                orb (andb (fst p =? (fst l)) (snd p =? (fst r)))
-                    (andb (fst p =? (fst r)) (snd p =? (fst l))))
-                gv).
-  Notation "x '<i>?' y 'in' G" := (connected_vertices G x y) (at level 40).
-  
-  Definition connected_edge (vert : VertexIdx) (edge : Edge) :=
-    (fst edge =? vert) || (snd edge =? vert).
+  Definition vertex_in_edge (v : Vertex) (e : Edge) :=
+    let vidx := vertex_idx v in
+      (vidx =? left_idx e) || (vidx =? right_idx e).
+
+  Definition connected_verticesb (zxg : ZXG) (v0 v1 : Vertex) : bool :=
+    existsb 
+    (fun e => vertex_in_edge v0 e && vertex_in_edge v1 e) 
+    (edges zxg).
+  Notation "x '-?' y 'in' G" := (connected_verticesb G x y) (at level 40).
 
   (* Access elements of the graph *)
-  Definition all_edges {n m : nat} (zxg : ZXG n m) : list LEdge :=
-    ledges zxg ++ iedges zxg ++ redges zxg.
+  Definition vertex_neighborhood (zxg : ZXG) (v : Vertex) : list Vertex := 
+    filter (fun v0 => v -? v0 in zxg) (vertices zxg).
+  Definition vertex_neighborhood_edges (zxg : ZXG) (v : Vertex) : list Edge :=
+    filter (vertex_in_edge v) (edges zxg).
 
-  Definition input_edges_vert {n m : nat} (zxg : ZXG n m) (vert : VertexIdx) : list LEdge :=
-    filter (connected_edge vert) (ledges zxg).
+  Definition input_edges_vert (zxg : ZXG) (v : Vertex) : list Edge :=
+    filter (fun e => vertex_in_edge v e && input? e) (edges zxg).
 
-  Definition internal_edges_vert {n m : nat} (zxg : ZXG n m) (vert : VertexIdx) : list IEdge :=
-    filter (connected_edge vert) (iedges zxg).
-  Definition output_edges_vert {n m : nat} (zxg : ZXG n m) (vert : VertexIdx) : list REdge :=
-    filter (connected_edge vert) (redges zxg).
+  Definition output_edges_vert (zxg : ZXG) (v : Vertex) : list Edge :=
+    filter (fun e => vertex_in_edge v e && output? e) (edges zxg).
 
-  Definition neighborhood_edges {n m : nat} (zxg : ZXG n m) (vert : VertexIdx) : list IEdge := 
-    filter (connected_edge vert) (all_edges zxg).
+  Definition internal_edges_vert (zxg : ZXG) (v : Vertex) : list Edge :=
+    filter (fun e => vertex_in_edge v e && internal? e) (edges zxg).
 
   (* High level graph rewriting through induced subgraphs *)
-  Parameter induced_subgraph : forall {n m o p : nat}, 
-    ZXG n m -> list VertexIdx -> list VertexIdx -> ZXG o p.
+  Parameter induced_subgraph :
+    ZXG -> list Vertex -> list Vertex -> ZXG.
 
   Fixpoint list_minus (data remover : list nat) : list nat.
   Proof.
@@ -213,14 +194,6 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     destruct remover.
     - exact data.
     - exact (list_minus (remove Nat.eq_dec n data) remover).
-  Defined.
-
-  Fixpoint add_list_vertices {n m} (verts : list Vertex) : ZXG n m -> ZXG n m.
-  Proof.
-    intros zx.
-    destruct verts as [|[lbl rog] verts].
-    - exact zx.
-    - exact ((add_list_vertices _ _ verts) (rog @ lbl +v zx)).
   Defined.
 
   Fixpoint satisfy {A} (P : A -> bool) (lst : list A) : option A.
@@ -232,79 +205,29 @@ Module ZXGraph (GraphInstance :  ZXGModule).
       + exact (satisfy A P lst).
   Defined.
 
-  Fixpoint get_vertices {n m} (verts : list VertexIdx) : ZXG n m -> list (VertexIdx * VertexType).
+  Definition pull_vertex_left (vert : Vertex) 
+    (target : ZXG) (source : ZXG) : (ZXG * ZXG).
   Proof.
-    intros zxg.
-    specialize (vertices zxg) as gverts.
-    exact (fold_left (fun acc nxt => acc)
-                     gverts []).
-  Defined.
+    destruct vert as [idx ty].
+    exact (source, source). Defined.
 
-  Definition join_edge (ledge : LEdge) (redge : REdge) : IEdge :=
-    (fst ledge, snd redge).
-
-  Definition pull_vertex_left {n m o p} (vert : Vertex) 
-    (target : ZXG o p) (source : ZXG n m) : (ZXG o p * ZXG n m).
+  Definition isolate_subgraph :
+    ZXG -> list Vertex -> list Vertex -> ZXG.
   Proof.
-    destruct vert                                          as [idx ty].
-    specialize (max (fresh_idx target) (fresh_idx source)) as f_idx.
-    specialize (input_edges_vert source idx)               as source_inputs.
-    specialize (internal_edges_vert source idx)            as source_internal.
-    specialize (output_edges_vert source idx)              as source_output.
-    specialize (ty @ idx -v source)                        as newsource.
-    specialize (ty @ idx +v target)                        as newtarget.
-    exact (newtarget, newsource). Defined.
-
-  Definition isolate_subgraph : forall {n m o p : nat},
-    ZXG n m -> list VertexIdx -> list (VertexIdx * VertexType) -> ZXG o p.
-  Proof.
-    intros n m o p graph inputs internal.
-    specialize (vertices graph) as all_vertices.
-    specialize (iedges graph) as all_edges.
-    specialize (map fst all_vertices) as all_vertices_idx.
-    specialize (map fst internal) as internal_idx.
-    specialize (filter 
-                    (fun e => 
-                      (0 <? (count_occ Nat.eq_dec internal_idx (fst e)))
-                   || (0 <? (count_occ Nat.eq_dec internal_idx (snd e)))) 
-                    all_edges) 
-      as connected_to_internal.
-    specialize (filter
-                    (fun e =>
-                      (0 <? (count_occ Nat.eq_dec inputs (fst e)))
-                   || (0 <? (count_occ Nat.eq_dec inputs (snd e))))
-                connected_to_internal)
-      as input_connected_to_internal.
-    specialize (filter
-                    (fun e =>
-                      (0 =? (count_occ Nat.eq_dec inputs (fst e)))
-                   || (0 =? (count_occ Nat.eq_dec inputs (snd e))))
-                connected_to_internal)
-      as output_connected_to_internal.
-    specialize 0%nat as x.
-    specialize (add_list_vertices internal empty_graph) as subgraph.
   Admitted.
 
-  Definition induce_subgraph : forall {n m o p : nat},
-    ZXG n m -> list VertexIdx -> list (VertexIdx * VertexType) -> ZXG o p.
+  Definition induce_subgraph : 
+    ZXG -> list Vertex -> list Vertex -> ZXG.
   Proof.
-    intros n m o p big_graph inputs internal.
-    specialize (vertices big_graph) as all_vertices.
-    specialize (iedges big_graph) as all_edges.
-    specialize (list_minus (list_minus (map fst all_vertices) inputs) (map fst internal)) as remainder.
-    specialize (add_list_vertices internal empty_graph) as subgraph.
-
   Admitted.
 
   Notation "zxa '|_' inputs '#' vertices" := 
       (induced_subgraph zxa inputs vertices) (at level 40).
-  Parameter replace_subgraph : forall {n m o p : nat} 
-  (G : ZXG n m) (S : list VertexIdx) 
-  (H : ZXG o p), ZXG n m.
+  Parameter replace_subgraph : forall (G : ZXG) (S : list Vertex) (H : ZXG), ZXG.
   Notation "G '|_{' S '>=>' H '}'" := (replace_subgraph G S H) (at level 40).
   Parameter gen_rewrite : forall {n m o p : nat} 
-    (G : ZXG n m) (S : list VertexIdx) (I : list VertexIdx) 
-    (H : ZXG o p) (P : H ∝ G |_ I # S), 
+    (G : ZXG) (S : list Vertex) (I : list Vertex) 
+    (H : ZXG) (P : H ∝ G |_ I # S), 
       G ∝ G |_{ S >=> H }.
 
   (* Parameter permute_inputs *)
@@ -316,57 +239,57 @@ Module ZXGraph (GraphInstance :  ZXGModule).
 
   (* Stating ZX-Calc rules in the language *)
 
-  Definition bialg_l : ZXG 2 2 := 
-    2 <=> +e 3 <=> +e
-    <=> 0 +e <=> 1 +e
-    0 <=> 2 +e 0 <=> 3 +e
-    1 <=> 2 +e 1 <=> 3 +e
-    (X 0) @ 3 +v (X 0) @ 2 +v 
-    (Z 0) @ 1 +v (Z 0) @ 0 +v ∅.
+  (* Definition bialg_l : ZXG 2 2 :=  *)
+  (*   2 <=> +e 3 <=> +e *)
+  (*   <=> 0 +e <=> 1 +e *)
+  (*   0 <=> 2 +e 0 <=> 3 +e *)
+  (*   1 <=> 2 +e 1 <=> 3 +e *)
+  (*   (X 0) @ 3 +v (X 0) @ 2 +v  *)
+  (*   (Z 0) @ 1 +v (Z 0) @ 0 +v ∅. *)
 
-  Definition bialg_r : ZXG 2 2 :=
-    <=> 0 +e <=> 0 +e 1 <=> +e 1 <=> +e
-    (X 0) @ 0 +v (Z 0) @ 1 +v ∅ .
+  (* Definition bialg_r : ZXG 2 2 := *)
+  (*   <=> 0 +e <=> 0 +e 1 <=> +e 1 <=> +e *)
+  (*   (X 0) @ 0 +v (Z 0) @ 1 +v ∅ . *)
 
-  Parameter bialgebra_rule : bialg_l ∝ bialg_r.
+  (* Parameter bialgebra_rule : bialg_l ∝ bialg_r. *)
 
-  Definition hopf_l : ZXG 1 1 :=
-  0 <=> 1 +e 0 <=>1 +e <=> 1 +e 0 <=> +e
-  (Z 0) @ 1 +v (X 0) @ 0 +v ∅ .
+  (* Definition hopf_l : ZXG 1 1 := *)
+  (* 0 <=> 1 +e 0 <=>1 +e <=> 1 +e 0 <=> +e *)
+  (* (Z 0) @ 1 +v (X 0) @ 0 +v ∅ . *)
 
-  Definition hopf_r : ZXG 1 1 :=
-  <=> 1 +e 0 <=> +e
-  (Z 0) @ 1 +v (X 0) @ 0 +v ∅ .
+  (* Definition hopf_r : ZXG 1 1 := *)
+  (* <=> 1 +e 0 <=> +e *)
+  (* (Z 0) @ 1 +v (X 0) @ 0 +v ∅ . *)
 
-  Parameter hopf_rule : hopf_l ∝ hopf_r.
+  (* Parameter hopf_rule : hopf_l ∝ hopf_r. *)
 
-  Definition fusion_g_l_fin {m : nat} {α β : R} : ZXG 2 2 :=
-    0 <=> +e 1 <=> +e
-    <=> 0 +e <=> 1 +e
-    0 <=> 1 ^e m +e
-    (Z α) @ 0 +v Z β @ 1 +v ∅. 
+  (* Definition fusion_g_l_fin {m : nat} {α β : R} : ZXG 2 2 := *)
+  (*   0 <-> +e 1 <=> +e *)
+  (*   <=> 0 +e <=> 1 +e *)
+  (*   0 <=> 1 ^e m +e *)
+  (*   (Z α) @ 0 +v Z β @ 1 +v ∅.  *)
 
-  Definition fusion_g_r_fin {α β : R} : ZXG 2 2 :=
-    0 <=> +e 0 <=> +e
-    <=> 0 +e <=> 0 +e
-    Z (α + β) @ 0 +v ∅.
+  (* Definition fusion_g_r_fin {α β : R} : ZXG 2 2 := *)
+  (*   0 <=> +e 0 <=> +e *)
+  (*   <=> 0 +e <=> 0 +e *)
+  (*   Z (α + β) @ 0 +v ∅. *)
 
-  Parameter fusion_g_fin : forall {m : nat} {α β : R},
-    @fusion_g_l_fin m α β ∝ @fusion_g_r_fin α β.
+  (* Parameter fusion_g_fin : forall {α β : R}, *)
+  (*   @fusion_g_l_fin α β ∝ @fusion_g_r_fin α β. *)
 
-  Definition fusion_g_l {n0 n1 o0 o1 m} {α β : R} : ZXG (n0 + (n1 + 0)) (o0 + (o1 + 0)) :=
-    0 <=> 1 ^e m +e
-    0 <=> ^e o0 +e 1 <=> ^e o1 +e
-    <=> 0 ^e n0 +e <=> 1 ^e n1 +e
-    (Z β) @ 1 +v (Z α) @ 0 +v ∅ .
+  (* Definition fusion_g_l {n0 n1 o0 o1 m} {α β : R} : ZXG := *)
+  (*   0 - 1 ^e m +e *)
+  (*   0 - 1 ^e o0 +e 1 - 0 ^e o1 +e *)
+  (*   1 - 0 ^e n0 +e 0 - 1 ^e n1 +e *)
+  (*   (Z β) @ 1 +v (Z α) @ 0 +v ∅ . *)
 
-  Definition fusion_g_r {n0 n1 o0 o1} {α β : R} : ZXG (n0 + (n1 + 0)) (o0 + (o1 + 0)) :=
-    0 <=> ^e o0 +e 1 <=> ^e o1 +e
-    <=> 0 ^e n0 +e <=> 1 ^e n1 +e
-    (Z (α + β)) @ 0 +v ∅ .
+  (* Definition fusion_g_r {n0 n1 o0 o1} {α β : R} : ZXG (n0 + (n1 + 0)) (o0 + (o1 + 0)) := *)
+  (*   0 <=> ^e o0 +e 1 <=> ^e o1 +e *)
+  (*   <=> 0 ^e n0 +e <=> 1 ^e n1 +e *)
+  (*   (Z (α + β)) @ 0 +v ∅ . *)
 
-  Parameter fusion_g : forall {n0 n1 o0 o1 m : nat} {α β : R},
-    @fusion_g_l n0 n1 o0 o1 m α β ∝ @fusion_g_r n0 n1 o0 o1 α β.
+  (* Parameter fusion_g : forall {n0 n1 o0 o1 m : nat} {α β : R}, *)
+  (*   @fusion_g_l n0 n1 o0 o1 m α β ∝ @fusion_g_r n0 n1 o0 o1 α β. *)
 
   Local Close Scope nat.
 
