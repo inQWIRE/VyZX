@@ -60,6 +60,8 @@ End ZXvertNotation.
 
 Lemma compose_ZX_vert_alt {n m o} (zx0 : ZXvert n m) (zx1 : ZXvert m o) :
   compose_ZX_vert zx0 zx1 ∝ n_cap_mid n m o ⟷ stack_ZX_vert zx0 zx1.
+Proof.
+Admitted.
 
 (* Section on theory specific to the graphs *)
 

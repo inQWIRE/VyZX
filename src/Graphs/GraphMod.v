@@ -3,10 +3,20 @@ Require Import ZXCore.
 Require Import List.
 Require Import Nat.
 
+(*   autosubst                                                    *)
+(* C Rework edges to be end - ver ver - ver end - end ver - end   *)
+(* C Hadamard Edges                                               *)
+(*   Phase gadgets                                                *)
+(*   Sum of diagrams                                              *)
+(*   Arbitrary Scalars                                            *)
+(*   Flow and Flow Conditions - eventual circuit extraction       *)
+
 Module Type ZXGModule.
 
   Parameter ZXG : Type.
   Parameter proportional : ZXG -> ZXG -> Prop.
+  Parameter SemanticType : Type.
+  Parameter semantic : ZXG -> SemanticType.
 
   (* Allows for flexible types of graph nodes *)
   Parameter VertexType : Type. 
@@ -24,15 +34,8 @@ Module Type ZXGModule.
     | Boundary : Idx -> EdgeType
     | Internal : Idx -> EdgeType.
 
-  Definition Edge : Type := (EdgeType * EdgeType).
+  Definition Edge : Type := (EdgeType * EdgeType * bool).
 
-(*  autosubst                                                    *)
-(*  Rework edges to be end - ver ver - ver end - end ver - end   *)
-(*  Hadamard Edges                                               *)
-(*  Phase gadgets                                                *)
-(*  Sum of diagrams                                              *)
-(*  Arbitrary Scalars                                            *)
-(*  Flow and Flow Conditions - eventual circuit extraction       *)
   (* Accessing different parts of graph *)
   Parameter vertices : ZXG -> list Vertex.
   Parameter edges : ZXG -> list Edge.
@@ -72,34 +75,44 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   Notation "'X' α"    := (VertexX α) (at level 20).
   Notation "∅"         := empty_graph.
 
+  (*  *)
+  Notation "id @ idx" := (idx%nat, id) (at level 20).
+  Notation "id0 '--' id1" := (id0%nat, id1%nat, false) (at level 20).
+  Notation "id0 'h-' id1" := (id0, id1, true) (at level 20).
+
   (* Low level graph construction notations *)
-  Notation "vt '@' vidx '+v' G" := 
-    (add_vertex (vidx, vt) G) (at level 41, right associativity).
-  Notation "idx0 '-' idx1 '+e' G" := 
-    (add_edge (idx0, idx1) G) (at level 41, right associativity).
+  Notation "v '+v' G" := 
+    (add_vertex v G) (at level 41, right associativity).
+  Notation "e '+e' G" := 
+    (add_edge e G) (at level 41, right associativity).
 
   (* Low level graph deconstruction notations *)
-  Notation "vt '@' vidx '-v' G" := 
-    (remove_vertex (vidx, vt) G) (at level 41, right associativity).
-  Notation "idx0 '-' idx1 '-e' G" := 
-    (remove_edge (idx0, idx1) G) (at level 41, right associativity).
+  Notation "v '-v' G" := 
+    (remove_vertex v G) (at level 41, right associativity).
+  Notation "e '-e' G" := 
+    (remove_edge e G) (at level 41, right associativity).
 
   Definition inputb (edge : Edge) : bool :=
     match edge with
-    | (Boundary _, _) => true
+    | (Boundary _, _, _) => true
     | _               => false
     end.
 
   Definition outputb (edge : Edge) : bool :=
     match edge with
-    | (_, Boundary _) => true
+    | (_, Boundary _, _) => true
     | _               => false
     end.
 
   Definition internalb (edge : Edge) : bool :=
     match edge with
-    |(Internal _, Internal _) => true
+    |(Internal _, Internal _, _) => true
     | _ => false
+    end.
+
+  Definition hadamardb (edge : Edge) : bool :=
+    match edge with
+    | (_, _, hb) => hb
     end.
 
   Notation "'input?' e" := (inputb e) (at level 20).
@@ -122,12 +135,12 @@ Module ZXGraph (GraphInstance :  ZXGModule).
 
   Definition left_et (e : Edge) : EdgeType :=
     match e with
-    | (l, r) => l
+    | (l, _, _) => l
     end.
 
   Definition right_et (e : Edge) : EdgeType :=
     match e with
-    | (l, r) => r
+    | (_, r, _) => r
     end.
 
   Definition left_idx (e : Edge) : nat := edgetype_idx (left_et e).
@@ -135,7 +148,9 @@ Module ZXGraph (GraphInstance :  ZXGModule).
 
   Definition edges_idx (graph : ZXG) : list nat :=
     match (split (edges graph)) with
-    | (l, r) => map edgetype_idx (l ++ r)
+    | (lr, _) => match (split lr) with
+                | (l, r) => map edgetype_idx (l ++ r)
+                 end
     end.
 
   (* Get a fresh index for the purposes of graph isolation, 
@@ -144,17 +159,32 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     S (list_max (edges_idx graph ++ map fst (vertices graph))).
   
   (* Repeated addition of vertices and edges *)
-  Reserved Notation "bidx '-' idx '^e' n '+e' zxg"
+  Reserved Notation "e '^e' n '+e' zxg"
     (at level 41, right associativity).
   Fixpoint add_n_edges (zx : ZXG) (idx0 : EdgeType) 
     (idx1 : EdgeType) (iter : nat) : ZXG :=
       match iter with
       | 0 => zx
-      | S k => idx0 - idx1 +e idx0 - idx1 ^e k +e zx
-      end
-      where "bidx '-' idx '^e' n '+e' zxg" :=
-      (add_n_edges zxg bidx idx n).
-    
+      | S k => idx0 -- idx1 +e add_n_edges zx idx0 idx1 k
+      end.
+  Notation "e '^e' n '+e' zxg" := (add_n_edges zxg (fst (fst e)) (snd (fst e)) n).
+  
+  Fixpoint add_list_edges (zx : ZXG) (el : list Edge) : ZXG :=
+    match el with
+    | [] => zx
+    | e::es => e +e add_list_edges zx es
+    end.
+  Notation "ls +el zxg" := 
+    (add_list_edges zxg ls) (at level 41, right associativity).
+
+  Fixpoint remove_list_edges (zx : ZXG) (el : list Edge) : ZXG :=
+    match el with
+    | [] => zx
+    | e::es => e -e remove_list_edges zx es
+    end.
+  Notation "ls -el zxg" := 
+    (remove_list_edges zxg ls) (at level 41, right associativity).
+
   (* Ways to combine graphs *)
   Notation "A '+' B" := (compose A B).
   Notation "A '⊗' B" := (stack A B).
@@ -165,8 +195,8 @@ Module ZXGraph (GraphInstance :  ZXGModule).
 
   Definition connected_verticesb (zxg : ZXG) (v0 v1 : Vertex) : bool :=
     existsb 
-    (fun e => vertex_in_edge v0 e && vertex_in_edge v1 e) 
-    (edges zxg).
+      (fun e => vertex_in_edge v0 e && vertex_in_edge v1 e) 
+      (edges zxg).
   Notation "x '-?' y 'in' G" := (connected_verticesb G x y) (at level 40).
 
   (* Access elements of the graph *)
@@ -205,11 +235,87 @@ Module ZXGraph (GraphInstance :  ZXGModule).
       + exact (satisfy A P lst).
   Defined.
 
+  Fixpoint remap_edges_input (idx : nat) (es : list Edge) :=
+    match es with
+    | []    => []
+    | e::es => match e with
+               | (_, r, b) => (Boundary idx, r, b)::(remap_edges_input (S idx) es)
+               end
+    end.
+
+  Fixpoint remap_edges_output (idx : nat) (es: list Edge) :=
+    match es with
+    | []    => []
+    | e::es => match e with
+               | (l, _, b) => (l, Boundary idx, b)::(remap_edges_output (S idx) es)
+               end
+    end.
+
+  Fixpoint remap_edges_internal_l (idx : nat) (es: list Edge) :=
+    match es with
+    | []    => []
+    | e::es => match e with
+               | (_, r, b) => (Internal idx, r, b)::(remap_edges_internal_l idx es)
+               end
+    end.
+
+  Fixpoint remap_edges_internal_r (idx : nat) (es: list Edge) :=
+    match es with
+    | []    => []
+    | e::es => match e with
+               | (l, _, b) => (l, Internal idx, b)::(remap_edges_internal_r idx es)
+               end
+    end.
+
+  Definition et_eqb (id0 : EdgeType) (id1 : EdgeType) : bool :=
+    match (id0, id1) with
+    | (Internal x, Internal y)
+    | (Boundary x, Boundary y) => x =? y
+    | _ => false
+    end.
+
+  Definition move_ident_to_left (id : EdgeType) (e : Edge) :=
+    match e with
+    | (l, r, b) => if et_eqb r id then (r, l, b) else (l, r, b)
+    end.
+  Definition move_ident_to_right (id : EdgeType) (e : Edge) :=
+    match e with
+    | (l, r, b) => if et_eqb l id then (r, l, b) else (l, r, b)
+    end.
+  Definition flip (e : Edge) :=
+    match e with
+    | (l, r, b) => (r, l, b)
+    end.
+
   Definition pull_vertex_left (vert : Vertex) 
     (target : ZXG) (source : ZXG) : (ZXG * ZXG).
   Proof.
-    destruct vert as [idx ty].
-    exact (source, source). Defined.
+    inversion vert as [idx vt].
+    specialize (input_edges_vert source vert) as vert_inputs.
+    specialize (output_edges_vert source vert) as vert_outputs.
+    specialize (internal_edges_vert source vert) as vert_internal.
+    specialize 
+      (vert_inputs -el vert_outputs -el vert_internal -el source) 
+      as clean_source.
+    specialize (max (fresh_idx source) (fresh_idx target)) as fresh_src.
+    specialize 
+      (remap_edges_input 
+        fresh_src 
+        (map (move_ident_to_left (Internal idx)) 
+              vert_outputs)) as new_passthrough.
+    specialize 
+      (remap_edges_input 
+        fresh_src 
+        (map (move_ident_to_left (Internal idx)) 
+              vert_internal)) as new_inputs.
+    specialize 
+      (remap_edges_internal_l
+        idx
+        (map flip new_passthrough)) as new_outputs_pass.
+  exact 
+    (new_outputs_pass +el vert +v target, 
+     new_inputs +el new_passthrough +el clean_source). 
+  Defined.
 
   Definition isolate_subgraph :
     ZXG -> list Vertex -> list Vertex -> ZXG.
