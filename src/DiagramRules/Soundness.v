@@ -305,20 +305,91 @@ Proof.
   reflexivity.
 Qed.
 
+(* We don't really ever want to unfold zx_of_const... *)
+#[global]
+Opaque zx_of_const.
+
+Lemma stack_zx_of_const_semantics {n m} (zx : ZX n m) c : 
+  ⟦ zx_of_const c ↕ zx ⟧ = c .* ⟦ zx ⟧.
+Proof.
+  simpl.
+  rewrite zx_of_const_semantics.
+  rewrite Mscale_kron_dist_l, kron_1_l by auto_wf.
+  reflexivity.
+Qed.
+
+(* A version with dimensions that simplify the addition *)
+Lemma stack_zx_of_const_semantics' {n m} (zx : ZX n m) c : 
+  @ZX_semantics n m (zx_of_const c ↕ zx) = c .* ⟦ zx ⟧.
+Proof.
+  apply stack_zx_of_const_semantics.
+Qed.
+
+Lemma prop_by_iff_eq_gadget_nonzero {n m} (zx0 zx1 : ZX n m) c : 
+  zx0 ∝[c] zx1 <-> zx0 ∝= zx_of_const c ↕ zx1 /\ c <> 0.
+Proof.
+  split.
+  - intros Hby.
+    split; [|apply Hby].
+    unfold proportional_by_1.
+    rewrite stack_zx_of_const_semantics'.
+    apply Hby.
+  - intros [Hprop Hnz].
+    split; [|apply Hnz].
+    rewrite Hprop, stack_zx_of_const_semantics'.
+    reflexivity.
+Qed.
+
+Lemma prop_by_to_gadget {n m} (zx0 zx1 : ZX n m) c : 
+  zx0 ∝[c] zx1 -> zx0 ∝= zx_of_const c ↕ zx1.
+Proof.
+  rewrite prop_by_iff_eq_gadget_nonzero.
+  easy.
+Qed.
+
 Local Open Scope ZX_scope.
 
 Lemma proportional_sound : forall {nIn nOut} (zx0 zx1 : ZX nIn nOut),
   zx0 ∝ zx1 -> exists (zxConst : ZX 0 0), ⟦ zx0 ⟧ = ⟦ zxConst ↕ zx1 ⟧.
 Proof.
   intros.
-  simpl; unfold proportional, proportional_general in H.
-  destruct H as [c [H cneq0]].
-  rewrite H.
+  destruct H as [c Hby].
   exists (zx_of_const c).
-  rewrite zx_of_const_semantics.
-  rewrite Mscale_kron_dist_l, kron_1_l by auto_wf.
-  reflexivity.
+  apply prop_by_to_gadget, Hby.
 Qed.
+
+(* Automation for gadgets *)
+
+(* Automatically convert an explicit proportionality lemma
+  (i.e. ending in [_ ∝[_] _]) to the corresponding semantic
+  equality statement. *)
+Ltac zxlem_to_gadget h :=
+  lazymatch type of h with 
+  | ?zx0 ∝[?c] ?zx1 => open_constr:(prop_by_to_gadget zx0 zx1 c h)
+  | forall x : ?T, _ => 
+    let x := fresh x in 
+    constr:(fun x : T => 
+      ltac:(
+        let happ := eval cbn beta in (h x) in 
+        let res := zxlem_to_gadget happ
+        in exact res))
+  | ?T => fail 0 "Couldn't see lemma of type '" T
+    "' as a lemma of shape '_ ∝[_] _'"
+  end.
+
+(* Use an explicit proportionality [∝[c]] lemma in a semantic 
+  equality [∝=] context by converting to a gadget statement. 
+  For example, [rewrite (to_gadget bi_algebra_rule_Z_X)]. Note
+  that the lemma cannot have any implicit arguments, which is 
+  usually most easily rectified by writing [to_gadget @lem] 
+  instead of [to_gadget lem]. (Specifically, [lem] can be any
+  term without holes, potentially with evars, so it can be 
+  partially applied to arguments)*)
+Notation "'to_gadget' h" := 
+  (ltac:(
+    let res := zxlem_to_gadget open_constr:(h) in 
+    exact res))
+  (at level 0, h at level 100, only parsing) : ZX_scope.
 
 
 
@@ -644,7 +715,7 @@ Proof.
   - easy.
 Qed.
 
-Lemma prop_by_iff_by_quot {n m} (zx0 zx1 : ZX n m) : 
+Lemma prop_iff_by_quot {n m} (zx0 zx1 : ZX n m) : 
   zx0 ∝ zx1 <-> zx0 ∝[zxquot zx0 zx1] zx1.
 Proof.
   split; [apply prop_by_quot_of_prop|].
@@ -723,7 +794,7 @@ Qed.
 Lemma proportional_dec {n m} (zx0 zx1 : ZX n m) : 
   Decidable (zx0 ∝ zx1).
 Proof.
-  refine (dec_iff' (proportional_by_dec _ _ _) (prop_by_iff_by_quot zx0 zx1)).
+  refine (dec_iff' (proportional_by_dec _ _ _) (prop_iff_by_quot zx0 zx1)).
 Qed.
 
 End ProportionalDec.
