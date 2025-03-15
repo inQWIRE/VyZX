@@ -1,6 +1,4 @@
 From QuantumLib Require Complex Matrix RealAux Polar.
-Require Ltac2.Ltac2 Ltac2.Init.
-(* Ltac2 used only for better notations *)
 
 Module SoundnessC.
 
