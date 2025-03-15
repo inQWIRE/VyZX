@@ -7,7 +7,7 @@ Require Export CoreRules.ZRules.
 Require Export CoreRules.XRules.
 
 
-Theorem X_state_copy : forall (r n : nat) prfn prfm,
+Theorem X_state_copy_phase_0 : forall (r n : nat) prfn prfm,
 	(X 0 1 ((INR r) * PI) ⟷ Z 1 n 0) 
 	∝[(√2 * (/√2 ^ n))%R]
 	cast 0%nat n prfn prfm (n ⇑ (X 0 1 ((INR r) * PI))).
@@ -19,7 +19,6 @@ Proof.
 		zxsymmetry.
 		split; [|C_field].
 		symmetry.
-		(* rewrite Mscale_inv by nonzero. *)
 		prep_matrix_equivalence.
 		Msimpl; simpl.
 		unfold X_semantics, Z_semantics.
@@ -80,13 +79,116 @@ Proof.
 		all: lia.
 Qed.
 
-Theorem Z_state_copy : forall (r n : nat) prfn prfm,
+Theorem Z_state_copy_phase_0 : forall (r n : nat) prfn prfm,
 	(Z 0 1 ((INR r) * PI) ⟷ X 1 n 0) 
 	∝[(√2 * (/√2 ^ n))%R]
 	cast 0%nat n prfn prfm (n ⇑ (Z 0 1 ((INR r) * PI))).
 Proof.
 	intros r n prfn prfm.
-	colorswap_of (X_state_copy r n prfn prfm).
+	colorswap_of (X_state_copy_phase_0 r n prfn prfm).
+Qed.
+
+Theorem X_state_copy : forall (r n : nat) (a : R) prfn prfm,
+	(X 0 1 ((INR r) * PI) ⟷ Z 1 n a) 
+	∝[((/√2 ^ S n))%R *
+	(((C1 + Cexp ((INR r) * PI)) * (C1 - Cexp a) + 2 * Cexp a))]
+	cast 0%nat n prfn prfm (n ⇑ (X 0 1 ((INR r) * PI))).
+Proof.
+	assert (X_Z_phase_value' : forall (a b : R),
+		⟦ X 0 1 a ⟷ Z 1 0 b ⟧ = 
+		(((C1 + Cexp a) * (C1 - Cexp b) + 2 * Cexp b) / √2) .* I 1). 1: {
+		intros a b.
+		prep_matrix_equivalence.
+		by_cell.
+		cbn; unfold kron, scale; cbn.
+		Csimpl.
+		C_field_simplify; [|nonzero].
+		lca.
+	}
+	intros r n a prfn prfm.
+	replace (((/√2 ^ S n))%R * (((C1 + Cexp ((INR r) * PI)) * (C1 - Cexp a) + 2 * Cexp a))) 
+		with  (((/√2 ^ n))%R * (((C1 + Cexp ((INR r) * PI)) * (C1 - Cexp a) + 2 * Cexp a) / √2))
+		by (simpl; unfold Cdiv; rewrite Rinv_mult, Cmult_assoc, Cmult_comm, 
+			Cmult_assoc, RtoC_mult, !RtoC_inv; reflexivity).
+	replace (Z 1 n a) with (Z 1 n (a + 0)) by (f_equal; lra).
+	rewrite Z_appendix_rot_r.
+	rewrite <- compose_assoc.
+	zxrewrite X_state_copy_phase_0.
+	simpl.
+	rewrite cast_compose_l.
+	erewrite <- (cast_stack_r (nBot' := n * 1) (mBot' := n) 
+		_ _ _ _ (Z 1 0 a) (n_wire n)).
+	rewrite <- (stack_compose_distr (X 0 1 _) (Z 1 0 a) (n ⇑ X 0 1 _)
+		($ n * 1, n ::: n_wire n $)).
+	erewrite (cast_stack_distribute (n':=0) (m' := 0) (o' := 0) (p' := n)
+		_ _ _ _ _ _ (X 0 1 (INR r * PI) ⟷ Z 1 0 a)
+		((n ⇑ X 0 1 (INR r * PI) ⟷ $ n * 1, n ::: n_wire n $))).
+	rewrite cast_id.
+	zxsymmetry.
+	rewrite <- stack_empty_l.
+	erewrite (proportional_by_trans_iff_l _ _ _ 1).
+	- apply (stack_prop_by_compat_l
+		⦰ (X 0 1 (INR r * PI) ⟷ Z 1 0 a)
+		($ 0, n ::: n ⇑ X 0 1 (INR r * PI) ⟷ $ n * 1, n ::: n_wire n $ $)).
+		assert (Hnz : ((C1 + Cexp (INR r * PI)) * (C1 - Cexp a) + C2 * Cexp a) <> 0). 1: {
+			rewrite Cmult_plus_distr_r.
+			unfold Cminus at 1.
+			rewrite Cmult_plus_distr_l.
+			Csimpl.
+			rewrite Cplus_comm, Cplus_assoc. 
+			replace (C2 * Cexp a + (C1 + - Cexp a)) with (C1 + Cexp a) by lca.
+			destruct (INR_pi_exp r) as [-> | ->].
+			- Csimpl.
+				rewrite <- Cplus_assoc, (Cplus_comm (Cexp a)).
+				unfold Cminus.
+				rewrite <- Cplus_assoc, Cplus_opp_l.
+				intros H%(f_equal fst); simpl in H; lra.
+			- pose proof (Cexp_nonzero a) as Hnz.
+				replace (C1 + Cexp a + -1 * (C1 - Cexp a)) with (C2 * Cexp a) by lca.
+				apply Cmult_nonzero_iff.
+				split; nonzero.
+		} 
+		split.
+		+ rewrite X_Z_phase_value'.
+			prep_matrix_equivalence.
+			by_cell.
+			unfold scale;
+			cbn.
+			Csimpl.
+			rewrite Cdiv_1_r.
+			unfold Cdiv.
+			rewrite Cinv_mult_distr.
+			rewrite <- 2!Cmult_assoc.
+			rewrite Cinv_l by (apply Cdiv_nonzero_iff; split; assumption + nonzero).
+			Csimpl.
+			rewrite Rinv_mult, <- Rmult_assoc, Rinv_r, Rmult_1_l by nonzero.
+			symmetry.
+			apply Cinv_r.
+			rewrite RtoC_inv, <- RtoC_pow.
+			apply nonzero_div_nonzero.
+			nonzero.
+		+ apply Cdiv_nonzero; [|nonzero].
+			apply Cmult_nonzero_iff; split; [nonzero|].
+			apply nonzero_div_nonzero.
+			apply Cmult_nonzero_iff; split; [nonzero|].
+			apply Cdiv_nonzero_iff; split; [nonzero|assumption].
+	- zxrefl.
+		rewrite 2!stack_empty_l.
+		rewrite cast_compose_r, nwire_removal_r.
+		rewrite 2!cast_contract.
+		cast_irrelevance.
+	Unshelve.
+	all: lia.
+Qed.
+
+Theorem Z_state_copy : forall (r n : nat) (a : R) prfn prfm,
+	(Z 0 1 ((INR r) * PI) ⟷ X 1 n a) 
+	∝[((/√2 ^ S n))%R *
+	(((C1 + Cexp ((INR r) * PI)) * (C1 - Cexp a) + 2 * Cexp a))]
+	cast 0%nat n prfn prfm (n ⇑ (Z 0 1 ((INR r) * PI))).
+Proof.
+	intros r n a prfn prfm.
+	colorswap_of (X_state_copy r n a prfn prfm).
 Qed.
 
 Theorem X_state_pi_copy : forall n prfn prfm,
@@ -96,7 +198,7 @@ Proof.
 	intros.
 	replace (PI)%R with (1 * PI)%R by lra.
 	replace (1)%R with (INR 1)%R by reflexivity.
-	zxrewrite X_state_copy.
+	zxrewrite X_state_copy_phase_0.
 	zxrefl.
 Qed.
 
@@ -107,7 +209,7 @@ Proof.
 	intros.
 	replace (0)%R with (0 * PI)%R at 1 by lra.
 	replace (0)%R with (INR 0)%R by reflexivity.
-	zxrewrite X_state_copy.
+	zxrewrite X_state_copy_phase_0.
 	rewrite Rmult_0_l.
 	zxrefl.
 Qed.
@@ -119,7 +221,7 @@ Proof.
 	intros.
 	replace (PI)%R with (1 * PI)%R by lra.
 	replace (1)%R with (INR 1)%R by reflexivity.
-	zxrewrite Z_state_copy.
+	zxrewrite Z_state_copy_phase_0.
 	zxrefl.
 Qed.
 
@@ -130,7 +232,7 @@ Proof.
 	intros.
 	replace (0)%R with (0 * PI)%R at 1 by lra.
 	replace (0)%R with (INR 0)%R by reflexivity.
-	zxrewrite Z_state_copy.
+	zxrewrite Z_state_copy_phase_0.
 	rewrite Rmult_0_l.
 	zxrefl.
 Qed.
