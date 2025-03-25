@@ -115,6 +115,7 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     | (_, _, hb) => hb
     end.
 
+
   Notation "'input?' e" := (inputb e) (at level 20).
   Notation "'output?' e" := (outputb e) (at level 20).
   Notation "'internal?' e" := (internalb e) (at level 20).
@@ -185,10 +186,22 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   Notation "ls -el zxg" := 
     (remove_list_edges zxg ls) (at level 41, right associativity).
 
-  (* Ways to combine graphs *)
-  Notation "A '<->' B" := (compose A B).
-  Notation "A '⊗' B" := (stack A B).
-  
+  Fixpoint add_list_vertices (zx : ZXG) (el : list Vertex) : ZXG :=
+    match el with
+    | [] => zx
+    | v::vs => v +v add_list_vertices zx vs
+    end.
+  Notation "ls +vl zxg" := 
+    (add_list_vertices zxg ls) (at level 41, right associativity).
+
+  Fixpoint remove_list_vertices (zx : ZXG) (vl : list Vertex) : ZXG :=
+    match vl with
+    | [] => zx
+    | v::vs => v -v remove_list_vertices zx vs
+    end.
+  Notation "ls -vl zxg" := 
+    (remove_list_vertices zxg ls) (at level 41, right associativity).
+
   Definition vertex_in_edge (v : Vertex) (e : Edge) :=
     let vidx := vertex_idx v in
       (vidx =? left_idx e) || (vidx =? right_idx e).
@@ -273,6 +286,20 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     | (Boundary x, Boundary y) => x =? y
     | _ => false
     end.
+  Notation "et0 '=?' et1" := (et_eqb et0 et1).
+
+  Search (bool -> bool -> bool).
+
+  Definition eqb_edge (e0 e1 : Edge) : bool :=
+    match (e0, e1) with
+    | ((l, r, b), (l', r', b')) => (et_eqb l l') && (et_eqb r r') && bool_eq b b'
+    end.
+  Notation "e0 '=e?' e1" := (eqb_edge e0 e1) (at level 70).
+
+  Definition composable_edges (e0 e1 : Edge) : bool :=
+    match (e0, e1) with
+    | ((l, r, b), (l', r', b')) => (et_eqb r l')
+    end.
 
   Definition move_ident_to_left (id : EdgeType) (e : Edge) :=
     match e with
@@ -318,6 +345,33 @@ Module ZXGraph (GraphInstance :  ZXGModule).
       as new_diagram.
     exact (new_diagram, source_clean).
   Defined.
+
+  Fixpoint compose_edge_to_list (e : Edge) (el  : list Edge) : list Edge :=
+    match el  with
+    | [] => [e]
+    | e'::es => match (e, e') with
+                | ((l, r, bv), (l' , r', bv')) => 
+                    if r =? r'
+                    then (l, r', if bv then negb bv' else bv) :: es
+                    else e' :: (compose_edge_to_list e es)
+                end
+    end.
+
+  Fixpoint compose_edgelist_to_edgelist (el0 el1 : list Edge) : list Edge :=
+    match el0 with
+    | [] => el1
+    | e'::es => compose_edgelist_to_edgelist es (compose_edge_to_list e' el1)
+    end.
+
+  Definition compose' (zx0 zx1 : ZXG) : ZXG := 
+    (compose_edgelist_to_edgelist (edges zx0) (edges zx1)) +el vertices zx0 +vl vertices zx1 +vl ∅.
+
+  Definition stack' (zx0 zx1 : ZXG) : ZXG :=
+    (edges zx0) +el (vertices zx0) +vl zx1.
+
+  (* Ways to combine graphs *)
+  Notation "A '<->' B" := (compose A B).
+  Notation "A '⊗' B" := (stack A B).
 
   Definition pull_vertex_left (vert : Vertex) 
     (target : ZXG) (source : ZXG) : (ZXG * ZXG) :=
