@@ -50,9 +50,9 @@ Module Type ZXGModule.
     ZXG -> ZXG.
 
   (* Algebraic constructors for graphs (might define) *)
-  Parameter compose : forall {n m o : nat}, 
+  Parameter compose : 
     ZXG -> ZXG -> ZXG.
-  Parameter stack   : forall {n m o p : nat}, 
+  Parameter stack   :
     ZXG -> ZXG -> ZXG.
 
   (* Axioms for well behaved adding and removal of vertices and edges *)
@@ -186,7 +186,7 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     (remove_list_edges zxg ls) (at level 41, right associativity).
 
   (* Ways to combine graphs *)
-  Notation "A '+' B" := (compose A B).
+  Notation "A '<->' B" := (compose A B).
   Notation "A '⊗' B" := (stack A B).
   
   Definition vertex_in_edge (v : Vertex) (e : Edge) :=
@@ -287,45 +287,54 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     | (l, r, b) => (r, l, b)
     end.
 
-  Definition pull_vertex_left (vert : Vertex) 
-    (target : ZXG) (source : ZXG) : (ZXG * ZXG).
+  (* Definition pull_vertex_left' (vert : Vertex)  *)
+  (*   (target : ZXG) (source : ZXG) : (ZXG * ZXG) := *)
+
+  Definition split_edge (between : nat) (e : Edge) : (Edge * Edge) :=
+    match e with
+    | (l, r, b) => ((l, Boundary between, b), 
+                    (Boundary between, r, false))
+    end.
+
+  Fixpoint split_edges_from (start : nat) (edges : list Edge) : list (Edge * Edge) :=
+    match edges with
+    | [] => []
+    | e::es => split_edge start e :: split_edges_from (S start) es
+    end.
+  
+  Definition isolate_vertex (vert : Vertex)
+    (source : ZXG) : (ZXG * ZXG).
   Proof.
-    inversion vert as [idx vt].
     specialize (input_edges_vert source vert) as vert_inputs.
     specialize (output_edges_vert source vert) as vert_outputs.
     specialize (internal_edges_vert source vert) as vert_internal.
     specialize 
-      (vert_inputs -el vert_outputs -el vert_internal -el source) 
-      as clean_source.
-    specialize (max (fresh_idx source) (fresh_idx target)) as fresh_src.
+      (split (split_edges_from (fresh_idx source) 
+              (internal_edges_vert source vert))) as (internal_new, internal_src).
     specialize 
-      (remap_edges_input 
-        fresh_src 
-        (map (move_ident_to_left (Internal idx)) 
-              vert_outputs)) as new_passthrough.
-    specialize 
-      (remap_edges_input 
-        fresh_src 
-        (map (move_ident_to_left (Internal idx)) 
-              vert_internal)) as new_inputs.
-    specialize 
-      (remap_edges_internal_l
-        idx
-        (map flip new_passthrough)) as new_outputs_pass.
-  exact 
-    (new_outputs_pass +el vert +v target, 
-     new_inputs +el new_passthrough +el clean_source). 
+      (internal_src +el vert -v vert_inputs -el vert_outputs -el vert_internal -el source)
+      as source_clean.
+    specialize (internal_new +el vert_inputs +el vert_outputs +el vert +v ∅)
+      as new_diagram.
+    exact (new_diagram, source_clean).
   Defined.
 
-  Definition isolate_subgraph :
-    ZXG -> list Vertex -> list Vertex -> ZXG.
-  Proof.
-  Admitted.
+  Definition pull_vertex_left (vert : Vertex) 
+    (target : ZXG) (source : ZXG) : (ZXG * ZXG) :=
+    match isolate_vertex vert source with 
+    | (zx0, zx1) => (target <-> zx0, zx1)
+    end.
 
-  Definition induce_subgraph : 
-    ZXG -> list Vertex -> list Vertex -> ZXG.
-  Proof.
-  Admitted.
+  Fixpoint isolate_subgraph_rec (zx : ZXG) (acc : ZXG) (vl : list Vertex) : ZXG :=
+    match vl with
+    | [] => acc
+    | v::vs => match pull_vertex_left v acc zx with
+              | (nacc, nzx) => isolate_subgraph_rec nzx nacc vs
+              end
+    end.
+
+  Definition isolate_subgraph (zx : ZXG) (vl : list Vertex) : ZXG :=
+    isolate_subgraph_rec zx ∅ vl.
 
   Notation "zxa '|_' inputs '#' vertices" := 
       (induced_subgraph zxa inputs vertices) (at level 40).
