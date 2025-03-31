@@ -2,6 +2,8 @@ Require Import Proportional.
 Require Import ZXCore.
 Require Import List.
 Require Import Nat.
+Require Import Decidable.
+Require Import Coq.Arith.PeanoNat.
 
 (*   autosubst                                                    *)
 (* C Rework edges to be end - ver ver - ver end - end ver - end   *)
@@ -24,6 +26,10 @@ Module Type ZXGModule.
   Parameter VertexType : Type. 
   Parameter VertexZ : R -> VertexType.
   Parameter VertexX : R -> VertexType.
+  Parameter decVT : forall (vt0 vt1 : VertexType), decidable (vt0 = vt1).
+  Parameter eqb_vt : VertexType -> VertexType -> bool.
+  Parameter reflect_vt : forall (vt0 vt1 : VertexType), 
+    reflect (vt0 = vt1) (eqb_vt vt0 vt1).
 
   Parameter empty_graph : ZXG.
 
@@ -74,8 +80,8 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   Notation "∅"         := empty_graph.
 
   (*  *)
-  Notation "id @ idx" := (idx%nat, id) (at level 20).
-  Notation "id0 '--' id1" := (id0%nat, id1%nat, false) (at level 20).
+  Notation "id @ idx" := (idx, id) (at level 20).
+  Notation "id0 '--' id1" := (id0, id1, false) (at level 20).
   Notation "id0 'h-' id1" := (id0, id1, true) (at level 20).
 
   (* Low level graph construction notations *)
@@ -113,36 +119,110 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     | (_, _, hb) => hb
     end.
 
-
   Notation "'input?' e" := (inputb e) (at level 20).
   Notation "'output?' e" := (outputb e) (at level 20).
   Notation "'internal?' e" := (internalb e) (at level 20).
+  Notation "'hadamard?' e" := (hadamardb e) (at level 20).
 
-  Definition ledges (graph : ZXG) : list Edge := filter (inputb) (edges graph).
+  Definition ledges (graph : ZXG) : list Edge := 
+    filter (inputb) (edges graph).
 
-  Definition redges (graph : ZXG) : list Edge := filter (outputb) (edges graph).
+  Definition redges (graph : ZXG) : list Edge := 
+    filter (outputb) (edges graph).
 
   Definition edgetype_idx (e : EdgeType) : nat :=
     match e with
     | Boundary x | Internal x => x
     end.
+
+  (* Decidable Equality for vertices, edges, and edgetypes. *)
+
+  Lemma dec_eq_vert (v0 v1 : Vertex) : decidable (v0 = v1).
+  Proof.
+    destruct v0, v1.
+    destruct (decVT v v0), (dec_eq_nat i i0); subst.
+    2-4: right;
+      intros pairEQ;
+      inversion pairEQ;
+      contradiction.
+    - left; reflexivity. Qed.
+
+  Definition dec_eq_et : forall (et0 et1 : EdgeType), decidable (et0 = et1).
+  Proof.
+    intros [] [].
+    - destruct (dec_eq_nat i i0); subst.
+      + left; reflexivity.
+      + right; intros contra.
+        inversion contra; contradiction.
+    - right; intros contra; inversion contra.
+    - right; intros contra; inversion contra.
+    - destruct (dec_eq_nat i i0); subst.
+      + left; reflexivity.
+      + right; intros contra.
+        inversion contra; contradiction. Qed.
+
+  Definition dec_eq_edge : forall (e0 e1 : Edge), decidable (e0 = e1).
+  Proof.
+    intros [[e0l e0r] []] [[e1l e1r] []];
+      destruct (dec_eq_et e0l e1l), (dec_eq_et e0r e1r); subst; 
+        try (left; reflexivity); 
+        right; intros contra; inversion contra; contradiction. Qed.
+
+  (* Reflect equality over vertices and edges *)
+
+  Notation "vt0 =vt? vt1" := (eqb_vt vt0 vt1) (at level 40).
+
+  Definition eqb_edgetype (id0 : EdgeType) (id1 : EdgeType) : bool :=
+    match (id0, id1) with
+    | (Internal x, Internal y)
+    | (Boundary x, Boundary y) => x =? y
+    | _ => false
+    end.
+  Notation "et0 '=et?' et1" := (eqb_edgetype et0 et1) (at level 40).
+
+  Definition eqb_edge (e0 e1 : Edge) : bool :=
+    match (e0, e1) with
+    | ((l, r, b), (l', r', b')) => (l =et? l') && (r =et? r') && bool_eq b b'
+    end.
+  Notation "e0 '=e?' e1" := (eqb_edge e0 e1) (at level 40).
+
+  Definition eqb_vert (v0 v1 : Vertex) : bool :=
+    match (v0, v1) with
+    | ((i0, t0), (i1, t1)) => (i0 =? i1) && (t0 =vt? t1)
+    end.
+  Notation "v0 '=v?' v1" := (eqb_vert v0 v1) (at level 40).
+
+  Definition reflect_vert : forall (v0 v1 : Vertex), 
+      reflect (v0 = v1) (v0 =v? v1).
+  Proof.
+    intros [i0 vt0] [i1 vt1].
+    unfold eqb_vert.
+    destruct (reflect_vt vt0 vt1), (Nat.eqb_spec i0 i1); 
+      try (subst; left; reflexivity); 
+      subst; right; intros contra; inversion contra; contradiction. Qed.
+
+  Definition reflect_edgetype : forall (et0 et1 : EdgeType),
+      reflect (et0 = et1) (et0 =et? et1).
+  Proof.
+    intros [] [];
+    unfold eqb_edgetype;
+    destruct (Nat.eqb_spec i i0); subst; try (left; reflexivity);
+      right; intros contra; inversion contra; contradiction. Qed.
+
+  Definition reflect_edge : forall (e0 e1 : Edge),
+      reflect (e0 = e1) (e0 =e? e1).
+  Proof.
+    unfold eqb_edge.
+    intros [[][]][[][]];
+      destruct (reflect_edgetype e e1);
+        destruct (reflect_edgetype e0 e2); subst; simpl; 
+          try (left; reflexivity);
+          right; intros contra; inversion contra; contradiction. Qed.
   
-  Definition vertex_idx (v : Vertex) : nat :=
-    match v with
-    | (id, vt) => id
-    end.
-
-  Definition left_et (e : Edge) : EdgeType :=
-    match e with
-    | (l, _, _) => l
-    end.
-
-  Definition right_et (e : Edge) : EdgeType :=
-    match e with
-    | (_, r, _) => r
-    end.
-
-  Definition left_idx (e : Edge) : nat := edgetype_idx (left_et e).
+  Definition vertex_idx : Vertex -> nat := fst.
+  Definition left_et   (e : Edge) : EdgeType := fst (fst e).
+  Definition right_et  (e : Edge) : EdgeType := snd (fst e).
+  Definition left_idx  (e : Edge) : nat := edgetype_idx (left_et e).
   Definition right_idx (e : Edge) : nat := edgetype_idx (right_et e).
 
   Definition edges_idx (graph : ZXG) : list nat :=
@@ -155,7 +235,7 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   (* Get a fresh index for the purposes of graph isolation, 
      they have arbitrary space above them *)
   Definition fresh_idx (graph : ZXG) : nat :=
-    S (list_max (edges_idx graph ++ map fst (vertices graph))).
+    S (list_max (edges_idx graph ++ map vertex_idx (vertices graph))).
   
   (* Repeated addition of vertices and edges *)
   Reserved Notation "e '^e' n '+e' zxg"
@@ -278,22 +358,6 @@ Module ZXGraph (GraphInstance :  ZXGModule).
                end
     end.
 
-  Definition et_eqb (id0 : EdgeType) (id1 : EdgeType) : bool :=
-    match (id0, id1) with
-    | (Internal x, Internal y)
-    | (Boundary x, Boundary y) => x =? y
-    | _ => false
-    end.
-  Notation "et0 '=?' et1" := (et_eqb et0 et1).
-
-  Search (bool -> bool -> bool).
-
-  Definition eqb_edge (e0 e1 : Edge) : bool :=
-    match (e0, e1) with
-    | ((l, r, b), (l', r', b')) => (et_eqb l l') && (et_eqb r r') && bool_eq b b'
-    end.
-  Notation "e0 '=e?' e1" := (eqb_edge e0 e1) (at level 70).
-
   Definition composable_edges (e0 e1 : Edge) : bool :=
     match (e0, e1) with
     | ((l, r, b), (l', r', b')) => (et_eqb r l')
@@ -335,14 +399,11 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     specialize (internal_edges_vert source vert) as vert_internal.
     specialize 
       (split (split_edges_from (fresh_idx source) 
-              (internal_edges_vert source vert))) as (internal_new, internal_src).
-    specialize 
-      (internal_src +el vert -v vert_inputs -el vert_outputs -el vert_internal -el source)
-      as source_clean.
-    specialize (internal_new +el vert_inputs +el vert_outputs +el vert +v ∅)
-      as new_diagram.
-    exact (new_diagram, source_clean).
+              (internal_edges_vert source vert))) as inis.
+    exact (((fst inis) +el vert_inputs +el vert_outputs +el vert +v ∅), ((snd inis) +el vert -v vert_inputs -el vert_outputs -el vert_internal -el source)).
   Defined.
+
+  Print separate_vert_from_graph.
 
   Definition isolate_vertex (vert : Vertex) (source : ZXG) : ZXG :=
     fst (separate_vert_from_graph vert source).
@@ -402,6 +463,9 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   Definition remove_vertex_subgraph (zx : ZXG) (v : Vertex) :=
     vertex_neighborhood_edges zx v -el v -v zx.
 
+  
+  (* Subgraph Equivalence and Vertex/Edge in Graphs *)
+
   Definition In_v (v : Vertex) (zx : ZXG) := In v (vertices zx).
   Definition In_e (e : Edge) (zx : ZXG) := In e (edges zx).
 
@@ -427,6 +491,20 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     edges (e +e zx) = e :: edges zx.
   Parameter edges_empty : edges ∅ = [].
   Parameter vertices_empty : vertices ∅ = [].
+
+  Lemma v_not_in_empty : forall (v : Vertex), ~ In_v v ∅. 
+  Proof. 
+    intros v contra. 
+    unfold In_v in contra. 
+    rewrite vertices_empty in contra.
+    assumption. Qed.
+
+  Lemma e_not_in_empty : forall (e : Edge), ~ In_e e ∅. 
+  Proof.
+    intros e contra. 
+    unfold In_e in contra. 
+    rewrite edges_empty in contra.
+    assumption. Qed.
 
   Lemma vertices_add_vl_comm : forall (vl : list Vertex) (zx : ZXG),
     vertices (vl +vl zx) = vl ++ vertices zx.
@@ -502,6 +580,47 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     apply IHel.
     assumption. Qed.
 
+  Create HintDb graphalg.
+  Hint Rewrite vertices_add_e_comm : graphalg. 
+  Hint Rewrite vertices_add_el_comm : graphalg. 
+  Hint Rewrite vertices_add_v_comm : graphalg. 
+  Hint Rewrite vertices_add_vl_comm : graphalg. 
+  Hint Rewrite vertices_empty : graphalg.
+  Hint Rewrite edges_add_e_comm : graphalg. 
+  Hint Rewrite edges_add_el_comm : graphalg. 
+  Hint Rewrite edges_add_v_comm : graphalg. 
+  Hint Rewrite edges_add_vl_comm : graphalg. 
+  Hint Rewrite edges_empty : graphalg.
+
+  Ltac graphalg_simpl := autorewrite with graphalg.
+
+  Lemma vertices_isolate_vertex : forall (v : Vertex) (zx : ZXG), 
+    vertices (isolate_vertex v zx) = [v].
+  Proof.
+    intros.
+    unfold isolate_vertex.
+    unfold separate_vert_from_graph.
+    simpl.
+    graphalg_simpl.
+    reflexivity. Qed.
+
+  Lemma v_in_isolate_implies_eq : forall (v0 v1 : Vertex) (zx : ZXG),
+    In_v v0 (isolate_vertex v1 zx) -> v0 = v1.
+  Proof.
+    intros.
+    unfold In_v in H.
+    rewrite vertices_isolate_vertex in H.
+    inversion H; auto.
+    contradiction H0. Qed.
+
+  Lemma v_in_isolate : forall (v : Vertex) (zx : ZXG),
+    In_v v (isolate_vertex v zx).
+  Proof.
+    intros.
+    unfold In_v.
+    rewrite vertices_isolate_vertex.
+    left; reflexivity. Qed.
+
   Lemma compose_in_v_l : forall (v : Vertex) (zx0 zx1 : ZXG),
     In_v v zx0 -> In_v v (zx0 ↔ zx1).
   Proof.
@@ -550,11 +669,18 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     intros.
     intros v e.
     split.
+    - destruct (dec_eq_vert v vert); subst.
+
+      
+
+
     - split.
       + intros.
         apply In_v_compose_In_v in H.
         destruct H.
-        * admit.
+        * specialize (v_in_isolate_implies_eq v vert source H) as Hveq; 
+            subst.
+          admit.
         * admit.
       + intros.
         admit.
