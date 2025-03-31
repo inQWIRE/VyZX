@@ -79,7 +79,7 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   Notation "'X' α"    := (VertexX α) (at level 20).
   Notation "∅"         := empty_graph.
 
-  (*  *)
+  (* Vertex and Edge Notations *)
   Notation "id @ idx" := (idx, id) (at level 20).
   Notation "id0 '--' id1" := (id0, id1, false) (at level 20).
   Notation "id0 'h-' id1" := (id0, id1, true) (at level 20).
@@ -360,16 +360,16 @@ Module ZXGraph (GraphInstance :  ZXGModule).
 
   Definition composable_edges (e0 e1 : Edge) : bool :=
     match (e0, e1) with
-    | ((l, r, b), (l', r', b')) => (et_eqb r l')
+    | ((l, r, b), (l', r', b')) => r =et? l'
     end.
 
   Definition move_ident_to_left (id : EdgeType) (e : Edge) :=
     match e with
-    | (l, r, b) => if et_eqb r id then (r, l, b) else (l, r, b)
+    | (l, r, b) => if r =et? id then (r, l, b) else (l, r, b)
     end.
   Definition move_ident_to_right (id : EdgeType) (e : Edge) :=
     match e with
-    | (l, r, b) => if et_eqb l id then (r, l, b) else (l, r, b)
+    | (l, r, b) => if l =et? id then (r, l, b) else (l, r, b)
     end.
   Definition flip (e : Edge) :=
     match e with
@@ -416,7 +416,7 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     | [] => [e]
     | e'::es => match (e, e') with
                 | ((l, r, bv), (l' , r', bv')) => 
-                    if r =? r'
+                    if r =et? r'
                     then (l, r', if bv then negb bv' else bv) :: es
                     else e' :: (compose_edge_to_list e es)
                 end
@@ -670,25 +670,6 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     intros v e.
     split.
     - destruct (dec_eq_vert v vert); subst.
-
-      
-
-
-    - split.
-      + intros.
-        apply In_v_compose_In_v in H.
-        destruct H.
-        * specialize (v_in_isolate_implies_eq v vert source H) as Hveq; 
-            subst.
-          admit.
-        * admit.
-      + intros.
-        admit.
-    - split.
-      + intros.
-        admit.
-      + intros.
-        admit.
   Admitted.
 
   Notation "zxa '|_' inputs '#' vertices" := 
@@ -709,6 +690,8 @@ Module ZXGraph (GraphInstance :  ZXGModule).
 
   Definition Bo : nat -> EdgeType := Boundary.
   Definition It : nat -> EdgeType := Internal.
+
+  Open Scope nat.
 
   Definition bialg_l : ZXG := 
     It 2 -- Bo 2 +e It 3 -- Bo 3 +e
