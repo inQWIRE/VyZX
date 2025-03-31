@@ -6,6 +6,8 @@ Require Import Nat.
 (*   autosubst                                                    *)
 (* C Rework edges to be end - ver ver - ver end - end ver - end   *)
 (* C Hadamard Edges                                               *)
+(* C Subgraph Isolation *)
+(*   Subgraph Isolation Proof *)
 (*   Phase gadgets                                                *)
 (*   Sum of diagrams                                              *)
 (*   Arbitrary Scalars                                            *)
@@ -50,10 +52,6 @@ Module Type ZXGModule.
     ZXG -> ZXG.
 
   (* Algebraic constructors for graphs (might define) *)
-  Parameter compose : 
-    ZXG -> ZXG -> ZXG.
-  Parameter stack   :
-    ZXG -> ZXG -> ZXG.
 
   (* Axioms for well behaved adding and removal of vertices and edges *)
   Parameter add_vertex_commutes : forall (G : ZXG) (v0 v1 : Vertex),
@@ -329,7 +327,7 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     | e::es => split_edge start e :: split_edges_from (S start) es
     end.
   
-  Definition isolate_vertex (vert : Vertex)
+  Definition separate_vert_from_graph (vert : Vertex)
     (source : ZXG) : (ZXG * ZXG).
   Proof.
     specialize (input_edges_vert source vert) as vert_inputs.
@@ -345,6 +343,12 @@ Module ZXGraph (GraphInstance :  ZXGModule).
       as new_diagram.
     exact (new_diagram, source_clean).
   Defined.
+
+  Definition isolate_vertex (vert : Vertex) (source : ZXG) : ZXG :=
+    fst (separate_vert_from_graph vert source).
+
+  Definition remove_vertex_and_edges (vert : Vertex) (source : ZXG) : ZXG :=
+    snd (separate_vert_from_graph vert source).
 
   Fixpoint compose_edge_to_list (e : Edge) (el  : list Edge) : list Edge :=
     match el  with
@@ -363,32 +367,203 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     | e'::es => compose_edgelist_to_edgelist es (compose_edge_to_list e' el1)
     end.
 
-  Definition compose' (zx0 zx1 : ZXG) : ZXG := 
+  Definition shift (zx : ZXG) (degree : nat) : ZXG := zx.
+
+  Definition compose (zx0 zx1 : ZXG) : ZXG := 
     (compose_edgelist_to_edgelist (edges zx0) (edges zx1)) +el vertices zx0 +vl vertices zx1 +vl ∅.
 
-  Definition stack' (zx0 zx1 : ZXG) : ZXG :=
+  Definition stack (zx0 zx1 : ZXG) : ZXG :=
     (edges zx0) +el (vertices zx0) +vl zx1.
 
   (* Ways to combine graphs *)
-  Notation "A '<->' B" := (compose A B).
+  Notation "A '↔' B" := (compose A B) (at level 42).
   Notation "A '⊗' B" := (stack A B).
 
   Definition pull_vertex_left (vert : Vertex) 
     (target : ZXG) (source : ZXG) : (ZXG * ZXG) :=
-    match isolate_vertex vert source with 
-    | (zx0, zx1) => (target <-> zx0, zx1)
+    match separate_vert_from_graph vert source with 
+    | (zx0, zx1) => (target ↔ zx0, zx1)
     end.
 
-  Fixpoint isolate_subgraph_rec (zx : ZXG) (acc : ZXG) (vl : list Vertex) : ZXG :=
+  Fixpoint subgraph_rec (acc : ZXG) (zx : ZXG) (vl : list Vertex) : ZXG * ZXG :=
     match vl with
-    | [] => acc
+    | [] => (acc, zx)
     | v::vs => match pull_vertex_left v acc zx with
-              | (nacc, nzx) => isolate_subgraph_rec nzx nacc vs
-              end
+               | (nacc, nzx) => subgraph_rec nacc nzx vs
+               end
     end.
 
-  Definition isolate_subgraph (zx : ZXG) (vl : list Vertex) : ZXG :=
-    isolate_subgraph_rec zx ∅ vl.
+  Definition isolate_subgraph (zx : ZXG) (vl : list Vertex) := 
+    fst (subgraph_rec zx ∅ vl). 
+
+  Definition remove_subgraph (zx : ZXG) (vl : list Vertex) := 
+    snd (subgraph_rec zx ∅ vl).
+
+  Definition remove_vertex_subgraph (zx : ZXG) (v : Vertex) :=
+    vertex_neighborhood_edges zx v -el v -v zx.
+
+  Definition In_v (v : Vertex) (zx : ZXG) := In v (vertices zx).
+  Definition In_e (e : Edge) (zx : ZXG) := In e (edges zx).
+
+  Definition equiv_graphs (zx0 zx1 : ZXG) :=
+    forall (v : Vertex) (e : Edge),
+    (In_v v zx0 <-> In_v v zx1) /\
+    (In_e e zx0 <-> In_e e zx1).
+  Notation "zx0 '≡g' zx1" := (equiv_graphs zx0 zx1) (at level 70).
+
+  Fixpoint remove_vertexlist_subgraph (zx : ZXG) (vl : list Vertex) :=
+    match vl with
+    | [] => zx
+    | v::vs => remove_vertexlist_subgraph (remove_vertex_subgraph zx v) vs
+    end.
+
+  Parameter vertices_add_v_comm : forall (v : Vertex) (zx : ZXG),
+    vertices (v +v zx) = v :: vertices zx.
+  Parameter vertices_add_e_comm : forall (e : Edge) (zx : ZXG),
+    vertices (e +e zx) = vertices zx.
+  Parameter edges_add_v_comm : forall (v : Vertex) (zx : ZXG),
+    edges (v +v zx) = edges zx.
+  Parameter edges_add_e_comm : forall (e : Edge) (zx : ZXG),
+    edges (e +e zx) = e :: edges zx.
+  Parameter edges_empty : edges ∅ = [].
+  Parameter vertices_empty : vertices ∅ = [].
+
+  Lemma vertices_add_vl_comm : forall (vl : list Vertex) (zx : ZXG),
+    vertices (vl +vl zx) = vl ++ vertices zx.
+  Proof.
+    induction vl.
+    - reflexivity.
+    - simpl. intros. rewrite vertices_add_v_comm.
+      rewrite IHvl.
+      reflexivity. Qed.
+
+  Lemma edges_add_el_comm : forall (el : list Edge) (zx : ZXG),
+    edges (el +el zx) = el ++ edges zx.
+  Proof.
+    induction el.
+    - reflexivity.
+    - simpl. intros. rewrite edges_add_e_comm.
+      rewrite IHel.
+      reflexivity. Qed.
+
+  Lemma vertices_add_el_comm : forall (el : list Edge) (zx : ZXG),
+    vertices (el +el zx) = vertices zx.
+  Proof.
+    induction el.
+    - reflexivity.
+    - simpl; intros. rewrite vertices_add_e_comm.
+      rewrite IHel. reflexivity. Qed.
+
+  Lemma edges_add_vl_comm : forall (vl : list Vertex) (zx : ZXG),
+    edges (vl +vl zx) = edges zx.
+  Proof.
+    induction vl.
+    - reflexivity.
+    - simpl; intros. rewrite edges_add_v_comm.
+      rewrite IHvl. reflexivity. Qed.
+
+
+  Lemma In_v_add_v_here : forall (v : Vertex) (zx : ZXG),
+    In_v v (v +v zx).
+  Proof.
+    intros.
+    unfold In_v.
+    rewrite vertices_add_v_comm.
+    constructor; reflexivity. Qed.
+
+  Lemma In_v_add_v_list : forall (v : Vertex) (vl : list Vertex) (zx : ZXG),
+    In v vl -> In_v v (vl +vl zx).
+  Proof.
+    induction vl; intros; inversion H.
+    - subst.
+      simpl.
+      apply In_v_add_v_here.
+    - simpl.
+      unfold In_v.
+      rewrite vertices_add_v_comm.
+      right.
+      apply IHvl.
+      assumption. Qed.
+
+  Lemma In_v_add_e : forall (v : Vertex) (e : Edge) (zx : ZXG),
+    In_v v zx -> In_v v (e +e zx).
+  Proof.
+    intros.
+    unfold In_v.
+    rewrite vertices_add_e_comm.
+    apply H. Qed.
+    
+  Lemma In_v_add_e_list : forall (v : Vertex) (el : list Edge) (zx : ZXG),
+    In_v v zx -> In_v v (el +el zx).
+  Proof.
+    induction el; intros; [assumption |].
+    simpl.
+    apply In_v_add_e.
+    apply IHel.
+    assumption. Qed.
+
+  Lemma compose_in_v_l : forall (v : Vertex) (zx0 zx1 : ZXG),
+    In_v v zx0 -> In_v v (zx0 ↔ zx1).
+  Proof.
+    intros.
+    unfold In_v in H.
+    unfold compose.
+    apply In_v_add_e_list.
+    apply In_v_add_v_list.
+    assumption. Qed.
+
+  Lemma compose_in_v_r : forall (v : Vertex) (zx0 zx1 : ZXG),
+    In_v v zx1 -> In_v v (zx0 ↔ zx1).
+  Proof.
+    intros.
+    unfold In_v in H.
+    unfold compose.
+    apply In_v_add_e_list. Admitted.
+
+  Lemma vertices_compose_distribute : forall (v : Vertex) (zx0 zx1 : ZXG),
+    In v ((vertices zx0) ++ (vertices zx1)) ->
+    In v (vertices (zx0 ↔ zx1)).
+  Proof.
+    intros.
+    rewrite in_app_iff in H.
+    destruct H.
+    - apply compose_in_v_l.
+      apply H.
+    - apply compose_in_v_r.
+      apply H. Qed.
+
+  Lemma In_v_compose_In_v : forall (v : Vertex) (zx0 zx1 : ZXG),
+    In_v v (zx0 ↔ zx1) -> In_v v zx0 \/ In_v v zx1.
+  Proof.
+    intros.
+    unfold In_v.
+    Search (In _ _ \/ In _ _).
+    rewrite <- in_app_iff.
+    unfold In_v in H.
+    unfold compose in H. Admitted.
+
+  Lemma separate_maintains_graph : 
+    forall (vert : Vertex) (source : ZXG),
+      isolate_vertex vert source ↔ 
+      remove_vertex_and_edges vert source ≡g source.
+  Proof. 
+    intros.
+    intros v e.
+    split.
+    - split.
+      + intros.
+        apply In_v_compose_In_v in H.
+        destruct H.
+        * admit.
+        * admit.
+      + intros.
+        admit.
+    - split.
+      + intros.
+        admit.
+      + intros.
+        admit.
+  Admitted.
 
   Notation "zxa '|_' inputs '#' vertices" := 
       (induced_subgraph zxa inputs vertices) (at level 40).
@@ -404,21 +579,23 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   (* Google doc of contributions for VyZX - Google Doc, different contributions and 
      different configurations of papers. ViCAR, etc. *)
 
-  Local Open Scope nat.
-
   (* Stating ZX-Calc rules in the language *)
 
-  (* Definition bialg_l : ZXG 2 2 :=  *)
-  (*   2 <=> +e 3 <=> +e *)
-  (*   <=> 0 +e <=> 1 +e *)
-  (*   0 <=> 2 +e 0 <=> 3 +e *)
-  (*   1 <=> 2 +e 1 <=> 3 +e *)
-  (*   (X 0) @ 3 +v (X 0) @ 2 +v  *)
-  (*   (Z 0) @ 1 +v (Z 0) @ 0 +v ∅. *)
+  Definition Bo : nat -> EdgeType := Boundary.
+  Definition It : nat -> EdgeType := Internal.
 
-  (* Definition bialg_r : ZXG 2 2 := *)
-  (*   <=> 0 +e <=> 0 +e 1 <=> +e 1 <=> +e *)
-  (*   (X 0) @ 0 +v (Z 0) @ 1 +v ∅ . *)
+  Definition bialg_l : ZXG := 
+    It 2 -- Bo 2 +e It 3 -- Bo 3 +e
+    Bo 0 -- It 0 +e Bo 1 -- It 1 +e
+    It 0 -- It 2 +e It 0 -- It 3 +e
+    It 1 -- It 2 +e It 1 -- It 3 +e
+    (X 0) @ 3 +v (X 0) @ 2 +v 
+    (Z 0) @ 1 +v (Z 0) @ 0 +v ∅.
+
+  Definition bialg_r : ZXG :=
+     Bo 0 -- It 0 +e Bo 1 -- It 0 +e 
+     It 1 -- Bo 0 +e It 1 -- Bo 1 +e
+    (X 0) @ 0 +v (Z 0) @ 1 +v ∅ .
 
   (* Parameter bialgebra_rule : bialg_l ∝ bialg_r. *)
 
