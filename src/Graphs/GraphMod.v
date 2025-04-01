@@ -463,11 +463,26 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   Definition remove_vertex_subgraph (zx : ZXG) (v : Vertex) :=
     vertex_neighborhood_edges zx v -el v -v zx.
 
-  
   (* Subgraph Equivalence and Vertex/Edge in Graphs *)
 
   Definition In_v (v : Vertex) (zx : ZXG) := In v (vertices zx).
   Definition In_e (e : Edge) (zx : ZXG) := In e (edges zx).
+
+  Lemma decidable_in_v : forall (v : Vertex) (zx : ZXG), decidable (In_v v zx).
+  Proof.
+    intros.
+    unfold In_v.
+    induction (vertices zx).
+    - right; intros contra; destruct contra.
+    - destruct (dec_eq_vert v a).
+      + subst.
+        left; left; reflexivity.
+      + destruct IHl.
+        * left; right; assumption.
+        * right; intros contra.
+          inversion contra.
+          -- subst; contradiction.
+          -- apply H0. apply H1. Qed.
 
   Definition equiv_graphs (zx0 zx1 : ZXG) :=
     forall (v : Vertex) (e : Edge),
@@ -549,6 +564,15 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     rewrite vertices_add_v_comm.
     constructor; reflexivity. Qed.
 
+  Lemma In_v_add_v_later : forall (v l : Vertex) (zx : ZXG),
+    In_v v zx -> In_v v (l +v zx).
+  Proof.
+    intros.
+    unfold In_v.
+    rewrite vertices_add_v_comm.
+    right.
+    apply H. Qed.
+
   Lemma In_v_add_v_list : forall (v : Vertex) (vl : list Vertex) (zx : ZXG),
     In v vl -> In_v v (vl +vl zx).
   Proof.
@@ -562,6 +586,16 @@ Module ZXGraph (GraphInstance :  ZXGModule).
       right.
       apply IHvl.
       assumption. Qed.
+
+  Lemma In_v_add_v_list_later : forall (v : Vertex) (vl : list Vertex) (zx : ZXG),
+    In_v v zx -> In_v v (vl +vl zx).
+  Proof.
+    induction vl; intros.
+    - simpl; apply H.
+    - simpl.
+      apply In_v_add_v_later.
+      apply IHvl.
+      apply H. Qed.
 
   Lemma In_v_add_e : forall (v : Vertex) (e : Edge) (zx : ZXG),
     In_v v zx -> In_v v (e +e zx).
@@ -636,8 +670,21 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   Proof.
     intros.
     unfold In_v in H.
-    unfold compose.
-    apply In_v_add_e_list. Admitted.
+    destruct (decidable_in_v v zx0).
+    - unfold In_v in H0.
+      apply compose_in_v_l.
+      assumption.
+    - unfold compose.
+      apply In_v_add_e_list.
+      induction (vertices zx0).
+      + simpl.
+        apply In_v_add_v_list.
+        apply H.
+      + simpl.
+        destruct (dec_eq_vert v a); subst.
+        * apply In_v_add_v_here.
+        * apply In_v_add_v_later.
+          apply IHl. Qed.
 
   Lemma vertices_compose_distribute : forall (v : Vertex) (zx0 zx1 : ZXG),
     In v ((vertices zx0) ++ (vertices zx1)) ->
