@@ -390,6 +390,44 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     | [] => []
     | e::es => split_edge start e :: split_edges_from (S start) es
     end.
+
+  Definition In_v (v : Vertex) (zx : ZXG) := In v (vertices zx).
+  Definition In_e (e : Edge) (zx : ZXG) := In e (edges zx).
+
+  Definition in_v (v : Vertex) (zx : ZXG) : bool :=
+    existsb (fun v0 => v =v? v0) (vertices zx).
+
+  Lemma decidable_in_v : forall (v : Vertex) (zx : ZXG), 
+    decidable (In_v v zx).
+  Proof.
+    intros.
+    unfold In_v.
+    induction (vertices zx).
+    - right; intros contra; destruct contra.
+    - destruct (dec_eq_vert v a).
+      + subst.
+        left; left; reflexivity.
+      + destruct IHl.
+        * left; right; assumption.
+        * right; intros contra.
+          inversion contra.
+          -- subst; contradiction.
+          -- apply H0. apply H1. Defined.
+
+  Lemma reflect_in_v : forall (v : Vertex) (zx : ZXG), 
+    reflect (In_v v zx) (in_v v zx).
+  Proof.
+    intros v zx.
+    specialize (decidable_in_v v zx); intros.
+    unfold In_v, in_v.
+    induction (vertices zx).
+    - right; intros contra; destruct contra.
+    - simpl. destruct (IHl);
+      destruct (reflect_vert v a); subst.
+      + left; left; reflexivity.
+      + left; right; assumption.
+      + left; left; reflexivity.
+      + right; intros contra; destruct contra; auto. Qed.
   
   Definition separate_vert_from_graph (vert : Vertex)
     (source : ZXG) : (ZXG * ZXG).
@@ -400,12 +438,30 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     specialize 
       (split (split_edges_from (fresh_idx source) 
               (internal_edges_vert source vert))) as inis.
-    exact (((fst inis) +el vert_inputs +el vert_outputs +el vert +v ∅), ((snd inis) +el vert -v vert_inputs -el vert_outputs -el vert_internal -el source)).
+    exact (if (in_v vert source) then (((fst inis) +el vert_inputs +el vert_outputs +el vert +v ∅), ((snd inis) +el vert -v vert_inputs -el vert_outputs -el vert_internal -el source))
+    else (∅, source)).
   Defined.
 
   Print separate_vert_from_graph.
 
+  Definition separate_vert_from_graph' (v : Vertex) (source : ZXG) : 
+    (ZXG * ZXG) :=
+    if (in_v v source) 
+    then
+      let v_inputs := input_edges_vert source v in
+      let v_output := output_edges_vert source v in
+      let v_intern := internal_edges_vert source v in
+      let inis := split (split_edges_from 
+                          (fresh_idx source)
+                          (v_intern)) in
+        (((fst inis) +el v_inputs +el v_output +el v +v ∅), 
+          ((snd inis) +el v -v v_inputs 
+          -el v_output -el v_intern -el source))
+    else
+     (∅, source). 
+
   Definition isolate_vertex (vert : Vertex) (source : ZXG) : ZXG :=
+
     fst (separate_vert_from_graph vert source).
 
   Definition remove_vertex_and_edges (vert : Vertex) (source : ZXG) : ZXG :=
@@ -465,25 +521,6 @@ Module ZXGraph (GraphInstance :  ZXGModule).
 
   (* Subgraph Equivalence and Vertex/Edge in Graphs *)
 
-  Definition In_v (v : Vertex) (zx : ZXG) := In v (vertices zx).
-  Definition In_e (e : Edge) (zx : ZXG) := In e (edges zx).
-
-  Lemma decidable_in_v : forall (v : Vertex) (zx : ZXG), decidable (In_v v zx).
-  Proof.
-    intros.
-    unfold In_v.
-    induction (vertices zx).
-    - right; intros contra; destruct contra.
-    - destruct (dec_eq_vert v a).
-      + subst.
-        left; left; reflexivity.
-      + destruct IHl.
-        * left; right; assumption.
-        * right; intros contra.
-          inversion contra.
-          -- subst; contradiction.
-          -- apply H0. apply H1. Qed.
-
   Definition equiv_graphs (zx0 zx1 : ZXG) :=
     forall (v : Vertex) (e : Edge),
     (In_v v zx0 <-> In_v v zx1) /\
@@ -506,6 +543,26 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     edges (e +e zx) = e :: edges zx.
   Parameter edges_empty : edges ∅ = [].
   Parameter vertices_empty : vertices ∅ = [].
+
+  Lemma empty_vert_empty_edge_equiv_empty : forall (zx : ZXG),
+    vertices zx = [] -> edges zx = [] -> zx ≡g ∅.
+  Proof.
+    intros.
+    unfold equiv_graphs.
+    intros.
+    split; split; intros.
+    - unfold In_v in H1.
+      rewrite H in H1.
+      contradiction H1.
+    - unfold In_v in H1. 
+      rewrite vertices_empty in H1.
+      contradiction H1.
+    - unfold In_e in H1.
+      rewrite H0 in H1.
+      contradiction H1.
+    - unfold In_e in H1.
+      rewrite edges_empty in H1.
+      contradiction H1. Qed.
 
   Lemma v_not_in_empty : forall (v : Vertex), ~ In_v v ∅. 
   Proof. 
@@ -565,54 +622,71 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     constructor; reflexivity. Qed.
 
   Lemma In_v_add_v_later : forall (v l : Vertex) (zx : ZXG),
-    In_v v zx -> In_v v (l +v zx).
+    v <> l ->
+    In_v v (l +v zx) <-> In_v v zx.
   Proof.
-    intros.
-    unfold In_v.
-    rewrite vertices_add_v_comm.
-    right.
-    apply H. Qed.
-
-  Lemma In_v_add_v_list : forall (v : Vertex) (vl : list Vertex) (zx : ZXG),
-    In v vl -> In_v v (vl +vl zx).
-  Proof.
-    induction vl; intros; inversion H.
-    - subst.
-      simpl.
-      apply In_v_add_v_here.
-    - simpl.
-      unfold In_v.
+    split; intros.
+    - unfold In_v in *.
+      rewrite vertices_add_v_comm in H0.
+      induction (vertices zx).
+      + inversion H0; subst; contradiction.
+      + inversion H0.
+        * subst. right. apply IHl0. left; reflexivity.
+        * apply H1.
+    - unfold In_v in *.
       rewrite vertices_add_v_comm.
-      right.
-      apply IHvl.
-      assumption. Qed.
+      induction (vertices zx).
+      + destruct H0.
+      + right; apply H0. Qed.
 
   Lemma In_v_add_v_list_later : forall (v : Vertex) (vl : list Vertex) (zx : ZXG),
-    In_v v zx -> In_v v (vl +vl zx).
+    ~ In v vl ->
+    In_v v (vl +vl zx) <-> In_v v zx.
   Proof.
     induction vl; intros.
-    - simpl; apply H.
+    - split; intros; assumption.
     - simpl.
-      apply In_v_add_v_later.
+      rewrite In_v_add_v_later.
       apply IHvl.
-      apply H. Qed.
+      intros contra.
+      simpl in H.
+      contradict H.
+      right; apply contra.
+      contradict H; subst.
+      left; reflexivity. Qed.
+
+  Lemma In_v_add_v_list_here : forall (v : Vertex) (vl : list Vertex) (zx : ZXG),
+    ~ In_v v zx ->
+    In_v v (vl +vl zx) <-> In v vl.
+  Proof.
+    induction vl; intros.
+    - simpl; split.
+      + intros; apply H; assumption.
+      + intros; contradict H0.
+    - simpl.
+      destruct (reflect_vert a v); subst.
+      + split; intros.
+        * left; reflexivity.
+        * apply In_v_add_v_here.
+      + rewrite In_v_add_v_later; [|auto].
+        rewrite IHvl; auto.
+        split; intros.
+        * right; auto.
+        * destruct H0; try auto; try contradiction. Qed.
 
   Lemma In_v_add_e : forall (v : Vertex) (e : Edge) (zx : ZXG),
-    In_v v zx -> In_v v (e +e zx).
+    In_v v zx <-> In_v v (e +e zx).
   Proof.
     intros.
     unfold In_v.
     rewrite vertices_add_e_comm.
-    apply H. Qed.
+    reflexivity. Qed.
     
   Lemma In_v_add_e_list : forall (v : Vertex) (el : list Edge) (zx : ZXG),
-    In_v v zx -> In_v v (el +el zx).
+    In_v v (el +el zx) <-> In_v v zx .
   Proof.
-    induction el; intros; [assumption |].
-    simpl.
-    apply In_v_add_e.
-    apply IHel.
-    assumption. Qed.
+    induction el; intros; [reflexivity|].
+    simpl. rewrite <- In_v_add_e. apply IHel. Qed.
 
   Create HintDb graphalg.
   Hint Rewrite vertices_add_e_comm : graphalg. 
@@ -629,84 +703,223 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   Ltac graphalg_simpl := autorewrite with graphalg.
 
   Lemma vertices_isolate_vertex : forall (v : Vertex) (zx : ZXG), 
-    vertices (isolate_vertex v zx) = [v].
+    In_v v zx -> vertices (isolate_vertex v zx) = [v].
   Proof.
     intros.
     unfold isolate_vertex.
     unfold separate_vert_from_graph.
-    simpl.
-    graphalg_simpl.
-    reflexivity. Qed.
+    destruct (reflect_in_v v zx); simpl; graphalg_simpl; try reflexivity.
+    contradiction. Qed.
+
+  Lemma vertices_isolate_nothing : forall (v : Vertex) (zx : ZXG), 
+    ~ In_v v zx -> vertices (isolate_vertex v zx) = [].
+  Proof.
+    intros.
+    unfold isolate_vertex.
+    unfold separate_vert_from_graph.
+    destruct (reflect_in_v v zx); simpl; graphalg_simpl; try reflexivity.
+    contradiction. Qed.
 
   Lemma v_in_isolate_implies_eq : forall (v0 v1 : Vertex) (zx : ZXG),
     In_v v0 (isolate_vertex v1 zx) -> v0 = v1.
   Proof.
     intros.
-    unfold In_v in H.
-    rewrite vertices_isolate_vertex in H.
-    inversion H; auto.
-    contradiction H0. Qed.
+    destruct (decidable_in_v v1 zx); simpl.
+    - unfold In_v in H.
+      rewrite (vertices_isolate_vertex v1 zx H0) in H.
+      inversion H; auto.
+      contradiction H1.
+    - unfold In_v in H.
+      rewrite (vertices_isolate_nothing v1 zx H0) in H.
+      contradiction H. Qed.
 
   Lemma v_in_isolate : forall (v : Vertex) (zx : ZXG),
-    In_v v (isolate_vertex v zx).
+    In_v v zx -> In_v v (isolate_vertex v zx).
   Proof.
     intros.
     unfold In_v.
-    rewrite vertices_isolate_vertex.
+    rewrite (vertices_isolate_vertex v zx H).
     left; reflexivity. Qed.
 
   Lemma compose_in_v_l : forall (v : Vertex) (zx0 zx1 : ZXG),
-    In_v v zx0 -> In_v v (zx0 ↔ zx1).
+    ~ In_v v zx1 ->
+    In_v v zx0 <-> In_v v (zx0 ↔ zx1).
   Proof.
     intros.
     unfold In_v in H.
     unfold compose.
-    apply In_v_add_e_list.
-    apply In_v_add_v_list.
-    assumption. Qed.
+    rewrite In_v_add_e_list.
+    rewrite In_v_add_v_list_here.
+    reflexivity.
+    unfold In_v.
+    rewrite vertices_add_vl_comm.
+    rewrite vertices_empty.
+    rewrite app_nil_r.
+    assumption.
+    Qed.
 
   Lemma compose_in_v_r : forall (v : Vertex) (zx0 zx1 : ZXG),
-    In_v v zx1 -> In_v v (zx0 ↔ zx1).
+    ~ In_v v zx0 ->
+    In_v v zx1 <-> In_v v (zx0 ↔ zx1).
   Proof.
     intros.
     unfold In_v in H.
-    destruct (decidable_in_v v zx0).
-    - unfold In_v in H0.
-      apply compose_in_v_l.
-      assumption.
-    - unfold compose.
-      apply In_v_add_e_list.
-      induction (vertices zx0).
-      + simpl.
-        apply In_v_add_v_list.
-        apply H.
-      + simpl.
-        destruct (dec_eq_vert v a); subst.
-        * apply In_v_add_v_here.
-        * apply In_v_add_v_later.
-          apply IHl. Qed.
-
-  Lemma vertices_compose_distribute : forall (v : Vertex) (zx0 zx1 : ZXG),
-    In v ((vertices zx0) ++ (vertices zx1)) ->
-    In v (vertices (zx0 ↔ zx1)).
-  Proof.
-    intros.
-    rewrite in_app_iff in H.
-    destruct H.
-    - apply compose_in_v_l.
-      apply H.
-    - apply compose_in_v_r.
-      apply H. Qed.
+    unfold compose.
+    rewrite In_v_add_e_list.
+    rewrite In_v_add_v_list_later; [|assumption].
+    unfold In_v.
+    rewrite vertices_add_vl_comm.
+    rewrite vertices_empty.
+    rewrite app_nil_r.
+    reflexivity. Qed.
 
   Lemma In_v_compose_In_v : forall (v : Vertex) (zx0 zx1 : ZXG),
-    In_v v (zx0 ↔ zx1) -> In_v v zx0 \/ In_v v zx1.
+    In_v v (zx0 ↔ zx1) <-> In_v v zx0 \/ In_v v zx1.
   Proof.
     intros.
     unfold In_v.
-    Search (In _ _ \/ In _ _).
+    unfold compose.
+    rewrite vertices_add_el_comm.
+    rewrite 2 vertices_add_vl_comm.
+    rewrite vertices_empty.
+    rewrite app_nil_r.
     rewrite <- in_app_iff.
-    unfold In_v in H.
-    unfold compose in H. Admitted.
+    reflexivity. Qed.
+
+  Lemma In_v_isolate_In_v_source : forall (v : Vertex) (source : ZXG),
+    In_v v (isolate_vertex v source) <-> In_v v source.
+  Proof.
+    intros v source.
+    unfold isolate_vertex.
+    unfold separate_vert_from_graph.
+    destruct (reflect_in_v v source); intros.
+    - simpl.
+      rewrite 3 In_v_add_e_list.
+      split; intros; auto.
+      apply In_v_add_v_here.
+    - simpl.
+      split; intros.
+      + unfold In_v in H.
+        rewrite vertices_empty in H.
+        destruct H.
+      + contradict n; assumption. Qed.
+
+  Lemma sumdec_vert : forall (v0 v1 : Vertex),
+    { v0 = v1 } + { v0 <> v1 }.
+  Proof.
+    intros.
+    destruct (reflect_vert v0 v1); auto. Qed.
+
+  Parameter vertices_sub_v_comm : forall (v : Vertex) (zx : ZXG),
+    vertices (v -v zx) = remove sumdec_vert v (vertices zx).
+
+  Parameter vertices_sub_e_comm : forall (e : Edge) (zx : ZXG),
+    vertices (e -e zx) = (vertices zx).
+
+  Lemma In_v_rem_v_comm : forall (v0 v1 : Vertex) (zx : ZXG),
+    v0 <> v1 -> In_v v0 zx <-> In_v v0 (v1 -v zx).
+  Proof.
+    intros v0 v1 zx Hneq.
+    unfold In_v in *.
+    rewrite vertices_sub_v_comm.
+    induction (vertices zx).
+    - split; intros; apply H.
+    - split; intros.
+      + simpl.
+        destruct (sumdec_vert v1 a); subst.
+        * rewrite <- IHl.
+          inversion H; subst; try contradiction.
+          assumption.
+        * inversion H; subst; [(left; reflexivity)|].
+          right.
+          rewrite <- IHl.
+          assumption.
+      + simpl in H.
+        destruct (sumdec_vert v1 a) eqn:E; subst.
+        * right.
+          rewrite IHl.
+          assumption.
+        * inversion H; subst; [left; reflexivity|].
+          right.
+          rewrite IHl.
+          apply H0. Qed.
+
+  Lemma In_v_remove_v_later : forall (v0 v1 : Vertex) (zx : ZXG),
+    v0 <> v1 ->
+    In_v v0 (v1 -v zx) <-> In_v v0 zx.
+  Proof.
+    intros.
+    unfold In_v.
+    rewrite vertices_sub_v_comm.
+    induction (vertices zx).
+    - reflexivity.
+    - simpl. 
+      destruct (sumdec_vert v1 a); subst.
+      + rewrite IHl.
+        split; intros; auto.
+        destruct H0; auto; subst; contradiction.
+      + split; intros.
+        * inversion H0; subst.
+          -- left; reflexivity.
+          -- right. rewrite <- IHl. apply H1.
+        * destruct H0; subst.
+          -- left; reflexivity.
+          -- right. rewrite IHl. assumption. Qed.
+
+  Lemma In_v_remove_e : forall (v : Vertex) (e : Edge) (zx : ZXG),
+    In_v v (e -e zx) <-> In_v v zx.
+  Proof.
+    intros.
+    unfold In_v.
+    rewrite vertices_sub_e_comm.
+    reflexivity. Qed.
+
+  Lemma In_v_remove_e_list : forall (v : Vertex) (el : list Edge) (zx : ZXG),
+    In_v v (el -el zx) <-> In_v v zx.
+  Proof.
+    induction el; intros.
+    - reflexivity.
+    - simpl.
+      rewrite In_v_remove_e.
+      rewrite IHel; reflexivity. Qed.
+
+  Lemma In_v_remove_In_v_source : forall (v0 v1 : Vertex) (source : ZXG),
+    v0 <> v1 ->
+    In_v v0 (remove_vertex_and_edges v1 source) <-> In_v v0 source.
+  Proof.
+    intros v0 v1 source.
+    unfold remove_vertex_and_edges.
+    unfold separate_vert_from_graph.
+    destruct (reflect_in_v v1 source); intros.
+    - simpl.
+      rewrite In_v_add_e_list.
+      rewrite In_v_remove_v_later; [|assumption].
+      rewrite 3 In_v_remove_e_list.
+      reflexivity.
+    - simpl; reflexivity. Qed.
+
+  Lemma In_v_remove_v : forall (v : Vertex) (zx : ZXG),
+    ~ In_v v (v -v zx).
+  Proof.
+    intros.
+    unfold In_v.
+    rewrite vertices_sub_v_comm.
+    induction (vertices zx).
+    - auto.
+    - simpl.
+      destruct (sumdec_vert v a); subst; auto.
+      intros contra; destruct contra; subst; auto. Qed.
+
+  Lemma In_v_remove_no_v : forall (v : Vertex) (zx : ZXG),
+    ~ In_v v (remove_vertex_and_edges v zx).
+  Proof.
+    intros v zx.
+    unfold remove_vertex_and_edges.
+    unfold separate_vert_from_graph.
+    destruct (reflect_in_v v zx); simpl.
+    - rewrite In_v_add_e_list.
+      apply In_v_remove_v. 
+    - assumption. Qed.
 
   Lemma separate_maintains_graph : 
     forall (vert : Vertex) (source : ZXG),
@@ -716,8 +929,21 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     intros.
     intros v e.
     split.
-    - destruct (dec_eq_vert v vert); subst.
-  Admitted.
+    - rewrite In_v_compose_In_v.
+      destruct (reflect_vert v vert); subst.
+      + rewrite In_v_isolate_In_v_source.
+        split; intros; auto.
+        destruct H; auto.
+        exfalso.
+        apply (In_v_remove_no_v vert source).
+        assumption.
+      + rewrite In_v_remove_In_v_source; [|auto].
+        split; intros; auto.
+        destruct H; auto.
+        Search (In_v _ (isolate_vertex _ _)).
+        apply v_in_isolate_implies_eq in H; subst.
+        contradiction n; reflexivity.
+    - Admitted.
 
   Notation "zxa '|_' inputs '#' vertices" := 
       (induced_subgraph zxa inputs vertices) (at level 40).
