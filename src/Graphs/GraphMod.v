@@ -442,8 +442,6 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     else (∅, source)).
   Defined.
 
-  Print separate_vert_from_graph.
-
   Definition separate_vert_from_graph' (v : Vertex) (source : ZXG) : 
     (ZXG * ZXG) :=
     if (in_v v source) 
@@ -940,7 +938,6 @@ Module ZXGraph (GraphInstance :  ZXGModule).
       + rewrite In_v_remove_In_v_source; [|auto].
         split; intros; auto.
         destruct H; auto.
-        Search (In_v _ (isolate_vertex _ _)).
         apply v_in_isolate_implies_eq in H; subst.
         contradiction n; reflexivity.
     - Admitted.
@@ -961,22 +958,22 @@ Module ZXGraph (GraphInstance :  ZXGModule).
 
   (* Stating ZX-Calc rules in the language *)
 
-  Definition Bo : nat -> EdgeType := Boundary.
-  Definition It : nat -> EdgeType := Internal.
+  Definition bo : nat -> EdgeType := Boundary.
+  Definition it : nat -> EdgeType := Internal.
 
   Open Scope nat.
 
   Definition bialg_l : ZXG := 
-    It 2 -- Bo 2 +e It 3 -- Bo 3 +e
-    Bo 0 -- It 0 +e Bo 1 -- It 1 +e
-    It 0 -- It 2 +e It 0 -- It 3 +e
-    It 1 -- It 2 +e It 1 -- It 3 +e
+    it 2 -- bo 2 +e it 3 -- bo 3 +e
+    bo 0 -- it 0 +e bo 1 -- it 1 +e
+    it 0 -- it 2 +e it 0 -- it 3 +e
+    it 1 -- it 2 +e it 1 -- it 3 +e
     (X 0) @ 3 +v (X 0) @ 2 +v 
     (Z 0) @ 1 +v (Z 0) @ 0 +v ∅.
 
   Definition bialg_r : ZXG :=
-     Bo 0 -- It 0 +e Bo 1 -- It 0 +e 
-     It 1 -- Bo 0 +e It 1 -- Bo 1 +e
+     bo 0 -- it 0 +e bo 1 -- it 0 +e 
+     it 1 -- bo 0 +e it 1 -- bo 1 +e
     (X 0) @ 0 +v (Z 0) @ 1 +v ∅ .
 
   (* Parameter bialgebra_rule : bialg_l ∝ bialg_r. *)
