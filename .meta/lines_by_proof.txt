@@ -1,0 +1,679 @@
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/dune...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/Quarantine.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreData/Swaps.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreData/StrongInduction.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreData/CoreData.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreData/CapCup.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreData/Proportional.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreData/QlibTemp.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreData/SemanticCore.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreData/ZXCore.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreRules/CoreRules.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreRules/CastRules.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreRules/ComposeRules.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreRules/CoreAutomation.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreRules/SpiderInduction.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreRules/StackComposeRules.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreRules/StackRules.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreRules/WireRules.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreRules/ZXRules.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreRules/CapCupRules.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreRules/SwapRules.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreRules/XRules.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/CoreRules/ZRules.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/DiagramRules/DiagramRules.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/DiagramRules/CompletenessComp.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/DiagramRules/Bell.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/DiagramRules/Completeness.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/DiagramRules/Soundness.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/DiagramRules/Bialgebra.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/Gates/Gates.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/Gates/GateDefinitions.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/Gates/GateRules.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/Ingest/ZXPad.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/Ingest/SQIRIngest.v...
+Checking /home/caldwellb/Documents/school/chiqp/vyzx/.meta/../src/Ingest/Ingest.v...
+In proof swap_self_inverse:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 4  (5.80%)
+Total of any assoc lines: 4 (5.80%)
+Number of other proof lines: 65 (94.20%)
+Total lines: 69
+
+In proof cap_passthrough:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 29 (100.00%)
+Total lines: 29
+
+In proof swap_passthrough_1_1:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 2  (2.78%)
+Total of any assoc lines: 2 (2.78%)
+Number of other proof lines: 70 (97.22%)
+Total lines: 72
+
+In proof WF_n_swap_mat_ind:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 35 (100.00%)
+Total lines: 35
+
+In proof n_cup_dim:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof proportional_refl:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 2 (100.00%)
+Total lines: 2
+
+In proof proportional_symm:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 70 (100.00%)
+Total lines: 70
+
+In proof n_stack_compat:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 16 (100.00%)
+Total lines: 16
+
+In proof n_stack1_compat:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 16 (100.00%)
+Total lines: 16
+
+In proof compose_compat:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 3  (17.65%)
+Total of any assoc lines: 3 (17.65%)
+Number of other proof lines: 14 (82.35%)
+Total lines: 17
+
+In proof cast_compat:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 11 (100.00%)
+Total lines: 11
+
+In proof transpose_compat:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 15 (100.00%)
+Total lines: 15
+
+In proof adjoint_compat:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 13 (100.00%)
+Total lines: 13
+
+In proof colorswap_is_bihadamard:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 1  (3.45%)
+Total of any assoc lines: 1 (3.45%)
+Number of other proof lines: 28 (96.55%)
+Total lines: 29
+
+In proof zx_compose_spec:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 2 (100.00%)
+Total lines: 2
+
+In proof zx_stack_spec:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 2 (100.00%)
+Total lines: 2
+
+In proof cast_semantics:
+Number of repeated assoc lines: 4 (1.44%)
+Number of assoc lines: 15  (5.40%)
+Total of any assoc lines: 19 (6.83%)
+Number of other proof lines: 259 (93.17%)
+Total lines: 278
+
+In proof stack_assoc:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 11  (10.68%)
+Total of any assoc lines: 11 (10.68%)
+Number of other proof lines: 92 (89.32%)
+Total lines: 103
+
+In proof n_stack1_succ_r:
+Number of repeated assoc lines: 3 (2.34%)
+Number of assoc lines: 36  (28.12%)
+Total of any assoc lines: 39 (30.47%)
+Number of other proof lines: 89 (69.53%)
+Total lines: 128
+
+In proof Z_0_is_wire:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 46 (100.00%)
+Total lines: 46
+
+In proof cup_Z:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 11 (100.00%)
+Total lines: 11
+
+In proof cap_X:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof swap_compose:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 4  (5.80%)
+Total of any assoc lines: 4 (5.80%)
+Number of other proof lines: 65 (94.20%)
+Total lines: 69
+
+In proof top_to_bottom_grow_r:
+Number of repeated assoc lines: 19 (4.62%)
+Number of assoc lines: 109  (26.52%)
+Total of any assoc lines: 128 (31.14%)
+Number of other proof lines: 283 (68.86%)
+Total lines: 411
+
+In proof swap_pullthrough_top_right_Z:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 7 (100.00%)
+Total lines: 7
+
+In proof grow_X_top_left:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 3 (100.00%)
+Total lines: 3
+
+In proof grow_X_top_right:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 3 (100.00%)
+Total lines: 3
+
+In proof grow_X_bot_left:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 3 (100.00%)
+Total lines: 3
+
+In proof grow_X_bot_right:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 3 (100.00%)
+Total lines: 3
+
+In proof X_rot_l:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 2 (100.00%)
+Total lines: 2
+
+In proof X_rot_r:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 2 (100.00%)
+Total lines: 2
+
+In proof X_add_r_base_rot:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_add_l_base_rot:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_appendix_rot_l:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 2 (100.00%)
+Total lines: 2
+
+In proof X_appendix_rot_r:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 2 (100.00%)
+Total lines: 2
+
+In proof X_wrap_over_top_left:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 2 (100.00%)
+Total lines: 2
+
+In proof X_wrap_over_top_right:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 2 (100.00%)
+Total lines: 2
+
+In proof X_add_r:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 2 (100.00%)
+Total lines: 2
+
+In proof X_add_l:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 2 (100.00%)
+Total lines: 2
+
+In proof X_1_2_1_fusion:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 2 (100.00%)
+Total lines: 2
+
+In proof X_absolute_fusion:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 3 (100.00%)
+Total lines: 3
+
+In proof dominated_X_spider_fusion_top_right:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 3 (100.00%)
+Total lines: 3
+
+In proof dominated_X_spider_fusion_top_left:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 3 (100.00%)
+Total lines: 3
+
+In proof dominated_X_spider_fusion_bot_right:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 3 (100.00%)
+Total lines: 3
+
+In proof dominated_X_spider_fusion_bot_left:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 3 (100.00%)
+Total lines: 3
+
+In proof X_spider_fusion_top_left_bot_right:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 5 (100.00%)
+Total lines: 5
+
+In proof X_spider_fusion_bot_left_top_right:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 5 (100.00%)
+Total lines: 5
+
+In proof X_self_cap_absorbtion_base:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_self_cap_absorbtion_top:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_self_cup_absorbtion_top:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_self_cap_absorbtion:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_self_cup_absorbtion:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_self_loop_removal_top:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_self_swap_absorbtion_right_base:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_self_swap_absorbtion_right_top:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_self_swap_absorbtion_right:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_self_swap_absorbtion_left_base:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_self_swap_absorbtion_left_top:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_self_swap_absorbtion_left:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_wrap_under_bot_left:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 6 (100.00%)
+Total lines: 6
+
+In proof X_wrap_under_bot_right:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 7 (100.00%)
+Total lines: 7
+
+In proof X_self_top_to_bottom_absorbtion_right_base:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_self_bottom_to_top_absorbtion_right_base:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_a_swap_absorbtion_right_base:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_n_swap_absorbtion_right_base:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_n_swap_absorbtion_left_base:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_n_wrap_under_r_base_unswapped:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_n_wrap_under_r_base:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_n_wrap_over_r_base_unswapped:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_n_wrap_over_r_base:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_n_wrap_over_l_base_unswapped:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_n_wrap_over_l_base:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_n_wrap_under_l_base_unswapped:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_n_wrap_under_l_base:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof X_2_PI:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof grow_Z_top_left:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 54  (26.60%)
+Total of any assoc lines: 54 (26.60%)
+Number of other proof lines: 149 (73.40%)
+Total lines: 203
+
+In proof Z_add_r_base_rot:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 10 (100.00%)
+Total lines: 10
+
+In proof Z_1_2_1_fusion:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 2 (100.00%)
+Total lines: 2
+
+In proof Z_absolute_fusion:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 10  (19.61%)
+Total of any assoc lines: 10 (19.61%)
+Number of other proof lines: 41 (80.39%)
+Total lines: 51
+
+In proof dominated_Z_spider_fusion_bot_left:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 3 (100.00%)
+Total lines: 3
+
+In proof Z_spider_fusion_top_left_bot_right:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 33  (35.11%)
+Total of any assoc lines: 33 (35.11%)
+Number of other proof lines: 61 (64.89%)
+Total lines: 94
+
+In proof Z_self_cap_absorbtion:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 3  (21.43%)
+Total of any assoc lines: 3 (21.43%)
+Number of other proof lines: 11 (78.57%)
+Total lines: 14
+
+In proof Z_self_loop_removal_top:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 8  (19.05%)
+Total of any assoc lines: 8 (19.05%)
+Number of other proof lines: 34 (80.95%)
+Total lines: 42
+
+In proof Z_self_swap_absorbtion_left_top:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof Z_self_swap_absorbtion_left:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
+In proof Z_wrap_under_bot_left:
+Number of repeated assoc lines: 1 (1.92%)
+Number of assoc lines: 17  (32.69%)
+Total of any assoc lines: 18 (34.62%)
+Number of other proof lines: 34 (65.38%)
+Total lines: 52
+
+In proof Z_self_top_to_bottom_absorbtion_right_base:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 153  (50.33%)
+Total of any assoc lines: 153 (50.33%)
+Number of other proof lines: 151 (49.67%)
+Total lines: 304
+
+In proof Z_n_wrap_over_l_base:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 2 (100.00%)
+Total lines: 2
+
+In proof Z_n_wrap_under_l_base_unswapped:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 2 (100.00%)
+Total lines: 2
+
+In proof Z_n_wrap_under_l_base:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 2 (100.00%)
+Total lines: 2
+
+In proof a_swap_sem_base:
+Number of repeated assoc lines: 8 (5.26%)
+Number of assoc lines: 7  (4.61%)
+Total of any assoc lines: 15 (9.87%)
+Number of other proof lines: 137 (90.13%)
+Total lines: 152
+
+In proof add_2_l:
+Number of repeated assoc lines: 0 (0.00%)
+Number of assoc lines: 0  (0.00%)
+Total of any assoc lines: 0 (0.00%)
+Number of other proof lines: 1 (100.00%)
+Total lines: 1
+
