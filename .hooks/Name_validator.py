@@ -42,7 +42,7 @@ def_token = "Definition|Fixpoint|Inductive|Example"
 exists_thm_regex = re.compile(f".*({thm_token}|{def_token})\\s*(([a-z]|[A-Z]|_)([a-z]|[A-Z]|_|-|\\d)+)")
 def_name_ignore_regex = re.compile("\\s*\\(\\*\\s*\\@nocheck\\s+name\\s*\\*\\)")
 
-acceptable_upper_case = ["Z","X","WF","H","Rz","Rx","S"]
+acceptable_upper_case = ["Z","X","WF","H","Rz","Rx","S","In","Idx","Edge","EdgeType"]
 acceptable_upper_case_regex = "|".join(acceptable_upper_case)
 
 snake_case_regex = re.compile(f"ZX|(_?((({acceptable_upper_case_regex})|(([a-z]|[0-9])*))_)*(({acceptable_upper_case_regex})|(([a-z]|[0-9])*)))")
