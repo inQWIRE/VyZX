@@ -80,7 +80,8 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   Notation "∅"         := empty_graph.
 
   (* Vertex and Edge Notations *)
-  Notation "id @ idx" := (idx, id) (at level 20).
+  Definition mk_vert (idx : nat) (vertid : VertexType) := pair idx vertid.
+  Notation "id @ idx" := (mk_vert idx id) (at level 20).
   Notation "id0 '--' id1" := (id0, id1, false) (at level 20).
   Notation "id0 'h-' id1" := (id0, id1, true) (at level 20).
 
@@ -118,6 +119,7 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     match edge with
     | (_, _, hb) => hb
     end.
+
 
   Notation "'input?' e" := (inputb e) (at level 20).
   Notation "'output?' e" := (outputb e) (at level 20).
@@ -225,6 +227,46 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   Definition left_idx  (e : Edge) : nat := edgetype_idx (left_et e).
   Definition right_idx (e : Edge) : nat := edgetype_idx (right_et e).
 
+  Definition input (e : Edge) : Prop :=
+    left_et e = Boundary (left_idx e).
+  Definition output (e : Edge) : Prop :=
+    right_et e = Boundary (right_idx e).
+  Definition internal (e : Edge) : Prop :=
+    left_et e = Internal (left_idx e) /\
+    right_et e = Internal (right_idx e).
+
+  Lemma reflect_input : forall (e : Edge),
+    reflect (input e) (input? e).
+  Proof.
+    intros [[[][]]]; simpl.
+    1-2: left; unfold input; 
+      unfold left_idx; unfold left_et;
+      simpl; reflexivity.
+    1-2: right; intros contra;
+      inversion contra. Qed.
+
+  Lemma reflect_output : forall (e : Edge),
+    reflect (output e) (output? e).
+  Proof.
+    intros [[[][]]]; simpl.
+    1, 3: left; unfold input; 
+      unfold right_idx; unfold right_et;
+      simpl; reflexivity.
+    1-2: right; intros contra;
+      inversion contra. Qed.
+
+  Lemma reflect_internal : forall (e : Edge),
+    reflect (internal e) (internal? e).
+  Proof.
+    intros [[[][]]]; simpl.
+    1-2: right; intros contra; inversion contra;
+      unfold left_et in H; simpl; discriminate H.
+    - right; intros contra; inversion contra;
+      unfold left_et in H0; simpl; discriminate H0.
+    - left. unfold internal. split.
+      + unfold left_et, left_idx. simpl. reflexivity.
+      + unfold right_et, right_idx. simpl. reflexivity. Qed.
+
   Definition edges_idx (graph : ZXG) : list nat :=
     match (split (edges graph)) with
     | (lr, _) => match (split lr) with
@@ -282,7 +324,7 @@ Module ZXGraph (GraphInstance :  ZXGModule).
 
   Definition vertex_in_edge (v : Vertex) (e : Edge) :=
     let vidx := vertex_idx v in
-      (vidx =? left_idx e) || (vidx =? right_idx e).
+      (Internal vidx =et? left_et e) || (Internal vidx =et? right_et e).
 
   Definition connected_verticesb (zxg : ZXG) (v0 v1 : Vertex) : bool :=
     existsb 
@@ -428,21 +470,33 @@ Module ZXGraph (GraphInstance :  ZXGModule).
       + left; right; assumption.
       + left; left; reflexivity.
       + right; intros contra; destruct contra; auto. Qed.
-  
-  Definition separate_vert_from_graph (vert : Vertex)
-    (source : ZXG) : (ZXG * ZXG).
-  Proof.
-    specialize (input_edges_vert source vert) as vert_inputs.
-    specialize (output_edges_vert source vert) as vert_outputs.
-    specialize (internal_edges_vert source vert) as vert_internal.
-    specialize 
-      (split (split_edges_from (fresh_idx source) 
-              (internal_edges_vert source vert))) as inis.
-    exact (if (in_v vert source) then (((fst inis) +el vert_inputs +el vert_outputs +el vert +v ∅), ((snd inis) +el vert -v vert_inputs -el vert_outputs -el vert_internal -el source))
-    else (∅, source)).
-  Defined.
 
-  Definition separate_vert_from_graph' (v : Vertex) (source : ZXG) : 
+  
+  Definition edge_connected_to_vertex (e : Edge) (v : Vertex) : Prop :=
+    Internal (vertex_idx v) = left_et e \/ 
+    Internal (vertex_idx v) = right_et e.
+
+  Notation "e '-c' v" := (edge_connected_to_vertex e v) (at level 20).
+  Notation "e '-c?' v" := (vertex_in_edge v e) (at level 20).
+
+  Lemma reflect_edge_connected (e : Edge) (v : Vertex) : 
+    reflect (e -c v) (e -c? v).
+  Proof.
+    unfold edge_connected_to_vertex.
+    unfold vertex_in_edge.
+    destruct e, v; simpl.
+    destruct p; simpl.
+    unfold left_idx, right_idx.
+    unfold left_et, right_et.
+    simpl.
+    destruct (reflect_edgetype (Internal i) e), 
+             (reflect_edgetype (Internal i) e0); subst.
+    - left; left; reflexivity.
+    - left; left; reflexivity.
+    - left; right; reflexivity.
+    - right; intros contra; destruct contra; contradiction. Qed.
+
+  Definition separate_vert_from_graph (v : Vertex) (source : ZXG) : 
     (ZXG * ZXG) :=
     if (in_v v source) 
     then
@@ -459,7 +513,6 @@ Module ZXGraph (GraphInstance :  ZXGModule).
      (∅, source). 
 
   Definition isolate_vertex (vert : Vertex) (source : ZXG) : ZXG :=
-
     fst (separate_vert_from_graph vert source).
 
   Definition remove_vertex_and_edges (vert : Vertex) (source : ZXG) : ZXG :=
@@ -637,21 +690,31 @@ Module ZXGraph (GraphInstance :  ZXGModule).
       + destruct H0.
       + right; apply H0. Qed.
 
-  Lemma In_v_add_v_list_later : forall (v : Vertex) (vl : list Vertex) (zx : ZXG),
-    ~ In v vl ->
-    In_v v (vl +vl zx) <-> In_v v zx.
+  Lemma In_e_add_e_here : forall (e : Edge) (zx : ZXG),
+    In_e e (e +e zx).
   Proof.
-    induction vl; intros.
-    - split; intros; assumption.
-    - simpl.
-      rewrite In_v_add_v_later.
-      apply IHvl.
-      intros contra.
-      simpl in H.
-      contradict H.
-      right; apply contra.
-      contradict H; subst.
-      left; reflexivity. Qed.
+    intros.
+    unfold In_e.
+    rewrite edges_add_e_comm.
+    constructor; reflexivity. Qed.
+
+  Lemma In_e_add_e_later : forall (e l : Edge) (zx : ZXG),
+    e <> l ->
+    In_e e (l +e zx) <-> In_e e zx.
+  Proof.
+    split; intros.
+    - unfold In_e in *.
+      rewrite edges_add_e_comm in H0.
+      induction (edges zx).
+      + inversion H0; subst; contradiction.
+      + inversion H0.
+        * subst. right. apply IHl0. left; reflexivity.
+        * apply H1.
+    - unfold In_e in *.
+      rewrite edges_add_e_comm.
+      induction (edges zx).
+      + destruct H0.
+      + right; apply H0. Qed.
 
   Lemma In_v_add_v_list_here : forall (v : Vertex) (vl : list Vertex) (zx : ZXG),
     ~ In_v v zx ->
@@ -672,6 +735,57 @@ Module ZXGraph (GraphInstance :  ZXGModule).
         * right; auto.
         * destruct H0; try auto; try contradiction. Qed.
 
+  Lemma In_v_add_v_list_later : forall (v : Vertex) (vl : list Vertex) (zx : ZXG),
+    ~ In v vl ->
+    In_v v (vl +vl zx) <-> In_v v zx.
+  Proof.
+    induction vl; intros.
+    - split; intros; assumption.
+    - simpl.
+      rewrite In_v_add_v_later.
+      apply IHvl.
+      intros contra.
+      simpl in H.
+      contradict H.
+      right; apply contra.
+      contradict H; subst.
+      left; reflexivity. Qed.
+
+  Lemma In_e_add_e_list_here : forall (e : Edge) (el : list Edge) (zx : ZXG),
+    ~ In_e e zx ->
+    In_e e (el +el zx) <-> In e el.
+  Proof.
+    induction el; intros.
+    - simpl; split.
+      + intros; apply H; assumption.
+      + intros; contradict H0.
+    - simpl.
+      destruct (reflect_edge a e); subst.
+      + split; intros.
+        * left; reflexivity.
+        * apply In_e_add_e_here.
+      + rewrite In_e_add_e_later; [|auto].
+        rewrite IHel; auto.
+        split; intros.
+        * right; auto.
+        * destruct H0; try auto; try contradiction. Qed.
+
+  Lemma In_e_add_e_list_later : forall (e : Edge) (el : list Edge) (zx : ZXG),
+    ~ In e el ->
+    In_e e (el +el zx) <-> In_e e zx.
+  Proof.
+    induction el; intros.
+    - split; intros; assumption.
+    - simpl.
+      rewrite In_e_add_e_later.
+      apply IHel.
+      intros contra.
+      simpl in H.
+      contradict H.
+      right; apply contra.
+      contradict H; subst.
+      left; reflexivity. Qed.
+
   Lemma In_v_add_e : forall (v : Vertex) (e : Edge) (zx : ZXG),
     In_v v zx <-> In_v v (e +e zx).
   Proof.
@@ -686,6 +800,20 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     induction el; intros; [reflexivity|].
     simpl. rewrite <- In_v_add_e. apply IHel. Qed.
 
+  Lemma In_e_add_v : forall (v : Vertex) (e : Edge) (zx : ZXG),
+    In_e e zx <-> In_e e (v +v zx).
+  Proof.
+    intros.
+    unfold In_e.
+    rewrite edges_add_v_comm.
+    reflexivity. Qed.
+    
+  Lemma In_e_add_v_list : forall (e : Edge) (vl : list Vertex) (zx : ZXG),
+    In_e e (vl +vl zx) <-> In_e e zx .
+  Proof.
+    induction vl; intros; [reflexivity|].
+    simpl. rewrite <- In_e_add_v. apply IHvl. Qed.
+
   Create HintDb graphalg.
   Hint Rewrite vertices_add_e_comm : graphalg. 
   Hint Rewrite vertices_add_el_comm : graphalg. 
@@ -699,6 +827,58 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   Hint Rewrite edges_empty : graphalg.
 
   Ltac graphalg_simpl := autorewrite with graphalg.
+
+  Lemma compose_empty_l : forall (zx : ZXG),
+   ∅ ↔ zx ≡g zx.
+  Proof.
+    intros zx v e; split.
+    - unfold compose.
+      rewrite edges_empty; simpl.
+      rewrite In_v_add_e_list.
+      rewrite vertices_empty.
+      simpl.
+      rewrite In_v_add_v_list_here.
+      + reflexivity.
+      + intros contra.
+        unfold In_v in contra.
+        rewrite vertices_empty in contra.
+        contradiction.
+    - unfold compose.
+      rewrite edges_empty; simpl.
+      rewrite In_e_add_e_list_here.
+      + reflexivity.
+      + rewrite 2 In_e_add_v_list.
+        apply e_not_in_empty. Qed.
+
+  Lemma compose_edgelist_to_edgelist_empty_r : forall (e : Edge) (el : list Edge),
+    In e (compose_edgelist_to_edgelist el []) <-> In e el.
+  Proof.
+    induction el.
+    - reflexivity.
+    - simpl.
+
+
+  Lemma compose_empty_r : forall (zx : ZXG),
+   zx ↔ ∅ ≡g zx.
+  Proof.
+    intros zx v e; split.
+    - unfold compose.
+      rewrite edges_empty; simpl.
+      rewrite In_v_add_e_list.
+      rewrite vertices_empty.
+      simpl.
+      rewrite In_v_add_v_list_here.
+      + reflexivity.
+      + intros contra.
+        unfold In_v in contra.
+        rewrite vertices_empty in contra.
+        contradiction.
+    - unfold compose.
+      rewrite edges_empty; simpl.
+      rewrite In_e_add_e_list_here.
+      + reflexivity.
+      + rewrite 2 In_e_add_v_list.
+        apply e_not_in_empty. Qed.
 
   Lemma vertices_isolate_vertex : forall (v : Vertex) (zx : ZXG), 
     In_v v zx -> vertices (isolate_vertex v zx) = [v].
@@ -718,6 +898,15 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     destruct (reflect_in_v v zx); simpl; graphalg_simpl; try reflexivity.
     contradiction. Qed.
 
+  Lemma vertices_isolate_nothing_edges : forall (v : Vertex) (zx : ZXG), 
+    ~ In_v v zx -> edges (isolate_vertex v zx) = [].
+  Proof.
+    intros.
+    unfold isolate_vertex.
+    unfold separate_vert_from_graph.
+    destruct (reflect_in_v v zx); simpl; graphalg_simpl; try reflexivity.
+    contradiction. Qed.
+
   Lemma v_in_isolate_implies_eq : forall (v0 v1 : Vertex) (zx : ZXG),
     In_v v0 (isolate_vertex v1 zx) -> v0 = v1.
   Proof.
@@ -730,6 +919,16 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     - unfold In_v in H.
       rewrite (vertices_isolate_nothing v1 zx H0) in H.
       contradiction H. Qed.
+
+  Lemma e_in_isolate_implies_connected : 
+    forall (v : Vertex) (e : Edge) (zx : ZXG),
+      In_e e (isolate_vertex v zx) <-> e -c v.
+  Proof.
+    intros v e zx.
+    unfold isolate_vertex.
+    unfold separate_vert_from_graph.
+    destruct (reflect_in_v v zx); simpl.
+  Admitted.
 
   Lemma v_in_isolate : forall (v : Vertex) (zx : ZXG),
     In_v v zx -> In_v v (isolate_vertex v zx).
@@ -919,6 +1118,44 @@ Module ZXGraph (GraphInstance :  ZXGModule).
       apply In_v_remove_v. 
     - assumption. Qed.
 
+  Lemma In_e_compose_In_e : forall (e : Edge) (zx0 zx1 : ZXG),
+    In_e e (zx0 ↔ zx1) <-> 
+      In_e e (zx0) \/ In_e e (zx1) \/ 
+      exists (idx : nat) (b : bool), 
+        In_e (left_et e, Boundary idx, b) zx0 /\
+        In_e (Boundary idx, right_et e, b) zx1.
+  Proof.
+    intros.
+    unfold compose.
+    split; intros.
+  Admitted.
+
+  Lemma test : forall (v : Vertex) (e : Edge) (zx : ZXG),
+    e -c v -> output e ->
+    In e (output_edges_vert zx v) <-> In_e e zx.
+    Proof.
+      intros v e zx.
+      unfold output_edges_vert.
+
+
+  Lemma connected_in_isolate_iff : 
+    forall (v : Vertex) (e : Edge) (zx : ZXG),
+      e -c v -> In_v v zx ->
+      In_e e (isolate_vertex v zx) <-> In_e e zx.
+  Proof.
+    intros.
+    unfold isolate_vertex.
+    unfold separate_vert_from_graph.
+    destruct (reflect_in_v v zx); simpl; subst; [|contradiction].
+    - destruct e, p.
+      inversion H. unfold left_et in H0; simpl in H0.
+      + destruct e0; simpl.
+        * rewrite 2 In_e_add_e_list_later.
+          unfold left_et in H1.
+          simpl in H1.
+          rewrite In_e_add_e_list_here.
+
+
   Lemma separate_maintains_graph : 
     forall (vert : Vertex) (source : ZXG),
       isolate_vertex vert source ↔ 
@@ -940,7 +1177,10 @@ Module ZXGraph (GraphInstance :  ZXGModule).
         destruct H; auto.
         apply v_in_isolate_implies_eq in H; subst.
         contradiction n; reflexivity.
-    - Admitted.
+    - rewrite In_e_compose_In_e.
+      destruct (reflect_edge_connected e v).
+      + 
+  Admitted.
 
   Notation "zxa '|_' inputs '#' vertices" := 
       (induced_subgraph zxa inputs vertices) (at level 40).
