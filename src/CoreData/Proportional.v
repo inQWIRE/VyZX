@@ -13,14 +13,15 @@ Definition proportional_general {T_0 m_0 n_0 T_1 m_1 n_1}
   (eval_1 : T_1 -> (Matrix m_1 n_1)) 
   (t_0 : T_0) (t_1 : T_1) := 
     exists (c : C), eval_0 t_0 = c .* eval_1 t_1 /\ c <> 0.
-Notation " t1 '≡' t2 'by' eval" := 
+(* Notation " t1 '≡' t2 'by' eval" := 
   (proportional_general eval eval t1 t2) (at level 70)
-  : ZX_scope. (* \equiv *)
+  : ZX_scope. (* \equiv *) *)
 
 (* ZX Proportionality *)
 
 Definition proportional {n m} 
-  (zx_0 : ZX n m) (zx_1 : ZX n m) := zx_0 ≡ zx_1 by ZX_semantics.
+  (zx_0 : ZX n m) (zx_1 : ZX n m) := 
+  proportional_general ZX_semantics ZX_semantics zx_0 zx_1.
 Notation "zx0 ∝ zx1" := (proportional zx0 zx1) (at level 70) : ZX_scope. (* \propto *)
 
 Ltac prop_exists_nonzero c := 

@@ -3115,6 +3115,36 @@ Proof.
 Qed.
 
 
+
+(* Definition biperm_compose_arb_cap_r n m k l f :=
+  flip_biperm (m - 2) n (biperm_compose_arb_cup_l m n k l (flip_biperm n m f)). *)
+
+(* Lemma biperm_compose_arb_cap_r_bipermutation n m k l f *)
+
+(* Lemma matrix_of_biperm_compose_arb_cup_l n m k l f 
+  (Hk : k < n) (Hl : l < n) (Hkl : k <> l) (Hf : bipermutation (n + m) f) : 
+  matrix_of_biperm (n - 2) m (biperm_compose_arb_cup_l n m k l f) [∝]
+  matrix_of_biperm n m f × ⟦ zx_arb_cup k l n ⟧.
+Proof.
+  unfold zx_arb_cup.
+  cbn [ZXCore.transpose zx_arb_cap].
+  rewrite zx_of_perm_transpose, swap_from_0_1_perm_inv' by auto_perm.
+  unfold zx_padded_cap.
+  destruct (le_lt_dec 2 n); [|lia].
+  rewrite cast_transpose.
+  rewrite zx_compose_spec.
+  simpl_cast_semantics.
+  cbn [ZXCore.transpose].
+  rewrite n_wire_transpose.
+  rewrite zx_stack_spec, n_wire_semantics.
+  rewrite zx_of_perm_semantics by auto_perm.
+  unfold biperm_compose_arb_cup_l.
+  rewrite matrix_of_biperm_compose_cup_l_base_prop by auto_biperm.
+  rewrite matrix_of_biperm_compose_perm_l_eq by auto_biperm.
+  now rewrite Mmult_assoc.
+Qed. *)
+
+
 (*
   Lemma biperm_compose_arb_cup_l_defn_alt n m k l f 
     (Hk : k < n) (Hl : l < n) (Hkl : k <> l) (Hf : bipermutation (n + m) f) :
@@ -4078,14 +4108,467 @@ Create HintDb divmod_db discriminated.
 Ltac dmlia :=
   auto with divmod_db zarith.
 
+(* FIXME: Move *)
+Lemma n_stacked_cups_resize {n m} (H : n = m) :
+  n_stacked_cups n = 
+  cast _ _ eq_refl (f_equal Nat.double H) (n_stacked_cups m).
+Proof.
+  subst.
+  reflexivity.
+Qed.
+
+(* FIXME: Move *)
+Lemma swap_from_0_1_perm_0_1 n :
+  swap_from_0_1_perm 0 1 n = idn.
+Proof.
+  eq_by_WF_perm_eq n.
+  rewrite swap_from_0_1_perm_defn.
+  intros a Ha.
+  destruct a as [|[| a]]; reflexivity.
+Qed.
+
+Lemma le_lt_dec_le {n m} (H : n <= m) : 
+  le_lt_dec n m = left H.
+Proof.
+  destruct (le_lt_dec n m); [|lia].
+  f_equal.
+  apply Peano_dec.le_unique.
+Qed.
+
+Lemma lt_unique : forall n m (h1 h2 : n < m), h1 = h2.
+Proof.
+  intros.
+  apply Peano_dec.le_unique.
+Qed.
+
+Lemma le_lt_dec_lt {n m} (H : m < n) : 
+  le_lt_dec n m = right H.
+Proof.
+  destruct (le_lt_dec n m); [lia|].
+  f_equal.
+  apply lt_unique.
+Qed.
+
+
+Lemma zx_arb_cap_0_1 n (Hn : 2 <= n) : 
+  zx_arb_cap 0 1 n ∝
+  cast n (n-2) (zx_padded_cap_prf Hn) eq_refl
+  (⊃ ↕ n_wire (n - 2)).
+Proof.
+  unfold zx_arb_cap.
+  rewrite swap_from_0_1_perm_0_1, zx_of_perm_idn, nwire_removal_l.
+  unfold zx_padded_cap.
+  rewrite (le_lt_dec_le Hn).
+  apply cast_simplify.
+  reflexivity.
+Qed.
+
+Lemma zx_arb_cap_lt_2 k l n (Hk : k < 2) (Hl : l < 2) 
+  (Hkl : k <> l) (Hn : 2 <= n) : 
+  zx_arb_cap k l n ∝
+  cast n (n-2) (zx_padded_cap_prf Hn) eq_refl
+  (⊃ ↕ n_wire (n - 2)).
+Proof.
+  assert (Hor : k < l \/ l < k) by lia.
+  by_symmetry Hor 
+    by (intros ? ? H ? ?; rewrite zx_arb_cap_comm; auto).
+  replace k with 0 in * by lia.
+  replace l with 1 in * by lia.
+  apply zx_arb_cap_0_1.
+Qed.
+
+
+Lemma compose_zx_arb_cap_n_stacked_cups_base k l n 
+  (Hk : k < 2) (Hl : l < 2) (Hkl : k <> l) : 
+  n_stacked_cups n ⟷ zx_arb_cap k l (n + n) ∝
+  cast _ _ eq_refl (double_sub_2_prf) (n_stacked_cups (n - 1)).
+Proof.
+  destruct n as [|n].
+  - rewrite cast_id.
+    unfold zx_arb_cap.
+    rewrite zx_of_perm_0.
+    unfold zx_padded_cap.
+    simpl.
+    rewrite compose_empty_l.
+    etransitivity; [|apply compose_empty_r].
+    apply compose_simplify_r.
+    apply Z_0_0_is_empty.
+  - auto_cast_eqn rewrite zx_arb_cap_lt_2 by auto.
+    rewrite n_stacked_cups_succ.
+    rewrite cast_compose_l, cast_contract_eq.
+    auto_cast_eqn erewrite (cast_stack_distribute (m':=0) (p':=S n + S n - 2) _ _ _ 
+      eq_refl _ _ ⊃ (n_wire (S n + S n - 2))).
+    rewrite cast_id.
+    rewrite (stack_split_diag ⊃), <- compose_assoc.
+    rewrite <- stack_compose_distr, cup_cap.
+    rewrite 2!stack_empty_l.
+    rewrite nwire_removal_r, cast_compose_r.
+    rewrite nwire_removal_r.
+    rewrite 2!cast_contract_eq.
+    rewrite (n_stacked_cups_resize (ltac:(lia) : S n - 1 = n)).
+    rewrite cast_contract_eq.
+    apply cast_simplify.
+    reflexivity.
+Qed.
+
+(* Lemma zx_arb_cap_small k l n (Hk : k < 4) (Hl : l < 4) 
+  (Hkl : k / 2 = l / 2) (Hn : 4 <= n) :
+  zx_arb_cap k l n ∝ 
+  cast _ _ _ _ () *)
+
+(* Lemma comp_zx_arb_small_prf {n} (Hn : 2 <= n) : 
+  n + n - 2 = 2 + (n - 2 + (n - 2)).
+Proof. lia. Qed. *)
+
+Lemma zx_arb_split_prf {n m} (Hn : 2 <= n) : 
+  n + m - 2 = n - 2 + m.
+Proof. lia. Qed.
+
+Lemma swap_from_0_1_perm_split_r k l n m 
+  (Hk : k < n) (Hl : l < n) (Hkl : k <> l) :
+  swap_from_0_1_perm k l (n + m) = 
+  stack_perms n m (swap_from_0_1_perm k l n) idn.
+Proof.
+  eq_by_WF_perm_eq (n + m).
+  rewrite 2!swap_from_0_1_perm_defn, stack_perms_defn.
+  intros a Ha.
+  bdestructΩ'.
+Qed.
+
+Lemma zx_padded_cap_add_r n m (Hn : 2 <= n) : 
+  zx_padded_cap (n + m) ∝ 
+  cast _ _ eq_refl (zx_arb_split_prf Hn) (zx_padded_cap n ↕ n_wire m).
+Proof.
+  unfold zx_padded_cap.
+  rewrite (le_lt_dec_le Hn).
+  rewrite (le_lt_dec_le (ltac:(lia) : 2 <= n + m)).
+  rewrite cast_stack_l_fwd.
+  auto_cast_eqn rewrite stack_assoc, n_wire_stack.
+  rewrite 2!cast_contract_eq.
+  rewrite <- ((fun H => cast_n_wire H H) (ltac:(lia) : n+m-2=n-2+m)).
+  rewrite cast_stack_r_fwd.
+  rewrite cast_contract_eq.
+  apply cast_simplify.
+  reflexivity.
+Qed.
+
+
+Lemma zx_arb_cap_split_nwire_r k l n m (Hk : k < n) (Hl : l < n) 
+  (Hkl : k <> l) (Hn : 2 <= n) :
+  zx_arb_cap k l (n + m) ∝
+  cast _ _ eq_refl (zx_arb_split_prf Hn) (zx_arb_cap k l n ↕ n_wire m).
+Proof.
+  unfold zx_arb_cap.
+  rewrite swap_from_0_1_perm_split_r by auto.
+  auto_cast_eqn rewrite zx_padded_cap_add_r.
+  rewrite <- stack_zx_of_perm by auto_perm.
+  rewrite cast_compose_r_eq_mid.
+  rewrite <- stack_compose_distr.
+  rewrite zx_of_perm_idn, nwire_removal_l.
+  apply cast_simplify.
+  reflexivity.
+Qed.
+
+Lemma zx_arb_cap_resize {n m} (H : n = m) k l :
+  zx_arb_cap k l n ∝ 
+  cast _ _ H (f_equal (fun x => x - 2) H)
+  (zx_arb_cap k l m).
+Proof.
+  subst.
+  reflexivity.
+Qed.
+
+Lemma n_stacked_cups_add n m : 
+  n_stacked_cups (n + m) ∝
+  cast _ _ eq_refl (double_add _ _) (n_stacked_cups n ↕ n_stacked_cups m).
+Proof.
+  unfold n_stacked_cups.
+  rewrite cast_stack_l_fwd, cast_stack_r_fwd.
+  auto_cast_eqn rewrite nstack_split.
+  rewrite !cast_contract_eq.
+  apply cast_simplify.
+  reflexivity.
+Qed.
+
+Lemma zx_arb_cap_4_cases k l (Hk : k < 2) (Hl : 2 <= l < 4) : 
+  zx_arb_cap k l 4 ∝
+  (if k =? 0 then ⨉ else n_wire 2) ↕
+  (if l =? 3 then ⨉ else n_wire 2) ⟷
+  (— ↕ ⊃ ↕ —).
+Proof.
+  apply ZXbiperm_prop_by_biperm_eq; 
+    [bdestruct_all; auto with zxbiperm_db zxperm_db..|].
+  rewrite biperm_of_zx_arb_cap by lia.
+  simpl.
+  assert (Hk' : k = 0 \/ k = 1) by lia.
+  assert (Hl' : l = 2 \/ l = 3) by lia.
+  destruct Hk', Hl'; subst; simpl; by_perm_cell; reflexivity.
+Qed.
+
+Lemma cup_cup_cap_yank : 
+  ⊂ ↕ ⊂ ⟷ (— ↕ ⊃ ↕ —) ∝ ⊂.
+Proof.
+  apply ZXbiperm_prop_by_biperm_eq; 
+    [auto with zxbiperm_db..|].
+  simpl.
+  by_perm_cell; reflexivity.
+Qed.
+
+Lemma compose_zx_arb_cap_n_stacked_cups_small k l n 
+  (Hk : k < 4) (Hl : l < 4) (Hkl : k / 2 <> l / 2) (Hn : 2 <= n) : 
+  n_stacked_cups n ⟷ zx_arb_cap k l (n + n) ∝
+  cast _ _ eq_refl double_sub_2_prf (n_stacked_cups (n - 1)).
+Proof.
+  assert (Hkl' : k <> l) by (intros ->; lia).
+  assert (H : n = 2 + (n - 2)) by lia.
+  rewrite (n_stacked_cups_resize H).
+  assert (H' : n + n = 4 + (n - 2 + (n - 2))) by lia.
+  rewrite (zx_arb_cap_resize H').
+  rewrite n_stacked_cups_add, cast_contract_eq.
+  rewrite cast_compose_eq_mid_join.
+  auto_cast_eqn rewrite zx_arb_cap_split_nwire_r by lia.
+  rewrite cast_compose_r_eq_mid.
+  assert (H'' : n - 1 = 1 + (n - 2)) by lia.
+  rewrite (n_stacked_cups_resize H'').
+  rewrite n_stacked_cups_add.
+  rewrite 3!cast_contract_eq.
+  rewrite <- stack_compose_distr.
+  rewrite nwire_removal_r.
+  apply cast_simplify.
+  apply stack_simplify; [|reflexivity].
+  assert (Hor : k < l \/ l < k) by lia.
+  by_symmetry Hor 
+    by (intros ? ? Hi **; rewrite zx_arb_cap_comm; apply Hi; lia).
+  assert (Hkl2 : k / 2 < l / 2) by 
+    (enough (k / 2 <= l / 2) by lia;
+    apply div0_div_le_mono; lia).
+  assert (l / 2 < 2) by dmlia.
+  assert (k / 2 = 0) as Hk2 by lia.
+  assert (l / 2 = 1) as Hl2 by lia.
+  rewrite div_eq_iff in Hk2, Hl2 by easy.
+  rewrite zx_arb_cap_4_cases by lia.
+  unfold n_stacked_cups.
+  cbn [n_stack].
+  rewrite <- compose_assoc.
+  auto_cast_eqn rewrite stack_empty_r.
+  rewrite !cast_id.
+  rewrite <- (stack_compose_distr ⊂ _ ⊂).
+  etransitivity; [|apply cup_cup_cap_yank].
+  apply compose_simplify; [|reflexivity].
+  rewrite 2!(if_dist _ _ _ (fun x => ⊂ ⟷ x)).
+  apply stack_simplify; bdestruct_one;
+  apply cup_swap_absorbtion + apply nwire_removal_r.
+Qed.
+   
+
+
+
+
+
+(* FIXME: Move to PermutationFacts.v *)
+Lemma tensor_perms_lt_iff_gen n m f g k (Hk : k < n * m) : 
+  tensor_perms n m f g k < m <->
+  f (k / m) = 0 /\ g (k mod m) < m.
+Proof.
+  rewrite tensor_perms_defn by auto.
+  nia.
+Qed.
+
+Lemma tensor_perms_lt n m f g k (Hk : k < n * m) 
+  (Hg : perm_bounded m g) : 
+  f (k / m) = 0 ->
+  tensor_perms n m f g k < m.
+Proof.
+  rewrite tensor_perms_lt_iff_gen by auto.
+  specialize (Hg (k mod m)).
+  dmlia.
+Qed.
+
+Lemma swap_to_0_1_perm_left_min k l n (Hk : k <= l) (Hl : l < n) : 
+  swap_to_0_1_perm k l n k = 0.
+Proof.
+  rewrite swap_to_0_1_perm_defn by lia.
+  bdestructΩ'.
+Qed.
+
+Lemma swap_to_0_1_perm_right_min k l n (Hk : k <= l) (Hl : l < n) : 
+  swap_to_0_1_perm l k n k = 0.
+Proof.
+  rewrite swap_to_0_1_perm_defn by lia.
+  bdestructΩ'.
+Qed.
+
+Lemma swap_to_0_1_perm_left_max k l n (Hl : l < k) (Hk : k < n) : 
+  swap_to_0_1_perm k l n k = 1.
+Proof.
+  rewrite swap_to_0_1_perm_defn by lia.
+  bdestructΩ'.
+Qed.
+
+Lemma swap_to_0_1_perm_right_max k l n (Hl : l < k) (Hk : k < n) : 
+  swap_to_0_1_perm l k n k = 1.
+Proof.
+  rewrite swap_to_0_1_perm_defn by lia.
+  bdestructΩ'.
+Qed.
+
+Lemma swap_to_0_1_perm_min k l n (Hk : k < n) (Hl : l < n) : 
+  swap_to_0_1_perm k l n (min k l) = 0.
+Proof.
+  rewrite swap_to_0_1_perm_defn by lia.
+  bdestructΩ'.
+Qed.
+
+Lemma swap_to_0_1_perm_max k l n (Hk : k < n) (Hl : l < n) (Hkl : k <> l) :
+  swap_to_0_1_perm k l n (max k l) = 1.
+Proof.
+  rewrite swap_to_0_1_perm_defn by lia.
+  bdestructΩ'.
+Qed.
+
+Lemma swap_to_0_1_perm_neither_bound k l a n 
+  (Ha : a < n) (Hak : a <> k) (Hal : a <> l) (Hkl : k <> l) :
+  2 <= swap_to_0_1_perm k l n a.
+Proof.
+  rewrite swap_to_0_1_perm_defn by lia.
+  bdestructΩ'.
+Qed.
+
+Lemma swap_to_0_1_perm_neither k l a n 
+  (Ha : a < n) (Hak : a <> k) (Hal : a <> l) (Hkl : k <> l) :
+  swap_to_0_1_perm k l n a = 
+  if a <? min k l then a + 2 else if a <? max k l then a + 1 else a.
+Proof.
+  rewrite swap_to_0_1_perm_defn by lia.
+  bdestructΩ'.
+Qed.
+
+
+Lemma comp_zx_cap_stacked_prf {n} : n + n - 2 - 2 = n - 2 + (n - 2).
+Proof. lia. Qed.
+
+Lemma n_stacked_cups_biperm_semantics n : 
+  ⟦ n_stacked_cups n ⟧ = matrix_of_biperm 0 (n + n) (n_m_cup_cap 0 n).
+Proof.
+  rewrite matrix_of_biperm_n_m_cup_cap_0_l.
+  apply n_stacked_cups_semantics.
+Qed.
+
+Lemma n_stacked_caps_biperm_semantics n : 
+  ⟦ n_stacked_caps n ⟧ = matrix_of_biperm (n + n) 0 (n_m_cup_cap n 0).
+Proof.
+  rewrite matrix_of_biperm_n_m_cup_cap_0_r.
+  apply n_stacked_caps_semantics.
+Qed.
+
+Lemma compose_zx_arb_cap_n_stacked_cups_step1 k l n
+  (Hk : k < n + n) (Hl : l < n + n) (Hkl : k <> l) : 
+  n_stacked_cups n ⟷ zx_arb_cap k l (n + n) ∝
+  (zx_arb_cup k l (n + n) ⟷ n_stacked_caps n) ⊤%ZX.
+Proof.
+  cbn [ZXCore.transpose].
+  unfold zx_arb_cup.
+  rewrite <- n_stacked_cups_tranpose, 2!Proportional.transpose_involutive.
+  reflexivity.
+Qed.
+
+
+Lemma matrix_of_zx_of_bipermutation n m f Hf : 
+  ⟦ zx_of_bipermutation n m f Hf ⟧ =
+  matrix_of_biperm n m f.
+Proof.
+  unfold zx_of_bipermutation.
+  simpl_cast_semantics.
+  unfold zx_of_NF_uncasted.
+  pose proof (NF_of_biperm_spec n m f Hf) as (HWF & Hin & Hout & Hreal).
+  pose proof HWF as (Hins & Houts & Hperml & Hpermr).
+  rewrite <- (matrix_of_biperm_eq_of_perm_eq Hreal).
+  rewrite (matrix_of_realize_NF_biperm' n m) by assumption + congruence.
+  cbn -[NF_of_biperm].
+  rewrite Hins in Hperml. rewrite Houts in Hpermr.
+  rewrite 2!zx_of_perm_semantics by auto.
+  rewrite n_wire_semantics.
+  rewrite n_stacked_cups_semantics, n_stacked_caps_semantics.
+  rewrite matrix_of_biperm_n_m_cup_cap_split, 
+    matrix_of_biperm_n_m_cup_cap_0_l, matrix_of_biperm_n_m_cup_cap_0_r.
+  rewrite Mmult_assoc.
+  rewrite <- Hins, <- Houts, Hin, Hout.
+  reflexivity.
+Qed.
+
+Lemma matrix_of_zx_of_biperm n m f (Hf : bipermutation (n + m) f) : 
+  ⟦ zx_of_biperm n m f ⟧ =
+  matrix_of_biperm n m f.
+Proof.
+  rewrite zx_of_biperm_bipermutation with n m f Hf.
+  apply matrix_of_zx_of_bipermutation.
+Qed.
+
+(* FIXME: Move *)
+Lemma biperm_compose_arb_cup_l_bipermutation n m k l
+  (Hk : k < n) (Hl : l < n) (Hkl : k <> l) f (Hf : bipermutation (n + m) f) : 
+  bipermutation ((n - 2) + m) (biperm_compose_arb_cup_l n m k l f).
+Proof.
+  unfold biperm_compose_arb_cup_l.
+  apply biperm_compose_cup_l_base_bipermutation.
+  - lia.
+  - auto_biperm.
+Qed.
+
+#[export] Hint Resolve biperm_compose_arb_cup_l_bipermutation : biperm_db.
+
+Lemma compose_zx_arb_cap_n_stacked_cups_step2 k l n
+  (Hk : k < n + n) (Hl : l < n + n) (Hkl : k <> l) : 
+  n_stacked_cups n ⟷ zx_arb_cap k l (n + n) ∝
+  (zx_of_biperm (n + n - 2) 0 
+    (biperm_compose_arb_cup_l (n + n) 0 k l (n_m_cup_cap n 0)))⊤%ZX.
+Proof.
+  rewrite compose_zx_arb_cap_n_stacked_cups_step1 by auto.
+  apply transpose_mor.
+  apply ZX_prop_by_mat_prop.
+  rewrite matrix_of_zx_of_biperm by auto_biperm.
+  rewrite matrix_of_biperm_compose_arb_cup_l by auto_biperm.
+  cbn [ZX_semantics].
+  rewrite n_stacked_caps_biperm_semantics.
+  reflexivity.
+Qed.
+
+
+(* Lemma biperm_compose_arb_cup_l_n_m_cup_cap_0_r_cases k l n
+  (Hk : k < n + n) (Hl : l < n + n) (Hkl : k <> l) : 
+  perm_eq (n + n - 2 + 0) 
+    (biperm_compose_arb_cup_l (n + n) 0 k l (n_m_cup_cap n 0))
+    (if k / 2 =? l / 2 then
+      n_m_cup_cap (n - 1) 0
+    else
+      biperm_compose_perm_l (n - 1 + (n - 1)) 0
+        (n_m_cup_cap (n - 1) 0)
+        (swap_to_0_1_perm (2 * (min k l / 2))
+          (2 * (max k l / 2) - 1) (n - 1 + (n - 1)))).
+Proof.
+  assert (Hn : 1 <= n) by lia.
+  bdestruct (k / 2 =? l / 2).
+  - admit.
+  - unfold biperm_compose_arb_cup_l.
+    replace (n + n - 2) with (n - 1 + (n - 1)) by (clear; lia).
+    rewrite (biperm_compose_perm_l_defn (n-1+(n-1)) 0).
+    rewrite <- perm_inv'_eq.
+
+    rewrite perm_inv'_stack_perms by auto_perm.
+    intros i Hi.
+    
+    unfold biperm_compose_perm_l. *)
+
+
 Lemma compose_zx_arb_cap_n_stacked_cups k l n
-  (Hk : k < n + n) (Hl : l < n + n) (Hkl : k <> l) prf1 : 
+  (Hk : k < n + n) (Hl : l < n + n) (Hkl : k <> l) : 
   n_stacked_cups n ⟷ zx_arb_cap k l (n + n) ∝
   if k / 2 =? l / 2 then 
     cast _ _ eq_refl double_sub_2_prf (n_stacked_cups (n - 1))
   else
-    cast _ _ eq_refl prf1 (n_stacked_cups (n - 2)) ⟷  
-    zx_arb_cup (n_m_cup_cap 0 n k) (n_m_cup_cap 0 n l) _.
+    cast _ _ eq_refl comp_zx_cap_stacked_prf (n_stacked_cups (n - 2)) ⟷  
+    zx_arb_cup (2 * (min k l / 2)) 
+      (2 * (max k l / 2) - 1) _.
 Proof.
   assert (Hor : k < l \/ l < k) by lia.
   by_symmetry Hor by 
@@ -4128,9 +4611,283 @@ Proof.
         lia.
   - assert (k / 2 < n) by dmlia.
     assert (l / 2 < n) by dmlia.
-    Abort.
+    assert (k / 2 < l / 2) by 
+      (enough (k / 2 <= l / 2) by lia;
+      apply div0_div_le_mono; lia).
+    rewrite <- (n_stacked_cups_zx_of_perm_absorbtion n 
+      (swap_to_0_1_perm (k / 2) (l / 2) n))
+      by auto_perm.
+    rewrite compose_assoc.
+    rewrite zx_arb_cap_compose_zx_of_perm_l by auto_perm.
+    rewrite <- compose_assoc.
+    rewrite compose_zx_arb_cap_n_stacked_cups_small.
+    + unfold zx_arb_cup, zx_arb_cap.
+      cbn [ZXCore.transpose].
+      rewrite <- compose_assoc.
+      match goal with 
+      |- ?B ⟷ _ ∝ ?A ⟷ _ => 
+        assert (Hrw : A ∝ B)
+      end.
+      1: {
+        unfold zx_padded_cap.
+        auto_cast_eqn erewrite le_lt_dec_le.
+        rewrite cast_transpose.
+        cbn [ZXCore.transpose].
+        rewrite n_wire_transpose.
+        rewrite cast_compose_r.
+        rewrite <- push_out_top.
+        rewrite cast_contract_eq.
+        rewrite (n_stacked_cups_resize (ltac:(lia) : n - 1 = S (n - 2))).
+        rewrite cast_contract_eq.
+        rewrite n_stacked_cups_succ.
+        rewrite cast_stack_r_fwd.
+        rewrite 2!cast_contract_eq.
+        apply cast_simplify; reflexivity.
+      }
+      rewrite Hrw.
+      rewrite Nat.min_l, Nat.max_r by lia.
+      assert (Hk2up : k / 2 < n - 1). 1: {
+        rewrite (Nat.div_mod_eq l 2) in Hl.
+        lia.
+      }
+      assert (Hkup : 2 * (k / 2) < 2 * (n - 1)) by lia.
+      assert (Hlup : 2 * (l / 2) - 1 < 2 * (n - 1)) by lia.
+      rewrite zx_of_perm_transpose by 
+        auto with perm_db zarith.
       
-    
+
+      apply compose_simplify_r.
+      ereflexivity.
+      apply zx_of_perm_eq_of_perm_eq.
+      rewrite swap_from_0_1_perm_inv' by lia.
+      unfold contract_biperm.
+      if_true_lia.
+      replace (n + n - 2) with (n + n - 1 - 1) by lia.
+      rewrite (swap_to_0_1_perm_defn (_ * _)).
+      intros a Ha.
+      rewrite Nat.min_l, Nat.max_r by lia.
+      assert (Hval2k2 : contract_perm (tensor_perms n 2 (swap_to_0_1_perm 
+        (k / 2) (l / 2) n) idn) l (2 * (k / 2)) = 0). 1: {
+        unfold contract_perm.
+        rewrite tensor_perms_defn by lia.
+        rewrite div_mul_l, (Nat.mul_comm 2 (_/_)), Nat.Div0.mod_mul
+          by easy.
+        pose proof (Nat.div_mod_eq k 2) as Hkeq.
+        if_true_lia.
+        clear Hkeq.
+        rewrite swap_to_0_1_perm_left_min by lia.
+        bdestruct_one; reflexivity.
+      }
+      assert (Hval2k21 : contract_perm (tensor_perms n 2 (swap_to_0_1_perm 
+        (k / 2) (l / 2) n) idn) l (2 * (k / 2) + 1) = 1). 1: {
+        unfold contract_perm.
+        pose proof (Nat.div_mod_eq l 2) as Hleq.
+        if_true_lia.
+        clear Hleq.
+        rewrite 2!tensor_perms_defn by lia.
+        rewrite (Nat.mul_comm 2 (k/2)), div_2_add_l_1.
+        rewrite mod_add_l.
+        rewrite swap_to_0_1_perm_left_min, 
+          swap_to_0_1_perm_right_max by lia.
+        reflexivity.
+      }
+      assert (Hvalk : contract_perm (tensor_perms n 2 (swap_to_0_1_perm 
+        (k / 2) (l / 2) n) idn) l k = k mod 2). 1: {
+        unfold contract_perm.
+        if_true_lia.
+        rewrite 2!tensor_perms_defn by lia.
+        rewrite swap_to_0_1_perm_left_min, 
+          swap_to_0_1_perm_right_max by lia.
+        assert (k mod 2 < 2) by dmlia.
+        if_true_lia.
+        reflexivity.
+      }
+      assert (Hval2l21 : contract_perm (tensor_perms n 2 (swap_to_0_1_perm 
+        (k / 2) (l / 2) n) idn) l (2 * (l / 2) - 1) = 
+        (if l / 2 - 1 =? k / 2 then 1 else 2 * (l / 2))). 1: {
+        unfold contract_perm.
+        pose proof (Nat.div_mod_eq l 2) as Hleq.
+        if_true_lia.
+        clear Hleq.
+        rewrite 2!tensor_perms_defn by lia.
+        rewrite (Nat.mul_comm 2 (l/2)), mod_mul_sub_le, div_sub by lia.
+        change (1 mod 2) with 1.
+        change (Nat.b2n _) with 1.
+        rewrite swap_to_0_1_perm_right_max by lia.
+        rewrite Nat.sub_0_r.
+        rewrite swap_to_0_1_perm_defn by lia.
+        rewrite Nat.min_l, Nat.max_r by lia.
+        replace_bool_lia (l / 2 - 1 =? l / 2) false.
+        replace_bool_lia (l / 2 - 1 <? k / 2) false.
+        replace_bool_lia (l / 2 - 1 <? l / 2) true.
+        assert (l mod 2 < 2) by dmlia.
+        rewrite Nat.sub_add by lia.
+        replace_bool_lia ((if l / 2 - 1 =? k / 2 then 0 else l / 2) * 2 
+          + (2 * 1 - 1) <? 1 * 2 + l mod 2) ((l / 2 - 1 =? k / 2)).
+        bdestruct_one; [reflexivity|].
+        apply Nat.add_sub.
+      }
+      assert (Hval2l2 : contract_perm (tensor_perms n 2 (swap_to_0_1_perm 
+        (k / 2) (l / 2) n) idn) l (2 * (l / 2)) = 
+        2). 1: {
+        unfold contract_perm.
+        pose proof (Nat.div_mod_eq l 2) as Hleq.
+        rewrite 2!tensor_perms_defn by lia.
+        rewrite (Nat.mul_comm 2 (l/2)), Nat.div_mul, Nat.Div0.mod_mul by lia.
+        rewrite tensor_perms_defn, div_2_add_l_1, mod_add_l by lia.
+        rewrite swap_to_0_1_perm_right_max by lia.
+        pose proof (Nat.div_mod_eq l 2).
+        bdestructΩ'.
+      }
+      (* assert (Hvall : contract_perm (tensor_perms n 2 (swap_to_0_1_perm 
+        (k / 2) (l / 2) n) idn) l l = 
+        2 - l mod 2). 1: {
+        unfold contract_perm.
+        if_false_lia.
+        rewrite 2!tensor_perms_defn by lia.
+        rewrite (Nat.mul_comm 2 (l/2)), Nat.div_mul, Nat.Div0.mod_mul by lia.
+        rewrite tensor_perms_defn, div_2_add_l_1, mod_add_l by lia.
+        rewrite swap_to_0_1_perm_right_max by lia.
+        pose proof (Nat.div_mod_eq l 2).
+        bdestructΩ'.
+      } *)
+
+      bdestruct (a =? 2 * (k / 2)). 1: {
+        subst a.
+        unfold contract_perm at 1.
+        rewrite Hval2k2, Hvalk, Hval2k21.
+        assert (k mod 2 < 2) by dmlia.
+        bdestructΩ'.
+      }
+      bdestruct (a =? 2 * (l / 2) - 1). 1: {
+        subst a.
+        unfold contract_perm at 1.
+        rewrite Nat.sub_add by lia.
+        rewrite Hval2l21, Hvalk, Hval2l2.
+        assert (k < 2 * (l / 2)). 1: {
+          rewrite (Nat.div_mod_eq k 2).
+          replace (l / 2) with (k / 2 + (l / 2 - k / 2)) by lia.
+          rewrite Nat.mul_add_distr_l.
+          enough (k mod 2 < 2) by lia.
+          dmlia.
+        }
+        if_false_lia.
+        assert (k mod 2 < 2) by dmlia.
+        if_false_lia.
+        reflexivity.
+      }
+      bdestruct (a <? 2 * (k / 2)); [|bdestruct (a <? 2 * (l / 2) - 1)].
+      * unfold contract_perm at 1.
+        pose proof (Nat.div_mod_eq k 2) as Heqk.
+        if_true_lia.
+        rewrite Hvalk.
+        pattern (contract_perm (tensor_perms n 2 (swap_to_0_1_perm 
+          (k/2) (l/2) n) idn) l a).
+        match goal with |- ?Q _ => set (P := Q) end.
+        unfold contract_perm.
+        if_true_lia.
+        clear Heqk.
+        rewrite 2!tensor_perms_defn by lia.
+        rewrite swap_to_0_1_perm_right_max by lia.
+        assert (a / 2 < k / 2) by dmlia.
+        rewrite swap_to_0_1_perm_neither by dmlia.
+        rewrite Nat.min_l, Nat.max_r by lia.
+        replace_bool_lia (a / 2 <? k / 2) true.
+        assert (l mod 2 < 2) by dmlia.
+        if_false_lia.
+        unfold P.
+        assert (k mod 2 < 2) by dmlia.
+        if_false_lia.
+        pose proof (Nat.div_mod_eq a 2).
+        lia.
+      * unfold contract_perm at 1.
+        pose proof (Nat.div_mod_eq k 2).
+        assert (k mod 2 < 2) by dmlia.
+        if_false_lia.
+        rewrite Hvalk.
+        pattern (contract_perm (tensor_perms n 2 (swap_to_0_1_perm 
+          (k/2) (l/2) n) idn) l (a+1)).
+        match goal with |- ?Q _ => set (P := Q) end.
+        unfold contract_perm.
+        pose proof (Nat.div_mod_eq l 2).
+        if_true_lia.
+        rewrite 2!tensor_perms_defn by lia.
+        rewrite swap_to_0_1_perm_right_max by lia.
+        assert ((a + 1) / 2 < l / 2) by dmlia.
+        assert (k / 2 < (a + 1) / 2). 1: {
+          apply (Nat.lt_le_trans _ (k / 2 + 1)); [lia|].
+          apply Nat.div_le_lower_bound; lia.
+        }
+        rewrite swap_to_0_1_perm_neither by lia.
+        rewrite Nat.min_l, Nat.max_r by lia.
+        replace_bool_lia ((a + 1)/2 <? k/2) false.
+        replace_bool_lia ((a + 1)/2 <? l/2) true.
+        assert (l mod 2 < 2) by dmlia.
+        if_false_lia.
+        unfold P.
+        assert (k mod 2 < 2) by dmlia.
+        if_false_lia.
+        pose proof (Nat.div_mod_eq (a + 1) 2).
+        lia.
+      * unfold contract_perm at 1.
+        pose proof (Nat.div_mod_eq k 2).
+        assert (k mod 2 < 2) by dmlia.
+        if_false_lia.
+        rewrite Hvalk.
+        pattern (contract_perm (tensor_perms n 2 (swap_to_0_1_perm 
+          (k/2) (l/2) n) idn) l (a+1)).
+        match goal with |- ?Q _ => set (P := Q) end.
+        unfold contract_perm.
+        pose proof (Nat.div_mod_eq l 2).
+        assert (l mod 2 < 2) by dmlia.
+        if_false_lia.
+        rewrite 2!tensor_perms_defn by lia.
+        rewrite swap_to_0_1_perm_right_max by lia.
+        replace (a+1+1) with (a+2) by apply (Nat.add_assoc a 1 1).
+
+        assert (k / 2 < (a + 2) / 2). 1: {
+          apply (Nat.lt_le_trans _ (k / 2 + 1)); [lia|].
+          apply Nat.div_le_lower_bound; lia.
+        }
+        assert (l / 2 < (a + 2) / 2). 1: {
+          apply (Nat.lt_le_trans _ (l / 2 + 1)); [lia|].
+          apply Nat.div_le_lower_bound; lia.
+        }
+        rewrite swap_to_0_1_perm_neither by dmlia.
+        rewrite Nat.min_l, Nat.max_r by lia.
+        replace_bool_lia ((a + 2)/2 <? k/2) false.
+        replace_bool_lia ((a + 2)/2 <? l/2) false.
+        if_false_lia.
+        unfold P.
+        if_false_lia.
+        pose proof (Nat.div_mod_eq (a + 2) 2).
+        lia.
+    + rewrite tensor_perms_defn by lia.
+      rewrite swap_to_0_1_perm_left_min by lia.
+      assert (k mod 2 < 2) by dmlia.
+      lia.
+    + rewrite tensor_perms_defn by lia.
+      rewrite swap_to_0_1_perm_right_max by lia.
+      assert (l mod 2 < 2) by dmlia.
+      lia.
+    + rewrite 2!tensor_perms_defn by lia.
+      rewrite swap_to_0_1_perm_left_min, swap_to_0_1_perm_right_max by lia.
+      rewrite 2!Nat.div_add_l, 2!mod_div; lia.
+    + lia.
+  - rewrite H by auto.
+    bdestruct_one; [reflexivity|].
+    rewrite zx_arb_cup_comm.
+    rewrite Nat.max_comm, Nat.min_comm.
+    reflexivity.
+Qed.
+
+
+  
+
+
+
+
+
   
 
 

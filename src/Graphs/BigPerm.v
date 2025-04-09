@@ -978,7 +978,7 @@ Qed.
    spider the edges land in, then show by induction on the edges that, up 
    to some spider absorption, we get back the original perm. We should also
    get permutation of the edges *almost* for free, by showing this 
-   only adds some (tensor_perm n 2 perm idn), which (n_stack n ⊃) absorbs. *)
+   only adds some (tensor_perms n 2 perm idn), which (n_stack n ⊃) absorbs. *)
 
 Definition perm_indep_wrt n ns f g :=
   perm_eq (big_sum ns n) 
