@@ -1612,6 +1612,13 @@ Definition ZX_of_infunc edges (f : nat -> nat) :
   cast _ _ eq_refl (eq_sym (Nat.mul_0_r edges)) 
   (zx_of_perm _ f ⟷ n_stack edges ⊃).
 
+Definition ZX_of_stack_uncast n m numspi (deg : nat -> nat)
+  (phase : nat -> R) (color : nat -> bool) : 
+  ZX (n + m) (big_sum deg numspi + n + m) := 
+  cast (n + m) _ ZX_of_perm_func_pf eq_refl (
+    big_stack (fun _ => 0) deg 
+      (fun k => b2ZX (color k) 0 (deg k) (phase k)) numspi
+      ↕ n_wire n ↕ n_wire m).
 
 Definition ZX_of_stack n m numspi (deg : nat -> nat)
   (phase : nat -> R) (color : nat -> bool) edges 
@@ -1621,6 +1628,17 @@ Definition ZX_of_stack n m numspi (deg : nat -> nat)
     big_stack (fun _ => 0) deg 
       (fun k => b2ZX (color k) 0 (deg k) (phase k)) numspi
       ↕ n_wire n ↕ n_wire m).
+
+Lemma ZX_of_stack_eq_cast_uncast n m numspi deg phase color edges size_pf : 
+  ZX_of_stack n m numspi deg phase color edges size_pf = 
+  cast _ _ eq_refl (eq_sym size_pf) 
+    (ZX_of_stack_uncast n m numspi deg phase color).
+Proof.
+  unfold ZX_of_stack_uncast.
+  rewrite cast_contract_eq.
+  apply cast_simplify_eq.
+  reflexivity.
+Qed.
 
 Definition ZX_of_infunc_data n m numspi (deg : nat -> nat)
   (phase : nat -> R) (color : nat -> bool) edges 
@@ -6745,27 +6763,42 @@ Require Import stdpp.fin_maps stdpp.natmap stdpp.fin_map_dom stdpp.gmultiset.
 
 
 
-
-
-Definition minverses (f g : natmap nat) :=
+Definition minverses {A B M M'} 
+  `{Lookup A B M} `{Lookup B A M'}
+  (f : M) (g : M') :=
   ∀ i j, f !! i = Some j <-> g !! j = Some i.
 
-Lemma minverses_symm {f g : natmap nat} : minverses f g -> minverses g f.
+Lemma minverses_symm {A B M M'} 
+  `{Lookup A B M} `{Lookup B A M'}
+  (f : M) (g : M') : minverses f g -> minverses g f.
 Proof.
-  intros H i j; symmetry; apply H.
+  intros Hfg i j; symmetry; apply Hfg.
 Qed.
 
-Lemma minverses_map_img_eq_dom f g (Hfg : minverses f g) :
-  map_img f = dom g.
+Lemma minverses_map_img_eq_dom {A B SA SB MA MB} 
+  `{FinMapDom A MA SA} `{FinMapDom B MB SB}
+  (f : MA B) (g : MB A) (Hfg : minverses f g) :
+  map_img f ≡@{SB} dom g.
 Proof.
-  apply set_eq => x.
+  intros x.
   rewrite elem_of_map_img, elem_of_dom.
   setoid_rewrite (fun i => Hfg i x).
   destruct (g !! x) eqn:e; eauto.
 Qed.
 
+Lemma minverses_map_img_eq_dom_L {A B SA SB MA MB} 
+  `{FinMapDom A MA SA} `{FinMapDom B MB SB} `{!LeibnizEquiv SB}
+  (f : MA B) (g : MB A) (Hfg : minverses f g) :
+  map_img f =@{SB} dom g.
+Proof.
+  apply set_eq.
+  apply minverses_map_img_eq_dom, Hfg.
+Qed.
 
-Lemma minverses_rinv_dom f g (Hfg : minverses f g) :
+
+Lemma minverses_rinv_dom {A B SA SB MA MB} 
+  `{FinMapDom A MA SA} `{FinMapDom B MB SB}
+  (f : MA B) (g : MB A) (Hfg : minverses f g) :
   ∀ i, i ∈ dom f -> (f !! i) ≫= (g !!.) = Some i.
 Proof.
   intros i (j & Hj)%elem_of_dom.
@@ -6775,7 +6808,9 @@ Proof.
 Qed.
 
 
-Lemma minverses_linv_dom f g (Hfg : minverses f g) :
+Lemma minverses_linv_dom {A B SA SB MA MB} 
+  `{FinMapDom A MA SA} `{FinMapDom B MB SB}
+  (f : MA B) (g : MB A) (Hfg : minverses f g) :
   ∀ i, i ∈ dom g -> (g !! i) ≫= (f !!.) = Some i.
 Proof.
   apply minverses_rinv_dom, minverses_symm, Hfg.
@@ -6838,10 +6873,10 @@ Proof.
   apply elem_of_elements.
 Qed.
 
-Definition list_idx_to_map (l : list nat) : natmap nat :=
+Definition list_idx_to_map {A} (l : list A) : natmap A :=
   list_to_map (zip (seq 0 (length l)) l).
 
-Lemma dom_list_idx_to_map l : 
+Lemma dom_list_idx_to_map {A} (l : list A) : 
   dom (list_idx_to_map l) = list_to_set (seq 0 (length l)).
 Proof.
   apply set_eq => x.
@@ -6851,7 +6886,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma lookup_list_idx_to_map l x : 
+Lemma lookup_list_idx_to_map {A} (l : list A) x : 
   list_idx_to_map l !! x = l !! x.
 Proof.
   apply option_eq => v.
@@ -6872,7 +6907,8 @@ Proof.
     apply (lookup_lt_Some _ _ _ Hgetx).
 Qed.
 
-Lemma lookup_total_list_idx_to_map l x : 
+Lemma lookup_total_list_idx_to_map {A} `{Inhabited A} 
+  (l : list A) x : 
   list_idx_to_map l !!! x = l !!! x.
 Proof.
   rewrite lookup_total_alt, list_lookup_total_alt,
@@ -6929,7 +6965,7 @@ Proof.
   split; [now intros []|].
   rewrite elem_of_list_to_set, elem_of_seq.
   intros Hx.
-  split; [|easy].
+    split; [|easy].
   simpl.
   rewrite <- elem_of_dom.
   rewrite lookup_total_list_idx_to_map.
@@ -6942,11 +6978,70 @@ Qed.
 
 
 
-Lemma natmap_compose_img {A} `{EqDecision A} `{Countable A} 
-  (f : natmap nat) (g : natmap A) :
-  map_img (g ∘ₘ f) = (set_omap (g !!.) (map_img f :> natset)) :> gmap.gset A.
+Lemma dom_omap {A SA M B D} `{FinMapDom A M SA}
+  `{!Elements A SA} `{!FinSet A SA}
+  (f : B -> option D) (g : M B) : 
+  dom (omap f g) ≡@{SA} 
+  filter (is_Some ∘ (fun i => (g !! i) ≫= f)) (dom g).
 Proof.
-  apply set_eq => x.
+  intros x.
+  rewrite elem_of_dom.
+  rewrite elem_of_filter, elem_of_dom.
+  rewrite lookup_omap.
+  destruct (g !! x) as [gx|] eqn:e.
+  - simpl.
+    rewrite e.
+    symmetry.
+    rewrite 3!is_Some_alt.
+    exact (and_True_r _).
+  - simpl.
+    symmetry.
+    rewrite 3!is_Some_alt.
+    easy.
+Qed.
+
+
+Lemma dom_omap_L {A SA M B D} `{FinMapDom A M SA}
+  `{!Elements A SA} `{!FinSet A SA} `{!LeibnizEquiv SA}
+  (f : B -> option D) (g : M B) : 
+  dom (omap f g) =@{SA} 
+  filter (is_Some ∘ (fun i => (g !! i) ≫= f)) (dom g).
+Proof.
+  apply set_eq.
+  apply dom_omap.
+Qed.
+
+Lemma dom_map_compose {A SA B SB D SD M M'} 
+  `{FinMapDom A M SA} `{Elements A SA} `{!FinSet A SA}
+  `{FinMapDom B M' SB} `{Elements B SB} `{!FinSet B SB}
+  `{SemiSet D SD} 
+  (f : M B) (g : M' D) : 
+  dom (g ∘ₘ f) ≡@{SA} filter (is_Some ∘ (fun i => (f !! i) ≫= (g !!.))) $ dom f.
+Proof.
+  apply dom_omap.
+Qed.
+
+Lemma dom_map_compose_L {A SA B SB D SD M M'} 
+  `{FinMapDom A M SA} `{Elements A SA} `{!FinSet A SA}
+  `{FinMapDom B M' SB} `{Elements B SB} `{!FinSet B SB}
+  `{SemiSet D SD} `{!LeibnizEquiv SA}
+  (f : M B) (g : M' D) : 
+  dom (g ∘ₘ f) =@{SA} filter (is_Some ∘ (fun i => (f !! i) ≫= (g !!.))) $ dom f.
+Proof.
+  apply dom_omap_L.
+Qed.
+
+
+
+Lemma map_compose_img {A SA B SB D SD M M'} 
+  `{FinMapDom A M SA} `{Elements A SA} `{!FinSet A SA}
+  `{FinMapDom B M' SB} `{Elements B SB} `{!FinSet B SB}
+  `{SemiSet D SD} 
+  (f : M B) (g : M' D) :
+  map_img (g ∘ₘ f) ≡@{SD} 
+    (set_omap (g !!.) (map_img f :> SB)).
+Proof.
+  intros d.
   rewrite elem_of_set_omap.
   setoid_rewrite elem_of_map_img.
   setoid_rewrite map_lookup_compose.
@@ -6965,9 +7060,32 @@ Proof.
     apply Hg.
 Qed.
 
-Lemma set_omap_lookup_subseteq {A} `{EqDecision A} `{Countable A} 
-  (f : natmap A) (B : natset) :
-  set_omap (f !!.) B ⊆ (map_img f :> gmap.gset A).
+Lemma map_compose_img_L {A SA B SB D SD M M'} 
+  `{FinMapDom A M SA} `{Elements A SA} `{!FinSet A SA}
+  `{FinMapDom B M' SB} `{Elements B SB} `{!FinSet B SB}
+  `{SemiSet D SD} `{!LeibnizEquiv SD}
+  (f : M B) (g : M' D) :
+  map_img (g ∘ₘ f) =@{SD} 
+    (set_omap (g !!.) (map_img f :> SB)).
+Proof.
+  apply (_ : LeibnizEquiv SD).
+  apply map_compose_img.
+Qed.
+
+
+Lemma natmap_compose_img {A} `{EqDecision A} `{Countable A} 
+  (f : natmap nat) (g : natmap A) :
+  map_img (g ∘ₘ f) = (set_omap (g !!.) (map_img f :> natset)) :> gmap.gset A.
+Proof.
+  apply map_compose_img_L.
+Qed.
+
+
+
+Lemma set_omap_lookup_subseteq {A SA B SB M} 
+  `{FinMapDom A M SA} `{Elements A SA} `{!FinSet A SA}
+  `{SemiSet B SB} (f : M B) (d : SA) :
+  set_omap (f !!.) d ⊆@{SB} map_img f.
 Proof.
   intros x.
   rewrite elem_of_set_omap, elem_of_map_img.
@@ -6975,11 +7093,12 @@ Proof.
   eauto.
 Qed.
 
-Lemma map_img_to_set_omap_dom {A} `{EqDecision A} `{Countable A} 
-  (f : natmap A) : 
-  map_img f = set_omap (f !!.) (dom f) :> gmap.gset A.
+Lemma map_img_to_set_omap_dom {A SA B SB M} 
+  `{FinMapDom A M SA} `{Elements A SA} `{!FinSet A SA}
+  `{SemiSet B SB} (f : M B) : 
+  map_img f ≡@{SB} set_omap (f !!.) (dom f).
 Proof.
-  apply set_eq => a.
+  intros a.
   rewrite elem_of_map_img, elem_of_set_omap.
   split.
   - intros (i & Hi).
@@ -6991,11 +7110,22 @@ Proof.
     eauto.
 Qed.
 
-Lemma map_img_to_set_map_dom {A} `{Inhabited A} `{EqDecision A} `{Countable A} 
-  (f : natmap A) : 
-  map_img f = set_map (f !!!.) (dom f) :> gmap.gset A.
+Lemma map_img_to_set_omap_dom_L {A SA B SB M} 
+  `{FinMapDom A M SA} `{Elements A SA} `{!FinSet A SA}
+  `{SemiSet B SB} `{!LeibnizEquiv SB} (f : M B) : 
+  map_img f =@{SB} set_omap (f !!.) (dom f).
 Proof.
-  apply set_eq => a.
+  apply (_ : LeibnizEquiv SB).
+  apply map_img_to_set_omap_dom.
+Qed.
+
+Lemma map_img_to_set_map_dom {A SA B SB M} 
+  `{FinMapDom A M SA} `{Elements A SA} `{!FinSet A SA}
+  `{SemiSet B SB} `{Inhabited B}
+  (f : M B) :
+  map_img f ≡@{SB} set_map (f !!!.) (dom f).
+Proof.
+  intros a.
   rewrite elem_of_map_img, elem_of_map.
   split.
   - intros (i & Hi).
@@ -7010,29 +7140,57 @@ Proof.
     now apply lookup_lookup_total_dom.
 Qed.
 
-
-
-Lemma set_omap_lookup_full {A} `{EqDecision A} `{Countable A} 
-  (f : natmap A) (B : natset) :
-  dom f ⊆ B -> set_omap (f !!.) B = map_img f :> gmap.gset A.
+Lemma map_img_to_set_map_dom_L {A SA B SB M} 
+  `{FinMapDom A M SA} `{Elements A SA} `{!FinSet A SA}
+  `{SemiSet B SB} `{Inhabited B} `{!LeibnizEquiv SB}
+  (f : M B) :
+  map_img f = set_map (f !!!.) (dom f) :> SB.
 Proof.
-  intros HB.
-  apply set_eq.
+  apply (_ : LeibnizEquiv SB).
+  apply map_img_to_set_map_dom.
+Qed.
+
+
+
+Lemma set_omap_lookup_full {A SA B SB M} 
+  `{FinMapDom A M SA} `{Elements A SA} `{!FinSet A SA}
+  `{SemiSet B SB} (f : M B) (d' : SA) :
+  dom f ⊆ d' -> set_omap (f !!.) d' ≡@{SB} map_img f.
+Proof.
+  intros HB b.
   apply set_subseteq_antisymm.
   - apply set_omap_lookup_subseteq.
   - rewrite map_img_to_set_omap_dom.
     apply set_omap_mono; easy.
 Qed.
 
-Lemma map_img_list_idx_to_map l : 
-  map_img (list_idx_to_map l) = list_to_set l :> natset.
+Lemma set_omap_lookup_full_L {A SA B SB M} 
+  `{FinMapDom A M SA} `{Elements A SA} `{!FinSet A SA}
+  `{SemiSet B SB} `{!LeibnizEquiv SB} (f : M B) (d' : SA) :
+  dom f ⊆ d' -> set_omap (f !!.) d' =@{SB} map_img f.
 Proof.
-  apply set_eq => x.
+  intros Hd.
+  apply set_eq, set_omap_lookup_full, Hd.
+Qed.
+
+
+
+Lemma map_img_list_idx_to_map {A SA} `{FinSet A SA} l : 
+  map_img (list_idx_to_map l) ≡@{SA} list_to_set l.
+Proof.
+  intros x.
   rewrite elem_of_list_to_set.
   rewrite elem_of_map_img.
   setoid_rewrite lookup_list_idx_to_map.
   rewrite elem_of_list_lookup.
   reflexivity.
+Qed.
+
+Lemma map_img_list_idx_to_map_L {A SA} `{FinSet A SA} `{!LeibnizEquiv SA} l : 
+  map_img (list_idx_to_map l) =@{SA} list_to_set l.
+Proof.
+  apply set_eq.
+  apply map_img_list_idx_to_map.
 Qed.
 
 Lemma list_to_set_natset_to_list (A : natset) :
@@ -7049,7 +7207,7 @@ Lemma map_img_natmap_justify {A} `{EqDecision A} `{Countable A}
 Proof.
   unfold natmap_justify.
   rewrite natmap_compose_img.
-  apply set_omap_lookup_full.
+  apply set_omap_lookup_full_L.
   rewrite map_img_list_idx_to_map.
   rewrite list_to_set_natset_to_list.
   reflexivity.
@@ -7687,32 +7845,1862 @@ Qed.
 
 
 
+
+
+
+
+
+(* FIXME: Move *)
+Definition edgeset_dom {A SA SAA}
+  `{Elements (A * A) SAA}
+  `{Empty SA} `{Union SA} `{Singleton A SA}
+  (d : SAA) : SA :=
+  set_bind (fun '(i, j) => {[i; j]}) d.
+
+Lemma elem_of_edgeset_dom {A SA SAA}
+  `{SemiSet A SA} `{FinSet (A * A) SAA}
+  (d : SAA) (k : A) : 
+  k ∈ (edgeset_dom d :> SA) <-> ∃ ij, ij ∈ d ∧ (k = ij.1 \/ k = ij.2).
+Proof.
+  unfold edgeset_dom.
+  rewrite (elem_of_set_bind _ d k).
+  apply exists_iff.
+  intros (i, j).
+  by rewrite elem_of_union, 2!elem_of_singleton.
+Qed.
+
+
+
+(* FIXME: Move *) 
+Lemma dom_gset_to_multiset {A} `{Countable A} 
+  (B : gmap.gset A) : 
+  dom (gset_to_multiset B) = B.
+Proof.
+  apply set_eq => k.
+  rewrite gmultiset_elem_of_dom, elem_of_multiplicity, 
+    multiplicity_gset_to_multiset.
+  destruct (decide (k ∈ B)); intuition lia.
+Qed.
+
+(* FIXME: Move *)
+Section seq_set.
+
+Context `{FinSet nat A}.
+
+Definition seq_set start len : A := list_to_set $ seq start len.
+
+Lemma elem_of_seq_set start len k : k ∈ seq_set start len <-> start <= k < start + len.
+Proof.
+  unfold seq_set.
+  rewrite elem_of_list_to_set.
+  apply elem_of_seq.
+Qed.
+
+
+Lemma elem_of_seq_set_0 len k : 
+  k ∈ seq_set 0 len <-> k < len.
+Proof.
+  rewrite elem_of_seq_set.
+  lia.
+Qed.
+
+Lemma seq_set_split start len1 len2 : 
+  seq_set start (len1 + len2) ≡@{A}
+  seq_set start len1 ∪ seq_set (start + len1) len2.
+Proof.
+  intros x.
+  rewrite elem_of_union, 3!elem_of_seq_set.
+  lia.
+Qed.
+
+Lemma seq_set_split_L `{!LeibnizEquiv A} start len1 len2 : 
+  seq_set start (len1 + len2) =@{A}
+  seq_set start len1 ∪ seq_set (start + len1) len2.
+Proof.
+  apply (_ : LeibnizEquiv A).
+  apply seq_set_split.
+Qed.
+
+
+End seq_set.
+
+Lemma dom_set_to_map {B C D K A} `{Elements B C} `{FinMapDom K M D}
+  `{Countable K} (f : B → K * A) (g : C) :
+  dom (set_to_map f g :> M A) ≡@{D} set_map (fst ∘ f) g.
+Proof.
+  unfold set_to_map.
+  rewrite dom_list_to_map.
+  rewrite <- list_fmap_compose.
+  reflexivity.
+Qed.
+
+Lemma dom_set_to_map_L {B C D K A} `{Elements B C} `{FinMapDom K M D}
+  `{Countable K} {HD : LeibnizEquiv D} (f : B → K * A) (g : C) :
+  dom (set_to_map f g :> M A) =@{D} set_map (fst ∘ f) g.
+Proof.
+  apply HD.
+  apply dom_set_to_map.
+Qed.
+
+Lemma map_img_set_to_map {B C K A M SA} `{FinMap K M}
+  `{Countable K} `{FinSet B C} 
+  `{SemiSet A SA}
+  (f : B → K * A) (g : C) 
+  (Hf : ∀ y y', y ∈ g → y' ∈ g → (f y).1 = (f y').1 → y = y') :
+  map_img (set_to_map f g :> M A) ≡@{SA} set_map (snd ∘ f) g.
+Proof.
+  unfold set_map, set_to_map.
+  pose proof (NoDup_elements g) as Hg.
+  setoid_rewrite <- elem_of_elements in Hf.
+  induction (elements g) as [|b bs IHbs].
+  - set_solver.
+  - apply NoDup_cons in Hg as (Hb & Hbs).
+    rewrite 2!fmap_cons. 
+    rewrite (surjective_pairing (f b)), list_to_map_cons, list_to_set_cons.
+    rewrite map_img_insert_notin.
+    + rewrite <- IHbs; [reflexivity | | easy].
+      intros y y' Hy Hy'.
+      apply Hf; by apply elem_of_list_further.
+    + apply not_elem_of_list_to_map.
+      rewrite <- list_fmap_compose.
+      intros Hfalse; apply Hb.
+      apply elem_of_list_fmap in Hfalse as (b' & Hfb & Hb').
+      enough (b = b') by congruence.
+      apply Hf; try constructor; easy.
+Qed.
+
+
+Lemma map_img_set_to_map_L {B C K A M SA} `{FinMap K M}
+  `{Countable K} `{FinSet B C} 
+  `{SemiSet A SA} `{HSA : !LeibnizEquiv SA}
+  (f : B → K * A) (g : C) 
+  (Hf : ∀ y y', y ∈ g → y' ∈ g → (f y).1 = (f y').1 → y = y') :
+  map_img (set_to_map f g :> M A) =@{SA} set_map (snd ∘ f) g.
+Proof.
+  apply HSA.
+  now apply map_img_set_to_map.
+Qed.
+
+Lemma set_map_set_map {A B C D E F} 
+  `{Elements A D} `{FinSet B E}
+  `{SemiSet C F}
+  (f : A -> B) (g : B -> C) (d : D) : 
+  set_map g (set_map f d :> E) ≡@{F} set_map (g ∘ f) d.
+Proof.
+  unfold set_map.
+  intros x.
+  set_solver.
+Qed.
+
+Lemma set_map_set_map_L {A B C D E F} 
+  `{Elements A D} `{FinSet B E}
+  `{SemiSet C F} `{HF : !LeibnizEquiv F}
+  (f : A -> B) (g : B -> C) (d : D) : 
+  set_map g (set_map f d :> E) =@{F} set_map (g ∘ f) d.
+Proof.
+  apply HF.
+  now apply set_map_set_map.
+Qed.
+
+Lemma set_map_to_omap_gen {A SA B SB} 
+  `{FinSet A SA}
+  `{SemiSet B SB}
+  (f : A -> B) (g : A -> option B) (d : SA)
+  (Hfg : forall a, a ∈ d -> g a = Some (f a)) :
+  set_map f d ≡@{SB} set_omap g d.
+Proof.
+  intros a.
+  rewrite elem_of_set_omap, elem_of_map.
+  naive_solver.
+Qed.
+
+Lemma set_map_to_omap_gen_L {A SA B SB} 
+  `{FinSet A SA} `{SemiSet B SB} `{!LeibnizEquiv SB}
+  (f : A -> B) (g : A -> option B) (d : SA)
+  (Hfg : forall a, a ∈ d -> g a = Some (f a)) :
+  set_map f d =@{SB} set_omap g d.
+Proof.
+  apply (_ : LeibnizEquiv SB).
+  by apply set_map_to_omap_gen.
+Qed.
+
+Lemma set_map_lookup_total_to_set_omap_lookup_gen {A SA B SB M} 
+  `{FinMapDom A M SA} `{Elements A SA} `{!FinSet A SA}
+  `{SemiSet B SB} `{Inhabited B}
+  (f : M B) (d' : SA) : d' ⊆ dom f ->
+  set_map (f !!!.) d' ≡@{SB} set_omap (f !!.) d'.
+Proof.
+  intros Hd'.
+  apply set_map_to_omap_gen.
+  intros a Ha.
+  apply lookup_lookup_total_dom.
+  by apply Hd', Ha.
+Qed.
+
+Lemma set_map_lookup_total_to_set_omap_lookup_gen_L {A SA B SB M} 
+  `{FinMapDom A M SA} `{Elements A SA} `{!FinSet A SA}
+  `{SemiSet B SB} `{Inhabited B} `{!LeibnizEquiv SB}
+  (f : M B) (d' : SA) : d' ⊆ dom f ->
+  set_map (f !!!.) d' =@{SB} set_omap (f !!.) d'.
+Proof.
+  intros Hd'.
+  apply (_ : LeibnizEquiv SB).
+  by apply set_map_lookup_total_to_set_omap_lookup_gen.
+Qed.
+
+Lemma set_map_lookup_total_eq_map_img {A SA B SB M} 
+  `{FinMapDom A M SA} `{Elements A SA} `{!FinSet A SA}
+  `{SemiSet B SB} `{Inhabited B} 
+  (f : M B) (d' : SA) : d' ≡@{SA} dom f ->
+  set_map (f !!!.) d' ≡@{SB} map_img f.
+Proof.
+  intros ->.
+  rewrite set_map_lookup_total_to_set_omap_lookup_gen by reflexivity.
+  apply set_omap_lookup_full; reflexivity.
+Qed.
+
+Lemma set_map_lookup_total_eq_map_img_L {A SA B SB M} 
+  `{FinMapDom A M SA} `{Elements A SA} `{!FinSet A SA}
+  `{SemiSet B SB} `{Inhabited B} `{!LeibnizEquiv SB}
+  (f : M B) (d' : SA) : d' =@{SA} dom f ->
+  set_map (f !!!.) d' =@{SB} map_img f.
+Proof.
+  intros ->.
+  by apply set_eq, set_map_lookup_total_eq_map_img.
+Qed.
+
+
+
+Lemma map_img_natmap_inv_subseteq (f : natmap nat) : 
+  map_img (natmap_inv f) ⊆ dom f.
+Proof.
+  intros n.
+  rewrite elem_of_map_img.
+  intros (i & Hi%lookup_natmap_inv_Some_inv).
+  now rewrite elem_of_dom, Hi.
+Qed.
+
+Lemma map_img_natmap_inv (f : natmap nat) (Hf : natmap_inj f) : 
+  map_img (natmap_inv f) = dom f.
+Proof.
+  apply set_eq => n.
+  rewrite elem_of_map_img.
+  setoid_rewrite lookup_natmap_inv_Some; [|easy].
+  rewrite elem_of_dom.
+  reflexivity.
+Qed.
+
+Lemma dom_natset_nth (A : natset) : 
+  dom (natset_nth A) = seq_set 0 (size A) :> natset.
+Proof.
+  unfold natset_nth.
+  rewrite dom_list_idx_to_map.
+  rewrite length_natset_to_list.
+  reflexivity.
+Qed.
+
+Lemma map_img_natset_nth (A : natset) : 
+  map_img (natset_nth A) = A.
+Proof.
+  unfold natset_nth. 
+  rewrite map_img_list_idx_to_map_L.
+  apply list_to_set_natset_to_list.
+Qed.
+
+Lemma dom_natset_idx (A : natset) : 
+  dom (natset_idx A) = A.
+Proof.
+  unfold natset_idx.
+  rewrite dom_natmap_inv.
+  apply map_img_natset_nth.
+Qed.
+
+(* Lemma dom_natset_idx_equiv `{FinSet nat SA} `{!LeibnizEquiv SA} (A : natset) : 
+  dom (natset_idx A) =@{SA} set_map (λ x, x) A. *)
+
+Definition set_cast {A SA SA'} `{Elements A SA}
+  `{Singleton A SA'} `{Empty SA'} `{Union SA'} (d : SA) : SA' :=
+  set_map Datatypes.id d.
+
+Lemma elem_of_set_cast {A SA SA'} `{FinSet A SA} 
+  `{SemiSet A SA'} (d : SA) a : 
+  a ∈ (set_cast d :> SA') ↔ a ∈ d.
+Proof.
+  unfold set_cast.
+  by rewrite elem_of_map, exists_eq_l_iff'.
+Qed.
+
+
+Lemma map_img_natmap_inv' `{FinSet nat A} 
+  `{!LeibnizEquiv A} f (Hf : natmap_inj f) :
+  map_img (natmap_inv f) =@{A} set_cast (dom f).
+Proof.
+  apply set_eq => x.
+  rewrite <- map_img_natmap_inv by easy.
+  rewrite elem_of_set_cast, 2!elem_of_map_img.
+  reflexivity.
+Qed.
+
+Lemma map_img_natset_idx `{FinSet nat SA} `{!LeibnizEquiv SA} 
+  (A : natset) : 
+  map_img (natset_idx A) =@{SA} seq_set 0 (size A).
+Proof.
+  unfold natset_idx.
+  apply set_eq => x.
+  rewrite map_img_natmap_inv' by apply natmap_inj_natset_nth.
+  rewrite dom_natset_nth, elem_of_set_cast, 2!elem_of_seq_set.
+  reflexivity.
+Qed.
+
+Lemma natmap_inj_natset_idx (A : natset) :
+  natmap_inj (natset_idx A).
+Proof.
+  apply natmap_inj_natmap_inv.
+Qed.
+
+
+Definition set_inl {A SA B SAB} `{Elements A SA}
+  `{Singleton (A + B) SAB} `{Empty SAB} `{Union SAB} 
+  (d : SA) : SAB :=
+  set_map inl d.
+
+Definition set_inr {A B SB SAB} `{Elements B SB}
+  `{Singleton (A + B) SAB} `{Empty SAB} `{Union SAB} 
+  (d : SB) : SAB :=
+  set_map inr d.
+
+Definition set_outl {A SA B SAB} `{Elements (A + B) SAB}
+  `{Singleton A SA} `{Empty SA} `{Union SA} 
+  (d : SAB) : SA :=
+  set_omap sum_to_l d.
+
+Definition set_outr {A B SB SAB} `{Elements (A + B) SAB}
+  `{Singleton B SB} `{Empty SB} `{Union SB} 
+  (d : SAB) : SB :=
+  set_omap sum_to_r d.
+
+Definition sum_set {A SA B SB SAB} `{Elements A SA} `{Elements B SB}
+  `{Singleton (A + B) SAB} `{Empty SAB} `{Union SAB} 
+  (d : SA) (d' : SB) : SAB :=
+  set_inl d ∪ set_inr d'.
+
+
+Lemma set_inl_eq {A SA B SAB} `{Elements A SA}
+  `{Singleton (A + B) SAB} `{Empty SAB} `{Union SAB} 
+  (d : SA) : 
+  set_inl d = set_map inl d :> SAB.
+Proof. by reflexivity. Qed.
+Lemma set_inr_eq {A B SB SAB} `{Elements B SB}
+  `{Singleton (A + B) SAB} `{Empty SAB} `{Union SAB} 
+  (d : SB) : 
+  set_inr d = set_map inr d :> SAB.
+Proof. by reflexivity. Qed.
+Lemma set_outl_eq {A SA B SAB} `{Elements (A + B) SAB}
+  `{Singleton A SA} `{Empty SA} `{Union SA} 
+  (d : SAB) : 
+  set_outl d = set_omap sum_to_l d :> SA.
+Proof. by reflexivity. Qed.
+Lemma set_outr_eq {A B SB SAB} `{Elements (A + B) SAB}
+  `{Singleton B SB} `{Empty SB} `{Union SB} 
+  (d : SAB) : 
+  set_outr d = set_omap sum_to_r d :> SB.
+Proof. by reflexivity. Qed.
+Lemma sum_set_eq {A SA B SB SAB} `{Elements A SA} `{Elements B SB}
+  `{Singleton (A + B) SAB} `{Empty SAB} `{Union SAB} 
+  (d : SA) (d' : SB) : 
+  sum_set d d' = set_inl d ∪ set_inr d' :> SAB.
+Proof. by reflexivity. Qed.
+
+(* FIXME: Move *) 
+Lemma sum_match_to_sum_elim {A B C} (P : A -> C) (Q : B -> C) (ab : A + B) : 
+  match ab with 
+  | inl a => P a
+  | inr b => Q b
+  end = sum_elim P Q ab.
+Proof.
+  by destruct ab.
+Qed.
+
+Lemma elem_of_set_inl_cases {A SA B SAB} `{FinSet A SA}
+  `{SemiSet (A + B) SAB} (d : SA) (ab : A + B) :
+  ab ∈@{SAB} set_inl d <->
+  match ab with
+  | inl a => a ∈ d
+  | inr b => False
+  end.
+Proof.
+  unfold set_inl.
+  rewrite elem_of_map.
+  destruct ab as [a | b]; [|split; try intros []; easy].
+  naive_solver.
+Qed.
+
+Lemma elem_of_set_inr_cases {A B SB SAB} `{FinSet B SB}
+  `{SemiSet (A + B) SAB} (d : SB) (ab : A + B) :
+  ab ∈@{SAB} set_inr d <->
+  match ab with
+  | inl a => False
+  | inr b => b ∈ d
+  end.
+Proof.
+  unfold set_inr.
+  rewrite elem_of_map.
+  destruct ab as [a | b]; [split; try intros []; easy|].
+  naive_solver.
+Qed.
+
+Lemma elem_of_sum_set_cases {A SA B SB SAB} 
+  `{FinSet A SA} `{FinSet B SB} `{SemiSet (A + B) SAB} 
+  (d : SA) (d' : SB) (ab : A + B) :
+  ab ∈@{SAB} sum_set d d' <-> 
+  match ab with
+  | inl a => a ∈ d
+  | inr b => b ∈ d'
+  end.
+Proof.
+  unfold sum_set.
+  rewrite elem_of_union, elem_of_set_inl_cases, elem_of_set_inr_cases.
+  by destruct ab; naive_solver.
+Qed.
+
+Lemma elem_of_set_outl {A SA B SAB} `{SemiSet A SA}
+  `{FinSet (A + B) SAB} (d : SAB) (a : A) :
+  a ∈@{SA} set_outl d <-> inl a ∈@{SAB} d.
+Proof.
+  unfold set_outl.
+  rewrite elem_of_set_omap.
+  split; [|intros ?; by exists (inl a)].
+  by intros ([] & ? & [= ->]).
+Qed.
+
+Lemma elem_of_set_outr {A B SB SAB} `{SemiSet B SB}
+  `{FinSet (A + B) SAB} (d : SAB) (b : B) :
+  b ∈@{SB} set_outr d <-> inr b ∈@{SAB} d.
+Proof.
+  unfold set_outr.
+  rewrite elem_of_set_omap.
+  split; [|intros ?; by exists (inr b)].
+  by intros ([] & ? & [= ->]).
+Qed.
+
+Lemma set_outl_union {A SA B SAB} `{SemiSet A SA}
+  `{FinSet (A + B) SAB} (d d' : SAB) :
+  set_outl (d ∪ d') ≡@{SA} set_outl d ∪ set_outl d'.
+Proof.
+  apply set_omap_union.
+Qed.
+
+Lemma set_outr_union {A B SB SAB} `{SemiSet B SB}
+  `{FinSet (A + B) SAB} (d d' : SAB) :
+  set_outr (d ∪ d') ≡@{SB} set_outr d ∪ set_outr d'.
+Proof.
+  apply set_omap_union.
+Qed.
+
+
+
+Lemma set_outl_inl {A SA B SAB} `{FinSet A SA} `{FinSet (A + B) SAB}
+  (d : SA) : 
+  set_outl (set_inl d :> SAB) ≡@{SA} d.
+Proof.
+  intros x.
+  by rewrite elem_of_set_outl, elem_of_set_inl_cases.
+Qed.
+
+Lemma set_outr_inr {A B SB SAB} `{FinSet B SB} `{FinSet (A + B) SAB}
+  (d : SB) : 
+  set_outr (set_inr d :> SAB) ≡@{SB} d.
+Proof.
+  intros x.
+  by rewrite elem_of_set_outr, elem_of_set_inr_cases.
+Qed.
+
+Lemma set_outl_inl_L {A SA B SAB} `{FinSet A SA} `{FinSet (A + B) SAB}
+  `{!LeibnizEquiv SA} (d : SA) : 
+  set_outl (set_inl d :> SAB) =@{SA} d.
+Proof.
+  apply set_eq, set_outl_inl.
+Qed.
+
+Lemma set_outr_inr_L {A B SB SAB} `{FinSet B SB} `{FinSet (A + B) SAB}
+  `{!LeibnizEquiv SB} (d : SB) : 
+  set_outr (set_inr d :> SAB) =@{SB} d.
+Proof.
+  apply set_eq, set_outr_inr.
+Qed.
+
+(* TODO: Improve hypotheses of these four *)
+Lemma set_outl_inr {A SA B SB SAB} 
+  `{FinSet A SA} `{FinSet B SB} `{FinSet (A + B) SAB}
+  (d : SB) : 
+  set_outl (set_inr d :> SAB) ≡@{SA} ∅.
+Proof.
+  intros x.
+  by rewrite elem_of_set_outl, elem_of_set_inr_cases, elem_of_empty.
+Qed.
+
+Lemma set_outr_inl {A SA B SB SAB} 
+  `{FinSet A SA} `{FinSet B SB} `{FinSet (A + B) SAB}
+  (d : SA) : 
+  set_outr (set_inl d :> SAB) ≡@{SB} ∅.
+Proof.
+  intros x.
+  by rewrite elem_of_set_outr, elem_of_set_inl_cases, elem_of_empty.
+Qed.
+
+Lemma set_outl_inr_L {A SA B SB SAB} 
+  `{FinSet A SA} `{FinSet B SB} `{FinSet (A + B) SAB} `{!LeibnizEquiv SA}
+  (d : SB) : 
+  set_outl (set_inr d :> SAB) =@{SA} ∅.
+Proof.
+  apply set_eq, set_outl_inr.
+Qed.
+
+Lemma set_outr_inl_L {A SA B SB SAB} 
+  `{FinSet A SA} `{FinSet B SB} `{FinSet (A + B) SAB} `{!LeibnizEquiv SB}
+  (d : SA) : 
+  set_outr (set_inl d :> SAB) =@{SB} ∅.
+Proof.
+  apply set_eq, set_outr_inl.
+Qed.
+
+
+
+(* TODO: Improve hypotheses of these: *)
+Lemma set_outl_sum_set {A SA B SB SAB} 
+  `{FinSet A SA} `{FinSet B SB} `{FinSet (A + B) SAB}
+  (d : SA) (d' : SB) : 
+  set_outl (sum_set d d' :> SAB) ≡@{SA} d.
+Proof.
+  unfold sum_set.
+  rewrite set_outl_union.
+  rewrite set_outl_inl, set_outl_inr, (union_empty_r _).
+  reflexivity.
+Qed.
+
+Lemma set_outl_sum_set_L {A SA B SB SAB} 
+  `{FinSet A SA} `{FinSet B SB} `{FinSet (A + B) SAB} `{!LeibnizEquiv SA}
+  (d : SA) (d' : SB) : 
+  set_outl (sum_set d d' :> SAB) =@{SA} d.
+Proof.
+  apply set_eq, set_outl_sum_set.
+Qed.
+
+Lemma set_outr_sum_set {A SA B SB SAB} 
+  `{FinSet A SA} `{FinSet B SB} `{FinSet (A + B) SAB}
+  (d : SA) (d' : SB) : 
+  set_outr (sum_set d d' :> SAB) ≡@{SB} d'.
+Proof.
+  unfold sum_set.
+  rewrite set_outr_union.
+  rewrite set_outr_inl, set_outr_inr, (union_empty_l _).
+  reflexivity.
+Qed.
+
+Lemma set_outr_sum_set_L {A SA B SB SAB} 
+  `{FinSet A SA} `{FinSet B SB} `{FinSet (A + B) SAB} `{!LeibnizEquiv SB}
+  (d : SA) (d' : SB) : 
+  set_outr (sum_set d d' :> SAB) =@{SB} d'.
+Proof.
+  apply set_eq, set_outr_sum_set.
+Qed.
+
+Lemma set_sum_to_sum_set {A SA B SB SAB} 
+  `{FinSet A SA} `{FinSet B SB} `{FinSet (A + B) SAB}
+  (d : SAB) : 
+  d ≡@{SAB} sum_set (set_outl d :> SA) (set_outr d :> SB).
+Proof.
+  intros x.
+  rewrite elem_of_sum_set_cases.
+  destruct x; 
+  by rewrite 1?elem_of_set_outl, 1?elem_of_set_outr.
+Qed.
+
+Lemma set_sum_to_sum_set_L {A SA B SB SAB} 
+  `{FinSet A SA} `{FinSet B SB} `{FinSet (A + B) SAB} `{!LeibnizEquiv SAB}
+  (d : SAB) : 
+  d =@{SAB} sum_set (set_outl d :> SA) (set_outr d :> SB).
+Proof.
+  apply set_eq, set_sum_to_sum_set.
+Qed.
+
+
 (* TODO: Use natset_nth / _idx to build the "shifted" (i.e. justified) 
   versions *)
 
 
+Lemma size_set_map_le `{FinSet A SA} `{FinSet B SB} (f : A -> B) (s : SA) :
+  size (set_map f s :> SB) <= size s.
+Proof.
+  revert s.
+  apply set_ind.
+  - by intros ? ? ->.
+  - by rewrite set_map_empty, 2!size_empty.
+  - intros a s Ha IH.
+    rewrite size_union by set_solver.
+    rewrite set_map_union, set_map_singleton, size_singleton.
+    rewrite size_union_alt, size_singleton.
+    enough (size (set_map f s ∖ {[f a]} :> SB) ≤ size (set_map f s :> SB)) by lia.
+    apply subseteq_size.
+    set_solver.
+Qed.
 
-Definition Idx    : Type := nat. 
+Lemma size_set_map_eq_iff `{FinSet A SA} `{FinSet B SB} (f : A -> B) (s : SA) :
+  size (set_map f s :> SB) = size s <->
+  (∀ a b, a ∈ s -> b ∈ s -> f a = f b -> a = b).
+Proof.
+  split.
+  - intros Hsize.
+    intros a b Ha Hb Hfab.
+    destruct (decide (a = b)) as [Hab|Hab]; [easy|].
+    exfalso.
+    assert (Hrw : s ≡ ({[a; b]} ∪ s ∖ {[a; b]})). 1: {
+      intros x.
+      rewrite elem_of_union, elem_of_difference, not_elem_of_union, 
+        2!not_elem_of_singleton.
+      rewrite elem_of_union, 2!elem_of_singleton.
+      destruct (decide (x = a)); [|destruct (decide (x = b))];
+      subst;
+      naive_solver.
+    }
+    rewrite Hrw in Hsize.
+    rewrite size_union in Hsize 
+      by (intros x Hx (_ & Hx')%elem_of_difference; apply Hx', Hx).
+    revert Hsize.
+    rewrite size_union 
+      by (intros x ?%elem_of_singleton ?%elem_of_singleton; congruence).
+    rewrite set_map_union.
+    rewrite set_map_union, 2!set_map_singleton. 
+    rewrite Hfab.
+    rewrite (union_idemp _).
+    rewrite size_union_alt.
+    rewrite 3!size_singleton.
+    enough (size (set_map f (s ∖ {[a; b]}) ∖ {[f b]} :> SB) ≤ size (s ∖ {[a;b]})) 
+      by lia.
+    erewrite subseteq_size by (apply subseteq_difference_l; reflexivity).
+    apply size_set_map_le.
+  - pattern s; revert s.
+    apply set_ind.
+    + intros s s' Hs Happ Hinj.
+      rewrite <- Hs.
+      apply Happ.
+      intros ? ? ? ?; apply Hinj; by rewrite <- Hs.
+    + intros _.
+      by rewrite set_map_empty, 2!size_empty.
+    + intros a s Ha IH Hinj.
+      specialize (IH ltac:(intros ? ? ? ?; apply Hinj; set_solver)).
+      rewrite set_map_union, set_map_singleton. 
+      rewrite size_union; 
+        first by rewrite size_union, 2!size_singleton, IH by set_solver.
+      intros x ->%elem_of_singleton (b & Hfab & Hb)%elem_of_map.
+      assert (Hab : a ≠ b) by congruence.
+      apply Hab.
+      apply Hinj; set_solver.
+Qed.
 
-(* Different types of edges we may see *)
-(* Inductive EdgeType : Type :=
-  | Boundary : Idx -> EdgeType
-  | Internal : Idx -> EdgeType. *)
 
-Definition EdgeType : Type := nat + nat.
+Lemma natmap_inj_alt_size (f : natmap nat) :
+  natmap_inj f <-> size (dom f :> natset) = size (map_img f :> natset).
+Proof.
+  rewrite map_img_to_set_map_dom_L.
+  rewrite (eq_comm _).
+  rewrite size_set_map_eq_iff.
+  rewrite natmap_inj_alt'. 
+  apply forall_iff => a.
+  apply forall_iff => b.
+  split.
+  - intros Hz (fa & Hfa)%elem_of_dom (fb & Hfb)%elem_of_dom Hfafb.
+    rewrite (lookup_total_correct _ _ _ Hfa), 
+      (lookup_total_correct _ _ _ Hfb) in Hfafb.
+    subst fb.
+    eauto.
+  - intros IH z Hfa Hfb.
+    apply IH; [by eapply elem_of_dom_2; eassumption..|].
+    by erewrite 2!lookup_total_correct by eassumption.
+Qed.
 
-Notation Boundary n := (@inl nat nat n).
-Notation Internal n := (@inr nat nat n).
 
-Definition Edge : Type := (EdgeType * EdgeType * bool).
 
-(* Definition vert_of_edgetype : EdgeType -> option nat :=
-  fun n => 
-  match n with 
-  | Boundary n' => None
-  | Internal n' => Some n'
-  end. *)
-  
+(* FIXME: Move *)
+Lemma gset_to_multiset_union `{Countable A} (g h : gmap.gset A) : 
+  gset_to_multiset (g ∪ h) = gset_to_multiset g ∪ gset_to_multiset h.
+Proof.
+  apply gmultiset_eq => a.
+  rewrite multiplicity_union, 3!multiplicity_gset_to_multiset.
+  destruct (decide (a ∈ g ∪ h)) as [e|e], (decide (a ∈ g)), (decide (a ∈ h));
+  rewrite elem_of_union in e; done + naive_solver. 
+Qed.
+
+Lemma dom_gmultiset_map {A B} `{Countable A} `{Countable B}
+  (g : gmultiset A) (f : A -> B) : 
+  dom (gmultiset_map f g) = set_map f $ dom g.
+Proof.
+  apply set_eq => x.
+  rewrite gmultiset_elem_of_dom, elem_of_gmultiset_map, elem_of_map.
+  setoid_rewrite gmultiset_elem_of_dom.
+  reflexivity.
+Qed.
+
+Lemma dom_gmultiset_union {A} `{Countable A}
+  (g h : gmultiset A) : 
+  dom (g ∪ h) = dom g ∪ dom h.
+Proof.
+  apply set_eq => x.
+  rewrite elem_of_union, 3!gmultiset_elem_of_dom.
+  apply gmultiset_elem_of_union.
+Qed.
+
+(* FIXME: Move *)
+Lemma set_map_id `{FinSet A SA} (s : SA) :
+  set_map (λ x, x) s ≡ s.
+Proof. set_solver. Qed.
+
+Lemma set_map_id_L `{FinSet A SA} `{!LeibnizEquiv SA} (s : SA) :
+  set_map (λ x, x) s = s.
+Proof. set_solver. Qed.
+
+Lemma set_map_id_inhom `{FinSet A SA} `{FinSet A SA'} (s : SA) :
+  set_map (λ x, x) s ≡@{SA'} set_cast s.
+Proof. set_solver. Qed.
+
+Lemma set_map_id_inhom_L `{FinSet A SA} `{FinSet A SA'} 
+  `{!LeibnizEquiv SA} (s : SA) :
+  set_map (λ x, x) s =@{SA'} set_cast s.
+Proof. set_solver. Qed.
+
+(* FIXME: Move *)
+Global Instance set_unfold_elem_of_set_cast `{FinSet A SA, SemiSet A SA'} 
+  (a : A) (s : SA) P : 
+  SetUnfoldElemOf a s P -> 
+  SetUnfoldElemOf a (set_cast s :> SA') P.
+Proof. intros []. constructor. by rewrite elem_of_set_cast. Qed.
+
+(* FIXME: Move *)
+Lemma gmultiset_map_compose `{Countable A} `{Countable B} `{Countable D}
+  (f : A -> B) (g : B -> D) (s : gmultiset A) :
+  gmultiset_map (g ∘ f) s = gmultiset_map g (gmultiset_map f s).
+Proof.
+  induction s using gmultiset_ind; [easy|].
+  rewrite 3!gmultiset_map_disj_union, 3!gmultiset_map_singleton.
+  unfold compose in *.
+  congruence.
+Qed.
+
+
+
+(* Lemma dom_mg_vert_idx `{FinSet nat A} `{!LeibnizEquiv A} : 
+  dom G.(mg_vert_idx) =@{A} G. *)
+(* FIXME: Move *)
+Lemma set_map_add_seq_set `{FinSet nat SA} `{FinSet nat SB} `{!LeibnizEquiv SB}
+  start len diff : 
+  set_map (Nat.add diff) (seq_set start len :> SA) =@{SB} seq_set (start + diff) len.
+Proof.
+  apply set_eq => x. 
+  rewrite elem_of_map.
+  setoid_rewrite elem_of_seq_set.
+  split; [intros []; lia|].
+  intros ?.
+  exists (x - diff).
+  lia.
+Qed.
+
+(* FIXME: Move *)
+Lemma exists_iff_of_unique {A} {P : A -> Prop} (a : A) : 
+  (∀ b, P b -> b = a) ->
+  (∃ b, P b) <-> P a.
+Proof.
+  intros HP.
+  split; [|eauto].
+  intros [b Hb].
+  apply HP in Hb as Hab.
+  by subst.
+Qed.
+
+
+Lemma map_img_omap {K A SA B SB M}
+  `{FinMap K M} `{FinSet A SA} `{SemiSet B SB}
+  (f : M A) (g : A -> option B) :
+  map_img (omap g f) ≡@{SB} set_omap g $ (map_img f :> SA).
+Proof.
+  intros x.
+  rewrite elem_of_map_img.
+  setoid_rewrite lookup_omap_Some.
+  rewrite elem_of_set_omap.
+  setoid_rewrite elem_of_map_img.
+  naive_solver.
+Qed.
+
+
+Lemma map_img_omap_L {K A SA B SB M}
+  `{FinMap K M} `{FinSet A SA} `{SemiSet B SB} `{!LeibnizEquiv SB}
+  (f : M A) (g : A -> option B) :
+  map_img (omap g f) =@{SB} set_omap g $ (map_img f :> SA).
+Proof.
+  apply set_eq, map_img_omap.
+Qed.
+
+
+
+
+(* FIXME: Move *)
+Lemma exists_or {A} {P Q : A -> Prop} :
+  (∃ a, (P a ∨ Q a)) <->
+  (∃ a, P a) ∨ (∃ a, Q a).
+Proof. naive_solver. Qed.
+
+Lemma edgeset_dom_union `{SemiSet A SA} `{FinSet (A * A) SAA}
+  (f g : SAA) : 
+  edgeset_dom (f ∪ g) ≡@{SA} edgeset_dom f ∪ edgeset_dom g.
+Proof.
+  intros x.
+  rewrite elem_of_union, 3!elem_of_edgeset_dom.
+  setoid_rewrite elem_of_union.
+  setoid_rewrite <- and_or_distr_same_r; [|reflexivity].
+  rewrite exists_or.
+  reflexivity.
+Qed.
+
+Lemma edgeset_dom_union_L `{SemiSet A SA} `{FinSet (A * A) SAA} 
+  `{!LeibnizEquiv SA} (f g : SAA) : 
+  edgeset_dom (f ∪ g) =@{SA} edgeset_dom f ∪ edgeset_dom g.
+Proof.
+  apply set_eq.
+  apply edgeset_dom_union.
+Qed.
+
+Lemma edgeset_dom_prod_map `{FinSet A SA} `{SemiSet B SB} 
+  `{FinSet (A * A) SAA} `{FinSet (B * B) SBB} 
+  (f : SAA) (g : A -> B) : 
+  edgeset_dom (set_map (prod_map g g) f :> SBB) ≡@{SB} 
+    set_map g $ (edgeset_dom f :> SA).
+Proof.
+  intros x.
+  rewrite elem_of_map, elem_of_edgeset_dom.
+  setoid_rewrite elem_of_edgeset_dom.
+  setoid_rewrite elem_of_map.
+  naive_solver.
+Qed.
+
+Lemma edgeset_dom_prod_map_L `{FinSet A SA} `{SemiSet B SB} `{!LeibnizEquiv SB}
+  `{FinSet (A * A) SAA} `{FinSet (B * B) SBB} 
+  (f : SAA) (g : A -> B) : 
+  edgeset_dom (set_map (prod_map g g) f :> SBB) =@{SB} 
+    set_map g $ (edgeset_dom f :> SA).
+Proof.
+  apply set_eq, edgeset_dom_prod_map.
+Qed.
+
+Lemma dom_gmultiset_disj_union `{Countable A} 
+  (d d' : gmultiset A) :
+  dom (d ⊎ d') = dom d ∪ dom d'.
+Proof.
+  apply set_eq => x.
+  rewrite elem_of_union, 3!gmultiset_elem_of_dom.
+  by rewrite gmultiset_elem_of_disj_union.
+Qed.
+
+
+Lemma not_elem_of_gmultiset `{Countable A} (s : gmultiset A) (a : A) :
+  a ∉ s <-> multiplicity a s = 0.
+Proof.
+  unfold elem_of, gmultiset_elem_of.
+  lia.
+Qed.
+
+Lemma multiplicity_eq `{Countable A} (s : gmultiset A) (a : A) (n : nat) : 
+  (a ∈ s -> multiplicity a s = n) ->
+  (a ∉ s -> 0 = n) ->
+  multiplicity a s = n.
+Proof.
+  intros Helem Hnelem.
+  destruct (decide (a ∈ s)) as [e|e]; [by apply Helem|].
+  rewrite <- Hnelem by apply e.
+  by apply not_elem_of_gmultiset.
+Qed.
+
+
+
+(* FIXME: This isn't in there??? *)
+Definition dec_of_iff {P Q} (H : Decision P) (HPQ : P <-> Q) : Decision Q :=
+  match H with 
+  | left HP => left (proj1 HPQ HP)
+  | right HnP => right (fun HQ => HnP (proj2 HPQ HQ))
+  end.
+
+Definition dec_of_iff' {P Q} (H : Decision P) (HPQ : Q <-> P) : Decision Q :=
+  dec_of_iff H (iff_sym HPQ).
+
+Lemma decide_rw {A P Q} {H : Decision P} (HPQ : P <-> Q) (x y : A) :
+  (if decide P then x else y) =
+  if (@decide Q (dec_of_iff H HPQ)) then x else y.
+Proof.
+  unfold dec_of_iff.
+  unfold decide.
+  by destruct H.
+Qed.
+
+
+
+(* FIXME: Move *)
+Class Comm_Monoid A `{Monoid A} :=
+  Gplus_comm' : ∀ x y : A, Gplus x y = Gplus y x.
+
+#[export] 
+Instance comm_group_is_comm_monoid `{Comm_Group A} : 
+  Comm_Monoid A | 5 := Gplus_comm.
+
+#[export] 
+Instance nat_is_comm_monoid : Comm_Monoid nat := Nat.add_comm.
+
+#[export] 
+Instance nat_max_is_comm_monoid : 
+  @Comm_Monoid nat nat_max_is_monoid := Nat.max_comm.
+
+
+Lemma Gplus_assoc_comm `{Comm_Monoid A} (x y z : A) : 
+  (x + (y + z))%G = (y + (x + z))%G.
+Proof.
+  rewrite 2!Gplus_assoc.
+  f_equal.
+  apply Gplus_comm'.
+Qed.
+
+Definition set_sum {A SA} `{Elements A SA} `{Monoid A}
+  (s : SA) : A :=
+  set_fold Gplus Gzero s.
+
+#[global]
+Add Parametric Morphism `{FinSet A SA} `{Comm_Monoid A} 
+  (* `{H : TCOr (Comm_Group A) (!LeibnizEquiv SA)} *) : 
+  set_sum with signature
+  (≡@{SA}) ==> eq as set_sum_comm_group_proper.
+Proof.
+  intros x y Hxy.
+  unfold set_sum.
+  apply set_fold_proper;
+  [try typeclasses eauto.. | | easy].
+  intros; apply Gplus_assoc_comm.
+Qed.
+
+
+#[export]
+Instance gplus_is_assoc `{Monoid A} : Assoc (=@{A}) Gplus := Gplus_assoc.
+
+#[export]
+Instance gplus_is_comm `{Comm_Monoid A} : Comm (=@{A}) Gplus := Gplus_comm'.
+
+
+Section set_sum.
+
+Lemma set_sum_empty {A SA} `{FinSet A SA} `{Monoid A} : 
+  set_sum (@empty SA _) = Gzero.
+Proof. 
+  unfold set_sum. 
+  apply set_fold_empty.
+Qed.
+
+Lemma set_sum_singleton {A SA} `{FinSet A SA} `{Monoid A} (a : A) : 
+  set_sum ({[a]} :> SA) = a.
+Proof.
+  unfold set_sum.
+  rewrite set_fold_singleton.
+  apply Gplus_0_r.
+Qed.
+
+Lemma set_sum_disj_union 
+  {A SA} `{FinSet A SA} `{Comm_Monoid A} (s t : SA) : s ## t ->
+  set_sum (s ∪ t) = (set_sum s + set_sum t)%G.
+Proof.
+  intros Hst.
+  unfold set_sum.
+  rewrite set_fold_disj_union by apply Hst + typeclasses eauto.
+  generalize (set_fold Gplus Gzero s) => a.
+  replace a with (Gplus a Gzero) at 1 by apply Gplus_0_r.
+  apply set_fold_comm_acc.
+  intros; apply Gplus_assoc_comm.
+Qed.
+
+Definition FinSet_elem_of_dec A SA `{FinSet A SA} : 
+  @RelDecision A SA (@elem_of A SA _) :=
+  fun x y => 
+    dec_of_iff (elem_of_list_dec x (elements y)) 
+    (elem_of_elements y x).
+
+(* Lemma set_fold_union_singleton_l *)
+
+Lemma set_sum_difference_subseteq 
+  {A SA} `{FinSet A SA} `{Comm_Group A} (s t : SA) : 
+  t ⊆ s -> 
+  set_sum (s ∖ t) = (set_sum s - set_sum t)%G.
+Proof.
+  pose proof (FinSet_elem_of_dec A SA).
+  revert t.
+  pattern (set_sum s), s.
+  revert s.
+  apply set_fold_ind.
+  { intros _ s t Hst.
+    hnf.
+    by setoid_rewrite Hst. }
+  - intros t ->%equiv_empty.
+    rewrite difference_empty, set_sum_empty.
+    by unfold Gminus; rewrite Gopp_0, Gplus_0_r.
+  - intros x s _ Hx IH t Ht.
+    destruct (decide (x ∈ t)) as [Hxt | Hxt].
+    + rewrite (ltac:(set_solver) : (({[x]} ∪ s) ∖ t ≡ s ∖ (t ∖ {[x]}))).
+      rewrite IH by set_solver.
+      rewrite (set_sum_disj_union {[x]}) by set_solver.
+      replace (set_sum t) with (set_sum ({[x]} ∪ (t ∖ {[x]}))) by
+        (eapply set_sum_comm_group_proper; typeclasses eauto + set_solver).
+      rewrite (set_sum_disj_union {[x]}) by set_solver.
+      symmetry. 
+      unfold Gminus.
+      rewrite Gopp_plus_distr, Gplus_assoc.
+      rewrite Gplus_comm, 2!Gplus_assoc.
+      rewrite Gopp_l, Gplus_0_l.
+      reflexivity.
+    + rewrite (ltac:(set_solver) : (({[x]} ∪ s) ∖ t ≡ {[x]} ∪ s ∖ t)).
+      rewrite 2!(set_sum_disj_union {[x]}) by set_solver.
+      rewrite IH by set_solver.
+      apply Gplus_assoc.
+Qed.
+
+
+Lemma set_sum_union {A SA} `{FinSet A SA} (* `{@RelDecision A SA (@elem_of A SA _)} *)
+  `{Comm_Group A} (s t : SA) : 
+  set_sum (s ∪ t) = (set_sum s + set_sum t - set_sum (s ∩ t))%G.
+Proof.
+  pose proof (FinSet_elem_of_dec A SA).
+  assert (Hrw : s ∪ t ≡ s ∪ (t ∖ (s ∩ t))).
+  { intros x. 
+    rewrite 2!elem_of_union, elem_of_difference, elem_of_intersection.
+    destruct (decide (x ∈ s)), (decide (x ∈ t)); naive_solver. }
+  rewrite Hrw.
+  rewrite set_sum_disj_union by set_solver.
+  rewrite set_sum_difference_subseteq by set_solver.
+  apply Gplus_assoc.
+Qed.
+
+
+Definition set_Nsum {A SA} `{Elements A SA} (f : A -> nat) (s : SA) : nat :=
+  set_fold (Nat.add ∘ f) 0 s.
+
+Lemma set_Nsum_alt `{FinSet A SA} (f : A -> nat) `{!Inj (=) (=) f} (s : SA) : 
+  set_Nsum f s = set_sum (set_map f s :> natset).
+Proof.
+  unfold set_Nsum.
+  unfold set_sum, set_fold, set_map.
+  simpl.
+  rewrite elements_list_to_set.
+  - induction (elements s); [easy | simpl in *; by rewrite IHl].
+  - apply NoDup_fmap; [easy | apply NoDup_elements].
+Qed.
+
+
+Lemma set_fold_eq_on {A SA B} `{FinSet A SA} (f f' : A -> B -> B) (s : SA) 
+  (b : B) (R : relation B) `{!Equivalence R} :
+  (∀ a a' b, R (f a (f a' b)) (f a' (f a b))) ->
+  (∀ a a' b, R (f' a (f' a' b)) (f' a' (f' a b))) ->
+  (∀ a, Proper (R ==> R) (f' a)) ->
+  (∀ a b, a ∈ s -> f a b = f' a b) -> 
+  R (set_fold f b s) (set_fold f' b s).
+Proof.
+  intros Hf Hf' Hf'prop Hff'.
+  revert Hff'.
+  revert s.
+  apply (set_fold_ind
+    ((λ (b0 : B) (t : SA),
+    (∀ (a : A) (b1 : B), a ∈ t → f a b1 = f' a b1)
+      → R b0 (set_fold f' b t)))
+      f b).
+  - intros folded s s' Hs Himpl Hff'.
+    erewrite <- set_fold_proper;
+    [| typeclasses eauto..| apply Hf' |apply Hs].
+    apply Himpl.
+    intros; apply Hff'. 
+    by rewrite <- Hs.
+  - intros Hff'.
+    rewrite set_fold_empty.
+    reflexivity.
+  - intros a s r Ha IH Hff'.
+    specialize (IH ltac:(intros; apply Hff'; set_solver)).
+    erewrite set_fold_proper;
+    [| typeclasses eauto..| apply Hf' |apply union_comm].
+    rewrite set_fold_disj_union_strong by 
+      first [intros ? ? ? **; apply Hf'; set_solver | 
+        typeclasses eauto | set_solver].
+    rewrite set_fold_singleton.
+    rewrite Hff' by set_solver.
+    apply Hf'prop.
+    apply IH.
+Qed.
+
+#[global]
+Add Parametric Morphism `{FinSet A SA} f : (set_Nsum f) with signature
+  (* pointwise_relation A eq ==> *) (≡@{SA}) ==> eq as set_Nsum_proper.
+Proof.
+  intros (* f f' Hf *) s s' Hs.
+  unfold set_Nsum.
+  apply set_fold_proper;
+  [typeclasses eauto..| intros; simpl; lia | apply Hs].
+Qed.
+
+Lemma set_Nsum_ext `{FinSet A SA} (f f' : A -> nat) (s s' : SA) : 
+  (forall a, a ∈ s -> f a = f' a) -> s ≡ s' -> 
+  set_Nsum f s = set_Nsum f' s'.
+Proof.
+  intros Hf <-.
+  unfold set_Nsum.
+  apply set_fold_eq_on.
+  - typeclasses eauto.
+  - simpl; lia.
+  - simpl; lia.
+  - typeclasses eauto.
+  - simpl.
+    intros; now rewrite Hf.
+Qed.
+
+
+
+
+Lemma set_Nsum_empty {A SA} `{FinSet A SA} f : 
+  set_Nsum f (@empty SA _) = 0.
+Proof.
+  apply set_fold_empty.
+Qed.
+
+Lemma set_Nsum_singleton {A SA} `{FinSet A SA} f (a : A) : 
+  set_Nsum f ({[a]} :> SA) = f a.
+Proof.
+  unfold set_Nsum.
+  rewrite set_fold_singleton.
+  apply Nat.add_0_r.
+Qed.
+
+Lemma set_Nsum_disj_union 
+  {A SA} `{FinSet A SA}f (s t : SA) : s ## t ->
+  set_Nsum f (s ∪ t) = (set_Nsum f s + set_Nsum f t).
+Proof.
+  intros Hst.
+  unfold set_Nsum.
+  rewrite set_fold_disj_union_strong by 
+    first [assumption | intros ? ? ? ? **; simpl; lia | typeclasses eauto].
+  (* rewrite <- (Nat.add_0_r *)
+  rewrite <- set_fold_comm_acc_strong by 
+    first [intros ? ? ?; simpl; lia | typeclasses eauto].
+  by rewrite Nat.add_0_r.
+Qed.
+
+Lemma set_Nsum_mono {A SA} `{FinSet A SA} (f : A -> nat) (s t : SA) : 
+  s ⊆ t -> set_Nsum f s <= set_Nsum f t.
+Proof.
+  pose proof (FinSet_elem_of_dec A SA).
+  intros Hst.
+  rewrite (union_difference _ _ Hst).
+  rewrite set_Nsum_disj_union by set_solver.
+  lia.
+Qed.
+
+(* Lemma set_Nsum_difference_singleton_mem *)
+
+Lemma set_Nsum_difference_subseteq 
+  {A SA} `{FinSet A SA} (f : A -> nat) (s t : SA) : 
+  t ⊆@{SA} s -> 
+  set_Nsum f (s ∖ t) = set_Nsum f s - set_Nsum f t.
+Proof.
+  pose proof (FinSet_elem_of_dec A SA).
+  revert t.
+  pattern s.
+  revert s.
+  apply set_ind.
+  - intros s s' Hs.
+    by setoid_rewrite Hs.
+  - intros t ->%equiv_empty.
+    rewrite difference_empty, set_Nsum_empty.
+    reflexivity.
+  - intros x s Hx IH t Ht.
+    destruct (decide (x ∈ t)) as [Hxt | Hxt].
+    + rewrite (ltac:(set_solver) : (({[x]} ∪ s) ∖ t ≡ s ∖ (t ∖ {[x]}))).
+      generalize (set_Nsum_mono f _ _ Ht).
+      (* intros Hsumt. *)
+      replace (set_Nsum f t) with (set_Nsum f ({[x]} ∪ (t ∖ {[x]}))) by
+        (eapply set_Nsum_proper; typeclasses eauto + set_solver).
+      rewrite 2!(set_Nsum_disj_union f {[x]}), set_Nsum_singleton by set_solver.
+      simpl.
+      intros Hle.
+      rewrite IH by set_solver.
+      lia.
+    + rewrite (ltac:(set_solver) : (({[x]} ∪ s) ∖ t ≡ {[x]} ∪ s ∖ t)).
+      rewrite 2!(set_Nsum_disj_union f {[x]}) by set_solver.
+      rewrite IH by set_solver.
+      rewrite set_Nsum_singleton.
+      pose proof (set_Nsum_mono f t s ltac:(set_solver)).
+      lia.
+Qed.
+
+
+Lemma set_Nsum_union {A SA} `{FinSet A SA} (f : A -> nat) (s t : SA) : 
+  set_Nsum f (s ∪ t) = set_Nsum f s + set_Nsum f t - set_Nsum f (s ∩ t).
+Proof.
+  pose proof (FinSet_elem_of_dec A SA).
+  assert (Hrw : s ∪ t ≡ s ∪ (t ∖ (s ∩ t))).
+  { intros x. 
+    rewrite 2!elem_of_union, elem_of_difference, elem_of_intersection.
+    destruct (decide (x ∈ s)), (decide (x ∈ t)); naive_solver. }
+  rewrite Hrw.
+  rewrite set_Nsum_disj_union by set_solver.
+  rewrite set_Nsum_difference_subseteq by set_solver.
+  pose proof (set_Nsum_mono f (s ∩ t) t ltac:(set_solver)).
+  lia.
+Qed.
+
+Lemma set_Nsum_sum `{FinSet A SA} (f g : A -> nat) (s : SA) :
+  set_Nsum f s + set_Nsum g s = set_Nsum (λ a, f a + g a) s.
+Proof.
+  revert s.
+  apply set_ind.
+  - by intros s s' ->.
+  - by rewrite 3!set_Nsum_empty.
+  - intros a s Ha IH.
+    rewrite 3!set_Nsum_disj_union, 3!set_Nsum_singleton by set_solver.
+    lia.
+Qed.
+
+End set_sum.
+
+
+Lemma multiplicity_singleton_eq `{Countable A} (a b : A) : 
+  multiplicity a {[+ b +]} = if decide (a = b) then 1 else 0.
+Proof.
+  case_decide.
+  - subst.
+    apply multiplicity_singleton.
+  - apply not_elem_of_gmultiset.
+    by rewrite gmultiset_elem_of_singleton.
+Qed.
+
+Lemma multiplicity_gmultiset_map_to_sum `{Countable A} `{Countable B} 
+  (f : A -> B) (s : gmultiset A) (b : B) :
+  multiplicity b (gmultiset_map f s) =
+  set_Nsum (fun a => if decide (f a = b) then multiplicity a s else 0) (dom s).
+Proof.
+  induction s using gmultiset_ind; [reflexivity|].
+  rewrite gmultiset_map_disj_union, multiplicity_disj_union, 
+    dom_gmultiset_disj_union.
+  simpl.
+  rewrite dom_singleton_L.
+  rewrite gmultiset_map_singleton, multiplicity_singleton_eq.
+  rewrite (decide_ext _ _ _ _ (eq_comm _ _)).
+  rewrite IHs.
+  destruct (decide (x ∈ dom s)) as [Hx | Hx].
+  - rewrite (ltac:(set_solver) : {[x]} ∪ dom s = dom s).
+    rewrite (union_difference {[x]} (dom s)) by set_solver.
+    rewrite 2!(set_Nsum_disj_union _ {[x]}) by set_solver.
+    rewrite 2!set_Nsum_singleton.
+    rewrite Nat.add_assoc.
+    f_equal.
+    + rewrite multiplicity_disj_union, multiplicity_singleton.
+      by case_decide.
+    + apply set_Nsum_ext; [|easy].
+      intros a Ha.
+      case_decide; [|easy].
+      rewrite multiplicity_disj_union, multiplicity_singleton_eq.
+      case_decide; [|easy].
+      subst.
+      set_solver.
+  - rewrite set_Nsum_disj_union, set_Nsum_singleton by set_solver.
+    f_equal.
+    + case_decide; [|easy].
+      rewrite multiplicity_disj_union, multiplicity_singleton.
+      rewrite gmultiset_elem_of_dom, not_elem_of_gmultiset in Hx.
+      by rewrite Hx.
+    + apply set_Nsum_ext; [|easy].
+      intros a Ha.
+      case_decide; [|easy].
+      rewrite multiplicity_disj_union, multiplicity_singleton_eq.
+      case_decide; [congruence | easy].
+Qed.
+
+
+
+(* Lemma mg_WF_multiplicity_mdegrees *)
+
+(* FIXME: Move *)
+Lemma multiplicity_to_if_decide `{Countable A} (g : gmultiset A) a : 
+  multiplicity a g = if decide (a ∈ g) then multiplicity a g else 0.
+Proof.
+  apply multiplicity_eq; case_decide; easy.
+Qed.
+
+Lemma multiplicity_to_if_decide_dom `{Countable A} (g : gmultiset A) a : 
+  multiplicity a g = if decide (a ∈ dom g) then multiplicity a g else 0.
+Proof.
+  rewrite multiplicity_to_if_decide at 1.
+  apply decide_ext.
+  by rewrite gmultiset_elem_of_dom.
+Qed.
+
+
+(* FIXME: Move *)
+Lemma if_decide_eq P `{Decision P} {A} (x y x' y' : A) : 
+  (P -> x = x') -> (¬ P -> y = y') ->
+  (if decide P then x else y) = (if decide P then x' else y').
+Proof.
+  case_decide; auto.
+Qed.
+
+Lemma if_and P Q `{Decision P, Decision Q} {A} (x y : A) : 
+  (if decide P then if decide Q then x else y else y) =
+  if decide (P ∧ Q) then x else y.
+Proof.
+  repeat case_decide; reflexivity + intuition auto.
+Qed.
+
+Lemma if_or P Q `{Decision P, Decision Q} {A} (x y : A) : 
+  (if decide P then x else if decide Q then x else y) =
+  if decide (P ∨ Q) then x else y.
+Proof.
+  repeat case_decide; reflexivity + intuition auto.
+Qed.
+
+Lemma if_not P `{Decision P} {A} (x y : A) : 
+  (if decide (¬ P) then x else y) =
+  if decide P then y else x.
+Proof.
+  repeat case_decide; reflexivity + intuition auto.
+Qed.
+
+Lemma if_same P `{Decision P} {A} (x : A) : 
+  (if decide P then x else x) = x.
+Proof. by case_decide. Qed.
+
+Lemma if_True P `{Decision P} {A} (x y : A) : 
+  P -> (if decide P then x else y) = x.
+Proof. by case_decide. Qed.
+
+Lemma if_False P `{Decision P} {A} (x y : A) : 
+  ¬ P -> (if decide P then x else y) = y.
+Proof. by case_decide. Qed.
+
+
+(* FIXME: Move*)
+
+Lemma set_Nsum_const_on `{FinSet A SA} (f : A -> nat) (s : SA) n :
+  (∀ a, a ∈ s -> f a = n) ->
+  set_Nsum f s = n * size s.
+Proof.
+  pattern s.
+  revert s.
+  eapply set_ind.
+  - intros s s' Hs.
+    rewrite Hs.
+    intros Himp Hs'; apply Himp.
+    intros; apply Hs'; set_solver.
+  - intros; rewrite set_Nsum_empty, size_empty; lia.
+  - intros a s Ha IH Hf.
+    rewrite set_Nsum_disj_union, set_Nsum_singleton by set_solver.
+    rewrite size_union, size_singleton by set_solver.
+    by rewrite Hf, IH by set_solver; lia.
+Qed.
+
+Lemma set_Nsum_0_on `{FinSet A SA} (f : A -> nat) (s : SA) :
+  (∀ a, a ∈ s -> f a = 0) ->
+  set_Nsum f s = 0.
+Proof.
+  intros Hf.
+  by rewrite (set_Nsum_const_on _ _ 0).
+Qed.
+
+
+Lemma set_Nsum_0 `{FinSet A SA} (f : A -> nat) (s : SA) :
+  (∀ a, f a = 0) ->
+  set_Nsum f s = 0.
+Proof.
+  intros Hf.
+  by rewrite set_Nsum_0_on.
+Qed.
+
+
+Lemma set_Nsum_restrict `{FinSet A SA} (f : A -> nat) (t s : SA) :
+  t ⊆ s -> (∀ a, a ∈ s ∖ t -> f a = 0) ->
+  set_Nsum f s = set_Nsum f t.
+Proof.
+  pose proof (FinSet_elem_of_dec A SA).
+  intros Ht Hf.
+  erewrite (union_difference t s) by set_solver. 
+  rewrite set_Nsum_disj_union by set_solver.
+  rewrite Nat.add_comm.
+  rewrite set_Nsum_0_on by easy.
+  reflexivity.
+Qed.
+
+(* FIXME: Move *)
+Lemma minverses_natmap_inj_l (f g : natmap nat) : minverses f g -> 
+  natmap_inj f.
+Proof.
+  intros Hfg x y ((fx & Hfx) & (fy & Hfy) & Hfxfy).
+  apply Hfg in Hfx as Hfx'.
+  apply Hfg in Hfy as Hfy'.
+  congruence.
+Qed.
+
+Lemma minverses_natmap_inj_r (f g : natmap nat) : minverses f g -> 
+  natmap_inj g.
+Proof.
+  intros Hfg x y ((fx & Hfx) & (fy & Hfy) & Hfxfy).
+  apply Hfg in Hfx as Hfx'.
+  apply Hfg in Hfy as Hfy'.
+  congruence.
+Qed.
+
+
+(* FIXME: Move *)
+Lemma set_map_disjoint `{FinSet A SA} `{FinSet B SB} 
+  (f : A -> B) (s t : SA) : 
+  (∀ a b, a ∈ s ∪ t -> b ∈ s ∪ t -> f a = f b -> a = b) ->
+  s ## t -> set_map f s ##@{SB} set_map f t.
+Proof.
+  intros Hf Hst.
+  intros x.
+  rewrite 2!elem_of_map.
+  intros (a & Haeq & Ha) (b & Hbeq & Hb).
+  apply Hst with a; [easy|].
+  enough (a = b) by by subst.
+  apply Hf; [set_solver..|congruence].
+Qed.
+
+Lemma set_Nsum_set_map `{FinSet A SA} `{FinSet B SB} 
+  (f : A -> B) (g : B -> nat) (s : SA) : 
+  (∀ a b, a ∈ s -> b ∈ s -> f a = f b -> a = b) ->
+  set_Nsum g (set_map f s :> SB) = set_Nsum (g ∘ f) s.
+Proof.
+  pattern s;
+  revert s; apply set_ind.
+  - intros s s' Hs Himp Hf.
+    rewrite <- Hs.
+    apply Himp.
+    intros ? ? ? ?; apply Hf; by apply Hs.
+  - by rewrite set_map_empty, 2!set_Nsum_empty.
+  - intros a s Ha IH Hf.
+    rewrite set_map_union.
+    rewrite 2!set_Nsum_disj_union;
+      [|set_solver|apply set_map_disjoint; [apply Hf|set_solver]]. 
+    rewrite set_map_singleton, set_Nsum_singleton, IH by set_solver.
+    rewrite set_Nsum_singleton.
+    reflexivity.
+Qed.
+
+Lemma map_to_set_to_map_dom {A} `{FinMapDom K M SK} 
+  `{!Elements K SK} `{!FinSet K SK} `{FinSet B SB}
+  `{Inhabited A} (f : K -> A -> B) (m : M A) :
+  map_to_set f m ≡@{SB} set_map (fun k => f k (m !!! k)) (dom m :> SK).
+Proof.
+  intros b.
+  rewrite elem_of_map, elem_of_map_to_set.
+  apply exists_iff => k.
+  rewrite elem_of_dom.
+  split.
+  - intros (a & Hmk & Hfka).
+    by rewrite (lookup_total_correct _ _ _ Hmk), Hmk.
+  - intros (Hb & (a & Hmk)).
+    rewrite (lookup_total_correct _ _ _ Hmk) in Hb.
+    by exists a.
+Qed.
+
+
+Lemma lookup_Some_iff_total_dom {A} `{FinMapDom K M SK} `{Inhabited A}
+  (m : M A) (k : K) (a : A) :
+  m !! k = Some a <-> m !!! k = a ∧ k ∈ dom m.
+Proof.
+  split.
+  - intros Hm.
+    split; [by apply lookup_total_correct|].
+    by apply elem_of_dom_2 in Hm.
+  - intros [Hm Hk].
+    rewrite lookup_lookup_total_dom; congruence.
+Qed.
+
+
+
+
+(* FIXME: Move *)
+Lemma minverses_lookup_total_linv 
+  `{Inhabited A, Inhabited B} `{FinMapDom A M SA} `{FinMap B M'} 
+  (f : M B) (g : M' A) : minverses f g -> ∀ x, 
+  x ∈ dom f -> g !!! (f !!! x) = x.
+Proof.
+  intros Hfg x Hx.
+  apply lookup_total_correct.
+  apply Hfg.
+  by apply lookup_lookup_total_dom.
+Qed.
+
+Lemma minverses_lookup_total_rinv 
+  `{Inhabited A, Inhabited B} `{FinMap A M} `{FinMapDom B M' SB} 
+  (f : M B) (g : M' A) : minverses f g -> ∀ x, 
+  x ∈ dom g -> f !!! (g !!! x) = x.
+Proof.
+  intros Hfg x Hx.
+  apply lookup_total_correct.
+  apply Hfg.
+  by apply lookup_lookup_total_dom.
+Qed.
+
+
+
+Lemma set_cast_seq_set `{FinSet nat SA} `{FinSet nat SA'} s l :
+  set_cast (seq_set s l :> SA) ≡@{SA'} seq_set s l.
+Proof.
+  set_solver.
+Qed.
+
+
+Lemma singleton_subseteq_iff `{SemiSet A SA} (a : A) (s : SA) :
+  {[a]} ⊆ s <-> a ∈ s.
+Proof. set_solver. Qed.
+
+
+Lemma lookup_total_elem_of_of_dom `{FinMapDom K M SK} `{Inhabited A} 
+  `{FinSet A SA} (f : M A) (k : K) (s : SA) : 
+  map_img f ⊆ s -> k ∈ dom f -> f !!! k ∈ s.
+Proof.
+  intros Hf Hk.
+  apply Hf.
+  apply elem_of_map_img_2 with k.
+  by apply lookup_lookup_total_dom.
+Qed.
+
+Lemma nat_add_pos n m : 0 < n + m <-> 0 < n ∨ 0 < m.
+Proof. lia. Qed.
+
+Lemma set_Nsum_pos `{FinSet A SA} (f : A -> nat) (s : SA) : 
+  0 < set_Nsum f s <-> ∃ a, a ∈ s /\ 0 < f a.
+Proof.
+  revert s.
+  apply set_ind.
+  - intros s s' Hs Himpl.
+    rewrite <- Hs. 
+    rewrite Himpl.
+    apply exists_iff => x.
+    by rewrite Hs.
+  - rewrite set_Nsum_empty.
+    setoid_rewrite elem_of_empty.
+    split; [easy|].
+    naive_solver.
+  - intros a s Ha IH. 
+    rewrite set_Nsum_disj_union, set_Nsum_singleton, 
+      nat_add_pos by set_solver.
+    rewrite IH.
+    split.
+    + intros [Hfa | (a' & Ha' & Hfa)].
+      * exists a; set_solver.
+      * exists a'; set_solver.
+    + intros (a' & [<-%elem_of_singleton | Ha']%elem_of_union & Hf).
+      * by left.
+      * right.
+        by exists a'.
+Qed.
+
+(* FIXME: Move *)
+Lemma gmultiset_map_id `{Countable A} (s : gmultiset A) : 
+  gmultiset_map (λ x, x) s = s.
+Proof.
+  apply gmultiset_eq => a.
+  change a with ((λ x, x) a) at 1.
+  rewrite multiplicity_gmultiset_map by easy.
+  reflexivity.
+Qed.
+
+Lemma gmultiset_map_ext `{Countable A, Countable B} 
+  (f f' : A -> B) (s : gmultiset A) 
+  (Hff' : forall a, a ∈ s -> f a = f' a) :
+  gmultiset_map f s = gmultiset_map f' s.
+Proof.
+  apply gmultiset_eq => b.
+  rewrite 2!multiplicity_gmultiset_map_to_sum.
+  apply set_Nsum_ext; [|easy].
+  intros a Ha%gmultiset_elem_of_dom.
+  apply decide_ext.
+  by rewrite Hff'.
+Qed.
+
+Lemma gmultiset_map_id_on `{Countable A} (s : gmultiset A) f :
+  (forall a, a ∈ s -> f a = a) ->
+  gmultiset_map f s = s.
+Proof.
+  intros Hf.
+  rewrite (gmultiset_map_ext f (λ x, x) s Hf).
+  apply gmultiset_map_id.
+Qed.
+
+Lemma multiplicity_gmultiset_map' `{Countable A} `{Countable B} 
+  (f : A -> B) (s : gmultiset A) x : 
+  (∀ a b, a ∈ {[x]} ∪ dom s -> b ∈ {[x]} ∪ dom s -> f a = f b -> a = b) -> 
+  multiplicity (f x) (gmultiset_map f s) = multiplicity x s.
+Proof.
+  intros Hf.
+  symmetry.
+  apply multiplicity_eq.
+  - intros Hx%gmultiset_elem_of_dom.
+    symmetry.
+    rewrite multiplicity_gmultiset_map_to_sum.
+    rewrite (set_Nsum_restrict _ {[x]}).
+    + rewrite set_Nsum_singleton.
+      by apply if_True.
+    + set_solver.
+    + intros a (Ha & Hax%not_elem_of_singleton)%elem_of_difference.
+      apply if_False.
+      intros Hfeq%Hf; multiset_solver.
+  - intros Hx.
+    symmetry.
+    apply not_elem_of_gmultiset.
+    rewrite <- gmultiset_elem_of_dom.
+    rewrite dom_gmultiset_map.
+    rewrite elem_of_map.
+    intros (y & Hy & Hys).
+    apply Hx.
+    enough (x = y) by (by subst; apply gmultiset_elem_of_dom).
+    apply Hf; multiset_solver.
+Qed.
+
+
+Lemma big_sum_of_1_r (f : nat -> nat) 
+  n m (Hf : perm_eq m (f ∘ rshift n) (λ _, 1)) : 
+  big_sum f (n + m) = big_sum f n + m.
+Proof.
+  rewrite big_sum_sum.
+  f_equal.
+  erewrite big_sum_eq_bounded. 2:{
+    intros x Hx.
+    rewrite Nat.add_comm.
+    apply Hf, Hx.
+  }
+  apply Nsum_1.
+Qed.
+
+Lemma set_Nsum_seq_set_big_sum `{FinSet nat SA} (f : nat -> nat) (m l : nat) :
+  set_Nsum f (seq_set m l :> SA) = big_sum (f ∘ rshift m) l.
+Proof.
+  induction l.
+  - apply set_Nsum_empty. 
+  - simpl. 
+    replace (S l) with (l + 1) by lia. 
+    rewrite seq_set_split, set_Nsum_disj_union by 
+      (intros ?; rewrite 2!elem_of_seq_set; lia).
+    rewrite IHl.
+    f_equal.
+    unfold seq_set.
+    simpl.
+    rewrite (union_empty_r {[m + l]}).
+    rewrite set_Nsum_singleton.
+    by rewrite Nat.add_comm.
+Qed.
+
+Lemma set_Nsum_seq_set_0_big_sum `{FinSet nat SA} (f : nat -> nat) (l : nat) :
+  set_Nsum f (seq_set 0 l :> SA) = big_sum f l.
+Proof.
+  rewrite set_Nsum_seq_set_big_sum.
+  apply big_sum_eq_bounded.
+  simpl.
+  unfold rshift.
+  intros; by rewrite Nat.add_0_r.
+Qed.
+
+Lemma gmultiset_dom_ind `{Countable A} (P : gmultiset A -> Prop) : 
+  P ∅ -> (∀ (x : A) (n : nat) g, 0 < n -> x ∉ dom g -> P g -> P ((n *: {[+x+]}) ⊎ g)) -> 
+  ∀ g, P g.
+Proof.
+  intros HPemp HPind.
+  intros (g).
+  induction g as [|x n g Hgi Hfirst IHg] using map_first_key_ind.
+  - apply HPemp.
+  - replace {| gmultiset_car := <[x:=n]> g |} with
+      (Pos.to_nat n *: {[+ x +]} ⊎ GMultiSet g).
+      { apply HPind, IHg.
+        - lia.
+        - simpl.
+          apply not_elem_of_dom.
+          apply Hgi. }
+    apply gmultiset_eq => a.
+    rewrite multiplicity_disj_union, multiplicity_scalar_mul.
+    rewrite multiplicity_singleton_eq.
+    unfold multiplicity.
+    simpl.
+    case_decide as Hax.
+    + subst a.
+      rewrite Hgi, lookup_insert.
+      lia.
+    + rewrite lookup_insert_ne by done.
+      lia.
+Qed.
+
+(* FIXME: MOve *)
+Lemma dom_gmultiset_scalar_mul_pos `{Countable A} 
+  (s : gmultiset A) n : 0 < n -> 
+  dom (n *: s) = dom s.
+Proof.
+  intros Hn.
+  apply set_eq => a.
+  rewrite 2!gmultiset_elem_of_dom, 2!elem_of_multiplicity.
+  rewrite multiplicity_scalar_mul.
+  lia.
+Qed.
+
+Lemma dom_gmultiset_singleton `{Countable A} (a : A) : 
+  dom ({[+ a +]} :> gmultiset A) = {[ a ]}.
+Proof.
+  apply set_eq => x.
+  rewrite gmultiset_elem_of_dom, elem_of_multiplicity.
+  rewrite multiplicity_singleton_eq, elem_of_singleton.
+  case_decide; split; easy + lia.
+Qed.
+
+Lemma sum_multiplicities_size `{Countable A}
+  (s : gmultiset A) : 
+  set_Nsum (λ x, multiplicity x s) (dom s) = size s.
+Proof.
+  induction s as [|x n s Hn Hx IHs] using gmultiset_dom_ind; first by reflexivity.
+  rewrite dom_gmultiset_disj_union.
+  rewrite dom_gmultiset_scalar_mul_pos, dom_gmultiset_singleton by easy.
+  rewrite set_Nsum_disj_union by set_solver.
+  rewrite gmultiset_size_disj_union, gmultiset_size_scalar_mul.
+  f_equal.
+  - rewrite gmultiset_size_singleton.
+    rewrite set_Nsum_singleton, multiplicity_disj_union.
+    rewrite multiplicity_scalar_mul, multiplicity_singleton.
+    rewrite gmultiset_elem_of_dom, not_elem_of_gmultiset in Hx.
+    rewrite Hx.
+    apply Nat.add_0_r.
+  - rewrite <- IHs.
+    apply set_Nsum_ext; [|reflexivity].
+    intros a Ha.
+    rewrite multiplicity_disj_union, multiplicity_scalar_mul, 
+      multiplicity_singleton_eq.
+    rewrite if_False by congruence.
+    lia. 
+Qed.
+
+Lemma set_cast_union `{FinSet A SA, SemiSet A SA'} 
+  (s t : SA) : 
+  set_cast (s ∪ t) ≡@{SA'} set_cast s ∪ set_cast t.
+Proof. set_unfold. set_solver. Qed.
+
+Lemma set_cast_difference `{FinSet A SA, Set_ A SA'} 
+  (s t : SA) : 
+  set_cast (s ∖ t) ≡@{SA'} set_cast s ∖ set_cast t.
+Proof. set_solver. Qed.
+
+Lemma set_cast_singleton `{FinSet A SA, SemiSet A SA'} 
+  (a : A) : 
+  set_cast ({[a]} :> SA) ≡@{SA'} {[a]}.
+Proof. set_solver. Qed.
+
+Lemma set_cast_empty `{FinSet A SA, SemiSet A SA'} : 
+  set_cast (∅ :> SA) ≡@{SA'} ∅.
+Proof. set_solver. Qed.
+
+Lemma set_cast_set_cast `{FinSet A SA, FinSet A SA', SemiSet A SA''} (s : SA) : 
+  set_cast (set_cast s :> SA') ≡@{SA''} set_cast s.
+Proof. set_solver. Qed.
+
+Lemma set_cast_id `{FinSet A SA} (s : SA) :
+  set_cast s ≡@{SA} s.
+Proof. set_solver. Qed.
+
+#[global]
+Add Parametric Morphism `{FinSet A SA, SemiSet A SA'} : set_cast
+  with signature (≡@{SA}) ==> (≡@{SA'}) as set_cast_proper.
+Proof. intros x y Hxy a. by rewrite 2!elem_of_set_cast. Qed. 
+
+
+(* FIXME: Move *)
+Lemma set_Nsum_set_cast `{FinSet A SA, FinSet A SA'} 
+  (f : A -> nat) (s : SA) : 
+  set_Nsum f (set_cast s :> SA') = set_Nsum f s.
+Proof.
+  revert s.
+  apply set_ind.
+  - by intros x x' ->.
+  - by rewrite set_cast_empty, 2!set_Nsum_empty.
+  - intros a s Ha IH.
+    rewrite set_cast_union, set_cast_singleton.
+    rewrite 2!set_Nsum_disj_union, 2!set_Nsum_singleton by set_solver.
+    congruence.
+Qed.
+
+Lemma sum_multiplicities_size_subseteq `{Countable A} `{FinSet A SA}
+  (s : gmultiset A) (d : SA) : dom s ⊆ set_cast d ->
+  set_Nsum (λ x, multiplicity x s) d = size s.
+Proof.
+  intros Hd.
+  rewrite (set_Nsum_restrict _ (set_cast (dom s))).
+  - by rewrite set_Nsum_set_cast, sum_multiplicities_size.
+  - set_solver.
+  - intros a (_ & Ha)%elem_of_difference.
+    apply not_elem_of_gmultiset.
+    by rewrite elem_of_set_cast, gmultiset_elem_of_dom in Ha.
+Qed.
+
+Lemma size_gmultiset_map `{Countable A, Countable B} (f : A -> B) s : 
+  size (gmultiset_map f s) = size s.
+Proof.
+  induction s using gmultiset_ind; first by reflexivity.
+  rewrite gmultiset_map_disj_union, gmultiset_map_singleton.
+  rewrite 2!gmultiset_size_disj_union, 2!gmultiset_size_singleton.
+  congruence.
+Qed.
+
+
+Lemma minverses_restrict `{FinMapDom A MA SA} `{FinMapDom B MB SB}
+  `{!Elements A SA} `{!FinSet A SA}
+  (f : MA B) (g : MB A) : 
+  minverses f g <-> 
+  map_img f ≡ dom g ∧
+  Forall (fun a : A => f !! a ≫= (g !!.) = Some a) (elements (dom f)).
+Proof.
+  split.
+  - intros Hfg.
+    split; [by apply minverses_map_img_eq_dom|].
+    rewrite Forall_forall.
+    intros a.
+    rewrite elem_of_elements, elem_of_dom.
+    intros (fa & Hfa).
+    rewrite Hfa.
+    simpl.
+    by apply Hfg.
+  - intros (Himg & Hfg).
+    rewrite Forall_forall in Hfg.
+    setoid_rewrite elem_of_elements in Hfg.
+    intros a b.
+    split.
+    + intros Hfa.
+      rewrite <- Hfg by (by apply elem_of_dom_2 in Hfa).
+      rewrite Hfa.
+      reflexivity.
+    + intros Hgb.
+      apply elem_of_dom_2 in Hgb as Hdom.
+      rewrite <- Himg in Hdom.
+      apply elem_of_map_img in Hdom as Hdom'. 
+      destruct Hdom' as (a' & Hfa').
+      rewrite <- Hfa'.
+      f_equal.
+      enough (Some a = Some a') by congruence.
+      symmetry.
+      rewrite <- Hfg; first by rewrite Hfa'.
+      by apply elem_of_dom_2 in Hfa'.
+Qed.
+
+
+
+
+
+
+
+
+
+
+
+(* FIXME: Move *)
+#[export] Instance R_inhabited : Inhabited R := populate R0.
 
 Record ZX_map_graph := {
   mg_verts : natmap (bool * R);
@@ -7728,7 +9716,7 @@ Record ZX_map_graph := {
   
   mg_boundary_outputs : natmap nat 
     := natmap_inv mg_boundary_inputs;
-  mg_outputs : natmap EdgeType
+  mg_outputs : natmap (nat + nat)
     := (inl <$> mg_vert_outputs) ∪ (inr <$> mg_boundary_outputs);
 
   mg_numspi : nat := size mg_verts;
@@ -7755,35 +9743,73 @@ Record ZX_map_graph := {
     natset_nth mg_output_set;
     
   mg_indices : gmap.gset (nat + nat + nat) :=
-    set_map (inl ∘ inl) mg_vert_set ∪
+    sum_set (sum_set mg_vert_set mg_input_set :> gmap.gset (nat + nat)) mg_output_set;
+    (* set_map (inl ∘ inl) mg_vert_set ∪
     set_map (inl ∘ inr) mg_input_set ∪
-    set_map inr mg_output_set;
+    set_map inr mg_output_set *)
 
   mg_to_idx : gmap.gmap (nat + nat + nat) nat :=
     set_to_map 
       (fun a =>
         ( a ,
-        sum_elim (sum_elim Datatypes.id 
-          (Nat.add mg_numspi)) 
-          (Nat.add (mg_numspi + mg_insize)) a)
+        sum_elim (sum_elim (mg_vert_idx !!!.)
+          (Nat.add mg_numspi ∘ (mg_input_idx !!!.))) 
+          (Nat.add (mg_numspi + mg_insize) ∘ (mg_output_idx !!!.)) a)
       )
       mg_indices;
   
+  mg_from_idx : gmap.gmap nat (nat + nat + nat) :=
+    set_to_map 
+      (fun a => (a,  
+      if decide (a < mg_numspi) then
+        inl (inl (mg_vert_nth !!! a)) else
+      if decide (a < mg_numspi + mg_insize) then
+        inl (inr (mg_input_nth !!! (a - mg_numspi))) else
+        inr (mg_output_nth !!! (a - (mg_numspi + mg_insize)))
+      ))
+      (seq_set 0 (mg_numspi + mg_insize + mg_outsize) :> natset);
+
   mg_input_edges : gmap.gset (nat * nat) :=
-    map_to_set (λ i v, (mg_to_idx !!! (inl (inr i)), v)) mg_vert_inputs;
+    map_to_set (λ i v, (mg_numspi + mg_input_idx !!! i, 
+      mg_vert_idx !!! v)) mg_vert_inputs;
 
   mg_output_edges : gmap.gset (nat * nat) :=
-    map_to_set (λ i v, (mg_to_idx !!! (inr i), v)) mg_vert_outputs;
+    map_to_set (λ i v, (mg_numspi + mg_insize + mg_output_idx !!! i, 
+      mg_vert_idx !!! v)) mg_vert_outputs;
 
   mg_io_edges : gmap.gset (nat * nat) :=
-    map_to_set (λ i o, (mg_to_idx !!! (inl (inr i)), mg_to_idx !!! inr o))
+    map_to_set (λ i o, (mg_numspi + mg_input_idx !!! i, 
+      mg_numspi + mg_insize + mg_output_idx !!! o))
       mg_boundary_inputs;
 
+  mg_input_medges : gmap.gset ((nat + nat + nat) * (nat + nat + nat)) :=
+    map_to_set (λ i v, (inl (inr i), inl (inl v))) mg_vert_inputs;
+  
+  mg_output_medges : gmap.gset ((nat + nat + nat) * (nat + nat + nat)) :=
+    map_to_set (λ o v, (inr o, inl (inl v))) mg_vert_outputs;
+  
+  mg_io_medges : gmap.gset ((nat + nat + nat) * (nat + nat + nat)) :=
+    map_to_set (λ i o, (inl (inr i), inr o)) mg_boundary_inputs;
+  
+  mg_vert_medges : gmultiset ((nat + nat + nat) * (nat + nat + nat)) :=
+    gmultiset_map (prod_map (inl ∘ inl) (inl ∘ inl)) mg_vert_edges;
+
+  mg_medges : gmultiset ((nat + nat + nat) * (nat + nat + nat)) :=
+    mg_vert_medges ⊎
+    gset_to_multiset 
+      (mg_input_medges ∪ mg_output_medges ∪ mg_io_medges);
+
+  mg_mdegrees : gmultiset (nat + nat + nat) :=
+    gmultiset_map fst mg_medges ⊎ gmultiset_map snd mg_medges;
+
   mg_edges : gmultiset (nat * nat) :=
-    mg_vert_edges 
+    gmultiset_map
+      (prod_map (mg_to_idx !!!.) (mg_to_idx !!!.))
+      mg_medges;
+    (* gmultiset_map (mg_vert_idx !!!.) mg_vert_edges 
     ∪ gset_to_multiset (mg_input_edges
       ∪ mg_output_edges
-      ∪ mg_io_edges);
+      ∪ mg_io_edges); *)
   
   mg_degrees : gmultiset nat :=
     gmultiset_map fst mg_edges ⊎ gmultiset_map snd mg_edges;
@@ -7796,113 +9822,1959 @@ Record ZX_map_graph := {
   mg_edge_func : nat -> nat * nat := 
     (elements mg_edges !!!.);
 
+  mg_io_diag : ZX (mg_numedges * 2) 0 :=
+    ZX_of_edgefunc (mg_numedges) mg_edge_func;
+
+  mg_spider_stack : ZX (mg_insize + mg_outsize) _ :=
+    ZX_of_stack_uncast mg_insize mg_outsize mg_numspi 
+      (λ x, multiplicity x mg_degrees)
+      (snd ∘ (mg_verts !!!.))
+      (fst ∘ (mg_verts !!!.))
 }.
 
-Module Examples.
 
-Notation "merge!" := (union_with (fun _ _ => None)).
-(* (fun _ _ => None) What to do with conflicts - but we can't have any! *)
+(* FIXME: Move *)
+Set Printing Projections.
 
-Definition stack_ZX_map_graph_of_WF' (ZXG0 ZXG1 : ZX_map_graph)  
-  : ZX_map_graph :=
-  (* Assumes ZXG0 and ZXG1 are "WF", in that their vertex, index, 
-    and output sets are "dense" (i.e. look like 0, 1, ..., n-1). 
-    WARNING: This is NOT the actual meaning that WF_ZX_map_graph will have,
-    nor with that predicate include this statement
-    This avoids only some composition by some adjustment functions, but 
-    is therefore much easier to read. *)
+
+(* TODO: Typeclass / record? *)
+Class WF_ZX_map_graph (G : ZX_map_graph) := {
+  mg_WF_vert_inputs : map_img G.(mg_vert_inputs) ⊆ G.(mg_vert_set);
+  mg_WF_vert_outputs : map_img G.(mg_vert_outputs) ⊆ G.(mg_vert_set);
+  mg_WF_vert_edges : 
+    edgeset_dom $ dom G.(mg_vert_edges) 
+      ⊆ G.(mg_vert_set);
+  mg_WF_boundary_inputs_img : 
+    map_img G.(mg_boundary_inputs) ## dom G.(mg_vert_outputs);
+  mg_WF_boundary_inputs_inj : 
+    natmap_inj G.(mg_boundary_inputs);
+}.
+
+
+
+Lemma mg_WF_io_minverses `{HG: WF_ZX_map_graph G} :
+  minverses G.(mg_boundary_inputs) G.(mg_boundary_outputs).
+Proof.
+  apply natmap_inv_minverses, HG.
+Qed.
+
+
+(* FIXME: RE-Move *) (*
+Reserved Notation "f ^~ y" (at level 10, y at level 8, no associativity,
+  format "f ^~ y").
+
+Notation "f ^~ y" := (fun x => f x y). *)
+
+Record WF_ZX_map_graph_raw {G : ZX_map_graph} := {
+  mg_raw_WF_inputs : 
+    map_Forall (fun k v => 
+      sum_elim 
+        (* to vert: *) (λ v, v ∈ dom G.(mg_verts))
+        (* to output: *) (λ v, v ∉ dom G.(mg_vert_outputs))
+        v)
+      G.(mg_inputs);
+  mg_raw_WF_vert_outputs : 
+    map_img G.(mg_vert_outputs) ⊆ dom G.(mg_verts);
+  mg_raw_WF_vert_edges : 
+    set_Forall 
+      (fun '(i, j) => i ∈ dom G.(mg_verts) ∧ j ∈ dom G.(mg_verts))
+      (dom G.(mg_vert_edges));
+  mg_raw_WF_boundary_inputs_inj : 
+    natmap_inj G.(mg_boundary_inputs);
+}.
+
+Global Arguments WF_ZX_map_graph_raw _ : clear implicits.
+
+
+Lemma WF_ZX_map_graph_to_prop G : 
+  WF_ZX_map_graph G <-> 
+  map_img G.(mg_vert_inputs) ⊆ G.(mg_vert_set)
+	∧ map_img G.(mg_vert_outputs) ⊆ G.(mg_vert_set)
+  ∧ edgeset_dom (dom G.(mg_vert_edges)) ⊆ G.(mg_vert_set)
+  ∧ map_img G.(mg_boundary_inputs) ## dom G.(mg_vert_outputs)
+  ∧ natmap_inj G.(mg_boundary_inputs).
+Proof.
+  split; intros []; constructor; naive_solver.
+Qed.
+
+Lemma WF_ZX_map_graph_iff_1 G : 
+  WF_ZX_map_graph G <-> 
+  (map_img G.(mg_vert_inputs) ∪ 
+    map_img G.(mg_vert_outputs) ∪ 
+    edgeset_dom (dom G.(mg_vert_edges))) ⊆ G.(mg_vert_set)
+  ∧ map_img G.(mg_boundary_inputs) ## dom G.(mg_vert_outputs)
+  ∧ size (dom G.(mg_boundary_inputs) :> natset) 
+    = size (map_img G.(mg_boundary_inputs) :> natset).
+Proof.
+  rewrite WF_ZX_map_graph_to_prop.
+  rewrite 2!union_subseteq, <- !(and_assoc _).
+  by rewrite natmap_inj_alt_size.
+Qed.
+
+Definition WF_ZX_map_graph_dec G : Decision (WF_ZX_map_graph G) :=
+  dec_of_iff' _ (WF_ZX_map_graph_iff_1 G).
+(* TODO: Set arguments of dec_of_iff / dec_of_iff' *)
+
+
+Lemma ZX_map_graph_WF_iff_raw G : 
+  WF_ZX_map_graph G <-> WF_ZX_map_graph_raw G.
+Proof.
+  split.
+  - intros HWF.
+    constructor.
+    + intros k [v | o] Hkv; simpl.
+      * apply HWF.
+        rewrite elem_of_map_img.
+        exists k.
+        apply lookup_omap_Some.
+        now exists (inl v).
+      * refine (mg_WF_boundary_inputs_img o _).
+        rewrite elem_of_map_img.
+        exists k.
+        apply lookup_omap_Some.
+        now exists (inr o).
+    + by apply HWF.
+    + intros (i, j) Hij.
+      split; apply mg_WF_vert_edges;
+      rewrite elem_of_edgeset_dom;
+      exists (i, j); 
+      (split; [easy|]);
+      auto.
+    + by apply HWF.
+  - intros HWF.
+    constructor.
+    + intros v (k & Hk)%elem_of_map_img.
+      pose proof (HWF.(mg_raw_WF_inputs) k (inl v)) as Hv.
+      apply lookup_omap_Some in Hk as ([v' |] & [=->] & Hgk).
+      apply (Hv Hgk).
+    + by apply HWF.
+    + intros v ((i, j) & Hij & [-> | ->])%elem_of_edgeset_dom;
+      now apply (HWF.(mg_raw_WF_vert_edges) (i, j)).
+    + intros o (k & Hk)%elem_of_map_img.
+      pose proof (HWF.(mg_raw_WF_inputs) k (inr o)) as Ho.
+      apply lookup_omap_Some in Hk as ([|o' ] & [=->] & Hgk).
+      apply (Ho Hgk).
+    + by apply HWF.
+Qed.
+
+Section WF_mapgraph.
+
+Context {G : ZX_map_graph}.
+
+Lemma dom_mg_degrees_eq_bind_dom_mg_edges : 
+  dom G.(mg_degrees) = 
+  edgeset_dom
+    (dom G.(mg_edges)).
+Proof.
+  apply set_eq => k.
+  rewrite gmultiset_elem_of_dom.
+  unfold mg_degrees.
+  rewrite elem_of_edgeset_dom.
+  rewrite gmultiset_elem_of_disj_union, 2!elem_of_gmultiset_map.
+  setoid_rewrite gmultiset_elem_of_dom.
+  split.
+  - intros [((i,j) & -> & ?) | ((i,j) & -> & ?)]; 
+    (exists (i, j); split; [easy|]; simpl; naive_solver).
+  - intros ((i, j) & Hij & 
+      [-> | ->]);
+    [left | right];
+    by exists (i, j).
+Qed.
+
+
+
+
+
+(* Lemma dom_mg_edges_eq : 
+  dom G.(mg_edges) = 
+  dom G.(mg_vert_edges) ∪
+  G.(mg_input_edges) ∪ G.(mg_output_edges) ∪ G.(mg_io_edges).
+Proof.
+  unfold mg_edges.
+  rewrite dom_gmultiset_map.
+  apply set_eq => ij.
+  rewrite gmultiset_elem_of_dom.
+  rewrite gmultiset_elem_of_union.
+  rewrite <- 2!(gmultiset_elem_of_dom ij).
+  rewrite dom_gset_to_multiset.
+  symmetry.
+  rewrite <- 2!(union_assoc (dom G.(mg_vert_edges))).
+  apply elem_of_union.
+Qed. *)
+
+
+
+Lemma dom_mg_to_idx : dom G.(mg_to_idx) = 
+  G.(mg_indices).
+Proof.
+  unfold mg_to_idx.
+  rewrite dom_set_to_map_L.
+  unfold compose.
+  simpl.
+  apply set_map_id_L.
+Qed.
+
+
+Lemma mg_degrees_eq_map_mdegrees : 
+  G.(mg_degrees) = 
+  gmultiset_map (G.(mg_to_idx) !!!.) G.(mg_mdegrees).
+Proof.
+  unfold mg_degrees, mg_mdegrees.
+  rewrite gmultiset_map_disj_union.
+  rewrite <- 2!gmultiset_map_compose.
+  unfold mg_edges.
+  rewrite <- 2!gmultiset_map_compose.
+  reflexivity.
+Qed.
+
+
+
+Lemma map_img_mg_to_idx `{FinSet nat A} `{!LeibnizEquiv A} : 
+  map_img G.(mg_to_idx) =
+  seq_set 0 (G.(mg_numspi) + G.(mg_insize) + G.(mg_outsize)) :> A.
+Proof.
+  unfold mg_to_idx.
+  erewrite map_img_set_to_map_L by easy.
+  unfold mg_indices.
+  unfold sum_set, set_inl, set_inr.
+  erewrite 3!set_map_union_L, !set_map_set_map_L.
+  unfold compose.
+  simpl.
+  erewrite 2!seq_set_split_L.
+  f_equal; [f_equal|].
+  - rewrite set_map_lookup_total_eq_map_img_L 
+      by (symmetry; apply dom_natset_idx).
+    unfold mg_vert_idx.
+    rewrite map_img_natset_idx.
+    unfold mg_vert_set.
+    rewrite size_dom.
+    reflexivity.
+  - change (λ x, _) with 
+      ((Nat.add G.(mg_numspi) ∘ (G.(mg_input_idx) !!!.))).
+    rewrite <- (set_map_set_map_L (E:=natset)).
+    rewrite set_map_lookup_total_eq_map_img_L
+      by (symmetry; apply dom_natset_idx).
+    unfold mg_input_idx.
+    rewrite map_img_natset_idx.
+    rewrite set_map_add_seq_set.
+    unfold mg_input_set.
+    by rewrite size_dom.
+  - change (λ x, _) with 
+      ((Nat.add (G.(mg_numspi) + G.(mg_insize)) ∘ (G.(mg_output_idx) !!!.))).
+    rewrite <- (set_map_set_map_L (E:=natset)).
+    rewrite set_map_lookup_total_eq_map_img_L
+      by (symmetry; apply dom_natset_idx).
+    unfold mg_output_idx.
+    rewrite map_img_natset_idx.
+    rewrite set_map_add_seq_set.
+    unfold mg_output_set.
+    by rewrite size_dom.
+Qed.
+
+Lemma lookup_mg_to_idx_inr i : 
+  G.(mg_to_idx) !! (inr i) = 
+  Nat.add (G.(mg_numspi) + G.(mg_insize)) <$> G.(mg_output_idx) !! i.
+Proof.
+  apply option_eq => v.
+  unfold mg_to_idx.
+  rewrite lookup_set_to_map by done.
+  setoid_rewrite pair_eq.
+  setoid_rewrite (and_comm (_ ∈ _)).
+  setoid_rewrite <- (and_assoc _).
+  rewrite exists_eq_l_iff.
+  simpl.
+  split.
+  - intros [Hlookup Hi].
+    rewrite lookup_lookup_total_dom.
+    { simpl. by rewrite Hlookup. }
+    unfold mg_indices in Hi.
+    rewrite elem_of_sum_set_cases in Hi.
+    unfold mg_output_idx.
+    rewrite dom_natset_idx.
+    apply Hi.
+  - destruct (G.(mg_output_idx) !! i) as [Gi|] eqn:e; [|easy].
+    simpl.
+    intros [=<-].
+    rewrite (lookup_total_correct _ _ _ e).
+    split; [easy|].
+    apply elem_of_dom_2 in e as Hi.
+    unfold mg_output_idx in Hi.
+    rewrite dom_natset_idx in Hi.
+    unfold mg_indices.
+    by rewrite elem_of_sum_set_cases.
+Qed.
+
+Lemma lookup_mg_to_idx_inl_inr i : 
+  G.(mg_to_idx) !! (inl (inr i)) = 
+  Nat.add G.(mg_numspi) <$> G.(mg_input_idx) !! i.
+Proof. 
+  apply option_eq => v.
+  unfold mg_to_idx.
+  rewrite lookup_set_to_map by done.
+  setoid_rewrite pair_eq.
+  setoid_rewrite (and_comm (_ ∈ _)).
+  setoid_rewrite <- (and_assoc _).
+  rewrite exists_eq_l_iff.
+  simpl.
+  split.
+  - intros [Hlookup Hi].
+    rewrite lookup_lookup_total_dom.
+    { simpl. by rewrite Hlookup. }
+    unfold mg_indices in Hi.
+    rewrite 2!elem_of_sum_set_cases in Hi.
+    unfold mg_input_idx.
+    rewrite dom_natset_idx.
+    apply Hi.
+  - destruct (G.(mg_input_idx) !! i) as [Gi|] eqn:e; [|easy].
+    simpl.
+    intros [=<-].
+    rewrite (lookup_total_correct _ _ _ e).
+    split; [easy|].
+    apply elem_of_dom_2 in e as Hi.
+    unfold mg_input_idx in Hi.
+    rewrite dom_natset_idx in Hi.
+    unfold mg_indices.
+    by rewrite 2!elem_of_sum_set_cases.
+Qed.
+
+
+Lemma lookup_mg_to_idx_inl_inl i : 
+  G.(mg_to_idx) !! (inl (inl i)) = 
+  G.(mg_vert_idx) !! i.
+Proof. 
+  apply option_eq => v.
+  unfold mg_to_idx.
+  rewrite lookup_set_to_map by done.
+  setoid_rewrite pair_eq.
+  setoid_rewrite (and_comm (_ ∈ _)).
+  setoid_rewrite <- (and_assoc _).
+  rewrite exists_eq_l_iff.
+  simpl.
+  unfold mg_indices.
+  rewrite 2!elem_of_sum_set_cases.
+  split.
+  - intros [Hlookup Hi].
+    rewrite lookup_lookup_total_dom.
+    { simpl. by rewrite Hlookup. }
+    unfold mg_vert_idx.
+    rewrite dom_natset_idx.
+    apply Hi.
+  - destruct (G.(mg_vert_idx) !! i) as [Gi|] eqn:e; [|easy].
+    simpl.
+    intros [=<-].
+    rewrite (lookup_total_correct _ _ _ e).
+    split; [easy|].
+    apply elem_of_dom_2 in e as Hi.
+    unfold mg_vert_idx in Hi.
+    rewrite dom_natset_idx in Hi.
+    apply Hi.
+Qed.
+
+
+Lemma lookup_mg_to_idx_cases i : 
+  G.(mg_to_idx) !! i = 
+  match i with
+  | inl (inl i) => G.(mg_vert_idx) !! i
+  | inl (inr i) => Nat.add G.(mg_numspi) <$> G.(mg_input_idx) !! i
+  | inr i => Nat.add (G.(mg_numspi) + G.(mg_insize)) <$> G.(mg_output_idx) !! i
+  end.
+Proof.
+  destruct i as [[i | i] | i].
+  - apply lookup_mg_to_idx_inl_inl.
+  - apply lookup_mg_to_idx_inl_inr.
+  - apply lookup_mg_to_idx_inr.
+Qed.
+
+
+Lemma mg_vert_outputs_eq_omap : 
+  G.(mg_vert_outputs) = omap sum_to_l G.(mg_outputs).
+Proof.
+  symmetry.
+  apply map_eq => i.
+  apply option_eq => v.
+  unfold mg_outputs.
+  rewrite lookup_omap_Some.
+  simpl.
+  rewrite (exists_iff_of_unique (inl v)) by
+    (intros [] []; simpl in *; congruence).
+  simpl.
+  rewrite lookup_union, 2!lookup_fmap, union_Some, fmap_None.
+  rewrite 2!fmap_Some.
+  setoid_rewrite (inj_iff inl).
+  rewrite exists_eq_r_iff'.
+  naive_solver.
+Qed.
+
+
+Lemma mg_boundary_inputs_img_subseteq : 
+  map_img G.(mg_boundary_inputs) ⊆ G.(mg_output_set).
+Proof.
+  unfold mg_output_set, mg_outputs.
+  rewrite dom_union, 2!dom_fmap.
+  rewrite <- union_subseteq_r.
+  unfold mg_boundary_outputs.
+  rewrite dom_natmap_inv.
+  reflexivity.
+Qed.
+
+
+Lemma mg_boundary_outputs_img_subseteq : 
+  map_img G.(mg_boundary_outputs) ⊆ G.(mg_input_set).
+Proof.
+  unfold mg_boundary_outputs.
+  rewrite map_img_natmap_inv_subseteq.
+  apply dom_omap_subseteq.
+Qed.
+
+
+Context {HG : WF_ZX_map_graph G}.
+
+
+
+
+Lemma mg_WF_input_medges :
+  edgeset_dom G.(mg_input_medges) ⊆
+  G.(mg_indices).
+Proof.
+  intros x.
+  intros ((i,v) & 
+    (i' & v' & Hi' & (<- & <-)%pair_eq)%elem_of_map_to_set 
+    & [-> | ->])%elem_of_edgeset_dom;
+  apply elem_of_sum_set_cases; simpl;
+  rewrite elem_of_sum_set_cases.
+  - apply elem_of_dom_2 in Hi'.
+    apply dom_omap_subseteq in Hi'.
+    apply Hi'.
+  - apply mg_WF_vert_inputs.
+    apply (elem_of_map_img_2 (SA:=natset)) in Hi'.
+    apply Hi'.
+Qed.
+
+Lemma mg_WF_ouput_medges :
+  edgeset_dom G.(mg_output_medges) ⊆
+  G.(mg_indices).
+Proof.
+  intros x.
+  intros ((i,v) & 
+    (i' & v' & Hi' & (<- & <-)%pair_eq)%elem_of_map_to_set 
+    & [-> | ->])%elem_of_edgeset_dom;
+  apply elem_of_sum_set_cases; simpl;
+  rewrite 1?elem_of_sum_set_cases.
+  - apply elem_of_dom_2 in Hi'.
+    unfold mg_output_set. 
+    unfold mg_outputs.
+    rewrite dom_union, elem_of_union.
+    left.
+    rewrite dom_fmap.
+    apply Hi'.
+  - apply mg_WF_vert_outputs.
+    apply (elem_of_map_img_2 (SA:=natset)) in Hi'.
+    apply Hi'.
+Qed.
+
+Lemma mg_WF_io_medges : 
+  edgeset_dom G.(mg_io_medges) ⊆
+  G.(mg_indices).
+Proof.
+  intros x.
+  intros ((i,v) & 
+    (i' & v' & Hi' & (<- & <-)%pair_eq)%elem_of_map_to_set 
+    & [-> | ->])%elem_of_edgeset_dom;
+  apply elem_of_sum_set_cases; simpl;
+  rewrite 1?elem_of_sum_set_cases.
+  - apply elem_of_dom_2 in Hi'.
+    apply dom_omap_subseteq in Hi'.
+    apply Hi'.
+  - unfold mg_output_set. 
+    unfold mg_outputs.
+    rewrite dom_union, elem_of_union.
+    right.
+    rewrite dom_fmap.
+    unfold mg_boundary_outputs.
+    rewrite dom_natmap_inv.
+    eapply elem_of_map_img_2, Hi'.
+Qed.
+
+
+
+
+
+Lemma mg_WF_vert_medges : 
+  edgeset_dom (dom G.(mg_vert_medges)) ⊆
+  G.(mg_indices).
+Proof.
+  intros x.
+  intros ((i,v) & 
+    Hiv
+    & Heqs)%elem_of_edgeset_dom;
+  apply elem_of_sum_set_cases.
+  simpl in Heqs.
+  unfold mg_vert_medges in Hiv.
+  rewrite dom_gmultiset_map in Hiv.
+  apply elem_of_map in Hiv as ((i', v') & [-> ->]%pair_eq & Hs).
+  destruct Heqs as [-> | ->]; simpl;
+  rewrite elem_of_sum_set_cases;
+  apply mg_WF_vert_edges, elem_of_edgeset_dom;
+  exists (i', v'); naive_solver.
+Qed.
+
+
+Lemma mg_WF_medges : 
+  edgeset_dom (dom G.(mg_medges)) ⊆
+  G.(mg_indices).
+Proof.
+  unfold mg_medges.
+  rewrite dom_gmultiset_disj_union.
+  rewrite edgeset_dom_union_L.
+  apply union_subseteq; split.
+  { apply mg_WF_vert_medges. }
+  rewrite dom_gset_to_multiset.
+  rewrite 2!edgeset_dom_union_L.
+  apply union_subseteq; split; [apply union_subseteq; split|].
+  - apply mg_WF_input_medges.
+  - apply mg_WF_ouput_medges.
+  - apply mg_WF_io_medges.
+Qed.
+
+Lemma mg_WF_edges `{FinSet nat SA} `{!LeibnizEquiv SA}:
+  edgeset_dom (dom G.(mg_edges)) ⊆@{SA}
+  seq_set 0 (G.(mg_numspi) + G.(mg_insize) + G.(mg_outsize)).
+Proof.
+  rewrite <- map_img_mg_to_idx.
+  unfold mg_edges.
+  rewrite dom_gmultiset_map.
+  rewrite (edgeset_dom_prod_map_L (SA:=gmap.gset _)).
+  erewrite <- set_map_lookup_total_eq_map_img_L by reflexivity.
+  apply set_map_mono; [easy|].
+  rewrite dom_mg_to_idx.
+  apply mg_WF_medges.
+Qed.
+
+
+Lemma dom_mg_degrees_WF : 
+  dom (mg_degrees G) ⊆ seq_set 0 (G.(mg_numspi) + G.(mg_insize) + G.(mg_outsize)).
+Proof.
+  rewrite dom_mg_degrees_eq_bind_dom_mg_edges.
+  apply mg_WF_edges.
+Qed.
+
+(* Definition gmultiset_bind `{Countable A} `{Countable B} 
+  (f : A -> gmultiset B) (d : gmultiset A) : gmultiset B :=
+  foldr disj_union ∅ (f <$> elements d).
+
+Lemma multiplicity_gmultiset_bind `{Countable A} `{Countable B} 
+  (f : A -> gmultiset B) (d : gmultiset A) b : 
+  multiplicity b (gmultiset_bind f d) = 
+    foldr (λ a n, n + multiplicity b (f a)) 0 (elements d).
+Proof.
+  unfold gmultiset_bind.
+  induction (elements d) as [|a ds]; [easy|].
+  simpl.
+  rewrite multiplicity_disj_union.
+  rewrite <- IHds.
+  apply Nat.add_comm.
+Qed. *)
+
+
+
+(* Lemma gmultiset_map_gset_to_multiset `{Countable A} `{Countable B}
+  (f : A -> B) (d : gmap.gset A) 
+  (Hf : forall a b, a ∈ d -> b ∈ d -> f a = f b -> a = b) : 
+  gmultiset_map f (gset_to_multiset d) = 
+  gset_to_multiset (set_map f d). *)
+
+(* Lemma mg_WF_mdegrees_outputs vio K : 
+  multiplicity vio G.(mg_mdegrees) =
+  K.
+Proof.
+  unfold mg_mdegrees.
+  rewrite multiplicity_disj_union.
+  unfold mg_medges.
+  rewrite 2!gmultiset_map_disj_union.
+  rewrite  *)
+
+(* Lemma gset_to_multiset_union *)
+
+Lemma elem_of_mg_input_medges_cases iv : 
+  iv ∈ G.(mg_input_medges) <->
+  match iv with 
+  | (inl (inr i), inl (inl v)) =>
+    G.(mg_vert_inputs) !! i = Some v
+  | _ => False
+  end.
+Proof.
+  unfold mg_input_medges.
+  rewrite elem_of_map_to_set.
+  destruct iv as ([[|]|], [[|]|]);
+  naive_solver.
+Qed.
+
+Lemma elem_of_mg_output_medges_cases iv : 
+  iv ∈ G.(mg_output_medges) <->
+  match iv with 
+  | (inr o, inl (inl v)) =>
+    G.(mg_vert_outputs) !! o = Some v
+  | _ => False
+  end.
+Proof.
+  unfold mg_output_medges.
+  rewrite elem_of_map_to_set.
+  destruct iv as ([[|]|], [[|]|]);
+  naive_solver.
+Qed.
+
+Lemma elem_of_mg_io_medges_cases iv : 
+  iv ∈ G.(mg_io_medges) <->
+  match iv with 
+  | (inl (inr i), inr o) =>
+    G.(mg_boundary_inputs) !! i = Some o
+  | _ => False
+  end.
+Proof.
+  unfold mg_io_medges.
+  rewrite elem_of_map_to_set.
+  destruct iv as ([[|]|], [[|]|]);
+  naive_solver.
+Qed.
+
+Lemma multiplicity_mg_vert_medges_cases uv : 
+  multiplicity uv G.(mg_vert_medges) =
+  match uv with 
+  | (inl (inl u), inl (inl v)) =>
+    multiplicity (u, v) G.(mg_vert_edges)
+  | _ => 0
+  end.
+Proof.
+  unfold mg_vert_medges.
+  destruct uv as (u, v).
+  apply multiplicity_eq.
+  - rewrite elem_of_gmultiset_map.
+    intros ((u', v') & [-> ->]%pair_eq & Huv').
+    etransitivity; 
+      [apply (multiplicity_gmultiset_map (prod_map (inl ∘ inl) (inl ∘ inl))
+        _ (u', v'));
+        by intros [] [] [[= ->] [= ->]]%pair_eq
+        |].
+    reflexivity.
+  - rewrite elem_of_gmultiset_map.
+    intros H.
+    destruct u as [[u|]|], v as [[v|]|]; try reflexivity.
+    symmetry.
+    apply not_elem_of_gmultiset.
+    intros Helem.
+    apply H.
+    eexists.
+    split; [|eassumption].
+    reflexivity.
+Qed. 
+
+
+
+
+Lemma multiplicity_mg_input_output_io_medges_cases iv : 
+  multiplicity iv (gset_to_multiset 
+    (G.(mg_input_medges) ∪ G.(mg_output_medges) ∪ G.(mg_io_medges))) =
+  match iv with 
+  | (inl (inr i), inl (inl v)) =>
+    if decide (G.(mg_vert_inputs) !! i = Some v) then 1 else 0
+  | (inr o, inl (inl v)) =>
+    if decide (G.(mg_vert_outputs) !! o = Some v) then 1 else 0
+  | (inl (inr i), inr o) =>
+    if decide (G.(mg_boundary_inputs) !! i = Some o) then 1 else 0
+  | _ => 0
+  end.
+Proof.
+  rewrite multiplicity_gset_to_multiset.
+  erewrite decide_rw. 
+  unshelve (instantiate (1 := _)). 1:{
+    rewrite 2!elem_of_union.
+    rewrite elem_of_mg_input_medges_cases,
+      elem_of_mg_output_medges_cases,
+      elem_of_mg_io_medges_cases.
+    reflexivity.
+  }
+  destruct iv as ([[|]|], [[|]|]); 
+  ((apply decide_ext; naive_solver) || case_decide; naive_solver).
+Qed.
+
+Lemma multiplicity_mg_medges_cases iv : 
+  multiplicity iv G.(mg_medges) =
+  match iv with 
+  | (inl (inr i), inl (inl v)) =>
+    if decide (G.(mg_vert_inputs) !! i = Some v) then 1 else 0
+  | (inr o, inl (inl v)) =>
+    if decide (G.(mg_vert_outputs) !! o = Some v) then 1 else 0
+  | (inl (inr i), inr o) =>
+    if decide (G.(mg_boundary_inputs) !! i = Some o) then 1 else 0
+  | (inl (inl u), inl (inl v)) =>
+    multiplicity (u, v) G.(mg_vert_edges)
+  | _ => 0
+  end.
+Proof.
+  unfold mg_medges.
+  rewrite multiplicity_disj_union.
+  rewrite multiplicity_mg_vert_medges_cases, 
+    multiplicity_mg_input_output_io_medges_cases.
+  by destruct iv as ([[|]|], [[|]|]).
+Qed.
+
+
+
+Lemma dom_mg_medges_cases a : 
+  a ∈ dom G.(mg_medges) <-> 
+  match a with 
+  | (inl (inr i), inl (inl v)) =>
+    G.(mg_vert_inputs) !! i = Some v
+  | (inr o, inl (inl v)) =>
+    G.(mg_vert_outputs) !! o = Some v
+  | (inl (inr i), inr o) =>
+    G.(mg_boundary_inputs) !! i = Some o
+  | (inl (inl u), inl (inl v)) =>
+    (u, v) ∈ dom G.(mg_vert_edges)
+  | _ => False
+  end.
+Proof using.
+  rewrite gmultiset_elem_of_dom. 
+  unfold elem_of at 1, gmultiset_elem_of at 1.
+  rewrite multiplicity_mg_medges_cases.
+  destruct a as ([[|]|], [[|]|]); [|try case_decide; split; lia + easy..].
+  rewrite gmultiset_elem_of_dom. 
+  reflexivity.
+Qed.
+
+(* Lemma dom_mg_medges_eq : 
+  dom G.(mg_medges) =
+   *)
+
+
+
+Lemma size_mg_degrees : size G.(mg_degrees) = G.(mg_numedges) * 2.
+Proof.
+  unfold mg_degrees.
+  rewrite gmultiset_size_disj_union, 2!size_gmultiset_map.
+  unfold mg_numedges.
+  lia.
+Qed.
+
+
+Lemma disjoint_dom_mg_vert_outputs_mg_boundary_outputs : 
+  dom G.(mg_vert_outputs) ## dom G.(mg_boundary_outputs).
+Proof.
+  unfold mg_boundary_outputs.
+  rewrite dom_natmap_inv.
+  apply disjoint_sym.
+  apply mg_WF_boundary_inputs_img.
+Qed.
+
+
+
+Lemma natmap_inj_mg_boundary_inputs : natmap_inj G.(mg_boundary_inputs).
+Proof.
+  by eapply minverses_natmap_inj_l, mg_WF_io_minverses.
+Qed.
+
+Lemma natmap_inj_mg_boundary_outputs : natmap_inj G.(mg_boundary_outputs).
+Proof.
+  by eapply minverses_natmap_inj_r, mg_WF_io_minverses. 
+Qed.
+
+
+Lemma mg_WF_mdegrees_outputs o : 
+  multiplicity (inr o) G.(mg_mdegrees) =
+  if decide (o ∈ G.(mg_output_set)) then 1 else 0.
+Proof using HG.
+  unfold mg_mdegrees.
+  rewrite multiplicity_disj_union.
+  rewrite 2!multiplicity_gmultiset_map_to_sum.
+  rewrite set_Nsum_sum.
+  erewrite (set_Nsum_ext _ 
+    (fun a => (if decide (a.1 = inr o) then 1 else 0) +
+      (* (if decide (G.(mg_vert_outputs) !! o = Some a.2) then 1 else 0) else 0) + *)
+      (if decide (a.2 = inr o) then 1 else 0)
+      (* (if decide (G.(mg_boundary_inputs) !! a.2 = Some o) then 1 else 0) else 0 *)
+      )). 3: reflexivity.
+  2: {
+    intros (a1, a2) Ha.
+    simpl.
+    case_decide.
+    - subst a1.
+      rewrite dom_mg_medges_cases in Ha.
+      destruct a2 as [[a2|]|]; [|easy..].
+      rewrite multiplicity_mg_medges_cases.
+      rewrite if_True, if_False by done.
+      done.
+    - case_decide; [|easy].
+      subst.
+      rewrite dom_mg_medges_cases in Ha.
+      destruct a1 as [[|a1]|]; [easy| |easy].
+      rewrite multiplicity_mg_medges_cases.
+      rewrite if_True by done.
+      done.
+  }
+  case_decide as Hoout.
+  - destruct (decide (o ∈ dom G.(mg_vert_outputs))) as [Hovert | Honvert].
+    + apply elem_of_dom in Hovert as [Go HGo].
+      rewrite (set_Nsum_restrict _ {[(inr o, inl (inl Go))]}).
+      * rewrite set_Nsum_singleton.
+        simpl.
+        by rewrite decide_True.
+      * enough ((inr o, inl (inl Go)) ∈ dom G.(mg_medges)) by set_solver.
+        by rewrite dom_mg_medges_cases.
+      * intros (a1, a2).
+        rewrite elem_of_difference, not_elem_of_singleton.
+        intros (Ha & Hane).
+        rewrite dom_mg_medges_cases in Ha.
+        destruct a1 as [[|]|], a2 as [[|]|]; try done.
+        --simpl.
+          apply if_False.
+          intros [=->].
+          apply (mg_WF_boundary_inputs_img o).
+          ++by apply elem_of_map_img_2 with n.
+          ++rewrite elem_of_dom, HGo; done.
+        --simpl.
+          rewrite if_False; [reflexivity|].
+          congruence.
+    + assert (Hobound: o ∈ dom G.(mg_boundary_outputs)). 1: {
+        unfold mg_output_set, mg_outputs in Hoout.
+        rewrite dom_union, 2!dom_fmap, elem_of_union in Hoout.
+        naive_solver.
+      }
+      apply elem_of_dom in Hobound as [i Hi].
+      rewrite (set_Nsum_restrict _ {[(inl (inr i), inr o)]}).
+      * rewrite set_Nsum_singleton.
+        simpl.
+        by rewrite decide_True.
+      * enough ((inl (inr i), inr o) ∈ dom G.(mg_medges)) by set_solver.
+        rewrite dom_mg_medges_cases.
+        by apply lookup_natmap_inv_Some_inv in Hi.
+      * intros (a1, a2).
+        rewrite elem_of_difference, not_elem_of_singleton.
+        intros (Ha & Hane).
+        rewrite dom_mg_medges_cases in Ha.
+        destruct a1 as [[|]|], a2 as [[|]|]; try done.
+        --simpl.
+          apply if_False.
+          intros [=->].
+          apply lookup_natmap_inv_Some_inv in Hi.
+          pose proof natmap_inj_mg_boundary_inputs as Hinj.
+          rewrite natmap_inj_alt' in Hinj.
+          specialize (Hinj i n o Hi Ha).
+          by subst.
+        --simpl.
+          rewrite if_False; [reflexivity|].
+          intros [=->].
+          unfold mg_boundary_outputs in Hi.
+          apply disjoint_dom_mg_vert_outputs_mg_boundary_outputs with o;
+          rewrite elem_of_dom; eexists; eauto.
+  - apply set_Nsum_0_on.
+    intros (a1, a2) Ha.
+    rewrite dom_mg_medges_cases in Ha.
+    simpl.
+    case_decide; [exfalso| case_decide; [|easy]];
+    destruct a1 as [[|a1]|a1], a2 as [[a2|]|a2]; try done.
+    + apply Hoout.
+      replace a1 with o in * by congruence.
+      apply elem_of_dom.
+      unfold mg_outputs.
+      rewrite lookup_union, lookup_fmap, Ha.
+      simpl.
+      rewrite union_Some_l.
+      done.
+    + replace a2 with o in * by congruence.
+      exfalso.
+      apply mg_WF_io_minverses in Ha.
+      apply Hoout.
+      apply elem_of_dom.
+      unfold mg_outputs.
+      rewrite lookup_union, 2!lookup_fmap, Ha.
+      simpl.
+      rewrite union_Some_r.
+      done.
+Qed.
+
+Lemma mg_WF_mdegrees_inputs i : 
+  multiplicity (inl (inr i)) G.(mg_mdegrees) =
+  if decide (i ∈ G.(mg_input_set)) then 1 else 0.
+Proof using HG.
+  unfold mg_mdegrees.
+  rewrite multiplicity_disj_union.
+  rewrite 2!multiplicity_gmultiset_map_to_sum.
+  rewrite set_Nsum_sum.
+  erewrite (set_Nsum_ext _ 
+    (fun a => if decide (a.1 = inl (inr i)) then 1 else 0)). 3: reflexivity.
+  2: {
+    intros (a1, a2) Ha.
+    simpl.
+    rewrite (if_False (a2 = _)). 2: {
+      intros ->.
+      rewrite dom_mg_medges_cases in Ha.
+      by destruct a1 as [[|]|].
+    }
+    case_decide; [|reflexivity].
+    subst a1.
+    rewrite dom_mg_medges_cases in Ha.
+    destruct a2 as [[v|]|o]; [|easy|].
+    - rewrite multiplicity_mg_medges_cases.
+      by rewrite if_True.
+    - rewrite multiplicity_mg_medges_cases.
+      by rewrite if_True.
+  }
+  case_decide as Hoout.
+  - pose proof Hoout as HGi.
+    unfold mg_input_set in HGi.
+    apply elem_of_dom in HGi as ([v | o] & Hv).
+    + rewrite (set_Nsum_restrict _ {[(inl (inr i), inl (inl v))]}).
+      * rewrite set_Nsum_singleton.
+        simpl.
+        by rewrite decide_True.
+      * enough ((inl (inr i), inl (inl v)) ∈ dom G.(mg_medges)) by set_solver.
+        rewrite dom_mg_medges_cases.
+        apply lookup_omap_Some; by exists (inl v).
+      * intros (a1, a2).
+        rewrite elem_of_difference, not_elem_of_singleton.
+        intros (Ha & Hane).
+        simpl.
+        apply if_False.
+        intros ->.
+        rewrite dom_mg_medges_cases in Ha.
+        destruct a2 as [[v'|]|o']; [|done|].
+        --apply lookup_omap_Some in Ha as ([] & [= ?] & ?).
+          congruence.
+        --apply lookup_omap_Some in Ha as ([] & [= ?] & ?).
+          congruence.
+    + rewrite (set_Nsum_restrict _ {[(inl (inr i), inr o)]}).
+      * rewrite set_Nsum_singleton.
+        simpl.
+        by rewrite decide_True.
+      * enough ((inl (inr i), inr o) ∈ dom G.(mg_medges)) by set_solver.
+        rewrite dom_mg_medges_cases.
+        apply lookup_omap_Some; by exists (inr o).
+      * intros (a1, a2).
+        rewrite elem_of_difference, not_elem_of_singleton.
+        intros (Ha & Hane).
+        rewrite dom_mg_medges_cases in Ha.
+        destruct a1 as [[|]|], a2 as [[|]|]; try done.
+        --simpl.
+          apply if_False.
+          intros [=->].
+          apply lookup_omap_Some in Ha as ([] & [= ?] & ?).
+          congruence.
+        --simpl.
+          apply if_False.
+          intros [=->].
+          apply lookup_omap_Some in Ha as ([] & [= ?] & ?).
+          congruence.
+  - apply set_Nsum_0_on.
+    intros (a1, a2) Ha.
+    rewrite dom_mg_medges_cases in Ha.
+    simpl.
+    apply if_False.
+    destruct a1 as [[|a1]|], a2 as [[a2|]|a2]; try done.
+    + intros [= ->].
+      apply Hoout.
+      apply elem_of_dom.
+      by apply lookup_omap_Some in Ha as ([] & [= ?] & ->).
+    + intros [= ->].
+      apply Hoout.
+      apply elem_of_dom.
+      by apply lookup_omap_Some in Ha as ([] & [= ?] & ->).
+Qed.
+
+
+Lemma mg_WF_mdegrees_verts v : 
+  multiplicity (inl (inl v)) G.(mg_mdegrees) =
+  set_Nsum 
+    (fun i => if decide (G.(mg_vert_inputs) !! i = Some v) then 1 else 0) 
+    (dom G.(mg_vert_inputs)) + 
+  set_Nsum 
+    (fun o => if decide (G.(mg_vert_outputs) !! o = Some v) then 1 else 0)
+    (dom G.(mg_vert_outputs)) + 
+  (* from_option size 0 ((map_preimg G.(mg_vert_inputs) :> natmap natset) !! v) + 
+  from_option size 0 ((map_preimg G.(mg_vert_outputs) :> natmap natset) !! v) + *)
+  set_Nsum (fun a => 
+    (if decide (a.1 = v) then multiplicity a G.(mg_vert_edges) else 0) + 
+    (if decide (a.2 = v) then multiplicity a G.(mg_vert_edges) else 0))
+    (dom G.(mg_vert_edges)).
+Proof using HG.
+  unfold mg_mdegrees.
+  rewrite multiplicity_disj_union.
+  rewrite 2!multiplicity_gmultiset_map_to_sum.
+  rewrite set_Nsum_sum.
+  erewrite (set_Nsum_ext _ 
+    (fun a => 
+    (if decide (a.2 = inl (inl v)) then
+      match a.1 with
+      | inl (inr i) => 
+        if decide (G.(mg_vert_inputs) !! i = Some v) then 1 else 0
+      | _ => 0
+      end else 0) +
+    (if decide (a.2 = inl (inl v)) then
+      match a.1 with
+      | inr o => 
+        if decide (G.(mg_vert_outputs) !! o = Some v) then 1 else 0
+      | _ => 0
+      end else 0) +
+    ( (if decide (a.2 = inl (inl v)) then
+        match a.1 with
+        | inl (inl u) => 
+          multiplicity (u, v) G.(mg_vert_edges)
+        | _ => 0
+        end else 0) +
+      (if decide (a.1 = inl (inl v)) then 
+        match a.2 with 
+        | inl (inl u) => multiplicity (v, u) G.(mg_vert_edges)
+        | _ => 0
+        end else 0) )
+    )). 3: reflexivity.
+  2: {
+    intros (a1, a2).
+    rewrite multiplicity_mg_medges_cases;
+    rewrite dom_mg_medges_cases;
+    simpl;
+    destruct a1 as [[v'|i]|o];
+    (destruct a2 as [[u'|]|]; [|done..]).
+    - intros Hv'u'.
+      (repeat case_decide);
+      repeat match goal with 
+      | Hut : _ = _ |- _ => pose proof Hut as [= -> ]
+      end; lia.
+    - intros HGi.
+      rewrite if_False by easy.
+      rewrite (if_True _ _ _ HGi).
+      case_decide as Heq.
+      + pose proof Heq as [= ->].
+        rewrite if_True, if_False by done.
+        reflexivity.
+      + by rewrite if_False.
+    - intros HGo.
+      rewrite if_False by done.
+      rewrite (if_True _ _ _ HGo).
+      case_decide as Heq.
+      + pose proof Heq as [= ->].
+        rewrite if_True, if_False by done.
+        reflexivity.
+      + by rewrite if_False.
+  }
+  rewrite <- 2!set_Nsum_sum.
+  f_equal; [f_equal|].
+  - rewrite (set_Nsum_restrict _ (G.(mg_input_medges))).
+    + unfold mg_input_medges.
+      rewrite map_to_set_to_map_dom.
+      rewrite set_Nsum_set_map by congruence.
+      apply set_Nsum_ext; [|easy].
+      intros a Ha.
+      simpl.
+      rewrite if_and.
+      apply decide_ext.
+      apply elem_of_dom in Ha as (v' & Hv').
+      rewrite (lookup_total_correct _ _ _ Hv').
+      naive_solver.
+    + unfold mg_medges.
+      rewrite dom_gmultiset_disj_union.
+      apply union_subseteq_r'.
+      rewrite dom_gset_to_multiset.
+      apply union_subseteq_l'.
+      apply union_subseteq_l.
+    + intros (a1, a2) (Ha & Hani)%elem_of_difference.
+      simpl.
+      destruct a1 as [[|i]|]; [apply if_same| |apply if_same].
+      rewrite if_and.
+      apply if_False.
+      intros (-> & HGi).
+      apply Hani.
+      by rewrite elem_of_mg_input_medges_cases.
+  - rewrite (set_Nsum_restrict _ (G.(mg_output_medges))).
+    + unfold mg_output_medges.
+      rewrite map_to_set_to_map_dom.
+      rewrite set_Nsum_set_map by congruence.
+      apply set_Nsum_ext; [|easy].
+      intros a Ha.
+      simpl.
+      rewrite if_and.
+      apply decide_ext.
+      apply elem_of_dom in Ha as (v' & Hv').
+      rewrite (lookup_total_correct _ _ _ Hv').
+      naive_solver.
+    + unfold mg_medges.
+      rewrite dom_gmultiset_disj_union.
+      apply union_subseteq_r'.
+      rewrite dom_gset_to_multiset.
+      apply union_subseteq_l'.
+      apply union_subseteq_r.
+    + intros (a1, a2) (Ha & Hani)%elem_of_difference.
+      simpl.
+      destruct a1 as [[|]|o]; [apply if_same..|].
+      rewrite if_and.
+      apply if_False.
+      intros (-> & HGi).
+      apply Hani.
+      by rewrite elem_of_mg_output_medges_cases.
+  - rewrite (set_Nsum_restrict _ (dom G.(mg_vert_medges))); cycle 1.
+    + unfold mg_medges.
+      rewrite dom_gmultiset_disj_union.
+      apply union_subseteq_l.
+    + intros (a1, a2) (Ha & Hanv)%elem_of_difference.
+      simpl.
+      case_decide as Ha2;
+      case_decide as Ha1.
+      * subst.
+        rewrite dom_mg_medges_cases in Ha.
+        rewrite gmultiset_elem_of_dom, not_elem_of_gmultiset in Hanv.
+        rewrite multiplicity_mg_vert_medges_cases in Hanv.
+        rewrite gmultiset_elem_of_dom in Ha.
+        unfold elem_of, gmultiset_elem_of in Ha.
+        rewrite Hanv in Ha.
+        easy.
+      * subst.
+        destruct a1 as [[v'|]|]; [|done..].
+        rewrite Nat.add_0_r.
+        apply not_elem_of_gmultiset.
+        rewrite <- gmultiset_elem_of_dom.
+        intros HF.
+        apply Hanv.
+        rewrite dom_mg_medges_cases in Ha.
+        rewrite gmultiset_elem_of_dom.
+        unfold elem_of, gmultiset_elem_of.
+        rewrite multiplicity_mg_vert_medges_cases.
+        apply gmultiset_elem_of_dom.
+        apply Ha.
+      * subst a1.
+        destruct a2 as [[v'|]|]; [|done..].
+        rewrite Nat.add_0_l.
+        apply not_elem_of_gmultiset.
+        rewrite <- gmultiset_elem_of_dom.
+        intros HF.
+        apply Hanv.
+        rewrite dom_mg_medges_cases in Ha.
+        rewrite gmultiset_elem_of_dom.
+        unfold elem_of, gmultiset_elem_of.
+        rewrite multiplicity_mg_vert_medges_cases.
+        apply gmultiset_elem_of_dom.
+        apply Ha.
+      * reflexivity.
+    + unfold mg_vert_medges.
+      rewrite dom_gmultiset_map.
+      rewrite set_Nsum_set_map by naive_solver.
+      apply set_Nsum_ext; [|easy].
+      intros (a1, a2) Ha.
+      simpl.
+      rewrite Nat.add_comm.
+      f_equal;
+      (repeat case_decide); congruence.
+Qed.
+
+
+
+Lemma mg_WF_mdegrees_cases a : 
+  multiplicity a G.(mg_mdegrees) =
+  match a with 
+  | inl (inl v) => 
+    set_Nsum 
+      (fun i => if decide (G.(mg_vert_inputs) !! i = Some v) then 1 else 0) 
+      (dom G.(mg_vert_inputs)) + 
+    set_Nsum 
+      (fun o => if decide (G.(mg_vert_outputs) !! o = Some v) then 1 else 0)
+      (dom G.(mg_vert_outputs)) + 
+    (* from_option size 0 ((map_preimg G.(mg_vert_inputs) :> natmap natset) !! v) + 
+    from_option size 0 ((map_preimg G.(mg_vert_outputs) :> natmap natset) !! v) + *)
+    set_Nsum (fun a => 
+      (if decide (a.1 = v) then multiplicity a G.(mg_vert_edges) else 0) + 
+      (if decide (a.2 = v) then multiplicity a G.(mg_vert_edges) else 0))
+      (dom G.(mg_vert_edges))
+  | inl (inr i) => 
+    if decide (i ∈ G.(mg_input_set)) then 1 else 0
+  | inr o => 
+    if decide (o ∈ G.(mg_output_set)) then 1 else 0
+  end.
+Proof.
+  destruct a as [[v | i] | o].
+  - apply mg_WF_mdegrees_verts.
+  - apply mg_WF_mdegrees_inputs.
+  - apply mg_WF_mdegrees_outputs.
+Qed.
+
+Lemma elem_of_mg_indices_cases a : 
+  a ∈ G.(mg_indices) <->
+  match a with
+  | inl (inl v) => v ∈ G.(mg_vert_set)
+  | inl (inr i) => i ∈ G.(mg_input_set)
+  | inr o => o ∈ G.(mg_output_set)
+  end.
+Proof.
+  unfold mg_indices.
+  rewrite elem_of_sum_set_cases.
+  destruct a as [a|]; [|reflexivity].
+  apply elem_of_sum_set_cases.
+Qed.
+
+Lemma mg_to_from_idx_minverses : 
+  minverses G.(mg_to_idx) G.(mg_from_idx).
+Proof.
+  intros i idx.
+  unfold mg_to_idx, mg_from_idx.
+  rewrite 2!lookup_set_to_map by (simpl; congruence).
+  setoid_rewrite pair_eq.
+  setoid_rewrite (and_comm (_ ∈ _)).
+  setoid_rewrite <- (and_assoc _).
+  rewrite 2!exists_eq_l_iff.
+  destruct i as [[v|i]|o]; simpl; 
+  rewrite elem_of_mg_indices_cases.
+  - rewrite <- (dom_natset_idx (G.(mg_vert_set))), 
+      <- lookup_Some_iff_total_dom.
+    split.
+    + intros Hv.
+      apply (elem_of_map_img_2 (SA:=natset)) in Hv as Hv'.
+      unfold mg_vert_idx in Hv'.
+      rewrite map_img_natset_idx in Hv'.
+      rewrite elem_of_seq_set_0 in *.
+      unfold mg_vert_set in Hv'.
+      rewrite size_dom in Hv'.
+      fold G.(mg_numspi) in Hv'.
+      split; [|lia].
+      rewrite if_True by easy.
+      apply natset_nth_idx_minverses in Hv.
+      by rewrite (lookup_total_correct _ _ _ Hv).
+    + intros (Hidx & _).
+      case_decide; [|by case_decide].
+      apply inl_inj, inl_inj in Hidx.
+      apply natset_nth_idx_minverses.
+      fold G.(mg_vert_nth).
+      rewrite lookup_lookup_total_dom; [congruence|].
+      unfold mg_vert_nth.
+      rewrite dom_natset_nth, elem_of_seq_set_0.
+      unfold mg_vert_set.
+      rewrite size_dom.
+      assumption.
+  - split.
+    + intros (Hidx & Hi).
+      rewrite if_False by lia.
+      assert (HGi : G.(mg_input_idx) !! i = Some (idx - G.(mg_numspi))). 1: {
+        rewrite lookup_lookup_total_dom by 
+          (unfold mg_input_idx; now rewrite dom_natset_idx).
+        f_equal.
+        lia.
+      }
+      assert (idx < G.(mg_numspi) + G.(mg_insize)). 1:{
+        apply (elem_of_map_img_2 (SA:=natset)) in HGi.
+        unfold mg_input_idx in HGi.
+        rewrite map_img_natset_idx, elem_of_seq_set_0 in HGi.
+        unfold mg_input_set in HGi.
+        rewrite size_dom in HGi.
+        fold G.(mg_insize) in HGi.
+        lia.
+      }
+      rewrite if_True by done.
+      apply lookup_total_correct in HGi as HGi'.
+      rewrite <- HGi'.
+      rewrite elem_of_seq_set_0.
+      split; [|lia].
+      f_equal.
+      f_equal.
+      apply lookup_total_correct.
+      apply natset_nth_idx_minverses.
+      rewrite HGi'.
+      apply HGi.
+    + case_decide as Hidxbig; [easy|].
+      case_decide as Hidxsmall; [|easy].
+      intros [[= HGidx] _].
+      assert (Hdom : idx - G.(mg_numspi) ∈ dom G.(mg_input_nth)). 1: {
+        unfold mg_input_nth.
+        rewrite dom_natset_nth.
+        unfold mg_input_set.
+        rewrite size_dom.
+        fold G.(mg_insize).
+        rewrite elem_of_seq_set_0.
+        lia.
+      }
+      apply lookup_lookup_total_dom in Hdom.
+      rewrite HGidx in Hdom.
+      apply (elem_of_map_img_2 (SA:=natset)) in Hdom as Hi.
+      unfold mg_input_nth in Hi.
+      rewrite map_img_natset_nth in Hi.
+      split; [|easy].
+      enough (G.(mg_input_idx) !!! i = idx - G.(mg_numspi)) by lia.
+      apply lookup_total_correct.
+      apply natset_nth_idx_minverses.
+      apply Hdom.
+  - rewrite elem_of_seq_set_0.
+    split.
+    + intros (HGo & Ho).
+      rewrite 2!if_False by lia.
+      split.
+      * f_equal.
+        apply lookup_total_correct.
+        apply natset_nth_idx_minverses.
+        rewrite lookup_lookup_total_dom by by rewrite dom_natset_idx.
+        f_equal.
+        fold G.(mg_output_idx).
+        lia.
+      * enough (G.(mg_output_idx) !!! o < G.(mg_outsize)) by lia.
+        rewrite <- (elem_of_seq_set_0 (A:=natset)).
+        unfold mg_outsize.
+        rewrite <- size_dom.
+        fold G.(mg_output_set).
+        rewrite <- map_img_natset_idx.
+        apply elem_of_map_img_2 with o.
+        apply lookup_lookup_total_dom.
+        unfold mg_output_idx.
+        now rewrite dom_natset_idx.
+    + case_decide as _h; [easy|clear _h].
+      case_decide as Hidxbig; [easy|].
+      intros [[= Ho] Hidx].
+      assert (Hdom : idx - (G.(mg_numspi) + G.(mg_insize)) 
+        ∈ dom G.(mg_output_nth)). 1:{
+        unfold mg_output_nth.
+        rewrite dom_natset_nth, elem_of_seq_set_0.
+        unfold mg_output_set.
+        rewrite size_dom.
+        fold G.(mg_outsize).
+        lia.
+      }
+      apply lookup_lookup_total_dom in Hdom as Hdom'.
+      rewrite Ho in Hdom'.
+      apply natset_nth_idx_minverses in Hdom'.
+      apply elem_of_dom_2 in Hdom' as Hdom''.
+      rewrite dom_natset_idx in Hdom''.
+      apply lookup_total_correct in Hdom'.
+      fold G.(mg_output_idx) in Hdom'.
+      rewrite Hdom'.
+      split; [lia | apply Hdom''].
+Qed.
+
+
+
+(* FIXME: Move *)
+Lemma dom_mg_from_idx : 
+  dom G.(mg_from_idx) = 
+  seq_set 0 (G.(mg_numspi) + G.(mg_insize) + G.(mg_outsize)).
+Proof.
+  apply set_eq => x.
+  unfold mg_from_idx.
+  rewrite dom_set_to_map.
+  unfold compose.
+  simpl.
+  rewrite set_map_id_inhom.
+  rewrite set_cast_seq_set.
+  reflexivity.
+Qed.
+
+Lemma map_img_mg_from_idx : 
+  map_img G.(mg_from_idx) = G.(mg_indices).
+Proof.
+  rewrite (minverses_map_img_eq_dom_L _ _ (minverses_symm _ _ 
+    mg_to_from_idx_minverses)).
+  apply dom_mg_to_idx.
+Qed.
+
+
+
+
+Lemma mg_WF_dom_mdegrees_subseteq :
+  dom G.(mg_mdegrees) ⊆ G.(mg_indices).
+Proof.
+  intros x.
+  rewrite gmultiset_elem_of_dom.
+  unfold elem_of at 1, gmultiset_elem_of.
+  rewrite mg_WF_mdegrees_cases.
+  revert x.
+  intros [[v|i]|o].
+  - rewrite 2!nat_add_pos, 3!set_Nsum_pos.
+    intros [[(a & Ha & Hdec)|(a & Ha & Hdec)]|((a1, a2) & Ha & Hdec)];
+    apply elem_of_mg_indices_cases.
+    + case_decide as Ha'; [|easy].
+      apply (elem_of_map_img_2 (SA:=natset)) in Ha' as Himg.
+      by apply mg_WF_vert_inputs in Himg.
+    + case_decide as Ha'; [|easy].
+      apply (elem_of_map_img_2 (SA:=natset)) in Ha' as Himg.
+      by apply mg_WF_vert_outputs in Himg.
+    + simpl in Hdec.
+      case_decide as Ha1; case_decide as Ha2.
+      * rewrite nat_add_pos in Hdec.
+        assert (Hdec' : 0 < multiplicity (a1, a2) G.(mg_vert_edges)) by 
+          by destruct Hdec.
+        pose proof (Hdec' : (a1, a2) ∈ G.(mg_vert_edges)) as Hdec''.
+        rewrite <- gmultiset_elem_of_dom in Hdec''.
+        apply mg_WF_vert_edges.
+        rewrite elem_of_edgeset_dom.
+        exists (a1, a2).
+        simpl.
+        split; by try left.
+      * rewrite Nat.add_0_r in Hdec.
+        pose proof (Hdec : (a1, a2) ∈ G.(mg_vert_edges)) as Hdec'.
+        rewrite <- gmultiset_elem_of_dom in Hdec'.
+        apply mg_WF_vert_edges.
+        rewrite elem_of_edgeset_dom.
+        exists (a1, a2).
+        simpl.
+        split; by try left.
+      * rewrite Nat.add_0_l in Hdec.
+        pose proof (Hdec : (a1, a2) ∈ G.(mg_vert_edges)) as Hdec'.
+        rewrite <- gmultiset_elem_of_dom in Hdec'.
+        apply mg_WF_vert_edges.
+        rewrite elem_of_edgeset_dom.
+        exists (a1, a2).
+        simpl.
+        split; by try right.
+      * easy.
+  - rewrite elem_of_mg_indices_cases.
+    now case_decide.
+  - rewrite elem_of_mg_indices_cases. 
+    now case_decide.
+Qed.
+
+
+Lemma mg_mdegrees_eq_map_degrees : 
+  G.(mg_mdegrees) = gmultiset_map (G.(mg_from_idx) !!!.) G.(mg_degrees).
+Proof.
+  rewrite mg_degrees_eq_map_mdegrees.
+  rewrite <- gmultiset_map_compose.
+  symmetry.
+  apply gmultiset_map_id_on.
+  intros a Ha%gmultiset_elem_of_dom.
+  apply mg_WF_dom_mdegrees_subseteq in Ha.
+  apply minverses_lookup_total_linv.
+  - apply mg_to_from_idx_minverses.
+  - by rewrite dom_mg_to_idx.
+Qed.
+
+
+Lemma mg_WF_degrees_inv a : 
+  a < G.(mg_numspi) + G.(mg_insize) + G.(mg_outsize) -> 
+  multiplicity a G.(mg_degrees) =
+  multiplicity (G.(mg_from_idx) !!! a) G.(mg_mdegrees).
+Proof.
+  intros Hasmall%(elem_of_seq_set_0 (A:=natset)).
+  rewrite mg_mdegrees_eq_map_degrees.
+  rewrite (multiplicity_gmultiset_map' (G.(mg_from_idx) !!!.)); [easy|].
+  intros b c.
+  assert (Hle : {[a]} ∪ dom G.(mg_degrees) ⊆ seq_set 0
+    (G.(mg_numspi) + G.(mg_insize) + G.(mg_outsize))) 
+    by (rewrite union_subseteq; split; [set_solver | apply dom_mg_degrees_WF]).
+  intros Hb%Hle Hc%Hle.
+  intros Heq%(f_equal (G.(mg_to_idx) !!!.)).
+  rewrite 2!(minverses_lookup_total_rinv _ _ 
+    mg_to_from_idx_minverses) in Heq
+    by (by rewrite dom_mg_from_idx).
+  apply Heq.
+Qed.
+
+Lemma lookup_mg_from_idx a : 
+  G.(mg_from_idx) !! a =
+  if decide (a < G.(mg_numspi)) then
+    Some $ inl (inl (G.(mg_vert_nth) !!! a))
+  else if decide (a < G.(mg_numspi) + G.(mg_insize)) then
+    Some $ inl (inr (G.(mg_input_nth) !!! (a - G.(mg_numspi))))
+  else if decide (a < G.(mg_numspi) + G.(mg_insize) + G.(mg_outsize)) then
+    Some $ inr (G.(mg_output_nth) !!! (a - (G.(mg_numspi) + G.(mg_insize))))
+  else None.
+Proof.
+  unfold mg_from_idx.
+  case_decide as Ha1; [|case_decide as Ha2; [|case_decide as Ha3]].
+  - rewrite lookup_set_to_map by easy.
+    exists a.
+    split; [by rewrite elem_of_seq_set_0; lia|].
+    f_equal.
+    by apply if_True.
+  - rewrite lookup_set_to_map by easy.
+    exists a.
+    split; [by rewrite elem_of_seq_set_0; lia|].
+    f_equal.
+    rewrite if_False by done.
+    by apply if_True.
+  - rewrite lookup_set_to_map by easy.
+    exists a.
+    split; [by rewrite elem_of_seq_set_0; lia|].
+    f_equal.
+    rewrite 2!if_False by done.
+    done.
+  - apply option_eq => vio.
+    split; [|easy].
+    rewrite lookup_set_to_map by easy.
+    intros (? & ?%elem_of_seq_set_0 & []%pair_eq).
+    exfalso; lia.
+Qed.
+
+Lemma size_mg_input_set : size G.(mg_input_set) = G.(mg_insize).
+Proof using. apply size_dom. Qed.
+
+Lemma size_mg_output_set : size G.(mg_output_set) = G.(mg_outsize).
+Proof using. apply size_dom. Qed.
+
+Lemma size_mg_vert_set : size G.(mg_vert_set) = G.(mg_numspi).
+Proof using. apply size_dom. Qed.
+
+Lemma mg_WF_degrees_large a : 
+  G.(mg_numspi) <= a < G.(mg_numspi) + G.(mg_insize) + G.(mg_outsize) ->
+  multiplicity a G.(mg_degrees) = 1.
+Proof.
+  intros Ha.
+  rewrite mg_WF_degrees_inv by easy.
+  rewrite lookup_total_alt.
+  rewrite lookup_mg_from_idx.
+  rewrite if_False by lia.
+  rewrite mg_WF_mdegrees_cases.
+  case_decide as Ha'; [|rewrite if_True by lia].
+  - simpl.
+    apply if_True.
+    apply lookup_total_elem_of_of_dom.
+    + unfold mg_input_nth.
+      by rewrite map_img_natset_nth.
+    + unfold mg_input_nth.
+      rewrite dom_natset_nth, elem_of_seq_set_0.
+      rewrite size_mg_input_set.
+      lia.
+  - cbn [default Datatypes.id].
+    apply if_True.
+    apply lookup_total_elem_of_of_dom.
+    + unfold mg_output_nth.
+      by rewrite map_img_natset_nth.
+    + unfold mg_output_nth.
+      rewrite dom_natset_nth, elem_of_seq_set_0.
+      rewrite size_mg_output_set.
+      lia.
+Qed.
+
+(* Lemma mg_WF_degrees_outputs : *)
+
+
+Lemma mg_size_pf :
+  big_sum (λ x, multiplicity x G.(mg_degrees)) G.(mg_numspi) 
+    + G.(mg_insize) + G.(mg_outsize)
+  = G.(mg_numedges) * 2.
+Proof.
+  rewrite <- Nat.add_assoc.
+  rewrite <- big_sum_of_1_r. 2:{
+    intros x Hx.
+    unfold rshift; simpl.
+    apply mg_WF_degrees_large; lia.
+  }
+  rewrite <- (set_Nsum_seq_set_0_big_sum (SA:=gmap.gset nat)).
+  rewrite <- size_mg_degrees.
+  apply sum_multiplicities_size_subseteq.
+  rewrite set_cast_id, Nat.add_assoc.
+  apply dom_mg_degrees_WF.
+Qed.
+
+End WF_mapgraph.
+
+
+
+
+(* FIXME: Move this to by ZX_el_graph *) 
+
+Lemma WF_edgefunc_0 n f : WF_edgefunc 0 n f.
+Proof. hnf. by lia. Qed.
+
+Definition ZX_el_graph_X (n m : nat) (a : R) : ZX_el_graph n m. 
+refine ({|
+  el_edges := n+m; 
+  el_numspi := 1;
+  el_color := inhabitant; 
+  el_phase := inhabitant;
+  el_edgefunc := λ k, (1 + k, 0);
+|}).
+- intros k Hk.
+  rewrite rshift_defn.
+  simpl.
+  unfold edgefunc_deg.
+  apply big_sum_unique.
+  exists k; split; first by done.
+  split.
+  + rewrite (proj2 (Nat.eqb_eq _ _)) by (cbn; lia).
+    rewrite (proj2 (Nat.eqb_neq _ _)) by (cbn; lia).
+    reflexivity.
+  + intros k' Hk' Hkk'.
+    rewrite 2!(proj2 (Nat.eqb_neq _ _)) by (cbn; lia).
+    reflexivity.
+- intros k Hk.
+  simpl; split; lia.
+Qed.
+
+(* Lemma multiplicity_mg_degrees_alt_WF `{HG : WF_ZX_map_graph G} k : 
+  multiplicity k G.(mg_degrees) = 
+  big_su
+*)
+
+
+Lemma gmultiset_dom_ind' `{Countable A} (P : gmultiset A -> Prop) : 
+  P ∅ -> (∀ (x : A) (n : nat) g, 0 < n -> x ∉ dom g -> 
+    elements ((n *: {[+x+]}) ⊎ g) = 
+    replicate n x ++ elements g -> P g -> P ((n *: {[+x+]}) ⊎ g)) -> 
+  ∀ g, P g.
+Proof.
+  intros HPemp HPind.
+  intros (g).
+  induction g as [|x n g Hgi Hfirst IHg] using map_first_key_ind.
+  - apply HPemp.
+  - enough (Hrw : {| gmultiset_car := <[x:=n]> g |}
+      = Pos.to_nat n *: {[+ x +]} ⊎ GMultiSet g).
+      { rewrite Hrw. 
+        apply HPind, IHg.
+        - lia.
+        - simpl.
+          apply not_elem_of_dom.
+          apply Hgi.
+        - rewrite <- Hrw.
+          unfold elements.
+          simpl.
+          rewrite map_to_list_insert_first_key by done.
+          reflexivity. }
+    apply gmultiset_eq => a.
+    rewrite multiplicity_disj_union, multiplicity_scalar_mul.
+    rewrite multiplicity_singleton_eq.
+    unfold multiplicity.
+    simpl.
+    case_decide as Hax.
+    + subst a.
+      rewrite Hgi, lookup_insert.
+      lia.
+    + rewrite lookup_insert_ne by done.
+      lia.
+Qed.
+
+(* FIXME: Move, make more formal *)
+Lemma linear_0_eq_0 `{Comm_Monoid A, Comm_Monoid B} 
+  (g : A -> B) (Hcharne2 : forall a : B, 
+    (a + a)%G = a -> a = 0%G): (∀ a b, g (a + b)%G = (g a + g b)%G) ->
+  g 0%G = 0%G.
+Proof.
+  intros Hg.
+  apply Hcharne2.
+  rewrite <- Hg.
+  f_equal.
+  apply Gplus_0_l.
+Qed.
+
+Lemma big_sum_compose_linear `{Comm_Monoid A, Comm_Monoid B} 
+  (g : A -> B) (f : nat -> A) n 
+  (Hg0 : g 0%G = 0%G) (Hg : ∀ a b, g (a + b)%G = (g a + g b)%G) :
+  big_sum (g ∘ f) n = g (big_sum f n).
+Proof.
+  induction n.
+  - symmetry; apply Hg0.
+  - simpl.
+    rewrite IHn.
+    symmetry; apply Hg.
+Qed.
+
+Lemma multiplicity_0 `{Countable A} a (g : gmultiset A) : 
+  a ∉ dom g -> multiplicity a g = 0.
+Proof. by rewrite gmultiset_elem_of_dom; apply not_elem_of_gmultiset. Qed.
+
+Lemma set_Nsum_multiplicities_dom_to_elements_gen `{Countable A} `{Inhabited A}
+  (g : gmultiset A) (f : A -> nat -> nat) 
+  (Hf : forall a k l, a ∈ dom g ->
+     f a (k + l) = f a k + f a l) : 
+  set_Nsum (λ a, f a (multiplicity a g)) (dom g) = 
+  big_sum (λ k, f (elements g !!! k) 1) (size g).
+Proof.
+  induction g as [|x n g Hn Hx Helem IHg] 
+    using gmultiset_dom_ind'; first by reflexivity.
+  rewrite dom_gmultiset_disj_union, dom_gmultiset_scalar_mul_pos, 
+    dom_gmultiset_singleton by done.
+  rewrite set_Nsum_disj_union by set_solver.
+  rewrite gmultiset_size_disj_union, gmultiset_size_scalar_mul.
+  rewrite gmultiset_size_singleton, Nat.mul_1_r.
+  rewrite big_sum_sum.
+  simpl.
+  rewrite dom_gmultiset_disj_union, 
+    dom_gmultiset_scalar_mul_pos, dom_gmultiset_singleton in Hf by done.
+  f_equal.
+  - rewrite set_Nsum_singleton.
+    rewrite multiplicity_disj_union, multiplicity_scalar_mul, 
+      multiplicity_singleton.
+    rewrite (proj1 (not_elem_of_gmultiset g x)) by 
+      (by rewrite <- gmultiset_elem_of_dom).
+    rewrite Nat.add_0_r, Nat.mul_1_r.
+    erewrite big_sum_eq_bounded. 2:{
+      intros k hk.
+      rewrite Helem.
+      rewrite list_lookup_total_alt.
+      rewrite lookup_app.
+      rewrite lookup_replicate_2 by done.
+      simpl.
+      reflexivity.
+    }
+    assert (Hf' : forall k l, f x (k + l) = f x k + f x l) by
+      (intros; apply Hf; set_solver).
+    clear -Hf'.
+    change (λ _ : nat, f x 1) with (f x ∘ (λ _ : nat, 1)).
+    rewrite (big_sum_compose_linear (f x) (λ _, 1)) by
+      (exact Hf' || generalize (Hf' 0 0); simpl; lia).
+    by rewrite Nsum_1.
+  - specialize (IHg ltac:(intros; apply Hf; set_solver)).
+    erewrite set_Nsum_ext, IHg; [..|reflexivity].
+    + apply big_sum_eq_bounded.
+      intros k Hk.
+      rewrite Helem.
+      f_equal.
+      rewrite 2!list_lookup_total_alt, 
+        lookup_app, (proj1 (lookup_replicate_None _ _ _)) by lia.
+      f_equal.
+      f_equal.
+      by rewrite length_replicate, add_sub'.
+    + intros a Ha.
+      simpl.
+      f_equal.
+      rewrite multiplicity_disj_union, 
+        multiplicity_scalar_mul.
+      rewrite multiplicity_0 by (rewrite dom_gmultiset_singleton, 
+        elem_of_singleton; congruence).
+      lia.
+Qed.
+
+Lemma set_Nsum_eq `{FinSet A SA} (f f' : A -> nat) (s : SA) : 
+  (∀ a, a ∈ s -> f a = f' a) ->
+  set_Nsum f s = set_Nsum f' s.
+Proof.
+  intros; by apply set_Nsum_ext.
+Qed.
+
+Lemma decide_to_b2n `{HP : Decision P} : 
+  (if decide P then 1 else 0) = Nat.b2n (bool_decide P).
+Proof.
+  by destruct HP.
+Qed.
+
+Lemma b2n_to_decide b : 
+  Nat.b2n b = if decide b then 1 else 0.
+Proof. 
+  by destruct b. 
+Qed.
+
+Lemma b2n_to_decide' b : 
+  Nat.b2n b = if decide (b = true) then 1 else 0.
+Proof. 
+  by destruct b. 
+Qed.
+
+Lemma size_gset_to_multiset `{Countable A} (g : gmap.gset A) : 
+  size (gset_to_multiset g) = size g.
+Proof.
+  rewrite <- sum_multiplicities_size.
+  rewrite <- (Nat.mul_1_l (size g)).
+  rewrite <- (set_Nsum_const_on (λ _, 1)) by done.
+  rewrite dom_gset_to_multiset.
+  apply set_Nsum_eq.
+  intros.
+  rewrite multiplicity_gset_to_multiset.
+  by rewrite decide_True by done.
+Qed.
+
+Lemma size_to_set_sum `{FinSet A SA} (s : SA) : 
+  size s = set_Nsum (λ _, 1) s.
+Proof.
+  by rewrite set_Nsum_const_on with _ _ 1 by done.
+Qed.
+
+Lemma size_union_to_inter `{FinSet A SA} (s t : SA) : 
+  size (s ∪ t) = size s + size t - size (s ∩ t).
+Proof.
+  rewrite 4!size_to_set_sum.
+  apply set_Nsum_union.
+Qed.
+
+Lemma set_Nsum_filter `{FinSet A SA} (s : SA) P `{∀ x, Decision (P x)} 
+  (f : A -> nat) : 
+  set_Nsum f (filter P s) = 
+  set_Nsum (λ a, if decide (P a) then f a else 0) s.
+Proof.
+  revert s.
+  apply set_ind.
+  - intros s s' Hs Himpl.
+    rewrite <- Hs at 2.
+    rewrite <- Himpl.
+    apply set_Nsum_ext; [done|].
+    set_solver.
+  - by rewrite filter_empty, 2!set_Nsum_empty.
+  - intros a s Ha IH.
+    rewrite filter_union.
+    rewrite 2!set_Nsum_disj_union by set_solver.
+    f_equal; [|apply IH].
+    rewrite set_Nsum_singleton.
+    case_decide as HPa.
+    + by rewrite filter_singleton, set_Nsum_singleton.
+    + by rewrite filter_singleton_not, set_Nsum_empty.
+Qed.
+
+
+Lemma mg_insize_alt (G : ZX_map_graph) : 
+  G.(mg_insize) = size G.(mg_vert_inputs) + size G.(mg_boundary_inputs).
+Proof.
+  rewrite <- 2!size_dom.
+  rewrite 2!size_to_set_sum.
+  unfold mg_vert_inputs, mg_boundary_inputs.
+  rewrite 2!dom_omap.
+  rewrite 2!set_Nsum_filter.
+  rewrite set_Nsum_sum.
+  unfold mg_insize.
+  rewrite <- size_dom, size_to_set_sum.
+  apply set_Nsum_eq.
+  simpl.
+  intros a ([l|r] & ->)%elem_of_dom; done.
+Qed.
+
+(* FIXME: Move *)
+(* Lemma size_minverses `{FinMapDom A MA SA, FinMapDom B MB SB} 
+  `{!Elements A SA} `{!FinSet A SA} `{!Elements B SB} `{!FinSet B SB}
+  (f : MA B) (g : MB A) : minverses f g -> 
+  size f = size g.
+Proof.
+  intros Hinv.
+  rewrite <- 2!size_dom.
   
-  {|
-    mg_verts (* : natmap (bool * R) *) := 
-      merge! 
-        ZXG0.(mg_verts)
-        (kmap (Nat.add ZXG0.(mg_numspi)) ZXG1.(mg_verts)) ; 
-          (* ^ Shift the vertex indexing by the number of vertices in the first *)
-    mg_inputs (* : natmap EdgeType (* verts + outputs *) *) := 
-      merge!
-        ZXG0.(mg_inputs)
-        (  (* Shift indexes of the targets of the input edges *)
-          sum_elim 
-            (inl ∘ Nat.add ZXG0.(mg_numspi)) 
-            (inr ∘ Nat.add ZXG0.(mg_outsize)) 
-          <$> 
-            kmap (Nat.add ZXG0.(mg_insize)) ZXG1.(mg_inputs) (* Shift, as above *)
-        ) ;
+  map_size *)
 
-    mg_vert_outputs (* : natmap nat (* only verts!! *) *) := 
-      merge!
-        ZXG0.(mg_vert_outputs)
-        (
-          Nat.add ZXG0.(mg_numspi) 
-            <$> (* Shift indexes of the targets of the output edges *)
-          kmap (Nat.add ZXG0.(mg_outsize)) ZXG1.(mg_vert_outputs) (* Shift, as above *)
-        ) ;
-
-    mg_vert_edges (* : gmultiset (nat * nat) *) :=
-      ZXG0.(mg_vert_edges) ⊎
-      (gmultiset_map ((λ f, prod_map f f) (Nat.add ZXG0.(mg_numspi)))
-        ZXG1.(mg_vert_edges))
-      ;
-
-  |}.
+(* Lemma mg_outsize_alt `{HG : WF_ZX_map_graph G} : 
+  G.(mg_outsize) = size G.(mg_vert_outputs) + size G.(mg_boundary_inputs).
+Proof.
+  rewrite <- 2!size_dom.
+  rewrite 2!size_to_set_sum.
+  rewrite mg_vert_outputs_eq_omap.
+  unfold mg_boundary_inputs.
+  rewrite 2!dom_omap_L.
+  rewrite 2!set_Nsum_filter.
+  rewrite set_Nsum_sum.
+  unfold mg_insize.
+  rewrite <- size_dom, size_to_set_sum.
+  apply set_Nsum_eq.
+  simpl.
+  intros a ([l|r] & ->)%elem_of_dom; done.
+Qed. *)
 
 
-Definition compose_ZX_map_graph_of_WF' (ZXG0 ZXG1 : ZX_map_graph)  
-  : ZX_map_graph :=
-  (* Assumes ZXG0 and ZXG1 are "WF", in that their vertex, index, 
-    and output sets are "dense" (i.e. look like 0, 1, ..., n-1). 
-    WARNING: This is NOT the actual meaning that WF_ZX_map_graph will have,
-    nor with that predicate include this statement
-    This avoids only some composition by some adjustment functions, but 
-    is therefore much easier to read. *)
   
-  {|
-    mg_verts (* : natmap (bool * R) *) := 
-      merge! 
-        ZXG0.(mg_verts)
-        (kmap (Nat.add ZXG0.(mg_numspi)) ZXG1.(mg_verts)) ; 
-          (* ^ Shift the vertex indexing by the number of vertices in the first *)
 
-    mg_inputs (* : natmap EdgeType (* verts + outputs *) *) :=
-      sum_elim
-        inl (* Inputs from ZXG0 to verts stay the same *)
-        ( fun o : nat (* ZXG0 output idx *) => 
-          (.$ ZXG1.(mg_inputs) !!! o) $
-          sum_elim (* cases on where ZXG1 sends the output *)
-            (inl ∘ Nat.add ZXG0.(mg_numspi)) (* left is a ZXG1 vertex *)
-            inr (* right is a ZXG1 output *)
-        )
-      <$>
-        (ZXG0.(mg_inputs) : natmap (nat + nat)) ;
+(* Lemma mg_numedges_alt (G : ZX_map_graph) : 
+  G.(mg_numedges) = size G.(mg_vert_medges) + 
+    G.(mg_insize) + G.(mg_outsize) - size G.(mg_io_edges).
+Proof.
+  unfold mg_numedges, mg_edges.
+  rewrite size_gmultiset_map.
+  unfold mg_medges.
+  rewrite gmultiset_size_disj_union, size_gset_to_multiset.
+  rewrite 2!size_union.
+  2: {
+   intros x.
+   rewrite elem_of_mg_input_medges_cases, elem_of_mg_output_medges_cases.
+   by destruct x as ([[|]|], [[|]|]).
+  }
+  2: {
+   intros x.
+   rewrite elem_of_union, elem_of_mg_input_medges_cases, 
+    elem_of_mg_output_medges_cases, elem_of_mg_io_medges_cases.
+   by destruct x as ([[|]|], [[|]|]); intros [].
+  } 
+*)
 
-    mg_vert_outputs (* : natmap nat (* only verts!! *) *) := 
-      merge! 
-      (Nat.add ZXG0.(mg_numspi) <$> (* Shift output-to-vertex edges *)
-        ZXG1.(mg_vert_outputs))
-      (map_compose ZXG0.(mg_vert_outputs) ZXG1.(mg_boundary_outputs)) 
-        (* We also need an output 
-        for the outputs of ZXG0 that get passed through ZXG1 *);
 
-    mg_vert_edges (* : gmultiset (nat * nat) *) :=
-      ZXG0.(mg_vert_edges) (* Edges of ZXG0 and... *)
-      ⊎ (gmultiset_map ((λ f, prod_map f f) (Nat.add ZXG0.(mg_numspi)))
-        ZXG1.(mg_vert_edges)) (* edges of ZXG1 and... *)
-      ⊎ (* The connections between ZXG0 and ZXG1's vertices from IO: *)
-        gset_to_multiset (map_img $
-        (merge 
-          (λ inv' outv', 
-            inv ← inv'; outv ← outv' ;
-            Some (inv, ZXG0.(mg_numspi) + outv))
-          ZXG0.(mg_vert_outputs)
-          ZXG1.(mg_vert_inputs)
-          :> natmap (nat * nat)));
+Lemma mg_WF_numedges_pos_impl `{HG : WF_ZX_map_graph G} : 
+  0 < G.(mg_numedges) -> 0 < G.(mg_numspi) + G.(mg_insize) + G.(mg_outsize).
+Proof.
+  enough (G.(mg_numspi) + G.(mg_insize) + G.(mg_outsize) = 0 -> 
+    G.(mg_numedges) = 0) by lia.
+  intros H0.
+  unfold mg_numedges.
+  apply gmultiset_size_empty_iff.
+  apply gmultiset_eq => a.
+  rewrite multiplicity_empty.
+  apply not_elem_of_gmultiset.
+  intros Ha.
+  (* intros (x & _ & Hx)%elem_of_gmultiset_map. *)
+  assert (a.1 < G.(mg_numspi) + G.(mg_insize) + G.(mg_outsize)). 1: {
+    rewrite <- (elem_of_seq_set_0 (A:=natset)).
+    apply mg_WF_edges.
+    rewrite elem_of_edgeset_dom.
+    exists a. 
+    rewrite gmultiset_elem_of_dom.
+    naive_solver.
+  }
+  lia.
+Qed.
 
-  |}.
 
-End Examples.
 
-Definition ZXvert_of_map_graph (ZXG : ZX_map_graph) : 
-  ZXvert ZXG.(mg_insize) ZXG.(mg_outsize) :=
+
+
+
+
+
+Lemma edgefunc_deg_ZX_map_graph `{HG : WF_ZX_map_graph G} k : 
+  edgefunc_deg G.(mg_numedges) G.(mg_edge_func) k = 
+  multiplicity k G.(mg_degrees).
+Proof.
+  unfold edgefunc_deg.
+  (* rewrite Nsum_plus. *)
+  
+  unfold mg_degrees.
+  rewrite multiplicity_disj_union.
+  erewrite 2!multiplicity_gmultiset_map_to_sum.
+  (* erewrite set_Nsum_eq. 2: {intros.
+    pattern (multiplicity a (G.(mg_edges))). reflexivity). *)
+  rewrite 2!(set_Nsum_multiplicities_dom_to_elements_gen
+    G.(mg_edges) (λ a m, if decide (_ = k) then m else 0))
+    by (intros; by case_decide).
+  fold G.(mg_numedges).
+  rewrite <- Nsum_plus.
+  apply big_sum_eq_bounded => x Hx.
+  rewrite 2!b2n_to_decide'.
+  f_equal; apply decide_ext; apply Nat.eqb_eq.
+Qed.
+
+Lemma prf_ZX_el_graph_of_map_graph_1 {G} (HG : WF_ZX_map_graph G) : 
+  perm_eq (G.(mg_insize) + G.(mg_outsize))
+    (edgefunc_deg G.(mg_numedges) G.(mg_edge_func)
+      ∘ rshift G.(mg_numspi)) (λ _ : nat, 1).
+Proof.
+  intros k Hk.
+  rewrite rshift_defn; simpl.
+  rewrite edgefunc_deg_ZX_map_graph.
+  apply mg_WF_degrees_large; lia.
+Qed.
+
+Lemma prf_ZX_el_graph_of_map_graph_2 {G} (HG : WF_ZX_map_graph G) : 
+  WF_edgefunc G.(mg_numedges)
+    (G.(mg_numspi) + G.(mg_insize) + G.(mg_outsize)) 
+    G.(mg_edge_func).
+Proof.
+  intros k Hk.
+  assert (Hdom : G.(mg_edge_func) k ∈ dom G.(mg_edges)). 1:{
+    unfold mg_edge_func.
+    apply elem_of_list_lookup_total_2 in Hk as Hk'.
+    rewrite gmultiset_elem_of_elements in Hk'.
+    by rewrite gmultiset_elem_of_dom.
+  }
+  split; apply (elem_of_seq_set_0 (A:=natset));
+  apply mg_WF_edges;
+  apply elem_of_edgeset_dom;
+  exists (G.(mg_edge_func) k);
+  (split; [|solve [by right | by left]]);
+  apply Hdom.
+Qed.
+
+Definition ZX_el_graph_of_map_graph (G : ZX_map_graph) : 
+  ZX_el_graph G.(mg_insize) G.(mg_outsize) :=
+  match @decide _ (WF_ZX_map_graph_dec G) with
+  | left HG =>
+    {|
+      el_edges := G.(mg_numedges); 
+      el_numspi := G.(mg_numspi);
+      el_color := fst ∘ (G.(mg_verts) !!!.); 
+      el_phase := snd ∘ (G.(mg_verts) !!!.); 
+      el_edgefunc := G.(mg_edge_func);
+      el_io_deg_1 := prf_ZX_el_graph_of_map_graph_1 HG;
+      el_edgefunc_WF := prf_ZX_el_graph_of_map_graph_2 HG;
+    |}
+  | right _ => ZX_el_graph_X _ _ 0
+  end.
+
+
+
+
+
+
+
+
 
 
 
@@ -7913,7 +11785,7 @@ Definition ZXvert_of_map_graph (ZXG : ZX_map_graph) :
     ⊆ (* Some <$> *)dom G.(mg_verts). *)
 
 
-
+(*
 Definition WF_ZX_map_graph (G : ZX_map_graph) :=
   map_img (mg_vert_inputs G) ⊆ dom G.(mg_verts) ∧
   map_img (mg_vert_outputs G) ⊆ dom G.(mg_verts) ∧
@@ -7976,58 +11848,6 @@ Definition ZX_map_graph_edge_multiset (G : ZX_map_graph) : gmultiset (nat * nat)
 
 
 
-Module Type ZXGModule.
-  Import Decidable.
-
-  Parameter ZXG : Type.
-  Parameter proportional : ZXG -> ZXG -> Prop.
-  Parameter SemanticType : Type.
-  Parameter semantic : ZXG -> SemanticType.
-
-  (* Allows for flexible types of graph nodes *)
-  Parameter VertexType : Type. 
-  Parameter VertexZ : R -> VertexType.
-  Parameter VertexX : R -> VertexType.
-  Parameter decVT : forall (vt0 vt1 : VertexType), decidable (vt0 = vt1).
-  Parameter eqb_vt : VertexType -> VertexType -> bool.
-  Parameter reflect_vt : forall (vt0 vt1 : VertexType), 
-    reflect (vt0 = vt1) (eqb_vt vt0 vt1).
-
-  Parameter empty_graph : ZXG.
-
-(* Typed aliases for indexing internal graphs *)
-  Definition Vertex : Type := (Idx * VertexType).
-
-
-  (* Accessing different parts of graph *)
-  Parameter vertices : ZXG -> list Vertex.
-  Parameter edges : ZXG -> list Edge.
-
-  (* Building graphs incrementally *)
-  Parameter add_vertex : Vertex -> ZXG -> ZXG.
-  Parameter add_edge : Edge -> ZXG -> ZXG.
-
-  (* Destructing graphs incrementally *)
-  Parameter remove_vertex : Vertex  -> ZXG -> ZXG.
-  Parameter remove_edge : Edge ->
-    ZXG -> ZXG.
-
-  (* Algebraic constructors for graphs (might define) *)
-
-  (* Axioms for well behaved adding and removal of vertices and edges *)
-  Parameter add_vertex_commutes : forall (G : ZXG) (v0 v1 : Vertex),
-    add_vertex v1 (add_vertex v0 G) = add_vertex v0 (add_vertex v1 G).
-  Parameter remove_add_vertex : forall (G : ZXG) (v : Vertex),
-    remove_vertex v (add_vertex v G) = G.
-  Parameter remove_add_edge : forall (G : ZXG) (e : Edge),
-    remove_edge e (add_edge e G) = G.
-
-End ZXGModule.
-
-
-Module ZXGInstance : ZXGModule.
-
-End ZXGInstance.
 
 
 
@@ -8049,6 +11869,7 @@ Include OrdProperties MapS.
 End NatMap.
 
 Search (_ -> NatMap.t).
+*)
 
 
 
@@ -8096,8 +11917,7 @@ Search (_ -> NatMap.t).
 
 
 
-
-
+(*
 
 Definition edgeperm_of_edgefunc n (f : nat -> nat * nat) : nat -> nat * nat :=
   edgefunc_of_infunc (perm_of_input_func (n * 2) (infunc_of_edgefunc f)).
@@ -9454,4 +13274,4 @@ Proof.
 
 
 
-
+*)
