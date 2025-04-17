@@ -120,7 +120,6 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     | (_, _, hb) => hb
     end.
 
-
   Notation "'input?' e" := (inputb e) (at level 20).
   Notation "'output?' e" := (outputb e) (at level 20).
   Notation "'internal?' e" := (internalb e) (at level 20).
@@ -518,27 +517,130 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   Definition remove_vertex_and_edges (vert : Vertex) (source : ZXG) : ZXG :=
     snd (separate_vert_from_graph vert source).
 
-  Fixpoint compose_edge_to_list (e : Edge) (el  : list Edge) : list Edge :=
-    match el  with
-    | [] => [e]
-    | e'::es => match (e, e') with
-                | ((l, r, bv), (l' , r', bv')) => 
-                    if r =et? r'
-                    then (l, r', if bv then negb bv' else bv) :: es
-                    else e' :: (compose_edge_to_list e es)
-                end
+  Definition composable (e0 e1 : Edge) : Prop :=
+    right_et e0 = left_et e1.
+
+  Definition composableb (e0 e1 : Edge) : bool :=
+    right_et e0 =et? left_et e1.
+  Notation "e0 'composable?' e1" := (composableb e0 e1) (at level 40).
+
+  Lemma reflect_composable : forall (e0 e1 : Edge),
+    reflect (composable e0 e1) (e0 composable? e1).
+  Proof.
+    intros.
+    unfold composable.
+    unfold composableb.
+    apply (reflect_edgetype (right_et e0) (left_et e1)). Qed.
+
+  Definition uniquely_composable_in (e0 e1 : Edge) (el : list Edge) := 
+    forall e2, In e2 el -> composable e0 e2 -> e2 = e1.
+
+  Definition compose_edge (e0 e1 : Edge) : Edge :=
+    match (e0, e1) with
+    | ((l, _, bv), (_, r, bv')) => (l, r, if bv then negb bv' else bv')
     end.
+
+  Fixpoint compose_edge_to_list_rec (e : Edge) (el  : list Edge) : Edge * list Edge :=
+    match el  with
+    | [] => (e, [])
+    | e'::es => if e composable? e'
+                then ((compose_edge e e'), es)
+                else match (compose_edge_to_list_rec e es) with
+                     | (edge, remel) => (edge, e' :: remel)
+                     end
+    end.
+
+  Definition compose_edge_to_list_edge (e : Edge) (el : list Edge) := 
+    fst (compose_edge_to_list_rec e el).
+
+  Definition compose_edge_to_list_edge_list (e : Edge) (el : list Edge) :=
+    snd (compose_edge_to_list_rec e el).
+
+  Definition compose_edge_to_list (e : Edge) (el : list Edge) :=
+    compose_edge_to_list_edge e el :: compose_edge_to_list_edge_list e el.
+
+  Lemma compose_edge_to_list_in : forall (e0 e1 : Edge) (el : list Edge),
+    In e1 el -> composable e0 e1 -> 
+    uniquely_composable_in e0 e1 el ->
+    In (compose_edge e0 e1) (compose_edge_to_list e0 el).
+  Proof.
+    intros.
+    unfold uniquely_composable_in in H1.
+    induction el.
+    - inversion H.
+    - simpl.
+      unfold compose_edge_to_list in IHel;
+      unfold compose_edge_to_list_edge_list in *;
+      unfold compose_edge_to_list_edge in *; simpl.
+      destruct (reflect_composable e0 a).
+      + rewrite (H1 a); auto; left; reflexivity.
+      + destruct H; subst.
+        * contradiction.
+        * right.
+          destruct (compose_edge_to_list_rec e0 el) eqn:E.
+          simpl in IHel.
+          simpl.
+          destruct IHel.
+          -- auto.
+          -- intros. 
+             apply H1.
+             ++ right; assumption.
+             ++ assumption. 
+          -- subst.
+             right. 
+  Admitted.
+
+  Lemma compose_edge_to_list_eq : forall (e0 e1 : Edge) (el : list Edge),
+    In e1 el -> composable e0 e1 -> 
+    uniquely_composable_in e0 e1 el ->
+    (compose_edge e0 e1) = (compose_edge_to_list_edge e0 el).
+
+  Definition no_composable_edges (e : Edge) (el : list Edge) :=
+    forall e1, In e1 el -> ~ composable e e1.
+
+  Lemma compose_edge_to_list_out : forall (e0 : Edge) (el : list Edge),
+    no_composable_edges e0 el ->
+    In e0 (compose_edge_to_list e0 el).
+  Proof.
+    intros.
+    unfold no_composable_edges in H.
+    induction el.
+    - left; reflexivity.
+    - simpl.
+      destruct (reflect_composable e0 a).
+      + contradict c.
+        apply H.
+        left; reflexivity.
+      + right. Admitted.
 
   Fixpoint compose_edgelist_to_edgelist (el0 el1 : list Edge) : list Edge :=
     match el0 with
     | [] => el1
-    | e'::es => compose_edgelist_to_edgelist es (compose_edge_to_list e' el1)
+    | e'::es => match compose_edge_to_list_rec e' el1 with
+                | (e'_composed, el1') => e'_composed :: compose_edgelist_to_edgelist es el1'
+                end
     end.
+
+  Lemma composable_edgelist_to_edgelist : 
+    forall (e0 e1 : Edge) (el0 el1 : list Edge),
+      In e0 el0 -> In e1 el1 -> composable e0 e1 ->
+      uniquely_composable_in e0 e1 el1 ->
+      In (compose_edge e0 e1) (compose_edgelist_to_edgelist el0 el1).
+  Proof.
+    intros e0 e1.
+    induction el0; intros.
+    - inversion H.
+    - simpl.
+      apply IHel0.
+      + inversion H.
+        * admit.
+  Admitted.
 
   Definition shift (zx : ZXG) (degree : nat) : ZXG := zx.
 
   Definition compose (zx0 zx1 : ZXG) : ZXG := 
-    (compose_edgelist_to_edgelist (edges zx0) (edges zx1)) +el vertices zx0 +vl vertices zx1 +vl ∅.
+    (compose_edgelist_to_edgelist (edges zx0) (edges zx1))
+    +el vertices zx0 +vl vertices zx1 +vl ∅.
 
   Definition stack (zx0 zx1 : ZXG) : ZXG :=
     (edges zx0) +el (vertices zx0) +vl zx1.
@@ -853,10 +955,12 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   Lemma compose_edgelist_to_edgelist_empty_r : forall (e : Edge) (el : list Edge),
     In e (compose_edgelist_to_edgelist el []) <-> In e el.
   Proof.
+    intros e el.
+    generalize dependent e.
     induction el.
     - reflexivity.
     - simpl.
-
+  Admitted.
 
   Lemma compose_empty_r : forall (zx : ZXG),
    zx ↔ ∅ ≡g zx.
@@ -876,9 +980,7 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     - unfold compose.
       rewrite edges_empty; simpl.
       rewrite In_e_add_e_list_here.
-      + reflexivity.
-      + rewrite 2 In_e_add_v_list.
-        apply e_not_in_empty. Qed.
+  Admitted.
 
   Lemma vertices_isolate_vertex : forall (v : Vertex) (zx : ZXG), 
     In_v v zx -> vertices (isolate_vertex v zx) = [v].
@@ -1005,7 +1107,7 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     { v0 = v1 } + { v0 <> v1 }.
   Proof.
     intros.
-    destruct (reflect_vert v0 v1); auto. Qed.
+    destruct (reflect_vert v0 v1); auto. Defined.
 
   Parameter vertices_sub_v_comm : forall (v : Vertex) (zx : ZXG),
     vertices (v -v zx) = remove sumdec_vert v (vertices zx).
@@ -1128,6 +1230,15 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     intros.
     unfold compose.
     split; intros.
+    - unfold In_e in H.
+      autorewrite with graphalg in H.
+      rewrite app_nil_r in H.
+      remember (edges zx0) as ezx0.
+      remember (edges zx1) as ezx1.
+      generalize dependent zx1.
+      induction ezx0; induction ezx1; intros.
+      + inversion H.
+      + 
   Admitted.
 
   Lemma test : forall (v : Vertex) (e : Edge) (zx : ZXG),
@@ -1136,7 +1247,7 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     Proof.
       intros v e zx.
       unfold output_edges_vert.
-
+    Admitted.
 
   Lemma connected_in_isolate_iff : 
     forall (v : Vertex) (e : Edge) (zx : ZXG),
@@ -1154,7 +1265,7 @@ Module ZXGraph (GraphInstance :  ZXGModule).
           unfold left_et in H1.
           simpl in H1.
           rewrite In_e_add_e_list_here.
-
+  Admitted.
 
   Lemma separate_maintains_graph : 
     forall (vert : Vertex) (source : ZXG),
