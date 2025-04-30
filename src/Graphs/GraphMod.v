@@ -26,7 +26,8 @@ Module Type ZXGModule.
   Parameter VertexType : Type. 
   Parameter VertexZ : R -> VertexType.
   Parameter VertexX : R -> VertexType.
-  Parameter decVT : forall (vt0 vt1 : VertexType), decidable (vt0 = vt1).
+  Parameter decVT : forall (vt0 vt1 : VertexType), 
+    decidable (vt0 = vt1).
   Parameter eqb_vt : VertexType -> VertexType -> bool.
   Parameter reflect_vt : forall (vt0 vt1 : VertexType), 
     reflect (vt0 = vt1) (eqb_vt vt0 vt1).
@@ -80,7 +81,8 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   Notation "∅"         := empty_graph.
 
   (* Vertex and Edge Notations *)
-  Definition mk_vert (idx : nat) (vertid : VertexType) := pair idx vertid.
+  Definition mk_vert (idx : nat) (vertid : VertexType) := 
+    pair idx vertid.
   Notation "id @ idx" := (mk_vert idx id) (at level 20).
   Notation "id0 '--' id1" := (id0, id1, false) (at level 20).
   Notation "id0 'h-' id1" := (id0, id1, true) (at level 20).
@@ -183,7 +185,8 @@ Module ZXGraph (GraphInstance :  ZXGModule).
 
   Definition eqb_edge (e0 e1 : Edge) : bool :=
     match (e0, e1) with
-    | ((l, r, b), (l', r', b')) => (l =et? l') && (r =et? r') && bool_eq b b'
+    | ((l, r, b), (l', r', b')) => 
+        (l =et? l') && (r =et? r') && bool_eq b b'
     end.
   Notation "e0 '=e?' e1" := (eqb_edge e0 e1) (at level 40).
 
@@ -287,7 +290,8 @@ Module ZXGraph (GraphInstance :  ZXGModule).
       | 0 => zx
       | S k => idx0 -- idx1 +e add_n_edges zx idx0 idx1 k
       end.
-  Notation "e '^e' n '+e' zxg" := (add_n_edges zxg (fst (fst e)) (snd (fst e)) n).
+  Notation "e '^e' n '+e' zxg" := 
+    (add_n_edges zxg (fst (fst e)) (snd (fst e)) n).
   
   Fixpoint add_list_edges (zx : ZXG) (el : list Edge) : ZXG :=
     match el with
@@ -387,7 +391,8 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     match es with
     | []    => []
     | e::es => match e with
-               | (_, r, b) => (Internal idx, r, b)::(remap_edges_internal_l idx es)
+               | (_, r, b) => 
+                   (Internal idx, r, b)::(remap_edges_internal_l idx es)
                end
     end.
 
@@ -395,7 +400,8 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     match es with
     | []    => []
     | e::es => match e with
-               | (l, _, b) => (l, Internal idx, b)::(remap_edges_internal_r idx es)
+               | (l, _, b) => 
+                   (l, Internal idx, b)::(remap_edges_internal_r idx es)
                end
     end.
 
@@ -469,7 +475,6 @@ Module ZXGraph (GraphInstance :  ZXGModule).
       + left; right; assumption.
       + left; left; reflexivity.
       + right; intros contra; destruct contra; auto. Qed.
-
   
   Definition edge_connected_to_vertex (e : Edge) (v : Vertex) : Prop :=
     Internal (vertex_idx v) = left_et e \/ 
@@ -534,107 +539,277 @@ Module ZXGraph (GraphInstance :  ZXGModule).
 
   Definition uniquely_composable_in (e0 e1 : Edge) (el : list Edge) := 
     forall e2, In e2 el -> composable e0 e2 -> e2 = e1.
+  
+  Lemma uniquely_composable_cons (e0 e1 e2 : Edge) (el : list Edge) :
+    ~ composable e0 e2 -> 
+    uniquely_composable_in e0 e1 (e2 :: el) <->  uniquely_composable_in e0 e1 el.
+  Proof.
+    intros.
+    unfold uniquely_composable_in.
+    split; intros.
+    - apply H0.
+      right; assumption.
+      assumption.
+    - apply H0.
+      inversion H1; subst.
+      + contradiction.
+      + assumption.
+      + assumption. Qed.
+
+  Definition no_composable_edges (e : Edge) (el : list Edge) :=
+    forall e1, In e1 el -> ~ composable e e1.
+  
+  Lemma no_composable_cons (e0 e1 : Edge) (el : list Edge) :
+    ~ composable e0 e1 ->
+    no_composable_edges e0 (e1 :: el) <-> no_composable_edges e0 el.
+  Proof.
+    intros.
+    split; intros.
+    - intros e2 Hine2.
+      apply H0.
+      right; assumption.
+    - intros e2 Hine2.
+      inversion Hine2; subst.
+      assumption.
+      apply H0.
+      assumption. Qed.
+
+  (* Composing edge to lists *)
 
   Definition compose_edge (e0 e1 : Edge) : Edge :=
     match (e0, e1) with
     | ((l, _, bv), (_, r, bv')) => (l, r, if bv then negb bv' else bv')
     end.
 
-  Fixpoint compose_edge_to_list_rec (e : Edge) (el  : list Edge) : Edge * list Edge :=
+  Fixpoint compose_edge_to_list_rec (e : Edge) (el  : list Edge) : 
+    Edge * list Edge :=
     match el  with
     | [] => (e, [])
     | e'::es => if e composable? e'
                 then ((compose_edge e e'), es)
                 else match (compose_edge_to_list_rec e es) with
-                     | (edge, remel) => (edge, e' :: remel)
+                     | erem => (fst erem, e' :: snd erem)
                      end
     end.
 
   Definition compose_edge_to_list_edge (e : Edge) (el : list Edge) := 
     fst (compose_edge_to_list_rec e el).
 
-  Definition compose_edge_to_list_edge_list (e : Edge) (el : list Edge) :=
-    snd (compose_edge_to_list_rec e el).
+  Lemma compose_edge_to_list_edge_here 
+    (e0 e1 : Edge) (el : list Edge) :
+    composable e0 e1 ->
+    compose_edge_to_list_edge e0 (e1 :: el) = compose_edge e0 e1.
+  Proof.
+    intros.
+    simpl.
+    unfold compose_edge_to_list_edge.
+    simpl.
+    destruct (reflect_composable e0 e1); 
+      [reflexivity|contradiction]. Qed.
 
+  Lemma compose_edge_to_list_edge_later
+    (e0 e1 : Edge) (el : list Edge) :
+    ~ composable e0 e1 ->
+    compose_edge_to_list_edge e0 (e1 :: el) = compose_edge_to_list_edge e0 el.
+  Proof.
+    intros.
+    unfold compose_edge_to_list_edge.
+    unfold compose_edge_to_list_rec.
+    destruct (reflect_composable e0 e1); 
+      [contradiction|reflexivity]. Qed.
+  
+  Lemma compose_edge_to_list_edge_composable (e0 e1 : Edge) (el : list Edge) :
+    composable e0 e1 -> In e1 el -> uniquely_composable_in e0 e1 el ->
+    compose_edge_to_list_edge e0 el = compose_edge e0 e1.
+  Proof.
+    intros.
+    induction el.
+    - contradiction.
+    - destruct (reflect_composable e0 a).
+      + rewrite (H1 a).
+        rewrite compose_edge_to_list_edge_here.
+        reflexivity.
+        assumption.
+        left; reflexivity.
+        assumption.
+      + rewrite compose_edge_to_list_edge_later.
+        apply IHel.
+        inversion H0; subst; [contradiction|].
+        assumption.
+        rewrite uniquely_composable_cons in H1.
+        assumption.
+        assumption.
+        assumption. Qed.
+
+  Lemma compose_edge_to_list_edge_no_composable (e : Edge) (el : list Edge) :
+    no_composable_edges e el ->
+    compose_edge_to_list_edge e el = e.
+  Proof.
+    intros.
+    induction el.
+    - unfold compose_edge_to_list_edge.
+      unfold compose_edge_to_list_rec.
+      reflexivity.
+    - unfold compose_edge_to_list_edge.
+      unfold compose_edge_to_list_rec.
+      destruct (reflect_composable e a).
+      + contradict c.
+        apply H.
+        left; reflexivity.
+      + fold compose_edge_to_list_rec.
+        fold (compose_edge_to_list_edge e el).
+        simpl.
+        apply IHel.
+        rewrite no_composable_cons in H.
+        all: assumption. Qed.
+
+  Definition compose_edge_to_list_list (e : Edge) (el : list Edge) :=
+    snd (compose_edge_to_list_rec e el).
+  
+  Lemma compose_edge_to_list_list_here 
+    (e0 e1 : Edge) (el : list Edge) :
+    composable e0 e1 ->
+    compose_edge_to_list_list e0 (e1 :: el) = el.
+  Proof.
+    intros.
+    simpl.
+    unfold compose_edge_to_list_list.
+    simpl.
+    destruct (reflect_composable e0 e1); 
+      [reflexivity|contradiction]. Qed.
+
+  Lemma compose_edge_to_list_list_later
+    (e0 e1 : Edge) (el : list Edge) :
+    ~ composable e0 e1 ->
+    compose_edge_to_list_list e0 (e1 :: el) = e1 :: compose_edge_to_list_list e0 el.
+  Proof.
+    intros.
+    unfold compose_edge_to_list_list.
+    unfold compose_edge_to_list_rec.
+    destruct (reflect_composable e0 e1); 
+      [contradiction|reflexivity]. Qed.
+  
   Definition compose_edge_to_list (e : Edge) (el : list Edge) :=
-    compose_edge_to_list_edge e el :: compose_edge_to_list_edge_list e el.
+    compose_edge_to_list_edge e el :: compose_edge_to_list_list e el.
+
+  Lemma compose_edge_to_list_here (e0 e1 : Edge) (el : list Edge) :
+    composable e0 e1 ->
+    compose_edge_to_list e0 (e1 :: el) = (compose_edge e0 e1) :: el.
+  Proof.
+    intros.
+    unfold compose_edge_to_list.
+    rewrite compose_edge_to_list_edge_here.
+    rewrite compose_edge_to_list_list_here.
+    reflexivity.
+    all: assumption. Qed.
+
+  Lemma compose_edge_to_list_later (e0 e1 : Edge) (el : list Edge) :
+    ~ composable e0 e1 ->
+    compose_edge_to_list e0 (e1 :: el) = compose_edge_to_list_edge e0 el :: e1 :: compose_edge_to_list_list e0 el.
+  Proof.
+    intros.
+    unfold compose_edge_to_list.
+    rewrite compose_edge_to_list_edge_later.
+    rewrite compose_edge_to_list_list_later.
+    reflexivity.
+    all: assumption. Qed.
 
   Lemma compose_edge_to_list_in : forall (e0 e1 : Edge) (el : list Edge),
     In e1 el -> composable e0 e1 -> 
     uniquely_composable_in e0 e1 el ->
     In (compose_edge e0 e1) (compose_edge_to_list e0 el).
   Proof.
-    intros.
-    unfold uniquely_composable_in in H1.
-    induction el.
-    - inversion H.
-    - simpl.
-      unfold compose_edge_to_list in IHel;
-      unfold compose_edge_to_list_edge_list in *;
-      unfold compose_edge_to_list_edge in *; simpl.
-      destruct (reflect_composable e0 a).
-      + rewrite (H1 a); auto; left; reflexivity.
-      + destruct H; subst.
-        * contradiction.
-        * right.
-          destruct (compose_edge_to_list_rec e0 el) eqn:E.
-          simpl in IHel.
-          simpl.
-          destruct IHel.
-          -- auto.
-          -- intros. 
-             apply H1.
-             ++ right; assumption.
-             ++ assumption. 
-          -- subst.
-             right. 
-  Admitted.
+    intros e0 e1.
+    induction el; intros HIn Hcomp Huniq.
+    - contradiction.
+    - destruct (reflect_composable e0 a).
+      + rewrite (Huniq a).
+        rewrite compose_edge_to_list_here.
+        left; reflexivity.
+        assumption.
+        left; reflexivity.
+        assumption.
+      + rewrite compose_edge_to_list_later.
+        rewrite uniquely_composable_cons in Huniq.
+        inversion HIn; [subst; contradiction|].
+        left.
+        apply compose_edge_to_list_edge_composable.
+        all: assumption. Qed.
 
   Lemma compose_edge_to_list_eq : forall (e0 e1 : Edge) (el : list Edge),
-    In e1 el -> composable e0 e1 -> 
+    In e1 el -> composable e0 e1 ->
     uniquely_composable_in e0 e1 el ->
     (compose_edge e0 e1) = (compose_edge_to_list_edge e0 el).
+  Proof.
+    intros.
+    induction el.
+    - inversion H.
+    - inversion H; subst.
+      + simpl.
+        rewrite compose_edge_to_list_edge_here. 
+        reflexivity.
+        assumption.
+      + destruct (reflect_composable e0 a).
+        * rewrite (H1 a).
+          rewrite compose_edge_to_list_edge_here.
+          reflexivity.
+          assumption.
+          left; reflexivity.
+          assumption.
+        * rewrite compose_edge_to_list_edge_later.
+          apply IHel.
+          assumption.
+          rewrite uniquely_composable_cons in H1.
+          apply H1.
+          assumption.
+          assumption. Qed.
 
-  Definition no_composable_edges (e : Edge) (el : list Edge) :=
-    forall e1, In e1 el -> ~ composable e e1.
-
-  Lemma compose_edge_to_list_out : forall (e0 : Edge) (el : list Edge),
+  Lemma compose_edge_to_list_no_comp_in : forall (e0 : Edge) (el : list Edge),
     no_composable_edges e0 el ->
     In e0 (compose_edge_to_list e0 el).
   Proof.
     intros.
-    unfold no_composable_edges in H.
     induction el.
     - left; reflexivity.
-    - simpl.
-      destruct (reflect_composable e0 a).
-      + contradict c.
-        apply H.
-        left; reflexivity.
-      + right. Admitted.
+    - rewrite compose_edge_to_list_later.
+      left.
+      apply compose_edge_to_list_edge_no_composable.
+      rewrite no_composable_cons in H.
+      assumption.
+      apply H.
+      left; reflexivity.
+      apply H.
+      left; reflexivity. Qed.
 
   Fixpoint compose_edgelist_to_edgelist (el0 el1 : list Edge) : list Edge :=
     match el0 with
     | [] => el1
-    | e'::es => match compose_edge_to_list_rec e' el1 with
-                | (e'_composed, el1') => e'_composed :: compose_edgelist_to_edgelist es el1'
-                end
+    | e'::es => compose_edge_to_list_edge e' el1 ::      
+                  compose_edgelist_to_edgelist es 
+                    (compose_edge_to_list_list e' el1)
     end.
 
-  Lemma composable_edgelist_to_edgelist : 
+  Lemma composable_in_edgelist_to_edgelist : 
     forall (e0 e1 : Edge) (el0 el1 : list Edge),
-      In e0 el0 -> In e1 el1 -> composable e0 e1 ->
+      In e1 el1 -> composable e0 e1 ->
       uniquely_composable_in e0 e1 el1 ->
-      In (compose_edge e0 e1) (compose_edgelist_to_edgelist el0 el1).
+      In (compose_edge e0 e1) (compose_edgelist_to_edgelist (e0 :: el0) el1).
   Proof.
-    intros e0 e1.
-    induction el0; intros.
-    - inversion H.
-    - simpl.
-      apply IHel0.
-      + inversion H.
-        * admit.
-  Admitted.
+    intros.
+    simpl.
+    left.
+    apply compose_edge_to_list_edge_composable.
+    all: assumption. Qed.
+  
+  Lemma no_composable_in_edgelist_to_edgelist : 
+    forall (e : Edge) (el0 el1 : list Edge),
+      no_composable_edges e el1 ->
+      In e (compose_edgelist_to_edgelist (e :: el0) el1).
+  Proof.
+    intros.
+    simpl.
+    right.
+    all: assumption. Qed.
 
   Definition shift (zx : ZXG) (degree : nat) : ZXG := zx.
 
