@@ -594,6 +594,10 @@ Module ZXGraph (GraphInstance :  ZXGModule).
 
   Definition compose_edge_to_list_edge (e : Edge) (el : list Edge) := 
     fst (compose_edge_to_list_rec e el).
+  
+  Lemma compose_edge_to_list_edge_empty (e : Edge) :
+    compose_edge_to_list_edge e [] = e.
+  Proof. reflexivity. Qed.
 
   Lemma compose_edge_to_list_edge_here 
     (e0 e1 : Edge) (el : list Edge) :
@@ -666,6 +670,10 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   Definition compose_edge_to_list_list (e : Edge) (el : list Edge) :=
     snd (compose_edge_to_list_rec e el).
   
+  Lemma compose_edge_to_list_list_empty (e : Edge) :
+    compose_edge_to_list_list e [] = [].
+  Proof. reflexivity. Qed.
+
   Lemma compose_edge_to_list_list_here 
     (e0 e1 : Edge) (el : list Edge) :
     composable e0 e1 ->
@@ -808,8 +816,9 @@ Module ZXGraph (GraphInstance :  ZXGModule).
   Proof.
     intros.
     simpl.
-    right.
-    all: assumption. Qed.
+    left.
+    apply compose_edge_to_list_edge_no_composable.
+    assumption. Qed.
 
   Definition shift (zx : ZXG) (degree : nat) : ZXG := zx.
 
@@ -1127,7 +1136,19 @@ Module ZXGraph (GraphInstance :  ZXGModule).
       + rewrite 2 In_e_add_v_list.
         apply e_not_in_empty. Qed.
 
-  Lemma compose_edgelist_to_edgelist_empty_r : forall (e : Edge) (el : list Edge),
+  Lemma compose_edgelist_to_edgelist_empty_r : 
+    forall (el : list Edge),
+    compose_edgelist_to_edgelist el [] = el.
+  Proof.
+    induction el.
+    - reflexivity.
+    - simpl.
+      rewrite compose_edge_to_list_edge_empty.
+      rewrite compose_edge_to_list_list_empty.
+      rewrite IHel.
+      reflexivity. Qed.
+
+  Lemma in_compose_edgelist_to_edgelist_empty_r : forall (e : Edge) (el : list Edge),
     In e (compose_edgelist_to_edgelist el []) <-> In e el.
   Proof.
     intros e el.
@@ -1135,7 +1156,10 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     induction el.
     - reflexivity.
     - simpl.
-  Admitted.
+      rewrite compose_edgelist_to_edgelist_empty_r.
+      simpl.
+      intros.
+      reflexivity. Qed.
 
   Lemma compose_empty_r : forall (zx : ZXG),
    zx ↔ ∅ ≡g zx.
@@ -1155,7 +1179,12 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     - unfold compose.
       rewrite edges_empty; simpl.
       rewrite In_e_add_e_list_here.
-  Admitted.
+      rewrite compose_edgelist_to_edgelist_empty_r.
+      reflexivity.
+      graphalg_simpl.
+      simpl.
+      rewrite In_e_add_v_list.
+      apply e_not_in_empty. Qed.
 
   Lemma vertices_isolate_vertex : forall (v : Vertex) (zx : ZXG), 
     In_v v zx -> vertices (isolate_vertex v zx) = [v].
@@ -1196,16 +1225,6 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     - unfold In_v in H.
       rewrite (vertices_isolate_nothing v1 zx H0) in H.
       contradiction H. Qed.
-
-  Lemma e_in_isolate_implies_connected : 
-    forall (v : Vertex) (e : Edge) (zx : ZXG),
-      In_e e (isolate_vertex v zx) <-> e -c v.
-  Proof.
-    intros v e zx.
-    unfold isolate_vertex.
-    unfold separate_vert_from_graph.
-    destruct (reflect_in_v v zx); simpl.
-  Admitted.
 
   Lemma v_in_isolate : forall (v : Vertex) (zx : ZXG),
     In_v v zx -> In_v v (isolate_vertex v zx).
@@ -1405,15 +1424,7 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     intros.
     unfold compose.
     split; intros.
-    - unfold In_e in H.
-      autorewrite with graphalg in H.
-      rewrite app_nil_r in H.
-      remember (edges zx0) as ezx0.
-      remember (edges zx1) as ezx1.
-      generalize dependent zx1.
-      induction ezx0; induction ezx1; intros.
-      + inversion H.
-      + 
+    - rewrite In_e_add_e_list_here in H.
   Admitted.
 
   Lemma test : forall (v : Vertex) (e : Edge) (zx : ZXG),
