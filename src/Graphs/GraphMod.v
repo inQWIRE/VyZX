@@ -1414,43 +1414,212 @@ Module ZXGraph (GraphInstance :  ZXGModule).
       apply In_v_remove_v. 
     - assumption. Qed.
 
+  Definition uniquely_indexed_edges (zx0 zx1 : ZXG) :=
+    forall (e0 e1 : Edge), 
+      In_e e0 zx0 -> In_e e1 zx1 -> composable e0 e1 ->
+        uniquely_composable_in e0 e1 (edges zx1).
+
+  Definition has_unique_composable_edge (zx0 zx1 : ZXG) (e : Edge) := 
+      exists (e0 e1 : Edge),
+        In_e e0 zx0 /\ In_e e1 zx1 /\
+        composable e0 e1 /\ 
+        uniquely_composable_in e0 e1 (edges zx1)
+        /\ compose_edge e0 e1 = e.
+  
+  Definition in_e_b (e : Edge) (zx : ZXG) : bool :=
+    existsb (eqb_edge e) (edges zx).
+  
+  Lemma reflect_in_e (e : Edge) (zx : ZXG) : 
+    reflect (In_e e zx) (in_e_b e zx).
+  Proof.
+    unfold In_e.
+    unfold in_e_b.
+    induction (edges zx).
+    - right.
+      auto.
+    - simpl.
+      destruct (reflect_edge e a); subst.
+      + left; left. reflexivity.
+      + destruct IHl.
+        * left; right; assumption.
+        * right. intros H.
+          destruct H.
+          -- subst. contradiction.
+          -- contradiction. Qed.
+
   Lemma In_e_compose_In_e : forall (e : Edge) (zx0 zx1 : ZXG),
+    uniquely_indexed_edges zx0 zx1 ->
     In_e e (zx0 ↔ zx1) <-> 
       In_e e (zx0) \/ In_e e (zx1) \/ 
-      exists (idx : nat) (b : bool), 
-        In_e (left_et e, Boundary idx, b) zx0 /\
-        In_e (Boundary idx, right_et e, b) zx1.
+      has_unique_composable_edge zx0 zx1 e.
   Proof.
     intros.
     unfold compose.
     split; intros.
-    - rewrite In_e_add_e_list_here in H.
+    - rewrite In_e_add_e_list_here in H0.
+      destruct (reflect_in_e e zx0); [auto|].
+      destruct (reflect_in_e e zx1); [auto|].
+      right; right.
+      unfold has_unique_composable_edge.
   Admitted.
 
-  Lemma test : forall (v : Vertex) (e : Edge) (zx : ZXG),
+  Lemma outputs_in_output_edges_vert : 
+  forall (v : Vertex) (e : Edge) (zx : ZXG),
     e -c v -> output e ->
     In e (output_edges_vert zx v) <-> In_e e zx.
     Proof.
       intros v e zx.
       unfold output_edges_vert.
-    Admitted.
+      intros.
+      unfold In_e.
+      induction (edges zx).
+      - reflexivity.
+      - simpl.
+        destruct (reflect_edge_connected a v);
+        destruct (reflect_output a).
+        + simpl.
+          rewrite IHl.
+          reflexivity.
+        + simpl.
+          rewrite IHl.
+          split; intros.
+          * auto.
+          * destruct H1. subst. contradiction.
+            assumption.
+        + simpl.
+          rewrite IHl.
+          split; intros.
+          * auto.
+          * destruct H1. subst. contradiction.
+            assumption.
+        + simpl.
+          rewrite IHl.
+          split; intros.
+          * auto.
+          * destruct H1. subst. contradiction.
+            assumption. Qed.
+  
+  Lemma internal_edges_vert_in_zx (e : Edge) (v : Vertex) (zx : ZXG) :
+    In e (internal_edges_vert zx v) <-> 
+    (In_e e zx /\ e -c v /\ internal e).
+  Proof.
+    unfold internal_edges_vert.
+    unfold In_e.
+    induction (edges zx).
+    - simpl. split.
+      + intros; contradiction.
+      + intros. destruct H; contradiction.
+    - simpl.
+      destruct (reflect_edge_connected a v);
+      destruct (reflect_internal a).
+      + simpl.
+        rewrite IHl.
+        split. 
+        * intros [].
+          subst.
+          -- auto.
+          -- split.
+             destruct H.
+             right; assumption.
+             destruct H.
+             assumption.
+        * intros [[][]].
+          left; assumption.
+          right; auto.
+      + simpl.
+        rewrite IHl.
+        split; intros [Hin [Hc Hi]].
+        split. right; assumption.
+        auto.
+        destruct Hin; subst.
+        contradiction.
+        auto.
+      + simpl.
+        rewrite IHl.
+        split.
+        * intros  [Hin [Hc Hi]].
+          auto.
+        * intros [[Ha|Hin][Hc Hi]].
+          -- subst.
+             contradiction.
+          -- auto.
+      + simpl.
+        rewrite IHl.
+        split.
+        * intros [Hin [Hc Hi]].
+          auto.
+        * intros [[Ha|Hin][Hc Hi]].
+          -- subst; contradiction.
+          -- auto. Qed.
 
-  Lemma connected_in_isolate_iff : 
+  Lemma input_edges_vert_conditions :
+  forall (v : Vertex) (e : Edge) (zx : ZXG),
+    In e (input_edges_vert zx v) -> e -c v /\ input e.
+  Proof.
+    intros v e zx.
+    unfold input_edges_vert.
+    induction (edges zx).
+    - simpl.
+      contradiction.
+    - simpl.
+      destruct (reflect_edge_connected a v);
+      destruct (reflect_input a); try (simpl; apply IHl).
+      + simpl.
+        intros [].
+        * subst; auto.
+        * apply IHl.
+          apply H. Qed.
+
+  Lemma inputs_in_inputs_edges_vert : 
+  forall (v : Vertex) (e : Edge) (zx : ZXG),
+    e -c v -> input e ->
+    In e (input_edges_vert zx v) <-> In_e e zx.
+    Proof.
+      intros v e zx.
+      unfold input_edges_vert.
+      intros.
+      unfold In_e.
+      induction (edges zx).
+      - reflexivity.
+      - simpl.
+        destruct (reflect_edge_connected a v);
+        destruct (reflect_input a).
+        + simpl.
+          rewrite IHl.
+          reflexivity.
+        + simpl.
+          rewrite IHl.
+          split; intros.
+          * auto.
+          * destruct H1. subst. contradiction.
+            assumption.
+        + simpl.
+          rewrite IHl.
+          split; intros.
+          * auto.
+          * destruct H1. subst. contradiction.
+            assumption.
+        + simpl.
+          rewrite IHl.
+          split; intros.
+          * auto.
+          * destruct H1. subst. contradiction.
+            assumption. Qed.
+
+  Lemma connected_in_isolate_iff_boundary : 
     forall (v : Vertex) (e : Edge) (zx : ZXG),
-      e -c v -> In_v v zx ->
+      e -c v -> In_v v zx -> 
       In_e e (isolate_vertex v zx) <-> In_e e zx.
   Proof.
     intros.
     unfold isolate_vertex.
     unfold separate_vert_from_graph.
     destruct (reflect_in_v v zx); simpl; subst; [|contradiction].
-    - destruct e, p.
-      inversion H. unfold left_et in H0; simpl in H0.
-      + destruct e0; simpl.
-        * rewrite 2 In_e_add_e_list_later.
-          unfold left_et in H1.
-          simpl in H1.
-          rewrite In_e_add_e_list_here.
+    rewrite In_e_add_e_list_here.
+    - split; intros.
+      + 
+        remember (e, (right_et e -- Boundary 0%nat)) as pr.
+        replace e with (fst pr) in H1.
   Admitted.
 
   Lemma separate_maintains_graph : 
