@@ -5,6 +5,11 @@ Require Import Nat.
 Require Import Decidable.
 Require Import Coq.Arith.PeanoNat.
 
+Require Import Coq.Sets.Ensembles.
+Require Import Coq.Sets.Finite_sets.
+
+Require Import stdpp.gmap.
+
 (*   autosubst                                                    *)
 (* C Rework edges to be end - ver ver - ver end - end ver - end   *)
 (* C Hadamard Edges                                               *)
@@ -31,12 +36,37 @@ Module Type ZXGModule.
   Parameter eqb_vt : VertexType -> VertexType -> bool.
   Parameter reflect_vt : forall (vt0 vt1 : VertexType), 
     reflect (vt0 = vt1) (eqb_vt vt0 vt1).
-
   Parameter empty_graph : ZXG.
+
+  Instance eqdecision_vt : EqDecision VertexType.
+  Proof.
+    intros et0 et1.
+    destruct (reflect_vt et0 et1).
+    left; auto.
+    right; auto. Defined.
+
+  Parameter countable_vt_param : Countable VertexType.
+
+  Instance countable_vt : Countable VertexType.
+  Proof. apply countable_vt_param. Defined.
 
 (* Typed aliases for indexing internal graphs *)
   Definition Idx    : Type := nat. 
   Definition Vertex : Type := (Idx * VertexType).
+  Instance vertex_eqdecision : EqDecision Vertex.
+  Proof.
+    unfold Vertex.
+    eapply prod_eq_dec. 
+  Defined.
+
+  Instance vertex_countable : Countable Vertex.
+  Proof.
+    unfold Vertex.
+    unfold vertex_eqdecision.
+    eapply prod_countable.
+  Defined.
+
+  (*Parameter vertex_countable : Countable Vertex.*)
 
 (* Different types of edges we may see *)
   Inductive EdgeType : Type :=
@@ -45,9 +75,82 @@ Module Type ZXGModule.
 
   Definition Edge : Type := (EdgeType * EdgeType * bool).
 
+  Instance edgetype_eqdecision : EqDecision EdgeType.
+  Proof.
+    intros [idx0 | idx0] [idx1 | idx1];
+    destruct (Nat.eq_dec idx0 idx1); subst.
+    1,7: left; auto.
+    1,6: right; injection; intros; contradiction.
+    all: right; auto.
+  Qed.
+
+  Definition encode_edgetype (et : EdgeType) : positive :=
+  match et with
+  | Boundary idx => Pos.of_nat((2 * (idx)) + 1)
+  | Internal idx => Pos.of_nat(2 * (idx + 1))
+  end.
+
+  Definition decode_edgetype (pos : positive) : option EdgeType :=
+    let pnat := Pos.to_nat pos in
+    if even pnat 
+    then Some (Internal (((pnat) / 2) - 1))
+    else Some (Boundary (((pnat - 1) / 2))).
+
+  Lemma encode_decode_edgetype (et : EdgeType) : 
+    decode_edgetype (encode_edgetype et) = Some et.
+  Proof.
+    destruct et.
+    - simpl.
+      fold (2 * i).
+      unfold decode_edgetype.
+      rewrite Nat2Pos.id.
+      assert (even (2 * (i) + 1) = false).
+      { rewrite Modulus.even_eqb.
+        rewrite Nat.Div0.add_mod.
+        rewrite Nat.Div0.mul_mod.
+        reflexivity. }
+      rewrite H.
+      rewrite Nat.add_sub.
+      rewrite Modulus.div_mul_l.
+      reflexivity.
+      all: lia.
+    - simpl.
+      fold (2 * (i + 1)).
+      unfold decode_edgetype.
+      rewrite Nat2Pos.id.
+      assert (even (2 * (i + 1)) = true).
+      { rewrite Modulus.even_eqb. 
+        rewrite Nat.Div0.mul_mod.
+        reflexivity.
+        }
+      rewrite H.
+      replace (2 * (i + 1) - 1) with ((2 * i) + 1) by lia.
+      (* rewrite Nat.mul_comm. *)
+      (* rewrite Nat.div_add_l. *)
+      rewrite Modulus.div_mul_l.
+      rewrite Nat.add_sub.
+      reflexivity.
+      all: lia. Qed.
+  
+  Global Program Instance bool_countable : Countable EdgeType := {|
+  encode := encode_edgetype;
+  decode := decode_edgetype 
+ |}.
+  Next Obligation. apply encode_decode_edgetype. Defined.
+
+  Instance edge_eqdecision : EqDecision Edge.
+  Proof.
+    unfold Edge.
+    apply prod_eq_dec. Defined.
+
+  Instance edge_countable : Countable Edge.
+  Proof. 
+    unfold Edge.
+    apply prod_countable. Defined.
+
   (* Accessing different parts of graph *)
-  Parameter vertices : ZXG -> list Vertex.
-  Parameter edges : ZXG -> list Edge.
+  Parameter vertices : ZXG -> gset Vertex.
+  Parameter edges : ZXG -> gset Edge.
 
   (* Building graphs incrementally *)
   Parameter add_vertex : Vertex -> ZXG -> ZXG.
@@ -692,6 +795,100 @@ Module ZXGraph (GraphInstance :  ZXGModule).
       apply H0.
       assumption. Qed.
 
+  Definition no_composable_edges_l (e : Edge) (el : list Edge) :=
+    forall e1, In e1 el -> ~ composable e1 e.
+  
+  Definition no_composable_edgesb_l (e : Edge) (el : list Edge) :=
+    forallb (fun x => negb (composableb x e)) el.
+  
+  Lemma reflect_no_composable_l (e : Edge) (el : list Edge) :
+    reflect (no_composable_edges_l e el) (no_composable_edgesb_l e el).
+  Proof.
+  unfold no_composable_edgesb_l.
+  unfold no_composable_edges_l.
+  simpl.
+  induction el.
+  - simpl.
+    left.
+    intros.
+    contradiction.
+  - simpl.
+    simpl in IHel.
+    destruct IHel.
+    + simpl.
+      destruct (reflect_composable a e).
+      * simpl.
+        right.
+        contradict c.
+        apply c.
+        left; reflexivity.
+      * simpl.
+        left.
+        intros.
+        destruct H; subst.
+        assumption.
+        apply n.
+        auto.
+    + rewrite andb_false_r.
+      right.
+      intros c.
+      apply n.
+      intros.
+      apply c.
+      right; assumption. Qed.
+
+  Definition has_composable_edge (e : Edge) (el : list Edge) :=
+    exists e1, In e1 el /\ composable e e1.
+  
+  Definition has_composable_edgeb (e : Edge) (el : list Edge) :=
+    existsb (composableb e) el.
+
+  Lemma reflect_has_composable (e : Edge) (el : list Edge) :
+    reflect (has_composable_edge e el) (has_composable_edgeb e el).
+  Proof.
+    induction el.
+    - right.
+      intros c.
+      destruct c.
+      destruct H.
+      contradiction.
+    - simpl.
+      destruct (reflect_composable e a).
+      + left.
+        exists a.
+        split; auto.
+        left; reflexivity.
+      + simpl.
+        destruct IHel.
+        * left.
+          destruct h as [x []].
+          exists x.
+          split; auto.
+          right; auto.
+        * right.
+          intros c.
+          destruct c as [x [[]]]. 
+          -- subst.
+             contradiction.
+          -- apply n0.
+             exists x.
+             split; auto. Qed.
+  
+  Lemma has_composable_edge_cons (e a : Edge) (el : list Edge) :
+    ~ composable e a ->
+    has_composable_edge e (a :: el) <-> has_composable_edge e el.
+  Proof.
+    intros.
+    split; intros.
+    - destruct H0 as [x [[Xeq | Xin] Xcomp]].
+      + subst; contradiction.
+      + exists x; auto.
+    - destruct H0 as [x [Xin Xcomp]].
+      exists x.
+      split.
+      + right; auto.
+      + auto. Qed.
+
   (* Composing edge to lists *)
 
   Definition compose_edge (e0 e1 : Edge) : Edge :=
@@ -699,7 +896,8 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     | ((l, _, bv), (_, r, bv')) => (l, r, if bv then negb bv' else bv')
     end.
 
-  Fixpoint compose_edge_to_list_rec (e : Edge) (el  : list Edge) : 
+  Fixpoint compose_edge_to_list_rec 
+    (e : Edge) (el  : list Edge) : 
     Edge * list Edge :=
     match el  with
     | [] => (e, [])
@@ -1017,7 +1215,7 @@ Module ZXGraph (GraphInstance :  ZXGModule).
         apply H.
         left; reflexivity.
       + apply H. left; reflexivity. Qed.
-
+  
   Lemma no_composable_eq_edgelist_to_edgelist :
     forall (e : Edge) (el0 el1 : list Edge),
       no_composable_edges e el1 ->
@@ -1031,7 +1229,7 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     reflexivity.
     all: assumption. Qed.
 
-  Lemma no_composable_in_edgelist_to_edgelist : 
+  Lemma no_composable_in_edgelist_to_edgelist_l : 
     forall (e : Edge) (el0 el1 : list Edge),
       no_composable_edges e el1 -> In e el0 ->
       In e (compose_edgelist_to_edgelist el0 el1).
@@ -1053,6 +1251,59 @@ Module ZXGraph (GraphInstance :  ZXGModule).
         apply in_compose_edge_to_list_in_el in Ha0.
         assumption. Qed.
 
+  Lemma sumdec_vert : forall (v0 v1 : Vertex),
+    { v0 = v1 } + { v0 <> v1 }.
+  Proof.
+    intros.
+    destruct (reflect_vert v0 v1); auto. Defined.
+
+  Lemma sumdec_edge : forall (e0 e1 : Edge),
+    { e0 = e1 } + { e0 <> e1 }.
+  Proof.
+    intros.
+    destruct (reflect_edge e0 e1); auto. Defined.
+
+  Lemma composable_compose_edge_to_list_eq : 
+    forall (e a : Edge) (el : list Edge),
+    composable e a -> In a el -> 
+      compose_edge_to_list_list e el = 
+      remove sumdec_edge a el.
+  Proof.
+    intros e a.
+    induction el; intros Hcomp Hin.
+    - inversion Hin.
+    - simpl.
+      destruct Hin.
+      + destruct (sumdec_edge a a0).
+
+
+
+
+
+
+
+
+  Lemma no_composable_in_edgelist_to_edgelist_r : 
+    forall (e : Edge) (el0 el1 : list Edge),
+      no_composable_edges_l e el0 -> In e el1 ->
+      In e (compose_edgelist_to_edgelist el0 el1).
+  Proof.
+    intros.
+    simpl.
+    generalize dependent el1.
+    induction el0; intros.
+    - assumption.
+    - simpl.
+      right.
+      apply IHel0.
+      intros a0 Ha0.
+      apply H.
+      right; assumption.
+      apply in_el_in_compose_edge_to_list.
+      apply H.
+      left; reflexivity.
+      assumption. Qed.
+
   Definition shift (zx : ZXG) (degree : nat) : ZXG := zx.
 
   Definition compose (zx0 zx1 : ZXG) : ZXG := 
@@ -1060,7 +1311,8 @@ Module ZXGraph (GraphInstance :  ZXGModule).
     +el vertices zx0 +vl vertices zx1 +vl ∅.
 
   Definition stack (zx0 zx1 : ZXG) : ZXG :=
-    (edges zx0) +el (vertices zx0) +vl zx1.
+    (edges    (shift zx0 (fresh_idx zx1))) +el 
+    (vertices (shift zx0 (fresh_idx zx1))) +vl zx1.
 
   (* Ways to combine graphs *)
   Notation "A '↔' B" := (compose A B) (at level 42).
@@ -1529,18 +1781,17 @@ Module ZXGraph (GraphInstance :  ZXGModule).
         rewrite vertices_empty in H.
         destruct H.
       + contradict n; assumption. Qed.
-
-  Lemma sumdec_vert : forall (v0 v1 : Vertex),
-    { v0 = v1 } + { v0 <> v1 }.
-  Proof.
-    intros.
-    destruct (reflect_vert v0 v1); auto. Defined.
-
   Parameter vertices_sub_v_comm : forall (v : Vertex) (zx : ZXG),
     vertices (v -v zx) = remove sumdec_vert v (vertices zx).
 
   Parameter vertices_sub_e_comm : forall (e : Edge) (zx : ZXG),
-    vertices (e -e zx) = (vertices zx).
+    vertices (e -e zx) = vertices zx.
+
+  Parameter edges_sub_v_comm : forall (v : Vertex) (zx : ZXG),
+    edges (v -v zx) = (edges zx).
+
+  Parameter edges_sub_e_comm : forall (e : Edge) (zx : ZXG),
+    edges (e -e zx) = remove sumdec_edge e (edges zx).
 
   Lemma In_v_rem_v_comm : forall (v0 v1 : Vertex) (zx : ZXG),
     v0 <> v1 -> In_v v0 zx <-> In_v v0 (v1 -v zx).
@@ -1658,7 +1909,7 @@ Module ZXGraph (GraphInstance :  ZXGModule).
         composable e0 e1 /\ 
         uniquely_composable_across e0 e1 (edges zx0) (edges zx1)
         /\ compose_edge e0 e1 = e.
-  
+
   Definition in_e_b (e : Edge) (zx : ZXG) : bool :=
     existsb (eqb_edge e) (edges zx).
   
@@ -1818,9 +2069,9 @@ Module ZXGraph (GraphInstance :  ZXGModule).
 
   Lemma conditions_In_e_compose : forall (e : Edge) (zx0 zx1 : ZXG),
     uniquely_indexed_edges zx0 zx1 ->
-      (In_e e (zx0) /\ wont_compose_to e zx1) \/ 
-      (In_e e (zx1) /\ wont_compose_from e zx0) \/ 
-      uniquely_composes_to zx0 zx1 e ->
+    (In_e e (zx0) /\ wont_compose_to e zx1) \/ 
+    (In_e e (zx1) /\ wont_compose_from e zx0) \/ 
+    uniquely_composes_to zx0 zx1 e ->
     In_e e (zx0 ↔ zx1).
   Proof.
     intros.
@@ -1842,17 +2093,129 @@ Module ZXGraph (GraphInstance :  ZXGModule).
           apply composable_in_edgelist_to_edgelist_in.
           all: assumption. Qed.
 
-  Lemma In_e_compose_imp_conditions : forall (e : Edge) (zx0 zx1 : ZXG),
+  Lemma In_e_compose_conditions : forall (e : Edge) (zx0 zx1 : ZXG),
     uniquely_indexed_edges zx0 zx1 ->
     In_e e (zx0 ↔ zx1) ->
-      (In_e e (zx0) /\ wont_compose_to e zx1) \/ 
-      (In_e e (zx1) /\ wont_compose_from e zx0) \/ 
-      uniquely_composes_to zx0 zx1 e.
+    (In_e e (zx0) /\ wont_compose_to e zx1) \/ 
+    (In_e e (zx1) /\ wont_compose_from e zx0) \/ 
+    uniquely_composes_to zx0 zx1 e.
+  Proof.
+  Admitted.
+
+  Definition in_compose_of (e : Edge) (el0 el1 : list Edge) :=
+    exists e0 e1, 
+    In e0 el0 -> In e1 el1 -> 
+    compose_edge e0 e1 = e.
+  
+  Lemma in_compose_of_cons_l (e a : Edge) (el0 el1 : list Edge) :
+    in_compose_of e (a :: el0) el1 -> in_compose_of e el0 el1.
+  Proof.
+    intros H.
+    intros.
+    unfold in_compose_of in *.
+    destruct H as [e0 [e1 He01]].
+    exists e0, e1; intros.
+    apply He01.
+    right.
+    apply H.
+    apply H0. Qed.
+
+
+  Lemma In_compose_edgelist_to_edgelist_conditions :
+  forall (e : Edge) (el0 el1 : list Edge),
+    In e (compose_edgelist_to_edgelist el0 el1) ->
+    In e el0 \/ In e el1 \/ in_compose_of e el0 el1.
+  Proof.
+    intros.
+    induction el0.
+    - right; left.
+      assumption.
+    - destruct (reflect_no_composable a el1).
+      + rewrite no_composable_eq_edgelist_to_edgelist in H.
+        destruct H.
+        * subst. left; left. reflexivity.
+        * destruct (IHel0 H).
+          -- left; right; assumption.
+          -- destruct H0.
+            ++ right; left; assumption.
+            ++ right; right.
+               
+
+      simpl in H.
+
+  Lemma In_compose_edgelist_to_edgelist_in_right 
+    (e : Edge) (zx0 zx1 : ZXG) :
+    ~ In_e e zx0 -> wont_compose_from e zx0 ->
+    ~ (uniquely_composes_to zx0 zx1 e)->
+    In e (compose_edgelist_to_edgelist (edges zx0) (edges zx1)) ->
+    In_e e zx1.
+    Proof.
+      intros.
+      unfold wont_compose_from in H0.
+
+      unfold In_e.
+      unfold wont_compose_from.
+      (* generalize dependent (edges zx1). *)
+      induction (edges zx0); intros.
+      - assumption.
+      - simpl in H1.
+        apply IHl.
+        intros c.
+        apply H.
+        right; assumption.
+        assumption.
+        assumption.
+    Admitted.
+
+  
+  Lemma In_e_compose_edgelist_to_edgelist 
+    (e : Edge) (el0 el1 : list Edge) :
+    ~ In e el0 -> ~ In e el1 ->
+    In e (compose_edgelist_to_edgelist el0 el1) ->
+    (exists e0 e1, In e0 el0 /\ In e1 el1 /\ 
+     compose_edge e0 e1 = e).
+  Proof.
+    intros Hel0 Hel1 Hcomp.
+    induction el0.
+    - contradiction.
+    - simpl in Hcomp.
+      destruct Hcomp.
+      + admit.
+      + destruct IHel0.
+        * intros c. apply Hel0. right; auto.
+        * generalize dependent el1.
+          induction el0; intros.
+          -- simpl in H.
+             apply in_compose_edge_to_list_in_el in H.
+             contradiction.
+          -- simpl.
+             right.
+             apply IHel0.
+             intros c.
+             apply Hel0.
+             destruct c.
+             ++ subst.
+                left; reflexivity.
+             ++ right; right; assumption.
+             ++ intros c.
+                apply in_compose_edge_to_list_in_el in c.
+                contradiction.
+             ++ 
+  Admitted.
+
+
+  Lemma In_e_compose_imp_conditions : 
+    forall (e : Edge) (zx0 zx1 : ZXG),
+      uniquely_indexed_edges zx0 zx1 ->
+      In_e e (zx0 ↔ zx1) ->
+        (In_e e (zx0) /\ wont_compose_to e zx1) \/ 
+        (In_e e (zx1) /\ wont_compose_from e zx0) \/ 
+        uniquely_composes_to zx0 zx1 e.
   Proof.
     unfold compose.
     intros e zxl zxr Huniq Hin.
     rewrite In_e_add_e_list_here in Hin.
-    unfold wont_compose_to.
+    unfold compose_edgelist_to_edgelist.
     unfold wont_compose_from.
     unfold In_e.
     induction (edges zxl).
@@ -1869,8 +2232,6 @@ Module ZXGraph (GraphInstance :  ZXGModule).
           -- intros e0 He0.
              contradiction.
   Admitted.
-
-     
 
   Lemma outputs_in_output_edges_vert : 
   forall (v : Vertex) (e : Edge) (zx : ZXG),
