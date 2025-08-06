@@ -5,97 +5,90 @@ Require Import ComposeRules.
 
 Local Open Scope ZX_scope.
 
-Lemma stack_semantics {n m o p} : forall (zx0 : ZX n m) (zx1 : ZX o p),
-  ⟦ zx0 ↕ zx1 ⟧ = ⟦ zx0 ⟧ ⊗ ⟦ zx1 ⟧.
-Proof. easy. Qed.
-
-Lemma compose_semantics {n m o} : forall (zx0 : ZX n m) (zx1 : ZX m o),
-⟦ zx0 ⟷ zx1 ⟧ = @Mmult (2 ^ n) (2 ^ m) (2 ^ o) (⟦ zx1 ⟧) (⟦ zx0 ⟧).
-Proof. easy. Qed.
-
 Lemma stack_assoc : 
 forall {n0 n1 n2 m0 m1 m2} 
 	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2) prfn prfm,
-	(zx0 ↕ zx1) ↕ zx2 ∝ 
+	(zx0 ↕ zx1) ↕ zx2 ∝= 
 		cast _ _ prfn prfm (zx0 ↕ (zx1 ↕ zx2)).
-Proof.                                               
+Proof.
 	intros.
-	prop_exists_nonzero 1.  
-	simpl.
-	Msimpl.
-	rewrite (@cast_semantics (n0 + (n1 + n2)) _ ((n0 + n1) + n2)%nat).
-	rewrite kron_assoc; auto with wf_db.
+	unfold proportional_by_1.
+	simpl_cast_semantics.
+	cbn.
+	restore_dims.
+	now rewrite kron_assoc by auto_wf.
 Qed.
 
 Lemma stack_assoc_back : 
 forall {n0 n1 n2 m0 m1 m2}
 	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2) prfn prfm,
-	zx0 ↕ (zx1 ↕ zx2) ∝ 
+	zx0 ↕ (zx1 ↕ zx2) ∝=
 		cast (n0 + (n1 + n2)) (m0 + (m1 + m2)) prfn prfm
 				((zx0 ↕ zx1) ↕ zx2).
-Proof.                                                      
+Proof.
 	intros.
-	rewrite <- cast_symm.
-	rewrite <- stack_assoc.
-	easy.
-Unshelve.
-all: lia.
+	unfold proportional_by_1.
+	simpl_cast_semantics.
+	cbn.
+	restore_dims.
+	now rewrite kron_assoc by auto_wf.
 Qed.
 
 Lemma stack_empty_l : forall {nIn nOut} (zx : ZX nIn nOut),
-	⦰ ↕ zx ∝ zx.
+	⦰ ↕ zx ∝= zx.
 Proof.
 	intros.
-	prop_exists_nonzero 1.
-	simpl.
-	rewrite kron_1_l; try auto with wf_db.
-	lma.
+	unfold proportional_by_1.
+	cbn.
+	restore_dims.
+	now rewrite kron_1_l by auto_wf.
 Qed.
 
 Lemma stack_empty_r : forall {n m : nat} (zx : ZX n m) prfn prfm,
-	zx ↕ ⦰ ∝ 
+	zx ↕ ⦰ ∝= 
 		cast (n + 0) (m + 0) prfn prfm zx.
 Proof.
 	intros.
-	prop_exists_nonzero 1.
-	simpl.
-	Msimpl.
-	rewrite (@cast_semantics n m (n + 0) (m + 0)).
-	reflexivity.
+	unfold proportional_by_1.
+	simpl_cast_semantics.
+	cbn.
+	restore_dims.
+	now rewrite kron_1_r by auto_wf.
 Qed.
 
-Lemma stack_empty_r_rev : forall {n m : nat} (zx : ZX n m) prfn prfm,
-	zx ∝ 
+Lemma stack_empty_r_back : forall {n m : nat} (zx : ZX n m) prfn prfm,
+	zx ∝= 
 		cast _ _ prfn prfm (zx ↕ ⦰).
 Proof.
 	intros.
-	prop_exists_nonzero 1.
-	simpl.
-	Msimpl.
+	unfold proportional_by_1.
 	simpl_cast_semantics.
-	simpl.
-	Msimpl.
-	reflexivity.
+	cbn.
+	restore_dims.
+	now rewrite kron_1_r by auto_wf.
+Qed.
+
+Lemma stack_simplify_eq : forall {n1 m1 n2 m2}
+  (zx1 zx3 : ZX n1 m1) (zx2 zx4 : ZX n2 m2),
+  zx1 ∝= zx3 -> zx2 ∝= zx4 -> zx1 ↕ zx2 ∝= zx3 ↕ zx4.
+Proof.
+  now intros * -> ->.
 Qed.
 
 Lemma stack_simplify : forall {n1 m1 n2 m2}
   (zx1 zx3 : ZX n1 m1) (zx2 zx4 : ZX n2 m2),
   zx1 ∝ zx3 -> zx2 ∝ zx4 -> zx1 ↕ zx2 ∝ zx3 ↕ zx4.
 Proof.
-  intros.
-  rewrite H, H0.
-  easy.
+  now intros * -> ->.
 Qed.
 
-Lemma stack_transpose : forall {n1 m1 n2 m2} (zx1 : ZX n1 m1) (zx2 : ZX n2 m2), (zx1 ↕ zx2) ⊤ ∝ (zx1⊤ ↕ zx2⊤).
+Lemma stack_transpose : forall {n1 m1 n2 m2} (zx1 : ZX n1 m1) (zx2 : ZX n2 m2), 
+	(zx1 ↕ zx2) ⊤ = (zx1⊤ ↕ zx2⊤).
 Proof.
-	intros.
-	prop_exists_nonzero 1.
-	simpl.
-	lma.
+	reflexivity.
 Qed.
 
-Lemma n_stack1_transpose : forall n (zx : ZX 1 1), (n ↑ zx)⊤ ∝ (n ↑ zx⊤).
+Lemma nstack1_colorswap : forall n (zx : ZX 1 1), ⊙(n ↑ zx) = (n ↑ (⊙ zx)).
 Proof.
 	intros.
 	induction n.
@@ -105,7 +98,17 @@ Proof.
 		easy.
 Qed.
 
-Lemma n_stack1_colorswap : forall n (zx : ZX 1 1), ⊙(n ↑ zx) ∝ (n ↑ (⊙ zx)).
+Lemma nstack_transpose : forall k {n m} (zx : ZX n m), (k ⇑ zx)⊤ = (k ⇑ zx⊤).
+Proof.
+	intros.
+	induction k.
+	- easy.
+	- simpl.
+		rewrite IHk.
+		easy.
+Qed.
+
+Lemma nstack_colorswap : forall n {n' m'} (zx : ZX n' m'), ⊙(n ⇑ zx) = (n ⇑ (⊙ zx)).
 Proof.
 	intros.
 	induction n.
@@ -115,82 +118,23 @@ Proof.
 		easy.
 Qed.
 
-Lemma n_stack_transpose : forall n (zx : ZX 1 1), (n ⇑ zx)⊤ ∝ (n ⇑ zx⊤).
-Proof.
-	intros.
-	induction n.
-	- easy.
-	- simpl.
-		rewrite IHn.
-		easy.
-Qed.
-
-Lemma n_stack_colorswap : forall n {n' m'} (zx : ZX n' m'), ⊙(n ⇑ zx) ∝ (n ⇑ (⊙ zx)).
-Proof.
-	intros.
-	induction n.
-	- easy.
-	- simpl.
-		rewrite IHn.
-		easy.
-Qed.
-
-Lemma n_stack1_l : forall n (zx : ZX 1 1),
-	(S n) ↑ zx ∝ zx ↕ (n ↑ zx).
+Lemma n_stack1_succ_l : forall n (zx : ZX 1 1),
+	(S n) ↑ zx = zx ↕ (n ↑ zx).
 Proof. easy. Qed.
 
-Lemma n_stack1_r : forall n (zx : ZX 1 1) prfn prfm, 
-	(S n) ↑ zx ∝ 
+Lemma n_stack1_succ_r : forall n (zx : ZX 1 1) prfn prfm, 
+	(S n) ↑ zx ∝=
 	cast (S n) (S n) prfn prfm ((n ↑ zx) ↕ zx).
 Proof.
-induction n.
-- intros.
-	simpl.
-	simpl_casts.
-	rewrite stack_empty_l, stack_empty_r.
-	simpl_casts.
-	easy.
-- intros.
-	rewrite n_stack1_l.
-	rewrite IHn at 1.
-	rewrite cast_stack_r.
-	simpl.
-	simpl_casts.
-	rewrite stack_assoc_back.
-	simpl_casts.
-	easy.
-Unshelve.
-all: lia.
-Qed.
-
-Lemma stack_wire_distribute_l : forall {n m o} (zx0 : ZX n m) (zx1 : ZX m o),
-	— ↕ (zx0 ⟷ zx1) ∝ (— ↕ zx0) ⟷ (— ↕ zx1).
-Proof.
 	intros.
-	prop_exists_nonzero 1.
-	simpl; Msimpl; easy.
-Qed.
-
-Lemma stack_wire_distribute_r : forall {n m o} (zx0 : ZX n m) (zx1 : ZX m o),
-	(zx0 ⟷ zx1) ↕ —  ∝ (zx0 ↕ —) ⟷ (zx1 ↕ —).
-Proof.
-	intros.
-	prop_exists_nonzero 1.
-	simpl; Msimpl; easy.
-Qed.
-
-Lemma stack_nwire_distribute_l : forall {n m o p} (zx0 : ZX n m) (zx1 : ZX m o),
-	n_wire p ↕ (zx0 ⟷ zx1) ∝ (n_wire p ↕ zx0) ⟷ (n_wire p ↕ zx1).
-Proof.
-	intros.
-	induction p.
-	- repeat rewrite stack_empty_l. easy.
-	- rewrite n_stack1_l.
-		rewrite (stack_assoc — (n_wire p) zx0).
-		rewrite (stack_assoc — (n_wire p) zx1).
+	induction n.	
+	- cbn. 
+		now rewrite stack_empty_r, 2!cast_id_eq, stack_empty_l.
+	- rewrite n_stack1_succ_l.
+		rewrite IHn at 1.
+		rewrite cast_stack_r.
+		simpl.
 		simpl_casts.
-		rewrite <- (stack_wire_distribute_l (n_wire p ↕ zx0) (n_wire p ↕ zx1)).
-		rewrite <- IHp.
 		rewrite stack_assoc_back.
 		simpl_casts.
 		easy.
@@ -198,11 +142,78 @@ Unshelve.
 all: lia.
 Qed.
 
-(* Lemma n_wre_collapse_r : forall {n0 n1 m1} (zx0 : ZX n0 0) (zx1 : ZX n1 m1),
+Lemma stack_wire_distribute_l : forall {n m o} (zx0 : ZX n m) (zx1 : ZX m o),
+	— ↕ (zx0 ⟷ zx1) ∝= (— ↕ zx0) ⟷ (— ↕ zx1).
+Proof.
+	intros.
+	unfold proportional_by_1.
+	simpl; Msimpl; easy.
+Qed.
+
+Lemma stack_wire_distribute_r : forall {n m o} (zx0 : ZX n m) (zx1 : ZX m o),
+	(zx0 ⟷ zx1) ↕ — ∝= (zx0 ↕ —) ⟷ (zx1 ↕ —).
+Proof.
+	intros.
+	unfold proportional_by_1.
+	simpl; Msimpl; easy.
+Qed.
+
+Lemma stack_nwire_distribute_l : forall {n m o p} (zx0 : ZX n m) (zx1 : ZX m o),
+	n_wire p ↕ (zx0 ⟷ zx1) ∝= (n_wire p ↕ zx0) ⟷ (n_wire p ↕ zx1).
+Proof.
+	intros.
+	unfold proportional_by_1.
+	cbn; rewrite n_wire_semantics; Msimpl; reflexivity.
+Qed.
+
+Lemma stack_nwire_distribute_r : forall {n m o p} (zx0 : ZX n m) (zx1 : ZX m o),
+	(zx0 ⟷ zx1) ↕ n_wire p ∝= (zx0 ↕ n_wire p) ⟷ (zx1 ↕ n_wire p).
+Proof.
+	intros.
+	induction p.
+	- repeat rewrite stack_empty_r.
+		eapply (cast_diagrams_eq n o).
+		repeat rewrite cast_contract.
+		rewrite cast_id.
+		rewrite cast_compose_distribute.
+		simpl_casts.
+		erewrite (cast_compose_mid m _ _ ($ n, m + 0 ::: zx0 $)).
+		simpl_casts.
+		easy.
+		Unshelve.
+		all: lia.
+	- unfold n_wire. 
+		rewrite n_stack1_succ_r.
+		repeat rewrite cast_stack_r.
+		eapply (cast_diagrams_eq (n + (p + 1)) (o + (p + 1))).
+		rewrite cast_contract.
+		rewrite cast_id.
+		rewrite cast_compose_distribute.
+		simpl_casts.
+		erewrite (cast_compose_mid (m + (p + 1)) _ _
+									($ n + (p + 1), m + (S p) ::: zx0 ↕ (n_wire p ↕ —)$)).
+		simpl_casts.
+		rewrite 3 stack_assoc_back.
+		eapply (cast_diagrams_eq (n + p + 1) (o + p + 1)).
+		rewrite cast_contract.
+		rewrite cast_id.
+		rewrite cast_compose_distribute.
+		rewrite 2 cast_contract.
+		erewrite (cast_compose_mid (m + p + 1) _ _
+									($ n + p + 1, m + (p + 1) ::: zx0 ↕ n_wire p ↕ — $)).
+		simpl_casts.
+		rewrite <- stack_wire_distribute_r.
+		rewrite <- IHp.
+		easy.
+		Unshelve.
+		all: lia.
+Qed.
+
+(* Lemma n_wire_collapse_r : forall {n0 n1 m1} (zx0 : ZX n0 0) (zx1 : ZX n1 m1),
  (zx0 ↕ n_wire n1) ⟷ zx1 ∝ zx0 ↕ zx1. *)
 
 Lemma nstack1_split : forall n m (zx : ZX 1 1),
-	(n + m) ↑ zx ∝ 
+	(n + m) ↑ zx ∝= 
 	(n ↑ zx) ↕ (m ↑ zx).
 Proof.
 	intros.
@@ -218,7 +229,7 @@ all: lia.
 Qed.
 
 Lemma nstack_split : forall n m {nIn mOut} (zx : ZX nIn mOut) prfn prfm,
-	(n + m) ⇑ zx ∝ 
+	(n + m) ⇑ zx ∝= 
 	cast _ _ prfn prfm ((n ⇑ zx) ↕ (m ⇑ zx)).
 Proof.
 	intros.
@@ -236,7 +247,7 @@ Unshelve.
 all: lia.
 Qed.
 
-Lemma nstack1_1 : forall zx, 1 ↑ zx ∝ zx.
+Lemma nstack1_1 : forall zx, 1 ↑ zx ∝= zx.
 Proof.
 	intros.
 	simpl.
@@ -247,48 +258,5 @@ Unshelve.
 all: lia.
 Qed.
 
-Lemma nstack1_0 : forall zx, 0 ↑ zx ∝ ⦰.
+Lemma nstack1_0 : forall zx, 0 ↑ zx = ⦰.
 Proof. easy. Qed.
-
-Lemma nstack_is_nstack1 : forall (zx : ZX 1 1) n prfn prfm, n ⇑ zx ∝ cast _ _ prfn prfm (n ↑ zx).
-Proof.
-	intros.
-	simpl_casts.
-	induction n.
-	- easy.
-	- simpl.
-		rewrite IHn; [ | lia | lia].
-		easy.
-Qed.
-
-Lemma nstack1_is_nstack : forall (zx : ZX 1 1) n prfn prfm, (n ↑ zx) ∝  cast _ _ prfn prfm (n ⇑ zx).
-Proof.
-	intros.
-	rewrite <- cast_symm.
-	rewrite nstack_is_nstack1.
-	easy.
-Unshelve.
-	all: lia.
-Qed.
-
-Lemma nstack_compose : forall n m o n' (zx0 : ZX n m) (zx1 : ZX m o), n' ⇑ (zx0 ⟷ zx1) ∝ n' ⇑ zx0 ⟷ n' ⇑ zx1.
-Proof.
-	intros.
-	induction n'.
-	- simpl. rewrite compose_empty_r. easy.
-	- simpl.
-		rewrite IHn'.
-		rewrite stack_compose_distr.
-    easy.
-Qed.
-
-Lemma nstack1_compose : forall n' (zx0 zx1 : ZX 1 1), n' ↑ (zx0 ⟷ zx1) ∝ n' ↑ zx0 ⟷ n' ↑ zx1.
-Proof.
-	intros.
-  rewrite 3 nstack1_is_nstack.
-	rewrite nstack_compose.
-	rewrite (cast_compose_distribute_general _ n').
-	easy.
-Unshelve.
-all: lia.
-Qed.

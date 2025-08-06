@@ -16,7 +16,7 @@ Proof.
   repeat rewrite kron_1_l; try auto with wf_db.
   repeat rewrite Mscale_1_l.
   repeat rewrite Mmult_adjoint.
-  repeat rewrite hadamard_sa.
+  repeat rewrite hadamard_hermitian.
   repeat rewrite ket2bra.
   autorewrite with scalar_move_db.
   apply Mscale_simplify; [ | C_field_simplify; [easy | nonzero]].
@@ -34,11 +34,11 @@ Qed.
 
 
 Theorem hopf_rule_Z_X : 
-  Z 1 2 0 ⟷ X 2 1 0 ∝ Z 1 0 0 ⟷ X 0 1 0.
+  (Z_Spider 1 2 0) ⟷ (X_Spider 2 1 0) ∝[/C2] (Z_Spider 1 0 0) ⟷ (X_Spider 0 1 0).
 Proof.
   intros.
   rewrite <- (@nwire_removal_r 2).
-  simpl.
+  cbv delta [n_wire]; simpl.
   rewrite stack_empty_r.
   simpl_casts.
   rewrite wire_loop at 1.
@@ -61,7 +61,7 @@ Opaque n_stack1.
   simpl.
   repeat rewrite <- compose_assoc.
   rewrite <- (push_out_top (Z 0 1 0)).
-  assert (Hl : (Z 0 1 0 ↕ Z 1 2 0) ⟷ ((Z) 1 2 0 ↕ n_wire 2) ∝ Z 0 1 0 ↕ n_wire 1 ⟷ (Z 1 2 0 ↕ Z 1 2 0)).
+  assert (Hl : (Z 0 1 0 ↕ Z 1 2 0) ⟷ ((Z) 1 2 0 ↕ n_wire 2) ∝= Z 0 1 0 ↕ n_wire 1 ⟷ (Z 1 2 0 ↕ Z 1 2 0)).
   {
     rewrite <- stack_compose_distr.
     rewrite nwire_removal_r.
@@ -72,7 +72,7 @@ Opaque n_stack1.
   rewrite Hl.
   repeat rewrite compose_assoc.
   rewrite <- (pull_out_top (X 1 0 0)).
-  assert (Hr : X 2 1 0 ↕ n_wire 2 ⟷ (X 1 0 0 ↕ X 2 1 0) ∝ X 2 1 0 ↕ (X) 2 1 0 ⟷ ((X) 1 0 0 ↕ n_wire 1)).
+  assert (Hr : X 2 1 0 ↕ n_wire 2 ⟷ (X 1 0 0 ↕ X 2 1 0) ∝= X 2 1 0 ↕ (X) 2 1 0 ⟷ ((X) 1 0 0 ↕ n_wire 1)).
   {
     rewrite <- stack_compose_distr.
     rewrite nwire_removal_l.
@@ -82,7 +82,7 @@ Opaque n_stack1.
   }
   rewrite Hr.
   repeat rewrite <- compose_assoc.
-  assert (HBiAlgAssoc : (Z) 0 1 0 ↕ n_wire 1 ⟷ ((Z) 1 2 0 ↕ (Z) 1 2 0) ⟷ (n_wire 1 ↕ ⨉ ↕ n_wire 1) ⟷ ((X) 2 1 0 ↕ (X) 2 1 0) ⟷ ((X) 1 0 0 ↕ n_wire 1) ∝ 
+  assert (HBiAlgAssoc : (Z) 0 1 0 ↕ n_wire 1 ⟷ ((Z) 1 2 0 ↕ (Z) 1 2 0) ⟷ (n_wire 1 ↕ ⨉ ↕ n_wire 1) ⟷ ((X) 2 1 0 ↕ (X) 2 1 0) ⟷ ((X) 1 0 0 ↕ n_wire 1) ∝= 
     (Z) 0 1 0 ↕ n_wire 1 ⟷ (((Z) 1 2 0 ↕ (Z) 1 2 0) ⟷ (n_wire 1 ↕ ⨉ ↕ n_wire 1) ⟷ ((X) 2 1 0 ↕ (X) 2 1 0)) ⟷ ((X) 1 0 0 ↕ n_wire 1)).
   {
     repeat rewrite compose_assoc.
@@ -93,8 +93,8 @@ Opaque n_stack1.
   rewrite <- wire_to_n_wire.
 Transparent n_stack1.
   fold bi_alg_Z_X.
-  rewrite <- bi_algebra_rule_Z_X.
-  assert (X_Wrap_Under_L_base : forall α, X 2 1 α ∝ (X 1 2 α ↕ —) ⟷ (— ↕ ⊃)).
+  zxrewrite <- bi_algebra_rule_Z_X.
+  assert (X_Wrap_Under_L_base : forall α, X 2 1 α ∝= (X 1 2 α ↕ —) ⟷ (— ↕ ⊃)).
   {
     intros.
     rewrite (X_wrap_under_bot_right 1).
@@ -105,14 +105,14 @@ Transparent n_stack1.
   rewrite X_Wrap_Under_L_base.
   repeat rewrite <- compose_assoc.
   rewrite <- stack_wire_distribute_r.
-  rewrite Z_state_0_copy.
+  zxrewrite Z_state_0_copy.
   simpl_casts.
   simpl.
   cleanup_zx; simpl_casts.
   rewrite (stack_assoc (Z 0 1 0) ((Z) (0 + 0) (1 + 0) 0) —).
   simpl_casts.
   rewrite <- (stack_compose_distr ((Z) 0 1 0) — ((Z) (0 + 0) (1 + 0) 0 ↕ —) ⊃).
-  assert (Hl: (Z) (0 + 0) (1 + 0) 0 ↕ — ⟷ ⊃ ∝ Z 1 0 0). (* Todo : pull out lemma *)
+  assert (Hl: (Z) (0 + 0) (1 + 0) 0 ↕ — ⟷ ⊃ ∝= Z 1 0 0). (* Todo : pull out lemma *)
   {
     rewrite cup_Z.
     rewrite <- Z_0_is_wire.
@@ -122,7 +122,7 @@ Transparent n_stack1.
   }
   rewrite Hl.
   cleanup_zx.
-  rewrite (stack_empty_r_rev (Z 1 2 0)).
+  rewrite (stack_empty_r_back (Z 1 2 0)).
   simpl_casts.
   rewrite <- (stack_compose_distr (Z 0 1 0) (Z 1 2 0) (Z 1 0 0) ⦰).
   cleanup_zx.
@@ -131,7 +131,7 @@ Transparent n_stack1.
   rewrite <- cap_Z.
   rewrite (disconnected_stack_compose_r).
   simpl_casts.
-  assert (Hr : ⊂ ⟷ ((X) 1 0 0 ↕ —) ∝ X 0 1 0).
+  assert (Hr : ⊂ ⟷ ((X) 1 0 0 ↕ —) ∝= X 0 1 0).
   {
     rewrite cap_X.
     rewrite <- X_0_is_wire.
@@ -141,13 +141,14 @@ Transparent n_stack1.
   }
   rewrite compose_assoc.
   rewrite Hr.
-  easy.
+  zxrefl.
+  autorewrite with RtoC_db; C_field.
 Unshelve.
 all: lia.
 Qed.
 
 Theorem hopf_rule_X_Z : 
-  (X 1 2 0) ⟷ (Z 2 1 0) ∝ (X 1 0 0) ⟷ (Z 0 1 0).
+  (X_Spider 1 2 0) ⟷ (Z_Spider 2 1 0) ∝[/ 2] (X_Spider 1 0 0) ⟷ (Z_Spider 0 1 0).
 Proof.
   colorswap_of hopf_rule_Z_X.
 Qed.

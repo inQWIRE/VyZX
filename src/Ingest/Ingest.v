@@ -351,6 +351,7 @@ Proof.
         repeat rewrite kron_1_r; try auto with wf_db.
       * replace (S n - n - 1)%nat with 0%nat by lia.
         apply Mscale_simplify; [ | easy ].
+        fold (n_wire (S n)).
         rewrite n_wire_semantics.
         repeat rewrite id_kron.
         replace (2 ^ S n + (2 ^ S n + 0))%nat with (2 * 2 ^ S n)%nat by lia.
@@ -431,6 +432,7 @@ Proof.
       repeat rewrite unfold_pad.
       simpl.
       Msimpl.
+      fold (n_wire n).
       rewrite n_wire_semantics.
       rewrite id_kron.
       replace (2 ^ n + (2 ^ n + 0))%nat with (2 * 2 ^ n)%nat by lia.

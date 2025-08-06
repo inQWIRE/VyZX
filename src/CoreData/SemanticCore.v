@@ -152,6 +152,8 @@ Definition X_dirac_semantics (n m : nat) (α : R) :=
 Arguments Z_dirac_semantics n m α /.
 Arguments X_dirac_semantics n m α /.
 
+(** Simplify by unfolding [dirac_spider_semantics] and [bra_ket_mn],
+  then [simplf; Msimpl]. *)
 Ltac unfold_dirac_spider := 
   simpl; unfold dirac_spider_semantics, bra_ket_mn; try (simpl; Msimpl).
 
