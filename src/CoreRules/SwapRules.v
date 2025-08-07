@@ -140,12 +140,20 @@ Qed.
 Lemma offset_swaps_comm_top_left : 
   ⨉ ↕ — ⟷ (— ↕ ⨉) ∝=
   — ↕ ⨉ ⟷ (⨉ ↕ —) ⟷ (— ↕ ⨉) ⟷ (⨉ ↕ —).
-Proof. (* solve_prop 1. Qed. *) Admitted.
+Proof. 
+  hnf.
+  simpl; Msimpl; unfold X_semantics;
+  unfold Z_semantics; simpl; solve_matrix; autorewrite with Cexp_db; lca.
+Qed.
 
 Lemma offset_swaps_comm_bot_right : 
  — ↕ ⨉ ⟷ (⨉ ↕ —)  ∝=
  ⨉ ↕ — ⟷ (— ↕ ⨉) ⟷ (⨉ ↕ —) ⟷ (— ↕ ⨉). 
-Proof. (* solve_prop 1. Qed. *) Admitted.
+Proof. 
+  hnf.
+  simpl; Msimpl; unfold X_semantics;
+  unfold Z_semantics; simpl; solve_matrix; autorewrite with Cexp_db; lca.
+Qed.
 
 Lemma bottom_wire_to_top_ind : forall n, 
   bottom_wire_to_top (S (S n)) = 
@@ -293,8 +301,8 @@ Lemma a_swap_3_order_indep :
   I 2 ⊗ swap × (swap ⊗ I 2) × (I 2 ⊗ swap) = 
   (swap ⊗ I 2) × (I 2 ⊗ swap) × (swap ⊗ I 2).
 Proof.
-  (* solve_matrix *) (* Commented out for performance*)
-Admitted.
+  solve_matrix. (* Commented out for performance*)
+Qed.
 
 Lemma a_swap_semantics_ind : forall n, a_swap_semantics (S (S (S n))) = 
   swap ⊗ (I (2 ^ (S n))) × (I 2 ⊗ a_swap_semantics (S (S n))) × (swap ⊗ (I (2 ^ (S n)))).

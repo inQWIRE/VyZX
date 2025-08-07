@@ -177,13 +177,28 @@ all: lia.
 Qed.
 
 Lemma cnot_inv_is_swapped_cnot : _CNOT_inv_ ∝= ⨉ ⟷ _CNOT_ ⟷ ⨉.
-Admitted.
+  hnf.
+  simpl; Msimpl; unfold X_semantics;
+  unfold Z_semantics; simpl; solve_matrix; autorewrite with Cexp_db; lca.
+Qed.
 
 Lemma notc_is_swapp_cnot : _NOTC_ ∝= ⨉ ⟷ _CNOT_ ⟷ ⨉. 
-Admitted.
+Proof.
+  rewrite <- cnot_inv_is_swapped_cnot.
+  rewrite compose_assoc.
+  rewrite <- colorswap_is_bihadamard.
+  rewrite cnot_is_cnot_r.
+  easy.
+Qed.
 
 Lemma notc_r_is_swapp_cnot_r : _NOTC_R ∝= ⨉ ⟷ _CNOT_R ⟷ ⨉. 
-Admitted.
+Proof.
+  rewrite <- cnot_is_cnot_r.
+  rewrite <- cnot_inv_is_swapped_cnot.
+  rewrite compose_assoc.
+  rewrite <- colorswap_is_bihadamard.
+  easy.
+Qed.
 
 Lemma notc_is_notc_r : _NOTC_ ∝= _NOTC_R.
 Proof.

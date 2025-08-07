@@ -105,12 +105,6 @@ Unshelve.
   all: lia.
 Qed.
 
-Lemma n_cup_inv_n_swap_n_wire : forall n, n_cup n ∝= 
-  n_wire n ↕ n_swap n ⟷ n_cup_unswapped n.
-Proof.
-  intros.
-Admitted. (*TODO*)
-
 Lemma n_cup_unswapped_colorswap : forall n, 
   ⊙ (n_cup_unswapped n) = n_cup_unswapped n.
 Proof. 
