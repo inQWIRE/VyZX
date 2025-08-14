@@ -935,3 +935,39 @@ Proof.
 	rewrite Cexp_0.
 	easy.
 Qed.
+
+
+Lemma grow_Z_bot_left : forall n {m o α},
+	Z (n + m) o α ∝=
+	(n_wire n ↕ Z m 1 0) ⟷ Z (n + 1) o α.
+Proof.
+	induction n; intros.
+	- simpl.
+		cleanup_zx.
+		rewrite Z_absolute_fusion.
+		rewrite Rplus_0_l.
+		easy.
+	- simpl. 
+		rewrite  (Z_wrap_over_top_left ((n + 1))).
+		rewrite <- compose_assoc.
+		rewrite (stack_assoc — (n ↑ —)).
+		simpl_casts.
+		rewrite <- (stack_compose_distr — —).
+		rewrite <- IHn.
+		cleanup_zx.
+		rewrite <- Z_wrap_over_top_left.
+		easy.
+	Unshelve.
+	all: lia.
+Qed.
+
+Lemma grow_Z_bot_right : forall {n m} o {α},
+	Z n (m + o) α ∝=
+	Z n (m + 1) α ⟷ (n_wire m ↕ Z 1 o 0).
+Proof.
+	intros.
+	apply transpose_diagrams_eq.
+	simpl.
+	rewrite n_wire_transpose.
+	apply grow_Z_bot_left.
+Qed.
