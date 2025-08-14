@@ -840,6 +840,11 @@ Proof.
 	apply Z_zxperm_absorbtion_right; auto_zxperm.
 Qed.
 
+Lemma Z_n_swap_absorbtion_left_base : forall n m α, n_swap n ⟷ Z n m α ∝= Z n m α.
+Proof.
+	transpose_of Z_n_swap_absorbtion_right_base.
+Qed.
+
 Lemma Z_n_wrap_under_r_base_unswapped : forall n m α, Z (n + m) 0 α ∝= (Z n m α ↕ n_wire m) ⟷ n_cup_unswapped m.
 Proof.
 	intros n m α.
@@ -883,11 +888,21 @@ Lemma Z_n_wrap_over_r_base : forall n m α,
 	Z (m + n) 0 α ∝= (n_wire m ↕ Z n m α) ⟷ n_cup m.
 Proof.
 	intros.
-	rewrite n_cup_inv_n_swap_n_wire.
+	unfold n_cup.
 	rewrite <- compose_assoc.
-	rewrite <- stack_nwire_distribute_l.
-	rewrite Z_n_swap_absorbtion_right_base.
-	rewrite Z_n_wrap_over_r_base_unswapped.
+	rewrite <- stack_compose_distr.
+	cleanup_zx.
+	rewrite <- (nwire_removal_l (Z n m α)).
+	rewrite <- (nwire_removal_r (n_swap m)).
+	rewrite stack_compose_distr.
+	rewrite compose_assoc.
+	rewrite <- Z_n_wrap_over_r_base_unswapped.
+	rewrite Z_add_l_base_rot.
+	rewrite <- compose_assoc.
+	rewrite <- stack_compose_distr.
+	cleanup_zx.
+	rewrite Z_n_swap_absorbtion_left_base.
+	rewrite <- Z_add_l_base_rot.
 	easy.
 Qed.
 

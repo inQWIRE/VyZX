@@ -559,14 +559,14 @@ Proof.
     rewrite !cast_id.
     now rewrite wire_to_n_wire, n_wire_stack, nwire_removal_l.
   - simpl.
+    fold (n_wire n).
     simpl in IHn.
     rewrite IHn at 1.
     rewrite stack_wire_distribute_l.
     rewrite stack_wire_distribute_r.
-    fold (n_wire n).
-    bundle_wires.
+    change (— ↕ n_wire n) with (n_wire (1 + n)).
     erewrite <- (@cast_n_wire (n + 1) (1 + n)).
-    rewrite <- ComposeRules.compose_assoc.
+    rewrite <- compose_assoc.
     apply compose_simplify_eq; [ | easy].
     erewrite (cast_compose_mid (S (n + S n))).
     rewrite cast_compose_distribute.
@@ -577,7 +577,7 @@ Proof.
     simpl_casts.
     rewrite 3 stack_assoc_back.
     simpl_casts.
-    erewrite <- (@cast_n_wire (n + 1) (1 + n)) at 2.
+    rewrite <- (@cast_n_wire (n + 1) (1 + n)) at 2.
     rewrite cast_stack_r.
     simpl.
     rewrite (stack_assoc (— ↕ n_wire n ↕ ⊃) (n_wire n) —).

@@ -99,6 +99,11 @@ Proof.
   apply cast_semantics.
 Qed.
 
+(** Replace [⟦ cast n m prf1 prf2 zx ⟧] in the goal with [⟦ zx ⟧]. 
+  NB this may make the goal no longer definitionally dimensionally 
+  consistent, as the size of [⟦ zx ⟧] need not be trivially equal to
+  the size of [⟦ cast n m prf1 prf2 zx ⟧]. In some cases, this may even
+  escape the abilities of [restore_dims] and require manual intervention. *)
 Ltac simpl_cast_semantics := 
   try repeat rewrite cast_semantics; 
   try repeat (rewrite cast_semantics_dim; unfold cast_semantics_dim_eqn).

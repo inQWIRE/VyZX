@@ -381,4 +381,7 @@ Proof.
   apply Z_wrap_over_top_right_0.
 Qed.
 
+(** Inducts on [n] and specializes the case where [n = 1]. Useful for 
+  induction on spiders where both the [n = 0] and [n = 1] cases are 
+  special, whereas normal induction has only [n = 0] as base case. *)
 Ltac spider_induction n := induction n; [ | destruct n ].

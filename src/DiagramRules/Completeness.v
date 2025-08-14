@@ -21,6 +21,27 @@ Qed.
 
 (* @nocheck name *)
 (* Conventional name *)
+Lemma completeness_E : Z 0 1 (PI / 4) ⟷ X 1 0 (- PI / 4) ∝= ⦰.
+Proof.
+	unfold proportional_by_1.
+	prep_matrix_equivalence.
+	by_cell.
+	unfold X_semantics; simpl; autounfold with U_db; simpl.
+	C_field.
+	rewrite Rdiv_opp_l.
+	rewrite Cexp_neg.
+	rewrite Cexp_PI4.
+	C_field.
+	- lca.
+	- split; [nonzero|].
+		intros H%(f_equal fst).
+		simpl in H.
+		lra.
+Qed.
+	
+
+(* @nocheck name *)
+(* Conventional name *)
 Lemma completeness_C : forall (α β γ : R),
 	(Z 1 2 0) ⟷ (((Z 0 1 β ↕ —) ⟷ X 2 1 PI) ↕ ((Z 0 1 α ↕ —) ⟷ X 2 1 0)) ⟷ ((Z 1 2 β ↕ Z 1 2 α) ⟷ (— ↕ X 2 1 γ ↕ —)) ⟷ (((— ↕ Z 1 2 0) ⟷ (X 2 1 (-γ) ↕ —)) ↕ —)
 	∝= 

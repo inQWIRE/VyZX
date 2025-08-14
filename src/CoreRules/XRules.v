@@ -256,6 +256,9 @@ Qed.
 
 Lemma X_n_swap_absorbtion_right_base : forall n m α, X n m α ⟷ n_swap m ∝= X n m α.
 Proof. colorswap_of Z_n_swap_absorbtion_right_base. Qed.
+	
+Lemma X_n_swap_absorbtion_left_base : forall n m α, n_swap n ⟷ X n m α ∝= X n m α.
+Proof. colorswap_of Z_n_swap_absorbtion_left_base. Qed.
 
 Lemma X_n_wrap_under_r_base_unswapped : forall n m α, X (n + m) 0 α ∝= (X n m α ↕ n_wire m) ⟷ n_cup_unswapped m.
 Proof. colorswap_of Z_n_wrap_under_r_base_unswapped. Qed.

@@ -52,17 +52,6 @@ Proof.
   apply Z_0_is_wire.
 Qed.
 
-Lemma stack_nwire_distribute_r : forall {n m o p} (zx0 : ZX n m) (zx1 : ZX m o),
-(zx0 ⟷ zx1) ↕ n_wire p ∝= (zx0 ↕ n_wire p) ⟷ (zx1 ↕ n_wire p).
-Proof.
-  intros.
-  hnf.
-  cbn.
-  rewrite n_wire_semantics.
-  restore_dims.
-  apply kron_id_dist_r; auto_wf.
-Qed.
-
 Lemma wire_to_n_wire : 
   — ∝= n_wire 1.
 Proof.

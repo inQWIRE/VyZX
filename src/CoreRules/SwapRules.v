@@ -167,22 +167,22 @@ Lemma bottom_to_top_grow_l : forall n prf prf',
   bottom_to_top (S (S n)) ∝= cast _ _ prf' prf'((cast _ _ prf prf (n_wire n ↕ ⨉)) ⟷ (bottom_to_top (S n) ↕ —)).
 Proof.
   intros.
-  by_perm_eq_nosimpl.
-  rewrite perm_of_bottom_to_top_eq, perm_of_zx_cast.
-  rewrite perm_of_zx_compose_spec, perm_of_zx_cast.
-  rewrite 2!perm_of_zx_stack_spec, perm_of_n_wire.
-  rewrite perm_of_bottom_to_top_eq.
-  cbn.
-  intros i Hi.
-  rewrite stack_perms_WF_idn by cleanup_perm.
-  rewrite stack_perms_idn_f.
-  unfold compose.
-  unfold bottom_to_top_perm.
-  destruct i.
-  - cbn [Nat.leb]. unfold swap_2_perm, swap_perm; bdestructΩ'.
-  - simplify_bools_lia_one_kernel.
-    unfold swap_2_perm, swap_perm.
-    bdestructΩ'.
+  apply transpose_diagrams_eq.
+  unfold bottom_to_top.
+  rewrite cast_transpose.
+  cbn -[top_to_bottom].
+  repeat rewrite cast_transpose.
+  cbn -[top_to_bottom].
+  rewrite n_wire_transpose.
+  repeat rewrite Proportional.transpose_involutive.
+  rewrite top_to_bottom_grow_r.
+  rewrite cast_compose_distribute.
+  simpl_casts.
+  erewrite (cast_compose_mid (S (n + 1))).
+  simpl_casts.
+  apply compose_simplify_eq; cast_irrelevance.
+Unshelve.
+all: lia.
 Qed.
 
 Lemma top_to_bottom_transpose : forall n, (top_to_bottom n)⊤ = bottom_to_top n.
@@ -284,6 +284,8 @@ Proof.
 Qed.
 
 (* n_swap proofs *)
+
+Opaque a_swap a_swap_semantics. (* For n_swap proofs we don't want a_swap to unfold, instead we use lemmata from above*)
 
 Lemma n_swap_2_is_swap : n_swap 2 ∝= ⨉.
 Proof.
