@@ -42,8 +42,6 @@ Proof.
   now rewrite 2!nwire_removal_l.
 Qed.
 
-Opaque n_cup.
-
 Lemma n_cap_0_empty : n_cap 0 ∝= ⦰.
 Proof.
   apply transpose_diagrams_eq.
@@ -577,15 +575,13 @@ Proof.
     simpl_casts.
     rewrite 2 stack_assoc.
     simpl_casts.
-    rewrite 3 stack_assoc_back.
+    rewrite wire_to_n_wire, n_wire_stack.
+    rewrite 2 stack_assoc_back.
     simpl_casts.
     erewrite <- (@cast_n_wire (n + 1) (S n)) at 2.
     rewrite cast_stack_r.
-    simpl.
-    rewrite (stack_assoc (— ↕ n_wire n ↕ ⊃) (n_wire n) —).
-    rewrite <- n_wire_stack.
-    simpl_casts.
-    now rewrite <- wire_to_n_wire.
+    rewrite n_wire_stack.
+    cast_irrelevance.
 Unshelve.
   all: lia.
 Qed.
