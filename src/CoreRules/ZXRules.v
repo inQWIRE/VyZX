@@ -6,6 +6,7 @@ Require Import CoreRules.CoreAutomation.
 Require Export CoreRules.ZRules.
 Require Export CoreRules.XRules.
 
+(** Rules relating Z and X spiders *)
 
 Theorem X_state_copy_phase_0 : forall (r n : nat) prfn prfm,
 	(X 0 1 ((INR r) * PI) ⟷ Z 1 n 0) 
@@ -43,9 +44,9 @@ Proof.
 		autorewrite with Cexp_db; lca.
 	-	simpl. (* n = 1 --> 1 *)
 		rewrite Z_0_is_wire.
-		simpl_casts.
+		rewrite cast_id.
 		rewrite stack_empty_r.
-		simpl_casts.
+		rewrite cast_id.
 		cleanup_zx.
 		zxrefl.
 	  rewrite Rmult_1_r.
@@ -54,7 +55,7 @@ Proof.
 	- eapply (cast_diagrams_by (S (S n) * 0) (S (S n) * 1)).
 		rewrite cast_contract.
 		rewrite cast_compose_distribute.
-		simpl_casts.
+		rewrite cast_X, cast_Z, cast_id.
 		simpl.
 		eapply (@cast_simplify_by 0 (S n * 0)%nat (S n) (S n * 1)%nat) in IHn.
 		rewrite cast_compose_distribute in IHn.
@@ -95,8 +96,8 @@ Theorem X_state_copy : forall (r n : nat) (a : R) prfn prfm,
 	cast 0%nat n prfn prfm (n ⇑ (X 0 1 ((INR r) * PI))).
 Proof.
 	assert (X_Z_phase_value' : forall (a b : R),
-		⟦ X 0 1 a ⟷ Z 1 0 b ⟧ = 
-		(((C1 + Cexp a) * (C1 - Cexp b) + 2 * Cexp b) / √2) .* I 1). 1: {
+		(⟦ X 0 1 a ⟷ Z 1 0 b ⟧ = 
+		(((C1 + Cexp a) * (C1 - Cexp b) + 2 * Cexp b) / √2) .* I 1)%M). 1: {
 		intros a b.
 		prep_matrix_equivalence.
 		by_cell.
@@ -130,7 +131,7 @@ Proof.
 	- apply (stack_prop_by_compat_l
 		⦰ (X 0 1 (INR r * PI) ⟷ Z 1 0 a)
 		($ 0, n ::: n ⇑ X 0 1 (INR r * PI) ⟷ $ n * 1, n ::: n_wire n $ $)).
-		assert (Hnz : ((C1 + Cexp (INR r * PI)) * (C1 - Cexp a) + C2 * Cexp a) <> 0). 1: {
+		assert (Hnz : ((C1 + Cexp (INR r * PI)) * (C1 - Cexp a) + C2 * Cexp a) <> C0). 1: {
 			rewrite Cmult_plus_distr_r.
 			unfold Cminus at 1.
 			rewrite Cmult_plus_distr_l.
@@ -259,7 +260,7 @@ Proof.
 	rewrite 2 cast_compose_distribute.
 	simpl_casts.
 	erewrite (@cast_compose_mid _ _ _ (n * 1)%nat _ _ (X 1 n 0)).
-	simpl_casts.
+	rewrite cast_X, cast_contract, cast_id.
 	induction n; [ | destruct n].
 	- simpl.
 		prep_matrix_equivalence.
@@ -271,13 +272,12 @@ Proof.
 	- simpl.
 		repeat rewrite X_0_is_wire.
 		cleanup_zx.
-		simpl_casts.
-		easy.
+		now rewrite cast_id.
 	- simpl.
 		rewrite grow_X_top_right.
 		simpl in IHn.
 		rewrite <- compose_assoc.
-		rewrite IHn.
+		rewrite IHn by lia.
 		rewrite compose_assoc.
 		rewrite <- (stack_compose_distr 
 			(Z 1 1 (INR r * PI)) 				(X 1 2 0) 
@@ -288,7 +288,7 @@ Proof.
 		rewrite stack_compose_distr.
 		rewrite compose_assoc.
 		rewrite (stack_assoc (Z 1 1 (INR r * PI))).
-		simpl_casts.
+		rewrite cast_id.
 		easy.
 	Unshelve.
 	all: lia.

@@ -1,6 +1,8 @@
 Require Import CoreData.
 Require Import CoreRules.
 
+(** Proof of correctness of bell state preparation and teleportation *)
+
 Definition bell_state_prep :=
   (((X 0 1 0) ↕ (X 0 1 0)) ⟷ (□ ↕ —) ⟷ 
   ((Z 1 2 0 ↕ —) ⟷ (— ↕ X 2 1 0))).
@@ -12,7 +14,8 @@ Proof.
   assert (X 0 1 0 ⟷ □ ∝= Z 0 1 0) as H.
   {
     replace (X 0 1 0) with (⊙ (Z 0 1 0)) at 1 by easy.
-    rewrite colorswap_is_bihadamard; simpl; cleanup_zx; simpl_casts.
+    rewrite colorswap_is_bihadamard; simpl. 
+    cleanup_zx. rewrite cast_id.
     rewrite compose_assoc; cleanup_zx; easy.
   }
   rewrite H; cleanup_zx.
@@ -25,7 +28,7 @@ Proof.
   rewrite (stack_assoc (n_wire 1) (n_wire 1)); simpl_casts.
   rewrite <- (stack_compose_distr (n_wire 1) (n_wire 1) (n_wire 1 ↕ X 0 1 0)).
   rewrite (dominated_X_spider_fusion_bot_right 0 0 1).
-  cleanup_zx; simpl_casts.
+  cleanup_zx; rewrite cast_id.
   rewrite Rplus_0_r; rewrite X_0_is_wire.
   bundle_wires; cleanup_zx.
   rewrite <- cap_Z.
@@ -49,22 +52,20 @@ Proof.
   }
   rewrite H.
   rewrite (stack_empty_r_back (X 1 0 _)).
-  simpl_casts.
+  rewrite cast_id.
   rewrite <- (stack_compose_distr (X 2 1 0) (X 1 0 _) (Z 1 0 _) ⦰).
   rewrite X_spider_1_1_fusion.
   cleanup_zx.
   rewrite (stack_assoc_back (X 1 1 _ ⟷ Z 1 1 _) (X 2 0 _) (Z 1 0 _)).
-  simpl_casts.
+  rewrite cast_id.
   rewrite <- (nwire_removal_l (X 2 0 _)).
-  cbn; rewrite stack_empty_r; simpl_casts.
+  simpl; rewrite stack_empty_r, cast_id.
   rewrite stack_compose_distr.
-  rewrite (stack_assoc_back (X 1 1 _) — —).
-  simpl_casts.
+  rewrite (stack_assoc_back (X 1 1 _) — —), cast_id.
   rewrite <- (compose_empty_r (Z 1 0 _)).
   rewrite stack_compose_distr.
   rewrite <- compose_assoc.
-  rewrite (stack_assoc (X 1 1 _ ↕ —) — (Z 1 0 _)).
-  simpl_casts.
+  rewrite (stack_assoc (X 1 1 _ ↕ —) — (Z 1 0 _)), cast_id.
   rewrite <- (stack_compose_distr ⊂ (X 1 1 _ ↕ —) (Z 1 2 0) (— ↕ Z 1 0 _)).
   rewrite cap_X.
   rewrite wire_to_n_wire at 1 2.
@@ -77,11 +78,11 @@ Proof.
   rewrite (X_add_l 1 1).
   rewrite stack_nwire_distribute_l.
   rewrite (stack_assoc_back (n_wire 1) (X 1 1 _)).
-  rewrite stack_empty_r.
-  simpl_casts.
+  rewrite stack_empty_r, !cast_id.
   rewrite compose_assoc.
   rewrite <- (compose_assoc (X 0 (1 + 1) _ ↕ Z 1 (1 + 0) _)).
-  rewrite <- (stack_compose_distr (X 0 (1 + 1) _) (n_wire 1 ↕ X 1 1 _) (Z 1 (1 + 0) _) (X 1 1 _)).
+  rewrite <- (stack_compose_distr (X 0 (1 + 1) _) (n_wire 1 ↕ X 1 1 _) 
+    (Z 1 (1 + 0) _) (X 1 1 _)).
   rewrite (dominated_X_spider_fusion_bot_left 1 0).
   replace ((INR b * PI + (INR b * PI + 0)))%R with (INR b * 2 * PI)%R by lra.
   rewrite X_2_PI.
@@ -93,12 +94,12 @@ Proof.
   repeat rewrite <- compose_assoc.
   rewrite (compose_assoc (n_wire 0 ↕ Z 1 (1 + 0) (INR a * PI + 0))).
   rewrite yank_r.
-  cleanup_zx; simpl_casts.
+  cleanup_zx. rewrite cast_id.
   rewrite Z_spider_1_1_fusion.
   replace (INR a * PI + 0 + INR a * PI)%R with ((INR a * 2 * PI))%R by lra.
   rewrite Z_2_PI.
   rewrite Z_0_is_wire.
   easy.
 Unshelve.
-all: lia.
+all: reflexivity.
 Qed.

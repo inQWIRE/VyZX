@@ -3,6 +3,9 @@ Require Import CastRules.
 Require Import SpiderInduction.
 
 Local Open Scope ZX_scope.
+
+(** Rules for manipulating compositions *)
+
 Lemma compose_assoc : forall {n m0 m1 o}
   (zx1 : ZX n m0) (zx2 : ZX m0 m1) (zx3 : ZX m1 o),
   zx1 ⟷ zx2 ⟷ zx3 ∝= zx1 ⟷ (zx2 ⟷ zx3).

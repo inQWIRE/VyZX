@@ -4,6 +4,8 @@ Require Import SpiderInduction.
 
 Local Open Scope ZX_scope.
 
+(** Results about stacks of diagrams *)
+
 Lemma stack_assoc : 
 forall {n0 n1 n2 m0 m1 m2} 
 	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2) prfn prfm,
@@ -87,6 +89,46 @@ Proof.
 	reflexivity.
 Qed.
 
+
+
+Lemma stack_empty_r_fwd {n m} (zx : ZX n m) : 
+  zx ↕ ⦰ ∝=
+  cast _ _ (Nat.add_0_r _) (Nat.add_0_r _) zx.
+Proof. apply stack_empty_r. Qed.
+
+Lemma cast_stack_l_fwd {n0 m0 n0' m0' n1 m1} 
+  (zx0 : ZX n0 m0) (zx1 : ZX n1 m1) prfn prfm :
+  cast n0' m0' prfn prfm zx0 ↕ zx1 ∝=
+  cast _ _ (f_equal (fun k => k + n1)%nat prfn)
+    (f_equal (fun k => k + m1)%nat prfm)
+    (zx0 ↕ zx1).
+Proof. now subst. Qed.
+
+Lemma cast_stack_r_fwd {n0 m0 n1 m1 n1' m1'} 
+  (zx0 : ZX n0 m0) (zx1 : ZX n1 m1) prfn prfm :
+  zx0 ↕ cast n1' m1' prfn prfm zx1 ∝=
+  cast _ _ (f_equal (Nat.add n0) prfn)
+    (f_equal (Nat.add m0) prfm)
+    (zx0 ↕ zx1).
+Proof. now subst. Qed.
+
+Lemma stack_assoc_fwd {n0 n1 n2 m0 m1 m2} 
+  (zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2) :
+  zx0 ↕ zx1 ↕ zx2 ∝= 
+  cast _ _ (eq_sym (Nat.add_assoc _ _ _)) 
+    (eq_sym (Nat.add_assoc _ _ _))
+  (zx0 ↕ (zx1 ↕ zx2)).
+Proof. apply stack_assoc. Qed.
+
+Lemma stack_assoc_back_fwd {n0 n1 n2 m0 m1 m2} 
+  (zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2) :
+  zx0 ↕ (zx1 ↕ zx2) ∝= 
+  cast _ _ (Nat.add_assoc _ _ _)
+    (Nat.add_assoc _ _ _)
+  (zx0 ↕ zx1 ↕ zx2).
+Proof. apply stack_assoc_back. Qed.
+
+
 Lemma nstack1_colorswap : forall n (zx : ZX 1 1), ⊙(n ↑ zx) = (n ↑ (⊙ zx)).
 Proof.
 	intros.
@@ -169,43 +211,8 @@ Lemma stack_nwire_distribute_r : forall {n m o p} (zx0 : ZX n m) (zx1 : ZX m o),
 	(zx0 ⟷ zx1) ↕ n_wire p ∝= (zx0 ↕ n_wire p) ⟷ (zx1 ↕ n_wire p).
 Proof.
 	intros.
-	induction p.
-	- repeat rewrite stack_empty_r.
-		eapply (cast_diagrams_eq n o).
-		repeat rewrite cast_contract.
-		rewrite cast_id.
-		rewrite cast_compose_distribute.
-		simpl_casts.
-		erewrite (cast_compose_mid m _ _ ($ n, m + 0 ::: zx0 $)).
-		simpl_casts.
-		easy.
-		Unshelve.
-		all: lia.
-	- unfold n_wire. 
-		rewrite n_stack1_succ_r.
-		repeat rewrite cast_stack_r.
-		eapply (cast_diagrams_eq (n + (p + 1)) (o + (p + 1))).
-		rewrite cast_contract.
-		rewrite cast_id.
-		rewrite cast_compose_distribute.
-		simpl_casts.
-		erewrite (cast_compose_mid (m + (p + 1)) _ _
-									($ n + (p + 1), m + (S p) ::: zx0 ↕ (n_wire p ↕ —)$)).
-		simpl_casts.
-		rewrite 3 stack_assoc_back.
-		eapply (cast_diagrams_eq (n + p + 1) (o + p + 1)).
-		rewrite cast_contract.
-		rewrite cast_id.
-		rewrite cast_compose_distribute.
-		rewrite 2 cast_contract.
-		erewrite (cast_compose_mid (m + p + 1) _ _
-									($ n + p + 1, m + (p + 1) ::: zx0 ↕ n_wire p ↕ — $)).
-		simpl_casts.
-		rewrite <- stack_wire_distribute_r.
-		rewrite <- IHp.
-		easy.
-		Unshelve.
-		all: lia.
+	unfold proportional_by_1.
+	cbn; rewrite n_wire_semantics; Msimpl; reflexivity.
 Qed.
 
 (* Lemma n_wire_collapse_r : forall {n0 n1 m1} (zx0 : ZX n0 0) (zx1 : ZX n1 m1),
@@ -259,3 +266,58 @@ Qed.
 
 Lemma nstack1_0 : forall zx, 0 ↑ zx = ⦰.
 Proof. easy. Qed.
+
+Lemma n_stack_mul {n m} k l (zx : ZX n m) : 
+  (k * l) ⇑ zx ∝=
+  cast _ _ (eq_sym (Nat.mul_assoc _ _ _)) (eq_sym (Nat.mul_assoc _ _ _))
+  (k ⇑ (l ⇑ zx)).
+Proof.
+  induction k.
+  - simpl.
+    now rewrite cast_id.
+  - simpl.
+    rewrite nstack_split, IHk.
+    simpl_casts.
+    reflexivity.
+  Unshelve. all: lia.
+Qed.
+
+Lemma n_stack_semantics {n m} (zx : ZX n m) k : 
+  ⟦ k ⇑ zx ⟧ = k ⨂ ⟦ zx ⟧.
+Proof.
+  induction k; [easy|].
+  rewrite kron_n_assoc by auto_wf.
+  simpl.
+  rewrite IHk.
+  f_equal; rewrite <- Nat.pow_mul_r; f_equal; lia.
+Qed.
+
+
+Lemma n_stack1_semantics (zx : ZX 1 1) k : 
+  ⟦ k ↑ zx ⟧ = k ⨂ ⟦ zx ⟧.
+Proof.
+  induction k; [easy|].
+  rewrite kron_n_assoc by auto_wf.
+  simpl.
+  rewrite IHk.
+  f_equal; rewrite <- Nat.pow_mul_r; f_equal; lia.
+Qed.
+
+
+
+
+Lemma n_stack_1 {n m} (zx : ZX n m) : 1 ⇑ zx ∝= 
+  cast _ _ (Nat.mul_1_l _) (Nat.mul_1_l _) zx.
+Proof.
+  simpl.
+  rewrite stack_empty_r.
+  reflexivity.
+Qed.
+
+Lemma n_stack_1' {n m} (zx : ZX n m) prfn prfm : cast _ _ prfn prfm (1 ⇑ zx) ∝= 
+  zx.
+Proof.
+  now rewrite n_stack_1, cast_contract, cast_id.
+  Unshelve. all: reflexivity.
+Qed.
+

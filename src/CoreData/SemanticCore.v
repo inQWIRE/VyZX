@@ -3,11 +3,11 @@ Contains the definitions for Z and X spider semantics, their equivalence,
 and well formedness 
 *)
 
+Require Export QuantumLib.Modulus.
 Require Export QuantumLib.Quantum.
 Require Import QuantumLib.Proportional.
 Require Export QuantumLib.VectorStates.
 Require Export QlibTemp.
-
 
 (* Sparse Matrix Definition *)
 
@@ -96,7 +96,7 @@ Proof.
   distribute_adjoint.
   rewrite Z_semantics_adj.
   rewrite 2 kron_n_adjoint; try auto with wf_db.
-  rewrite hadamard_sa.
+  rewrite hadamard_hermitian_rw.
   rewrite Mmult_assoc.
   reflexivity.
 Qed.
@@ -238,8 +238,8 @@ Proof.
   induction n; [reflexivity | ].
   rewrite kron_n_assoc; [ | auto with wf_db].
   unfold kron.
-  rewrite 2 Nat.div_0_l; try apply Nat.pow_nonzero; try easy.
-  rewrite 2 Nat.mod_0_l; try apply Nat.pow_nonzero; try easy.
+  rewrite 2 Nat.Div0.div_0_l.
+  rewrite 2 Nat.Div0.mod_0_l.
   rewrite IHn.
   rewrite Cmult_1_r.
   unfold bra.
@@ -258,28 +258,20 @@ Proof.
     rewrite kron_n_assoc; [| auto with wf_db].
     unfold kron.
     destruct (S j mod 2 ^S n) eqn:En.
-    + destruct (Nat.mod_divides (S j) (2 ^ S n)); 
-                 [apply Nat.pow_nonzero; auto |]. 
+    + destruct (Nat.mod_divides (S j) (2 ^ S n) (pow2_nonzero _)).
       destruct (H En).
       rewrite H1.
       replace (2 ^ S n * x / 2 ^ S n)%nat with x.
       * unfold bra; simpl.
         unfold adjoint.
         simpl.
-        destruct x.
-        -- rewrite Nat.mul_0_r in H1.
-           discriminate H1.
-        -- destruct (i / (1 ^ n + 0))%nat. 
-           ++ simpl.
-              destruct x; lca.
-           ++ simpl.
-              destruct x; lca.
+        destruct x;
+        [now rewrite Nat.mul_0_r in H1|].
+        destruct (i / (1 ^ n + 0))%nat;
+        simpl; destruct x; lca.
       * rewrite Nat.mul_comm.
-        rewrite Nat.divide_div_mul_exact.
-        -- rewrite Nat.div_same; [lia | ].
-           apply Nat.pow_nonzero; easy.
-        -- apply Nat.pow_nonzero; easy.
-        -- apply Nat.divide_refl.
+        rewrite Nat.div_mul by now apply Nat.pow_nonzero.
+        easy.
     + rewrite IHn.
       lca.
 Qed.
@@ -301,8 +293,8 @@ Proof.
   induction n; [reflexivity | ].
   rewrite kron_n_assoc; [ | auto with wf_db].
   unfold kron.
-  rewrite 2 Nat.div_0_l; try apply Nat.pow_nonzero; try easy.
-  rewrite 2 Nat.mod_0_l; try apply Nat.pow_nonzero; try easy.
+  rewrite 2 Nat.Div0.div_0_l.
+  rewrite 2 Nat.Div0.mod_0_l.
   rewrite IHn.
   rewrite Cmult_1_r.
   reflexivity.
@@ -334,14 +326,12 @@ Proof.
     rewrite Nat.mod_1_r.
     rewrite Nat.div_1_r.
     destruct (S i mod 2 ^ S n) eqn:En.
-    + destruct (Nat.mod_divides (S i) (2^S n)); [apply Nat.pow_nonzero; auto |].
+    + destruct (Nat.mod_divides (S i) (2^S n) (pow2_nonzero _)).
       destruct H; [assumption |].
       rewrite H.
       rewrite Nat.mul_comm.
-      rewrite Nat.divide_div_mul_exact; 
-        [ | apply Nat.pow_nonzero; auto | apply Nat.divide_refl ].
-      rewrite Nat.div_same; [ | apply Nat.pow_nonzero; auto].
-      rewrite Nat.mul_1_r.
+
+      rewrite Nat.div_mul by now apply Nat.pow_nonzero.
       destruct x; [rewrite Nat.mul_0_r in H; discriminate H |].
       unfold ket; simpl.
       destruct x, j; lca.
@@ -391,98 +381,6 @@ Proof.
       lca.
 Qed.
 
-Lemma big_ket_1_max_0 : forall n, (n ⨂  ∣1⟩) (2 ^ n - 1)%nat 0%nat = C1.
-Proof.
-  induction n.
-  - lca.
-  - rewrite kron_n_assoc; [| auto with wf_db].
-    unfold kron.
-    simpl.
-    rewrite <- Nat.add_sub_assoc.
-    + replace (0 / 1 ^ n)%nat with 0%nat 
-        by (rewrite Nat.pow_1_l; rewrite Nat.div_1_r; reflexivity).
-      replace (0 mod 1^n) with 0%nat by (rewrite Nat.pow_1_l; reflexivity).
-      replace ((2 ^ n + (2 ^ n + 0 - 1)) / 2 ^ n)%nat with 1%nat.
-      * replace ((2 ^ n + (2 ^ n + 0 - 1)) mod 2 ^ n)%nat with (2^n-1)%nat.
-        -- rewrite IHn; lca.
-        -- rewrite Nat.add_mod; [| apply Nat.pow_nonzero; auto].
-           ++ rewrite Nat.add_0_r.
-              rewrite Nat.mod_same; [| apply Nat.pow_nonzero; auto].
-              rewrite Nat.add_0_l.
-              rewrite Nat.mod_mod; [| apply Nat.pow_nonzero; auto].
-              destruct n.
-              ** reflexivity.
-              ** rewrite Nat.mod_small; [reflexivity|].
-                 destruct (2 ^ S n)%nat eqn:E.
-                 --- destruct (Nat.pow_nonzero 2 (S n)); [auto |apply E].
-                 --- simpl.
-                     rewrite Nat.sub_0_r.
-                     constructor.
-      * rewrite Nat.add_0_r.
-        replace ((2 ^ n + (2 ^ n - 1)) / 2 ^ n)%nat 
-          with (((1 * 2 ^ n) + (2 ^ n - 1)) / 2 ^ n)%nat.
-        -- rewrite Nat.div_add_l; [| apply Nat.pow_nonzero; auto].
-           rewrite Nat.div_small; [reflexivity|].
-           destruct (2^n)%nat eqn:E.
-           ++ destruct (Nat.pow_nonzero 2 n); [auto | apply E].
-           ++ simpl; rewrite Nat.sub_0_r.
-              auto.
-        -- rewrite Nat.mul_1_l.
-           reflexivity.
-    + rewrite Nat.add_0_r.
-      rewrite <- (Nat.pow_1_l n).
-      replace (S (1 ^ n)) with 2%nat.
-      * apply Nat.pow_le_mono_l.
-        auto.
-      * rewrite Nat.pow_1_l; reflexivity.
-Qed.
-
-Lemma big_bra_1_0_max : forall n, (n ⨂ ⟨1∣) 0%nat (2 ^ n - 1)%nat = C1.
-Proof.
-  induction n.
-  - lca.
-  - rewrite kron_n_assoc; [| auto with wf_db].
-    unfold kron.
-    simpl.
-    rewrite <- Nat.add_sub_assoc.
-    + replace (0 / 1 ^ n)%nat with 0%nat 
-        by (rewrite Nat.pow_1_l; rewrite Nat.div_1_r; reflexivity).
-      replace (0 mod 1^n) with 0%nat by (rewrite Nat.pow_1_l; reflexivity).
-      replace ((2 ^ n + (2 ^ n + 0 - 1)) / 2 ^ n)%nat with 1%nat.
-      * replace ((2 ^ n + (2 ^ n + 0 - 1)) mod 2 ^ n)%nat with (2^n-1)%nat.
-        -- rewrite IHn; lca.
-        -- rewrite Nat.add_mod; [| apply Nat.pow_nonzero; auto].
-           ++ rewrite Nat.add_0_r.
-              rewrite Nat.mod_same; [| apply Nat.pow_nonzero; auto].
-              rewrite Nat.add_0_l.
-              rewrite Nat.mod_mod; [| apply Nat.pow_nonzero; auto].
-              destruct n.
-              ** reflexivity.
-              ** rewrite Nat.mod_small; [reflexivity|].
-                 destruct (2 ^ S n)%nat eqn:E.
-                 --- destruct (Nat.pow_nonzero 2 (S n)); [auto |apply E].
-                 --- simpl.
-                     rewrite Nat.sub_0_r.
-                     constructor.
-      * rewrite Nat.add_0_r.
-        replace ((2 ^ n + (2 ^ n - 1)) / 2 ^ n)%nat 
-           with (((1 * 2 ^ n) + (2 ^ n - 1)) / 2 ^ n)%nat.
-        -- rewrite Nat.div_add_l; [| apply Nat.pow_nonzero; auto].
-           rewrite Nat.div_small; [reflexivity|].
-           destruct (2^n)%nat eqn:E.
-           ++ destruct (Nat.pow_nonzero 2 n); [auto | apply E].
-           ++ simpl; rewrite Nat.sub_0_r.
-              auto.
-        -- rewrite Nat.mul_1_l.
-           reflexivity.
-    + rewrite Nat.add_0_r.
-      rewrite <- (Nat.pow_1_l n).
-      replace (S (1 ^ n)) with 2%nat.
-      * apply Nat.pow_le_mono_l.
-        auto.
-      * rewrite Nat.pow_1_l; reflexivity.
-Qed.
-
 Lemma big_ket_1_n_S : forall n i j, (n ⨂  ∣1⟩) i (S j) = C0.
 Proof.
   induction n.
@@ -506,146 +404,31 @@ Definition big_bra_sem (n : nat) : Matrix 1 (2 ^ n) :=
   fun x y => 
   if (y =? 2^n-1) && (x =? 0) then C1 else C0.
 
-Opaque Nat.div.
-Opaque Nat.modulo.
+Lemma big_bra_sem_to_e_i n : 
+  big_bra_sem n = (e_i (2^n-1)) ⊤.
+Proof.
+  prep_matrix_equality.
+  unfold transpose, big_bra_sem, e_i.
+  pose proof (Modulus.pow2_nonzero n).
+  Modulus.bdestructΩ'.
+Qed.
 
 Lemma big_bra_to_sem : forall n, (n ⨂ (bra 1)) = big_bra_sem n.
 Proof.
+  intros n.
+  rewrite big_bra_sem_to_e_i.
+  replace (bra 1) with ((@e_i 2 1) ⊤) by lma'.
+  rewrite <- kron_n_transpose.
+  rewrite Nat.pow_1_l.
+  f_equal.
   induction n.
-  - prep_matrix_equality.
-    destruct x,y.
-    + lca.
-    + lca.
-    + lca.
-    + unfold big_bra_sem.
-      rewrite andb_false_r.
-      simpl.
-      unfold I.
-      rewrite andb_false_r.
-      reflexivity.
-  - prep_matrix_equality.
-    simpl.
+  - lma'.
+  - cbn [kron_n].
     rewrite IHn.
-    unfold kron.
-    destruct (y =? 2^(S n) - 1) eqn:Ex.
-    + unfold big_bra_sem.
-      rewrite Ex.
-      apply Nat.eqb_eq in Ex.
-      rewrite Ex.
-      rewrite Nat.mod_1_r.
-      rewrite Nat.div_1_r.
-      destruct y.
-      * destruct (2^n)%nat eqn:En.
-        -- contradict En.
-           apply Nat.pow_nonzero.
-           easy.
-        -- replace ((2 ^ S n - 1) / 2)%nat with (2^n - 1)%nat.
-           ++ rewrite En.
-              rewrite Nat.eqb_refl.
-              replace ((2 ^ S n - 1) mod 2)%nat with 1%nat.
-              ** destruct x; lca.
-              ** replace (2 ^ S n)%nat with (2^n + 2^n)%nat.
-                 --- destruct (2 ^ n)%nat eqn:E2n.
-                     +++ contradict E2n.
-                         apply Nat.pow_nonzero; easy.
-                     +++ rewrite <- plus_n_Sm.
-                         replace (S (S n1 + n1) - 1)%nat 
-                            with (S (n1 + n1))%nat by reflexivity.
-                         rewrite (double_mult n1).
-                         rewrite <- (Nat.add_0_l (2*n1)).
-                         replace (S (0 + 2 * n1))%nat 
-                            with (1 + 2 * n1)%nat by reflexivity.
-                         rewrite Nat.add_mod; [| easy].
-                         rewrite Nat.mul_comm.
-                         rewrite Nat.mod_mul; [| easy].
-                         reflexivity.
-                 --- simpl.
-                     rewrite Nat.add_0_r.
-                     lia.
-           ++ replace (2 ^ S n)%nat with (2 * (2 ^ n))%nat.
-              ** destruct (2^n)%nat.
-                 --- reflexivity.
-                 --- contradict Ex.
-                     destruct (2^S n)%nat eqn:Esn.
-                     +++ contradict Esn.
-                         apply Nat.pow_nonzero; easy.
-                     +++ destruct n2.
-                         *** contradict Esn.
-                             simpl.
-                             destruct (2^n)%nat.
-                             ---- easy.
-                             ---- destruct n2.
-                                  ++++ easy.
-                                  ++++ simpl.
-                                       easy.
-                         *** easy.
-              ** reflexivity.
-      * Opaque Nat.div.
-        Opaque Nat.modulo.
-        replace ((2 ^ S n - 1) / 2)%nat with (2^n - 1)%nat.
-        replace ((2 ^ S n - 1) mod 2)%nat with 1%nat.
-        -- rewrite Nat.eqb_refl.
-           destruct x; lca.
-        -- simpl.
-           rewrite Nat.add_0_r.
-           destruct (2 ^ n)%nat eqn:En.
-           ++ contradict En.
-              ** apply Nat.pow_nonzero; easy.
-           ++ simpl.
-              rewrite <- plus_n_Sm.
-              rewrite Nat.sub_0_r.
-              rewrite double_mult.
-              replace (S (2 * n0))%nat with (1 + (2 * n0))%nat by reflexivity.
-              rewrite Nat.mul_comm.
-              rewrite Nat.add_mod; [| easy].
-              rewrite Nat.mod_mul; [| easy].
-              reflexivity.
-        -- simpl.
-           rewrite Nat.add_0_r.
-           destruct (2 ^ n)%nat.
-           ++ reflexivity.
-           ++ simpl.
-              rewrite Nat.sub_0_r.
-              rewrite Nat.sub_0_r.
-              rewrite <- plus_n_Sm.
-              rewrite double_mult.
-              replace (S (2 * n0))%nat with ((1 + (2 * n0)))%nat by reflexivity.
-              rewrite Nat.add_comm.
-              rewrite Nat.mul_comm.
-              rewrite Nat.div_add_l; [| easy].
-              rewrite Nat.add_comm.
-              reflexivity.
-    + unfold big_bra_sem.
-      rewrite Ex.
-      simpl.
-      rewrite Nat.mod_1_r.
-      Transparent Nat.div.
-      destruct (Nat.divmod y 1 0 1) eqn:Edm.
-      assert (Hy : (y = 2 * (y / 2) + y mod 2)%nat).
-      { apply Nat.div_mod; lia. } (* Nat.div_mod_eq works in 8.14 on *)
-      destruct (y/2 =? 2^n-1) eqn:Ey2.
-      * destruct (y mod 2 =? 1) eqn:Eym.
-        -- apply Nat.eqb_eq in Eym, Ey2.
-           rewrite Ey2, Eym in Hy.
-           replace (2 * (2 ^ n - 1) + 1)%nat with (2 ^ S n - 1)%nat in Hy.
-           ++ rewrite Hy in Ex.
-              rewrite Nat.eqb_refl in Ex.
-              discriminate.
-           ++ simpl.
-              rewrite 2 Nat.add_0_r.
-              rewrite <- Nat.add_assoc.
-              rewrite <- plus_n_Sm.
-              rewrite Nat.add_0_r.
-              destruct (2 ^ n)%nat eqn:En.
-              ** contradict En.
-                 apply Nat.pow_nonzero; easy.
-              ** simpl. lia.
-        -- destruct (y mod 2).
-           ++ lca.
-           ++ destruct n2.
-              ** discriminate.
-              ** lca.
-      * lca.
+    restore_dims.
+    pose proof (Modulus.pow2_nonzero n).
+    rewrite (Kronecker.kron_e_i_e_i 2 (2^n) 1 (2^n-1)) by lia.
+    f_equal; cbn; lia.
 Qed.
 
 Definition big_ket_sem (n : nat) : Matrix (2 ^ n) 1 :=
@@ -666,14 +449,28 @@ Proof.
   intros.
   rewrite <- (transpose_involutive _ _ _).
   rewrite kron_n_transpose.
-  replace ((ket 1)⊤) with (bra 1).
-  - rewrite big_ket_sem_big_bra_sem_transpose.
-    f_equal.
-    + rewrite Nat.pow_1_l.
-      easy.
-    + apply big_bra_to_sem.
-  - rewrite ket1_transpose_bra1.
-    reflexivity.
+  rewrite ket1_transpose_bra1.
+  rewrite big_ket_sem_big_bra_sem_transpose.
+  rewrite big_bra_to_sem, Nat.pow_1_l.
+  easy.
+Qed.
+
+Lemma big_ket_1_max_0 : forall n, (n ⨂  ∣1⟩) (2 ^ n - 1)%nat 0%nat = C1.
+Proof.
+  intros n.
+  rewrite ket1_equiv.
+  rewrite big_ket_to_sem.
+  unfold big_ket_sem.
+  now rewrite 2!Nat.eqb_refl.
+Qed.
+
+Lemma big_bra_1_0_max : forall n, (n ⨂ ⟨1∣) 0%nat (2 ^ n - 1)%nat = C1.
+Proof.
+  intros n.
+  rewrite bra1_equiv.
+  rewrite big_bra_to_sem.
+  unfold big_bra_sem.
+  now rewrite 2!Nat.eqb_refl.
 Qed.
 
 Lemma braket_sem_1_intermediate : forall n m : nat, 
@@ -728,4 +525,62 @@ Proof.
 Qed.
 
 #[export] Hint Resolve WF_Z_semantics WF_X_semantics : wf_db.
+
+
+Lemma X_2_1_semantics α : X_semantics 2 1 α = 
+  (/ √ 2 * / 2) .* @make_WF (2^1) (2^2) (list2D_to_matrix
+    [[1 + Cexp α; 1 - Cexp α; 1 - Cexp α; 1 + Cexp α]; 
+     [1 - Cexp α; 1 + Cexp α; 1 + Cexp α; 1 - Cexp α]]).
+Proof.
+  unfold X_semantics.
+  cbn [kron_n].
+  Msimpl.
+  prep_matrix_equivalence.
+  restore_dims.
+  compute_matrix (hadamard × Z_semantics 2 1 α × (hadamard ⊗ hadamard)).
+  group_radicals.
+  replace (/ √ 2 * / C2 + / √ 2 * Cexp α * / C2) with 
+    (/ √ 2 * / C2 * (C1 + Cexp α)) by lca.
+  replace (/ √ 2 * / C2 + - (/ √ 2 * Cexp α * / C2)) with 
+    (/ √ 2 * / C2 * (C1 - Cexp α)) by lca.
+  rewrite 2!make_WF_equiv.
+  by_cell; lca.
+Qed.
+
+Lemma X_2_1_0_semantics : X_semantics 2 1 0 = 
+  @make_WF (2^1) (2^2) (list2D_to_matrix
+    [[/ √ 2; C0; C0; / √ 2]; [C0; / √ 2; / √ 2; C0]]).
+Proof.
+  rewrite X_2_1_semantics.
+  prep_matrix_equivalence.
+  match goal with 
+  |- ?A ≡ _ => compute_matrix A
+  end.
+  rewrite 2!make_WF_equiv.
+  rewrite Cexp_0.
+  rewrite <- Cdouble, Cmult_1_r, Cminus_diag by reflexivity.
+  rewrite <- Cmult_assoc.
+  now autorewrite with C_db.
+Qed.
+
+Lemma X_2_1_pi_semantics : X_semantics 2 1 PI = 
+  @make_WF (2^1) (2^2) (list2D_to_matrix
+    [[C0; / √ 2; / √ 2; C0]; [/ √ 2; C0; C0; / √ 2]]).
+Proof.
+  rewrite X_2_1_semantics.
+  prep_matrix_equivalence.
+  match goal with 
+  |- ?A ≡ _ => compute_matrix A
+  end.
+  rewrite Cexp_PI.
+  change (-1 : R) with (Ropp 1).
+  rewrite RtoC_opp.
+  autorewrite with C_db.
+  rewrite <- Cmult_assoc.
+  now autorewrite with C_db.
+Qed.
+
+(* Compatibility from earlier code *)
+Opaque Nat.div.
+Opaque Nat.modulo.
 
