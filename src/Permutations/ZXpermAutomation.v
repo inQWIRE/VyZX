@@ -2,6 +2,8 @@ Require Import ZXCore.
 Require CastRules ComposeRules.
 Require Export ZXperm.
 
+(** Automation for [ZXperm]'s *)
+
 #[export] Hint Extern 100 (WF_Matrix _) => 
   apply WF_Matrix_dim_change : wf_db.
 

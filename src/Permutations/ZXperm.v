@@ -3,8 +3,10 @@ Require Import QuantumLib.Permutations.
 
 Open Scope ZX_scope.
 
+(** Definition of ZX-diagrams corresponding to permutations, 
+  as well as computing diagrams corresponding to arbitrary permutations *)
+
 (* @nocheck name *)
-(* Allowing combination of Z and X; will check before push *)
 Inductive ZXperm : forall {n m}, ZX n m -> Prop :=
   | PermEmpty : ZXperm Empty
   | PermWire : ZXperm Wire

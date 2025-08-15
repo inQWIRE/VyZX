@@ -1,7 +1,8 @@
 Require Export CoreData CoreAutomation 
   CastRules StackComposeRules CapCupRules.
 
-
+(** Results about the Choi-Jamiolshosky isomorphism, i.e. 
+  process/state duality. *)
 
 Lemma proc_to_state_to_proc {n m} (zx : ZX n m) : 
   state_to_proc (proc_to_state zx) ∝= zx.

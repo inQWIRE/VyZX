@@ -7,6 +7,8 @@ Require Import ZXpermFacts.
 Require Import ZRules.
 Require Import ChoiJamiolchosky.
 
+(** Rules about X spiders *)
+
 Lemma grow_X_top_left : forall (nIn nOut : nat) α,
 	X (S (S nIn)) nOut α ∝=  
 	(X 2 1 0) ↕ (n_wire nIn) ⟷ (X (S nIn) nOut α).

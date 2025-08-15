@@ -4,6 +4,8 @@ Require Import SpiderInduction.
 
 Local Open Scope ZX_scope.
 
+(** Results about stacks of diagrams *)
+
 Lemma stack_assoc : 
 forall {n0 n1 n2 m0 m1 m2} 
 	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2) prfn prfm,

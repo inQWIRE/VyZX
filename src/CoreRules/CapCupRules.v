@@ -8,6 +8,9 @@ Require Import ZXpermFacts.
 Require Import CoreAutomation.
 Require Import StackComposeRules.
 
+(** Results about caps and cups, including yanking and 
+  pullthrough (both for cap/cup and n_cap/n_cup) *)
+
 Lemma cup_Z : ⊃ ∝= Z 2 0 0.
 Proof.
   lma'.
@@ -16,8 +19,7 @@ Qed.
 
 Lemma cap_Z : ⊂ ∝= Z 0 2 0.
 Proof.
-  lma'.
-  now rewrite Cexp_0.
+  transpose_of cup_Z.
 Qed.
 
 Lemma cup_X : ⊃ ∝= X 2 0 0.
@@ -28,15 +30,15 @@ Proof. colorswap_of cap_Z. Qed.
 
 Lemma n_cup_0_empty : n_cup 0 ∝= ⦰.
 Proof.
-  lma'.
+  etransitivity; [apply compose_empty_r|];
+  apply stack_empty_l.
 Qed.
 
 Lemma n_cup_1_cup : n_cup 1 ∝= ⊃.
 Proof.
   unfold n_cup.
   cbn.
-  auto_cast_eqn (rewrite stack_empty_r).
-  rewrite 2!cast_id_eq.
+  rewrite stack_empty_r_fwd, 2 cast_id.
   rewrite wire_removal_l.
   bundle_wires.
   now rewrite 2!nwire_removal_l.
@@ -44,17 +46,12 @@ Qed.
 
 Lemma n_cap_0_empty : n_cap 0 ∝= ⦰.
 Proof.
-  apply transpose_diagrams_eq.
-  simpl.
-  rewrite n_cup_0_empty.
-  easy.
+  transpose_of n_cup_0_empty.
 Qed.
 
 Lemma n_cap_1_cap : n_cap 1 ∝= ⊂.
 Proof.
-  unfold n_cap.
-  rewrite n_cup_1_cup.
-  easy.
+  transpose_of n_cup_1_cup.
 Qed.
 
 Local Open Scope matrix_scope.

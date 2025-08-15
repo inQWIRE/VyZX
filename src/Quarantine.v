@@ -187,29 +187,3 @@ Lemma X_spider_angle_2pi : forall {nIn nOut} α k, X_Spider nIn nOut α ∝= (X_
 Proof. intros. colorswap_of (@Z_spider_angle_2pi nIn nOut). Qed.
 
 Require Import DiagramRules.
-
-Lemma box_decomposition_Z_X_Z : □ ∝= 
-  (C1 - Ci) / √ 2 .*
-  (Z 1 1 (PI/2) ⟷ X 1 1 (PI/2) ⟷ Z 1 1 (PI/2)).
-Proof.
-  prep_matrix_equivalence.
-  rewrite zx_scale_semantics.
-  rewrite 2 zx_compose_spec.
-  compute_matrix (⟦ Z 1 1 (PI / 2) ⟧).
-  compute_matrix (⟦ X 1 1 (PI / 2) ⟧).
-  rewrite kron_1_l by auto_wf.
-  unfold hadamard.
-  unfold Cdiv; Csimpl.
-  rewrite 2 make_WF_equiv.
-  rewrite Cexp_PI2 (* , Cexp_PI4 *).
-  group_radicals.
-  by_cell; autounfold with U_db; unfold list2D_to_matrix; cbn;
-  lca.
-Qed.
-
-Lemma box_decomposition_X_Z_X : □ ∝= 
-  (C1 - Ci) / √ 2 .*
-  (X 1 1 (PI/2) ⟷ Z 1 1 (PI/2) ⟷ X 1 1 (PI/2)).
-Proof.
-  colorswap_of box_decomposition_Z_X_Z.
-Qed.

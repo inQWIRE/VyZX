@@ -1,5 +1,6 @@
 Require Import CoreRules.
 
+(** Universality of ZX-diagrams *)
 
 Theorem universality {n m} : forall (A : Matrix (2^m) (2^n)), WF_Matrix A -> 
   exists (zx : ZX n m), ⟦ zx ⟧ = A.

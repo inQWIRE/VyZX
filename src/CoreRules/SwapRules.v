@@ -6,6 +6,8 @@ Require Import StackComposeRules.
 Require Import CastRules.
 Require Import ZXpermFacts.
 
+(** Rules for manipulating swaps *)
+
 Lemma swap_compose :
   ⨉ ⟷ ⨉ ∝= n_wire 2.
 Proof. 

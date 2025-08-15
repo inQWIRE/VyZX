@@ -1,6 +1,8 @@
 Require Import CoreData.
 Require Import CoreRules.
 
+(** Proof of correctness of bell state preparation and teleportation *)
+
 Definition bell_state_prep :=
   (((X 0 1 0) ↕ (X 0 1 0)) ⟷ (□ ↕ —) ⟷ 
   ((Z 1 2 0 ↕ —) ⟷ (— ↕ X 2 1 0))).

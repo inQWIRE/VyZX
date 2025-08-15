@@ -1,6 +1,6 @@
 Require Import SemanticsComp CoreData GadgetRules ComposeRules CoreAutomation.
 
-(* Various computational results about explicit ZX-diagrams, using scalars *)
+(** Various computational results about explicit ZX-diagrams, using scalars *)
 
 
 Lemma Z_0_2_semantics α : 

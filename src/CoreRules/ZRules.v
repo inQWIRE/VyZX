@@ -9,6 +9,8 @@ Require Import SpiderInduction.
 Require Import ZXpermFacts.
 Require Import ChoiJamiolchosky.
 
+(** Rules about Z spiders *)
+
 Lemma grow_Z_top_left : forall (nIn nOut : nat) α,
 	Z (S (S nIn)) nOut α ∝=
 	(Z 2 1 0) ↕ (n_wire nIn) ⟷ (Z (S nIn) nOut α).

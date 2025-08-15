@@ -2,6 +2,8 @@ Require Import CoreData CapCupRules StackRules StateRules ZXStateRules
   ChoiJamiolchosky GadgetRules ControlizerRules.
 Import Setoid.
 
+(** Rules about the addition of ZX-diagrams, including the 
+  correctness of [zx_of_matrix], proving universality *)
 
 Lemma zx_plus_defn' {n m} (zx0 zx1 : ZX n m) : 
   zx0 .+ zx1 ∝= (/√2)^(n+m) .* 

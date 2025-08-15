@@ -10,52 +10,47 @@ Definition bi_alg_X_Z := ((X_Spider 1 2 0) ↕ (X_Spider 1 2 0)
 Theorem bi_algebra_rule_Z_X : 
  (X_Spider 2 1 0) ⟷ (Z_Spider 1 2 0) ∝[(√2)%R] bi_alg_Z_X.
 Proof.
+  rewrite prop_by_iff_zx_scale.
   split; [|nonzero].
-  simpl.
-  unfold X_semantics.
-  cbn [kron_n].
-  Msimpl.
-  restore_dims.
-  Import ZXpermAutomation.
-  compute_matrix (hadamard × Z_semantics 2 1 0 × (hadamard ⊗ hadamard)).
-  rewrite Cexp_0, 2!Cmult_1_r.
-  group_radicals.
-  autorewrite with C_db.
-  rewrite Cmult_comm, <- Cmult_assoc.
-  autorewrite with C_db.
-  change (2)%nat with (2^1)%nat.
-  rewrite <- perm_to_matrix_idn.
-  replace swap with (perm_to_matrix 2 (swap_perm 0 1 2)) by 
-    (prep_matrix_equivalence; by_cell; reflexivity).
-  restore_dims.
-  rewrite <- perm_to_matrix_of_stack_perms by auto with perm_db.
-  restore_dims.
-  rewrite <- perm_to_matrix_of_stack_perms by auto with perm_db.
+  unfold bi_alg_Z_X.
+  apply prop_eq_by_eq_on_states_b_step; intros b0.
+  apply prop_eq_by_eq_on_states_b_step; intros b1.
+  rewrite stack_empty_r_fwd, cast_id.
+  cbn -[n_wire].
+  distribute_zxscale.
+  rewrite <- 5 compose_assoc.
+  rewrite <- (@push_out_top 0 1 1).
+  rewrite X_2_1_states_b.
+  rewrite Rplus_0_l.
+  assert (Hrw : (if b0 ⊕ b1 then PI else 0%R) = 
+    (INR (Nat.b2n (b0 ⊕ b1)) * PI)%R)
+    by (destruct (b0 ⊕ b1); cbn; lra).
+  rewrite Hrw.
+  distribute_zxscale.
+  rewrite (to_scale X_state_copy_phase_0).
+  distribute_zxscale.
+  rewrite cast_id.
+  rewrite <- (@stack_compose_distr 0 1 2 0 1 2).
+  rewrite 2 Z_1_2_state_b.
+  cbn [n_stack]; rewrite stack_empty_r_fwd, cast_id.
+  rewrite Cexp_0, 2 Tauto.if_same, 2 zx_scale_1_l.
+  rewrite (@stack_assoc_back_fwd 0 0 0 2 1 1), cast_id.
+  rewrite <- (@stack_compose_distr 0 3 3 0 1 1).
+  rewrite (@stack_assoc_fwd 0 0 0 1 1 1), cast_id.
+  rewrite <- (@stack_compose_distr 0 1 1 0 2 2).
+  rewrite (@swap_commutes_r 0 0), zx_comm_0_0, compose_empty_l.
+  rewrite 2 wire_removal_r.
+  rewrite (@stack_assoc_back_fwd 0 0 0 1 1 1), cast_id.
+  rewrite (@stack_assoc_fwd 0 0 0 2 1 1), cast_id.
+  rewrite <- (@stack_compose_distr 0 2 1 0 2 1).
+  rewrite X_2_1_states_b, Rplus_0_l, Hrw.
+  rewrite zx_scale_stack_distr_l, zx_scale_stack_distr_r, 
+    2 zx_scale_assoc.
+  apply zx_scale_simplify_eq_l.
   cbn.
-  restore_dims.
-  compute_matrix (Z_semantics 1 2 0 ⊗ Z_semantics 1 2 0).
-  unfold perm_to_matrix.
-  rewrite perm_mat_permutes_matrix_r_eq by auto with wf_db perm_db.
-  unfold perm_inv;
-  simpl;
-  match goal with |- context[@make_WF ?n ?m ?A] =>
-    match A with 
-    | list2D_to_matrix _ => fail
-    | _ => compute_matrix (@make_WF n m A)
-    end
-  end.
-  rewrite Cexp_0; Csimpl.
-  symmetry.
-  rewrite Mscale_inv by nonzero.
-  match goal with |- ?A = ?B => compute_matrix B end.
-  match goal with |- context [?A ⊗ ?B] => compute_matrix (A ⊗ B) end.
-  group_radicals.
-  rewrite Cexp_0.
-  Csimpl.
-  prep_matrix_equivalence.
-  rewrite !make_WF_equiv.
-  unfold Mmult.
-  by_cell; cbn; lca.
+  autorewrite with RtoC_db.
+  C_field.
+  Unshelve. all: reflexivity.
 Qed.
 
 Theorem bi_algebra_rule_X_Z : 

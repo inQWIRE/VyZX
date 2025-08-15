@@ -2,6 +2,8 @@ Require Export CoreData StackComposeRules CoreAutomation
   StateRules CastRules CapCupRules ZXRules GadgetRules 
   SemanticsComp ScalarSemanticsComp ZXpermFacts.
 
+(** Results about states that use lemmas from ZXRules *)
+
 (* Assorted results about states of Z / X spiders *)
 
 Lemma X_to_Z n m α : X n m α ∝= n ↑ □ ⟷ Z n m α ⟷ m ↑ □.
@@ -111,7 +113,6 @@ Proof.
   colorswap_of (X_pi_copy_1_1_gen α).
 Qed.
 
-(* FIXME: get proper name and move *)
 Lemma Z_pi_copy_1_1_gen_r α : 
   X 0 1 α ⟷ Z 1 1 PI ∝= Cexp α .* X 0 1 (-α).
 Proof.
@@ -321,6 +322,7 @@ Qed.
 
 
 
+(* Results about states of certain other diagrams, such as NOT and □ *)
 
 (* @nocheck name *)
 Definition NOT : ZX 1 1 := X 1 1 PI.
@@ -491,7 +493,7 @@ Qed.
 
 
 
-
+(* Results about the uniform state *)
 
 Lemma uniform_state_fold n prf1 prf2 : 
   cast _ _ prf1 prf2 (n ⇑ Z 0 1 0) ∝= uniform_state n.
@@ -600,6 +602,8 @@ Proof.
   apply make_WF_equiv; [apply funbool_to_nat_bound | lia].
 Qed.
 
+(* Results about states of triangles, and their interactions with 
+  other diagrams *)
 
 Lemma triangle_state_0 : state_0 ⟷ ▷ ∝= Z 0 1 0.
 Proof.
@@ -753,4 +757,59 @@ Proof.
     reflexivity.
   - rewrite Modulus.mod_n_to_2n by lia.
     reflexivity.
+Qed.
+
+Lemma Z_1_n_state_b b n α : 
+  state_b b ⟷ Z 1 n α ∝= 
+  (if b then Cexp α else C1) .* 
+  cast _ _ (eq_sym (Nat.mul_0_r _)) (eq_sym (Nat.mul_1_r _)) 
+  (n ⇑ state_b b).
+Proof.
+  destruct b.
+  - apply Z_1_n_state1.
+  - rewrite zx_scale_1_l.
+    apply Z_1_n_state0.
+Qed.
+
+Lemma box_decomposition_Z_X_Z : □ ∝= 
+  (C1 - Ci) / √ 2 .*
+  (Z 1 1 (PI/2) ⟷ X 1 1 (PI/2) ⟷ Z 1 1 (PI/2)).
+Proof.
+  apply prop_eq_by_eq_on_state_b_1_n.
+  intros b0.
+  distribute_zxscale.
+  rewrite <- 2 compose_assoc.
+  rewrite Z_1_n_state_b, n_stack_1'.
+  distribute_zxscale.
+  rewrite X_1_n_state_b.
+  distribute_zxscale.
+  apply transpose_diagrams_eq.
+  rewrite zx_scale_transpose.
+  cbn.
+  apply prop_eq_by_eq_on_state_b_1_n.
+  intros b1.
+  distribute_zxscale.
+  rewrite <- 2 compose_assoc.
+  rewrite Z_1_n_state_b, n_stack_1'.
+  distribute_zxscale.
+  rewrite X_1_n_state_b, X_0_0_to_scalar.
+  distribute_zxscale.
+  rewrite (if_dist R R), 3 (if_dist R C).
+  rewrite 2 Cexp_add, Cexp_PI', Cexp_PI2.
+  prep_matrix_equivalence.
+  rewrite zx_scale_semantics.
+  cbn.
+  rewrite semantics_transpose_comm.
+  rewrite 2state_b_semantics.
+  by_cell.
+  cbn.
+  unfold scale.
+  destruct b0, b1; cbn; C_field; lca.
+Qed.
+
+Lemma box_decomposition_X_Z_X : □ ∝= 
+  (C1 - Ci) / √ 2 .*
+  (X 1 1 (PI/2) ⟷ Z 1 1 (PI/2) ⟷ X 1 1 (PI/2)).
+Proof.
+  colorswap_of box_decomposition_Z_X_Z.
 Qed.

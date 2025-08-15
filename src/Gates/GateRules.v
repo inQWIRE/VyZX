@@ -7,6 +7,8 @@ Require Export CoreRules.
 Local Open Scope ZX_scope.
 Local Open Scope matrix_scope.
 
+(** Rules for manipulating gates *)
+
 Lemma Z_is_Z : ⟦ _Z_ ⟧ = σz.
 Proof.
   apply z_1_1_pi_σz.
@@ -19,14 +21,13 @@ Qed.
 
 Lemma _H_is_box : _H_ ∝[Cexp (PI/4)] □.
 Proof.
+  apply prop_by_iff_zx_scale.
   split; [|nonzero].
-  prep_matrix_equivalence; cbn.
-  unfold X_semantics, Z_semantics.
-  simpl.
-  Msimpl.
-  rewrite Cexp_PI2, Cexp_PI4.
-  unfold scale.
-  by_cell; cbn; C_field.
+  rewrite box_decomposition_Z_X_Z.
+  distribute_zxscale.
+  rewrite zx_scale_eq_1_l; [reflexivity|].
+  rewrite Cexp_PI4.
+  C_field; lca.
 Qed.
 
 Lemma _Rz_is_Rz : forall α, ⟦ _Rz_ α ⟧ = phase_shift α.
@@ -46,7 +47,7 @@ Proof.
   rewrite Cexp_0.
   rewrite 2!make_WF_equiv.
   rewrite Kronecker.kron_I_l, Kronecker.kron_I_r.
-  by_cell; cbv; lca.
+  by_cell; lazy; lca.
 Qed.
 
 Lemma cnot_involutive : _CNOT_R ⟷ _CNOT_ ∝[/ C2] n_wire 2. 
@@ -78,19 +79,21 @@ Proof.
   rewrite <- (stack_compose_distr (n_wire 2) (n_wire (1 + 1)) (X 2 1 0) (X 1 2 0)).
   rewrite X_spider_1_1_fusion.
   rewrite Rplus_0_r.
-  cbn; cleanup_zx; simpl_casts.
+  rewrite nwire_removal_l.
+  cbn. 
+  rewrite stack_empty_r_fwd, cast_id.
   rewrite (compose_assoc _ (— ↕ — ↕ X 2 2 _)).
   rewrite stack_assoc. (* simpl_casts. *)
   rewrite cast_id.
   rewrite <- (stack_compose_distr — — (— ↕ X 2 2 _)).
-  cleanup_zx.
+  rewrite wire_removal_l.
   rewrite wire_to_n_wire at 7.
   rewrite <- X_wrap_over_top_left.
   rewrite (stack_assoc_back — ⊂ —).
   rewrite (stack_assoc_back _ — —).
   rewrite !cast_id.
   rewrite <- (stack_compose_distr (— ↕ ⊂) (Z 2 2 _ ↕ —) — —).
-  cleanup_zx.
+  rewrite wire_removal_l.
   rewrite wire_to_n_wire at 1.
   erewrite <- (cast_id _ _ (n_wire 1 ↕ ⊂)).
   rewrite <- Z_wrap_under_bot_left.
@@ -108,7 +111,7 @@ Proof.
   rewrite <- wire_to_n_wire.
   rewrite <- (stack_compose_distr — — (Z 1 2 0 ↕ —)).
   rewrite <- stack_compose_distr.
-  cleanup_zx.
+  rewrite wire_removal_l.
   zxrewrite hopf_rule_Z_X.
   rewrite wire_to_n_wire.
   rewrite stack_nwire_distribute_r.
@@ -137,41 +140,43 @@ Proof.
   remember (— ↕ X 1 2 0 ⟷ (Z 2 1 0 ↕ —)) as RHS.
   rewrite (Z_wrap_under_bot_left 1 1).
   rewrite (X_wrap_over_top_left 1 1).
-  simpl_casts.
+  rewrite cast_id.
   rewrite wire_to_n_wire.
   rewrite stack_nwire_distribute_l.
   rewrite stack_nwire_distribute_r.
   repeat rewrite <- compose_assoc.
   rewrite (compose_assoc _ (Z (1 + 1) 1 0 ↕ (n_wire _) ↕ _)).
   rewrite stack_assoc.
-  simpl_casts.
+  rewrite cast_id.
   rewrite n_wire_stack.
   rewrite (nwire_stack_compose_botleft (Z (1 + 1) 1 0) (n_wire 1 ↕ X 1 2 0)).
   rewrite <- (nwire_stack_compose_topleft (n_wire 1 ↕ X 1 2 0)).
   rewrite <- compose_assoc.
   rewrite stack_assoc_back.
-  simpl_casts.
+  rewrite cast_id.
   rewrite n_wire_stack.
   rewrite <- (stack_compose_distr ((n_wire 1) ↕ ⊂) (n_wire 3) (n_wire 1) (X 1 2 0)).
-  cleanup_zx.
+  rewrite nwire_removal_l, nwire_removal_r.
   rewrite <- nwire_stack_compose_topleft.
   rewrite compose_assoc.
   rewrite nwire_stack_compose_botleft.
   rewrite <- (nwire_stack_compose_topleft (⊃ ↕ n_wire 1)).
   rewrite <- compose_assoc.
   rewrite (compose_assoc _ (n_wire 1 ↕ ⊂ ↕ n_wire 2) _).
-  cbn; cleanup_zx; simpl_casts.
-  rewrite 2 stack_assoc; simpl_casts.
+  cbn; rewrite stack_empty_r_fwd, cast_id.
+  (* cbn; cleanup_zx; simpl_casts. *)
+  rewrite 2 (@stack_assoc 1 _ _ 1), 2 cast_id.
   rewrite <- stack_wire_distribute_l.
-  rewrite 2 stack_assoc_back; simpl_casts.
+  rewrite (@stack_assoc_back 1 2 1 1 0 1), 
+    (@stack_assoc_back 0 1 1 2 1 1), 2 cast_id.
   rewrite <- (stack_wire_distribute_r (⊂ ↕ —) (— ↕ ⊃)).
   rewrite yank_r.
   bundle_wires.
-  cleanup_zx.
+  rewrite nwire_removal_r.
   subst.
   easy.
 Unshelve.
-all: lia.
+all: reflexivity.
 Qed.
 
 Import Setoid.
@@ -188,77 +193,91 @@ Proof.
   now apply zx_of_perm_eq_of_perm_eq.
 Qed.
 
+Lemma cnot_states_b b0 b1 : 
+  state_b b0 ↕ state_b b1 ⟷ _CNOT_ ∝=
+  /√2 .* (state_b b0 ↕ state_b (b0 ⊕ b1)).
+Proof.
+  rewrite <- compose_assoc.
+  rewrite <- stack_compose_distr, wire_removal_r.
+  rewrite Z_1_2_state_b, Cexp_0, Tauto.if_same, zx_scale_1_l.
+  rewrite (@stack_assoc_fwd 0 0 0 1 1 1), cast_id,
+    <- (@stack_compose_distr 0 1 1 0 2 1).
+  rewrite X_2_1_states_b, wire_removal_r.
+  rewrite Rplus_0_l.
+  rewrite (state_b_defn' (xorb _ _)).
+  rewrite gadget_is_scaled_empty, const_of_zx_invsqrt2; distribute_zxscale.
+  rewrite zx_scale_stack_distr_r, zx_scale_assoc.
+  rewrite stack_empty_l.
+  apply zx_scale_simplify_eq_l; C_field.
+Qed.
+
+Lemma cnot_inv_is_colorswap_cnot : 
+  _CNOT_inv_ ∝= ⊙ _CNOT_.
+Proof.
+  now rewrite colorswap_is_bihadamard, ! compose_assoc.
+Qed.
+
+Lemma cnot_inv_states_b b0 b1 : 
+  state_b b0 ↕ state_b b1 ⟷ _CNOT_inv_ ∝=
+  /√2 .* (state_b (b0 ⊕ b1) ↕ state_b b1).
+Proof.
+  rewrite cnot_inv_is_colorswap_cnot.
+  cbn.
+  rewrite <- compose_assoc.
+  rewrite <- (@stack_compose_distr 0 1 2 0 1 1).
+  rewrite X_1_n_state_b, wire_removal_r, Rplus_0_r.
+  
+  distribute_zxscale.
+  rewrite zx_scale_compose_distr_l.
+  apply zx_scale_simplify_eq_r.
+  destruct b0.
+  - rewrite xorb_true_l, X_0_2_PI_to_cup_not, cup_pullthrough_bot_1.
+    rewrite not_defn; cbn [transpose]; rewrite <- not_defn.
+    rewrite wire_removal_r.
+    rewrite <- (nwire_removal_l (state_b b1)) at 1.
+    rewrite stack_compose_distr.
+    rewrite (@stack_assoc_fwd 1 1 0 1 1 1), cast_id.
+    rewrite compose_assoc.
+    rewrite <- (@stack_compose_distr 1 1 1 1 2 1).
+    rewrite wire_removal_r.
+    rewrite (stack_split_antidiag NOT).
+    rewrite <- compose_assoc.
+    rewrite stack_nwire_distribute_l, <- compose_assoc.
+    rewrite (@stack_assoc_back_fwd 1 1 0 1 1 1), cast_id.
+    rewrite wire_to_n_wire, n_wire_stack.
+    rewrite <- (stack_split_diag ⊂ (state_b b1)).
+    rewrite (stack_split_antidiag ⊂).
+    rewrite (compose_assoc (n_wire 0 ↕ state_b _)).
+    rewrite <- wire_to_n_wire at 2.
+    rewrite <- Z_wrap_over_top_right.
+    rewrite stack_empty_l.
+    rewrite Z_1_2_state_b, Cexp_0, Tauto.if_same, zx_scale_1_l.
+    rewrite <- (@stack_compose_distr 0 1 1 0 1 1).
+    rewrite not_state_b, nwire_removal_r.
+    reflexivity.
+  - rewrite xorb_false_l, <- cap_X.
+    rewrite stack_split_antidiag, compose_assoc.
+    rewrite <- Z_wrap_over_top_right.
+    rewrite stack_empty_l.
+    rewrite Z_1_2_state_b, Cexp_0, Tauto.if_same, zx_scale_1_l.
+    reflexivity.
+Qed.
+
 Lemma cnot_inv_is_swapped_cnot : _CNOT_inv_ ∝= ⨉ ⟷ _CNOT_ ⟷ ⨉.
 Proof.
-  symmetry.
+  apply prop_eq_by_eq_on_states_b_step.
+  intros b0.
+  apply prop_eq_by_eq_on_state_b_1_n.
+  intros b1.
+  rewrite <- 2 (compose_assoc (state_b b1)), <- push_out_top.
+  rewrite cnot_inv_states_b.
+  rewrite (compose_assoc ⨉), <- (compose_assoc (state_b _ ↕ state_b _)).
+  rewrite swap_commutes_r, zx_comm_0_0, compose_empty_l.
   rewrite <- compose_assoc.
-  rewrite swap_commutes_l.
-  rewrite !compose_assoc.
-  rewrite (swap_pullthrough_l — (X 2 1 0)).
-  rewrite <- (compose_assoc (zx_comm 1 2)).
-  unfold zx_comm, zx_of_perm_cast.
-  simpl_casts.
-  rewrite compose_zx_of_perm by auto with perm_db.
-  assert (H : perm_eq (1 + 2) 
-    (big_swap_perm 2 1 ∘ big_swap_perm 2 1)%prg
-    (big_swap_perm 1 2))
-    by (by_perm_cell; reflexivity).
-  rewrite H.
-  clear H.
-  rewrite <- (compose_assoc _ _ (2 ↑ □)).
-  rewrite <- colorswap_is_bihadamard.
-  simpl.
-  hnf.
-  simpl.
-  rewrite zx_of_perm_semantics by auto with perm_db.
-  simpl_rewrite' (kron_comm_pows2_eq_perm_to_matrix_big_swap 2 1).
-  rewrite !X_semantics_equiv, !Z_semantics_equiv.
-  simpl.
-  rewrite Cexp_0.
-  Msimpl.
-  restore_dims.
-  distribute_plus.
-  restore_dims.
-  rewrite 2!kron_id_dist_r by auto_wf.
-  rewrite 2!(Mmult_assoc _ _ (kron_comm 2 4)).
-  restore_dims.
-  rewrite 2!kron_assoc by auto_wf.
-  restore_dims.
-  rewrite 2!kron_comm_commutes_r by auto_wf.
-  rewrite kron_comm_1_l.
-  rewrite 2!Mmult_1_l by auto_wf.
-  rewrite <- kron_plus_distr_r, <- kron_plus_distr_l, <- !Mmult_plus_distr_r.
-  rewrite <- kron_plus_distr_l.
-  restore_dims.
-  unfold xbasis_plus, xbasis_minus, braplus, braminus.
-  autorewrite with scalar_move_db.
-  f_equal; [lca|].
-  rewrite <- (kron_1_r _ _ (_ ⊗ I 2)).
-  restore_dims.
-  rewrite 2!kron_mixed_product.
-  rewrite !Mmult_1_l by auto_wf.
-
-  rewrite <- (kron_1_r _ _ ((_ .+ _ .* _) ⊗ I 2)).
-  restore_dims.
-  rewrite 2!kron_mixed_product.
-  rewrite !Mmult_1_l by auto_wf.
-  prep_matrix_equivalence.
-  replace (∣0⟩ .+ ∣1⟩) with (@const_matrix 2 1 1) by lma'.
-  replace (⟨0∣ .+ ⟨1∣) with (@const_matrix 1 2 1) by lma'.
-  rewrite Mmult_const.
-  replace (-1:C) with (- C1) by lca.
-  compute_matrix ((∣0⟩ .+ - C1 .* ∣1⟩) × (⟨0∣ .+ - C1 .* ⟨1∣)).
-  autorewrite with C_db.
-  match goal with |- context [?A .+ ?B] => 
-    compute_matrix (A .+ B) end.
-  compute_matrix (I 2 ⊗ (∣0⟩ ⊗ ∣0⟩ × ⟨0∣ .+ ∣1⟩ ⊗ ∣1⟩ × ⟨1∣)).
-  restore_dims.
-  compute_matrix (∣0⟩ × (⟨0∣ ⊗ ⟨0∣) .+ ∣1⟩ × (⟨1∣ ⊗ ⟨1∣)).
-  match goal with |- context [?A .+ ?B] => 
-    compute_matrix (A .+ B) end.
-  autorewrite with C_db.
-  rewrite !make_WF_equiv, kron_I_l, kron_I_r.
-  by_cell; cbv; lca.
+  rewrite cnot_states_b.
+  distribute_zxscale.
+  rewrite swap_commutes_r, zx_comm_0_0, compose_empty_l.
+  now rewrite xorb_comm.
 Qed.
 
 Lemma notc_is_swapp_cnot : _NOTC_ ∝= ⨉ ⟷ _CNOT_ ⟷ ⨉. 

@@ -5,6 +5,8 @@ Require Export StackRules.
 Require Export WireRules.
 Require Export ComposeRules.
 
+(** Rules relating stack and compose *)
+
 Local Open Scope ZX_scope.
 Lemma nwire_stack_compose_topleft : forall {topIn botIn topOut botOut} 
                        (zx0 : ZX botIn botOut) (zx1 : ZX topIn topOut),

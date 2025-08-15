@@ -1,6 +1,8 @@
 Require Import CoreData.
 Require Import CoreRules.
 
+(** Results about padding ZX-diagrams *)
+
 Definition pad_bot {n m} pad (zx : ZX n m) : ZX (n + pad) (m + pad) := zx ↕ (n_wire pad).
 
 Definition pad_top {n m} pad (zx : ZX n m) : ZX (pad + n) (pad + m) := (n_wire pad) ↕ zx.

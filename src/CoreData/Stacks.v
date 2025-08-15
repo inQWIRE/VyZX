@@ -1,5 +1,7 @@
 Require Import ZXCore.
 
+(** Definitions involving arbitrary stacks *)
+
 (* TODO: Move n_stack / n_stack1 / n_wire / n_box in here *)
 
 Definition zx_assoc n m o : ZX (n + m + o) (n + (m + o)) :=

@@ -5,6 +5,8 @@ Require Import QuantumLib.Permutations.
 
 Import Setoid.
 
+(* Results that will eventually go into QuantumLib *)
+
 (* FIXME: Move to Prelim.v *)
 Lemma symmetry_iff {A} {R : relation A} `{Symmetric A R} (x y : A) : 
   R x y <-> R y x.

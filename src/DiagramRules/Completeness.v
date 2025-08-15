@@ -3,6 +3,8 @@ From QuantumLib Require Import Polar.
 Require Import CoreRules.
 Require Import CompletenessComp.
 
+(** Proofs of the completeness rules of Jeandel et al. *)
+
 (* @nocheck name *)
 (* Conventional name *)
 Lemma completeness_SUP : forall α, 

@@ -5,6 +5,8 @@ Require Import ZXpermAutomation.
 Require Import QuantumLib.Permutations QuantumLib.Modulus.
 Import CoreData.Proportional.
 
+(** Core proofs of semantics of [ZXperm]s in terms of their
+  underlying permutations *)
 
 Local Open Scope nat. 
 

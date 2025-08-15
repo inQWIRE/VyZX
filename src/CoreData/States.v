@@ -1,6 +1,8 @@
 Require Export ZXCore Proportional.
 Require Import CapCup Gadgets.
 
+(** Definitions about states, i.e. [ZX 0 n]'s, including the 
+  process-state (Choi-Jamiolchosky) isomorphism *)
 
 (* The Choi-Jamiolchosky isomorphism *)
 
@@ -29,7 +31,7 @@ Proof.
 Qed.
 
 
-
+(** The zero state |0⟩ *)
 Definition state_0 : ZX 0 1 := zx_invsqrt2 ↕ X 0 1 0.
 
 Lemma state_0_defn' : 
@@ -39,6 +41,7 @@ Proof. reflexivity. Qed.
 (* Don't want this to reduce, ever. *)
 Global Opaque state_0.
 
+(** The one state |a⟩ *)
 Definition state_1 : ZX 0 1 := zx_invsqrt2 ↕ X 0 1 PI.
 
 Lemma state_1_defn' : 
@@ -48,6 +51,7 @@ Proof. reflexivity. Qed.
 (* Don't want this to reduce, ever. *)
 Global Opaque state_1.
 
+(** The plus state |+⟩ *)
 Definition state_plus : ZX 0 1 := zx_invsqrt2 ↕ Z 0 1 0.
 
 Lemma state_plus_defn' : 
@@ -57,6 +61,7 @@ Proof. reflexivity. Qed.
 (* Don't want this to reduce, ever. *)
 Global Opaque state_plus.
 
+(** The minus state |-⟩ *)
 Definition state_minus : ZX 0 1 := zx_invsqrt2 ↕ Z 0 1 PI.
 
 Lemma state_minus_defn' : 
@@ -67,6 +72,7 @@ Proof. reflexivity. Qed.
 Global Opaque state_minus.
 
 
+(** The zero-or-one state | Nat.b2n b ⟩ *)
 Definition state_b (b : bool) := if b then state_1 else state_0.
 
 Lemma state_b_defn' b : state_b b = 
@@ -77,6 +83,7 @@ Proof.
   now destruct b.
 Qed.
 
+(** The state |f 0, f 1, ..., f (n-1)⟩ *)
 Fixpoint f_to_state n (f : nat -> bool) : ZX 0 n :=
   match n with 
   | 0 => ⦰
@@ -85,6 +92,7 @@ Fixpoint f_to_state n (f : nat -> bool) : ZX 0 n :=
 
 
 
+(** The uniform state [∑ x, |x⟩ = [1, 1, ..., 1]⊤] *)
 Definition uniform_state n : ZX 0 n :=
   cast _ _ (eq_sym (Nat.mul_0_r _)) (eq_sym (Nat.mul_1_r _))
     (n_stack n (Z 0 1 0)).

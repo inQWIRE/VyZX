@@ -1,7 +1,12 @@
 Require Import ZXCore Proportional CapCup Stacks ZXperm States Gadgets ZXperm.
 Import Setoid.
 
+(** Definition of controlizers of diagrams, i.e. controlled 
+  versions of the state corresponding (under Choi-Jamiolchosky)
+  to a given diagram. These are defined following 
+  https://arxiv.org/abs/2202.11386 *)
 
+(* [zx] is a controlled scalar ([ZX 0 0]) with value [c] *)
 Definition is_controlled_scalar c (zx : ZX 1 0) :=
   state_0 ⟷ zx ∝= ⦰ /\
   state_1 ⟷ zx ∝= c .* ⦰.
@@ -13,6 +18,7 @@ Proof.
   now intros ? ? ->.
 Qed.
 
+(* [czx] is some controlled state, i.e. [⟦ czx ⟧ |0⟩] is the uniform state *)
 Definition is_controlled_state {n} (czx : ZX 1 n) :=
   state_0 ⟷ czx ∝= uniform_state n.
 
@@ -23,6 +29,8 @@ Proof.
   now intros ? ? ->.
 Qed.
 
+(* [czx] is a controlled state such that 
+  [⟦ czx ⟧ |1⟩ = √2 ^ (n + m) .* ⟦ proc_to_state zx ⟧] *)
 Definition is_controlized {n m} (zx : ZX n m) (czx : ZX 1 (n + m)) :=
   is_controlled_state czx /\
   zx ∝= (/√2)^ (n + m) .* 
@@ -36,11 +44,11 @@ Proof.
   now rewrite Hrw.
 Qed.
 
+(* Controlizers for various diagrams *)
 
-(* TODO: We can remove this, I believe *)
+
 Definition controlled_half : ZX 1 0 :=
   zx_half ↕ (▷ ⟷ Z 1 0 0).
-
 
 
 Definition box_controlizer : ZX 1 (1 + 1) :=
@@ -176,6 +184,8 @@ Fixpoint controlizer {n m} (zx : ZX n m) : ZX 1 (n + m) :=
   end.
 
 
+(* The sum of two controlizers/controlled states, so that 
+  [⟦ sum_controlizer c0 c1 ⟧ |1⟩ = ⟦ c0 ⟧ |1⟩ .+ ⟦ c1 ⟧ |1⟩] *)
 
 Lemma nn_n2 {n:nat} : (n + n = n * 2)%nat. Proof. lia. Qed.
 Definition sum_controlizer {n} (c0 c1 : ZX 1 n) : ZX 1 n :=

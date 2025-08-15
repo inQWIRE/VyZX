@@ -2,6 +2,8 @@ Require Import CoreData GadgetRules CoreAutomation StackComposeRules.
 
 Open Scope ZX_scope.
 
+(** Rules about states *)
+
 Lemma state_0_defn : 
   state_0 ∝= /√2 .* X 0 1 0. 
 Proof.

@@ -1,5 +1,8 @@
 Require Gadgets. 
 
+(** Rules for manipulating gadgets ([ZX 0 0]'s) and scaled 
+  diagrams [c .* zx]. *)
+
 (* Some computational results, not needed outside the file *)
 
 Module ConstC.
@@ -794,7 +797,7 @@ Proof.
   lca.
 Qed.
 
-(* FIXME: Move *)
+(* FIXME: Move (but maybe can't go in ZXRules because of dependency?) *)
 Lemma X_0_0_is_Z_0_0 β : X 0 0 β ∝= Z 0 0 β.
 Proof.
   change ((⊙ (Z 0 0 β)) ∝= Z 0 0 β).

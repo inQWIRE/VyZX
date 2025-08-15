@@ -1,6 +1,6 @@
 Require Import CoreData.
 
-(* Various computational results about explicit ZX-diagrams *)
+(** Various computational results about explicit ZX-diagrams *)
 
 Local Open Scope matrix_scope.
 

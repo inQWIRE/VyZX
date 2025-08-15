@@ -7,7 +7,7 @@ Require Import QuantumLib.Kronecker.
 Require Import StackComposeRules.
 Require Export ZXpermSemantics.
 
-(* In this file, we develop some tools for showing things are ZXperms and
+(** In this file, we develop some tools for showing things are ZXperms and
    prove some specific values of perm_of_zx *)
 
 

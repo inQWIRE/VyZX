@@ -6,6 +6,8 @@ Require Import CoreRules.
 
 Local Open Scope matrix_scope.
 
+(** Some computational proofs used to prove the completeness results *)
+
 
 (* @nocheck name *)
 (* Conventional name *)

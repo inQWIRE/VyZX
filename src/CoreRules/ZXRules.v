@@ -6,6 +6,8 @@ Require Import CoreRules.CoreAutomation.
 Require Export CoreRules.ZRules.
 Require Export CoreRules.XRules.
 
+(** Rules relating Z and X spiders *)
+
 Theorem X_state_copy_phase_0 : forall (r n : nat) prfn prfm,
 	(X 0 1 ((INR r) * PI) ⟷ Z 1 n 0) 
 	∝[(√2 * (/√2 ^ n))%R]

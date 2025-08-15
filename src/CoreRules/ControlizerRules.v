@@ -1,6 +1,11 @@
 From QuantumLib Require Import Kronecker. 
 Require Import CoreData SemanticsComp SwapRules ScalarSemanticsComp ZXStateRules ChoiJamiolchosky.
 
+(** Proofs that our inductively-defined controlizers 
+  act as controlizers, and the correctness of the sum of 
+  controlizers. (The concept of controlizers, their 
+  definition, and ideas for some of the proofs are taken
+  from https://arxiv.org/abs/2202.11386) *)
 
 Lemma is_controlled_state_cast {n m} (zx : ZX 1 n) prf (H : m = n) : 
   is_controlled_state (cast _ _ prf H zx) <->
@@ -121,6 +126,19 @@ Proof.
 Qed.
 
 
+(** A tactic for simplifying the outermost multiplication which 
+  blocks the left argument from simplifying. For instance, if [v]
+  is a vector with many zero entries and [A] is some complex matrix
+  expresison, [A × v] is a sum many of whose terms are zero on 
+  account of [v], so by making [A] into a local variable (using the 
+  [set] tactic), we can avoid doing much of that computation *)
+Local Ltac simpl_mult := 
+  lazymatch goal with 
+  |- context [ ?A × ?B ] => 
+    let PA := fresh "PA" in 
+    set (PA := A);
+    unfold Mmult at 1
+  end.
 
 Lemma box_is_controlized : 
   is_controlized □ 
@@ -190,14 +208,6 @@ Proof.
     rewrite (kron_I_l_eq (make_WF _)) by auto_wf; cbn -[n_cap Nat.pow].
     Csimpl.
     rewrite Mmult_not_l by auto_wf.
-    (* FIXME: Move *)
-    Ltac simpl_mult := 
-      lazymatch goal with 
-      |- context [ ?A × ?B ] => 
-        let PA := fresh "PA" in 
-        set (PA := A);
-        unfold Mmult at 1
-      end.
 
     rewrite Cexp_0.
     compute_matrix (@Mmult (2^1) (2^1) (2^2) hadamard (Z_semantics 2 1 0)).
@@ -308,20 +318,16 @@ Proof.
     rewrite cast_id, stack_empty_l.
     rewrite const_of_zx_X_0_1_0_Z_1_0_0.
     rewrite triangle_state_0.
-    (* TODO: use full copy, when we have it *)
-
-    prep_matrix_equivalence.
-    rewrite zx_scale_semantics.
-    rewrite zx_compose_spec.
-    rewrite <- (n_stack_1' (Z 0 1 0) _ _ : uniform_state 1 ∝= _).
-    rewrite 2 uniform_state_semantics.
+    assert (Hrw : (0 = INR 0 * PI)%R) by (simpl; lra).
+    rewrite Hrw.
+    auto_cast_eqn (rewrite (to_scale Z_state_copy), cast_id, zx_scale_assoc).
+    rewrite uniform_state_defn, cast_id.
+    rewrite <- Hrw.
+    apply zx_scale_eq_1_l.
+    rewrite Cexp_0, Cexp_PI'.
     simpl.
-    rewrite X_semantics_equiv.
-    unfold X_dirac_semantics.
-    rewrite 2 make_WF_equiv.
-    unfold xbasis_minus, xbasis_plus, braminus, braplus;
-    by_cell; autounfold with U_db; cbn; 
-      rewrite 1?Cexp_PI; C_field; try lca.
+    autorewrite with RtoC_db.
+    C_field; lca.
   - rewrite <- compose_assoc.
     rewrite Z_1_2_state_1, Cexp_0, zx_scale_1_l,
        <- (@stack_compose_distr 0 1 0 0 1 2), <- 4 compose_assoc.
@@ -492,24 +498,24 @@ Proof.
       <- (@stack_compose_distr 0 1 0 0 1 3).
     rewrite <- 3 compose_assoc.
     rewrite left_triangle_state_0, Z_1_n_state0.
-    unfold uniform_state; simpl.
-    rewrite stack_empty_r, 3 cast_id, compose_empty_l.
+    (* unfold uniform_state; simpl.
+    rewrite stack_empty_r, 3 cast_id, compose_empty_l. *)
     rewrite Z_0_0_to_scalar, Cexp_0.
     distribute_zxscale.
-    rewrite stack_empty_l.
+    cbn.
+    rewrite cast_id, compose_empty_r, stack_empty_l.
     rewrite triangle_state_0.
-    (* TODO: use full copy, when we have it *)
-
-
-    prep_matrix_equivalence.
-    rewrite zx_scale_semantics.
+    
+    assert (Hrw : (0 = INR 0 * PI)%R) by (simpl; lra).
+    rewrite Hrw.
+    auto_cast_eqn (rewrite (to_scale Z_state_copy), cast_id, zx_scale_assoc).
+    rewrite uniform_state_defn, cast_id.
+    rewrite <- Hrw.
+    apply zx_scale_eq_1_l.
+    rewrite Cexp_0, Cexp_PI'.
     simpl.
-    compute_matrix (Z_semantics 0 1 0).
-    rewrite X_semantics_equiv.
-    unfold X_dirac_semantics.
-    unfold xbasis_minus, xbasis_plus, braminus, braplus;
-    by_cell; autounfold with U_db; cbn; 
-      rewrite 1?Cexp_0, 1?Cexp_PI; C_field; lca.
+    autorewrite with RtoC_db.
+    C_field; lca.
   - rewrite <- compose_assoc.
     rewrite Z_1_2_state_1, Cexp_0, zx_scale_1_l,
        <- (@stack_compose_distr 0 1 0 0 1 3), <- 3 compose_assoc.

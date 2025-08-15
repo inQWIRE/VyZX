@@ -4,6 +4,8 @@ Require Import SpiderInduction.
 
 Open Scope ZX_scope.
 
+(** Rules for manipulating casts *)
+
 Lemma cast_id_eq {n m} prfn prfm (zx : ZX n m) : 
   cast n m prfn prfm zx = zx.
 Proof.

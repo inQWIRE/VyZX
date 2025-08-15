@@ -4,6 +4,9 @@ From QuantumLib Require Complex Matrix RealAux Polar.
 
 Import Setoid.
 
+(** Results about gadgets, i.e. [ZX 0 0]'s, including a definition 
+  [zx_of_const] giving an arbitrary constant as a gadget *)
+
 (* There are several functions we don't need or want exposed as
   part of the main module, as they are just facts about C. If 
   they were less ZX-specific, they could go in QuantumLib. *)
@@ -24,7 +27,7 @@ Definition prop_decomp (z : C) : nat * (R * R) :=
 
 End ScalarC.
 
-(* Some common values as gadgets *)
+(* Some specific values as gadgets *)
 
 Definition zx_sqrt2 : ZX 0 0 :=
   Z 0 1 0 ⟷ X 1 0 PI.
@@ -93,7 +96,8 @@ Proof. reflexivity. Qed.
 #[global]
 Opaque zx_of_const.
 
-
+(* Get the constant associated to a gadget. We will 
+  show this is an inverse to zx_of_const. *)
 Definition const_of_zx (zx : ZX 0 0) : C :=
   ⟦ zx ⟧ O O.
 
@@ -105,6 +109,7 @@ Proof.
   now rewrite Hzx.
 Qed.
 
+(* A diagram scaling [zx] by [c], so that [⟦ c.* zx ⟧ = c .* ⟦ zx ⟧] *)
 Definition zx_scale {n m} (c : C) (zx : ZX n m) : ZX n m :=
   zx_of_const c ↕ zx.
 
@@ -141,6 +146,7 @@ Qed.
 
 
 (* NB: Can be made effective using [Z 0 0 PI] for [0] *)
+(* A diagram representing the zero element *)
 Definition zx_zero {n m} : ZX n m :=
   C0 .* Z n m 0.
 

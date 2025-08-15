@@ -4,6 +4,8 @@ From VyZX Require Import CoreRules.
 
 Local Open Scope matrix_scope.
 
+(** Soundness of proportionality for ZX-diagrams *)
+
 Theorem soundness {n m} (zx0 zx1 : ZX n m) : 
   zx0 ∝ zx1 -> 
   exists c, ⟦ zx0 ⟧ = c .* ⟦ zx1 ⟧ /\ c <> C0.

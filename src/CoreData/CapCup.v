@@ -5,6 +5,8 @@ Require Export QuantumLib.Permutations.
 
 Local Open Scope ZX_scope.
 
+(** Generalized cups and caps with arbitrary sizes*)
+
 Lemma n_cup_dim : forall n, ((S n) + (S n) = 1 + (n +n) + 1)%nat.
 Proof. lia. Qed.
 
