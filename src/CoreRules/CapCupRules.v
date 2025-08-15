@@ -739,17 +739,17 @@ Proof. transpose_of (cap_pullthrough_bot (zx ⊤) (zx' ⊤)). Qed.
 
 Lemma n_cup_plus_decomp n k : 
   n_cup (n + k) ∝=
-  zx_invassoc _ _ _ ⟷
-  ((zx_assoc n k n ⟷ (n_wire n ↕ zx_comm k n)
-    ⟷ zx_invassoc n n k) ↕ n_wire k) ⟷
-  zx_assoc (n + n) k k ⟷
+  invassociator _ _ _ ⟷
+  ((associator n k n ⟷ (n_wire n ↕ zx_comm k n)
+    ⟷ invassociator n n k) ↕ n_wire k) ⟷
+  associator (n + n) k k ⟷
   (n_cup n ↕ n_cup k).
 Proof.
   apply equal_on_basis_states_implies_equal';
   [auto_wf.. |].
   intros f.
   cbn -[cast n_cup].
-  unfold zx_assoc, zx_invassoc.
+  unfold associator, invassociator.
   simpl_cast_semantics.
   rewrite 6 n_wire_semantics; Msimpl.
   rewrite n_cup_f_to_vec.

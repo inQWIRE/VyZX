@@ -26,7 +26,7 @@ Notation "zx0 .+ zx1" := (zx_plus zx0 zx1)
 (* The indexed sum of a list of ZX-diagrams *)
 Fixpoint zx_sum {n m} (f : nat -> ZX n m) k : ZX n m :=
   match k with 
-  | O => 0
+  | O => zx_zero
   | 1 => f O
   | S k' => zx_sum f k' .+ f k'
   end.

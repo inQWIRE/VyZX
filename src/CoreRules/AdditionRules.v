@@ -54,7 +54,7 @@ Qed.
 
 
 Lemma zx_plus_0_l {n m} (zx : ZX n m) : 
-  0 .+ zx ∝= zx.
+  zx_zero .+ zx ∝= zx.
 Proof.
   prep_matrix_equivalence.
   rewrite zx_plus_semantics, zx_zero_semantics, Mplus_0_l.
@@ -62,7 +62,7 @@ Proof.
 Qed.
 
 Lemma zx_plus_0_r {n m} (zx : ZX n m) : 
-  zx .+ 0 ∝= zx.
+  zx .+ zx_zero ∝= zx.
 Proof.
   prep_matrix_equivalence.
   rewrite zx_plus_semantics, zx_zero_semantics, Mplus_0_r.

@@ -528,17 +528,17 @@ Qed.
 
 
 Lemma X_2_1_semantics α : X_semantics 2 1 α = 
-	(/ √ 2 * / 2) .* @make_WF (2^1) (2^2) (list2D_to_matrix
-		[[1 + Cexp α; 1 - Cexp α; 1 - Cexp α; 1 + Cexp α]; 
+  (/ √ 2 * / 2) .* @make_WF (2^1) (2^2) (list2D_to_matrix
+    [[1 + Cexp α; 1 - Cexp α; 1 - Cexp α; 1 + Cexp α]; 
      [1 - Cexp α; 1 + Cexp α; 1 + Cexp α; 1 - Cexp α]]).
 Proof.
-	unfold X_semantics.
-	cbn [kron_n].
-	Msimpl.
+  unfold X_semantics.
+  cbn [kron_n].
+  Msimpl.
   prep_matrix_equivalence.
   restore_dims.
-	compute_matrix (hadamard × Z_semantics 2 1 α × (hadamard ⊗ hadamard)).
-	group_radicals.
+  compute_matrix (hadamard × Z_semantics 2 1 α × (hadamard ⊗ hadamard)).
+  group_radicals.
   replace (/ √ 2 * / C2 + / √ 2 * Cexp α * / C2) with 
     (/ √ 2 * / C2 * (C1 + Cexp α)) by lca.
   replace (/ √ 2 * / C2 + - (/ √ 2 * Cexp α * / C2)) with 
@@ -549,7 +549,7 @@ Qed.
 
 Lemma X_2_1_0_semantics : X_semantics 2 1 0 = 
   @make_WF (2^1) (2^2) (list2D_to_matrix
-		[[/ √ 2; C0; C0; / √ 2]; [C0; / √ 2; / √ 2; C0]]).
+    [[/ √ 2; C0; C0; / √ 2]; [C0; / √ 2; / √ 2; C0]]).
 Proof.
   rewrite X_2_1_semantics.
   prep_matrix_equivalence.
@@ -565,7 +565,7 @@ Qed.
 
 Lemma X_2_1_pi_semantics : X_semantics 2 1 PI = 
   @make_WF (2^1) (2^2) (list2D_to_matrix
-		[[C0; / √ 2; / √ 2; C0]; [/ √ 2; C0; C0; / √ 2]]).
+    [[C0; / √ 2; / √ 2; C0]; [/ √ 2; C0; C0; / √ 2]]).
 Proof.
   rewrite X_2_1_semantics.
   prep_matrix_equivalence.

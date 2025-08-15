@@ -333,7 +333,7 @@ Proof.
 Qed.
 
 Lemma zx_scale_0_l {n m} (zx : ZX n m) : 
-  C0 .* zx ∝= 0.
+  C0 .* zx ∝= zx_zero.
 Proof.
   prep_matrix_equivalence.
   rewrite zx_scale_semantics, zx_zero_semantics.
@@ -341,7 +341,7 @@ Proof.
 Qed.
 
 Lemma zx_scale_0_r {n m} c : 
-  c .* (@zx_zero n m) ∝= 0.
+  c .* (@zx_zero n m) ∝= zx_zero.
 Proof.
   rewrite zx_zero_defn.
   distribute_zxscale.
@@ -349,7 +349,7 @@ Proof.
 Qed.
 
 Lemma stack_0_l {n0 m0 n1 m1} (zx : ZX n1 m1) : 
-  (@zx_zero n0 m0) ↕ zx ∝= 0.
+  (@zx_zero n0 m0) ↕ zx ∝= zx_zero.
 Proof.
   rewrite zx_zero_defn.
   distribute_zxscale.
@@ -357,7 +357,7 @@ Proof.
 Qed.
 
 Lemma stack_0_r {n0 m0 n1 m1} (zx : ZX n0 m0) : 
-  zx ↕ (@zx_zero n1 m1) ∝= 0.
+  zx ↕ (@zx_zero n1 m1) ∝= zx_zero.
 Proof.
   rewrite zx_zero_defn.
   distribute_zxscale.
@@ -365,7 +365,7 @@ Proof.
 Qed.
 
 Lemma compose_0_l {n m o} (zx : ZX m o) : 
-  (@zx_zero n m) ⟷ zx ∝= 0.
+  (@zx_zero n m) ⟷ zx ∝= zx_zero.
 Proof.
   rewrite zx_zero_defn.
   distribute_zxscale.
@@ -373,7 +373,7 @@ Proof.
 Qed.
 
 Lemma compose_0_r {n m o} (zx : ZX n m) : 
-  zx ⟷ (@zx_zero m o) ∝= 0.
+  zx ⟷ (@zx_zero m o) ∝= zx_zero.
 Proof.
   rewrite zx_zero_defn.
   distribute_zxscale.
@@ -381,13 +381,13 @@ Proof.
 Qed.
 
 Lemma cast_0 n m {n' m'} prfn prfm : 
-  cast n m prfn prfm (@zx_zero n' m') = 0.
+  cast n m prfn prfm (@zx_zero n' m') = zx_zero.
 Proof.
   now subst.
 Qed.
 
 Lemma n_stack_zx_zero k n m : k <> O ->
-  k ⇑ (@zx_zero n m) ∝= 0.
+  k ⇑ (@zx_zero n m) ∝= zx_zero.
 Proof.
   intros H.
   destruct k; [easy|].
@@ -404,21 +404,21 @@ Proof.
   now rewrite compose_0_l.
 Qed. *)
 
-Lemma zx_zero_transpose n m : (@zx_zero n m) ⊤ ∝= 0.
+Lemma zx_zero_transpose n m : (@zx_zero n m) ⊤ ∝= zx_zero.
 Proof.
   rewrite zx_zero_defn.
   distribute_zxscale.
   now rewrite zx_scale_0_l.
 Qed.
 
-Lemma zx_zero_adjoint n m : (@zx_zero n m) † ∝= 0.
+Lemma zx_zero_adjoint n m : (@zx_zero n m) † ∝= zx_zero.
 Proof.
   rewrite zx_zero_defn.
   distribute_zxscale.
   now rewrite Cconj_R, zx_scale_0_l.
 Qed.
 
-Lemma zx_zero_colorswap n m : ⊙ (@zx_zero n m) ∝= 0.
+Lemma zx_zero_colorswap n m : ⊙ (@zx_zero n m) ∝= zx_zero.
 Proof.
   rewrite zx_zero_defn.
   distribute_zxscale.

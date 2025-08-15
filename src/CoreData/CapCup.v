@@ -32,5 +32,5 @@ Lemma n_stacked_pf_2 {n} : (0 = n * 0)%nat. Proof. lia. Qed.
 Definition n_stacked_caps n : ZX (n + n) 0 :=
   cast _ _ n_stacked_pf_1 n_stacked_pf_2 (n ⇑ ⊃).
 
-  Definition n_stacked_cups n : ZX 0 (n + n) :=
+Definition n_stacked_cups n : ZX 0 (n + n) :=
   cast _ _ n_stacked_pf_2 n_stacked_pf_1 (n ⇑ ⊂).

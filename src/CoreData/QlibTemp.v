@@ -218,6 +218,20 @@ Proof.
 Qed.
 
 
+Lemma mat_eq_dec_WF {n m} {A B : Matrix n m} 
+  (HA : WF_Matrix A) (HB : WF_Matrix B) :
+  {A = B} + {A <> B}.
+Proof.
+  destruct (mat_equiv_dec A B) as [Heq | Hneq].
+  - left.
+    apply mat_equiv_eq; assumption.
+  - right.
+    intros ->.
+    apply Hneq.
+    reflexivity.
+(* Opaque because mat_equiv_dec is *)
+Qed.
+
 
 (* FIXME: Move, perhaps to Qlib.PermutationsBase? *)
 Lemma forall_nat_lt_add n m (P : nat -> Prop) :

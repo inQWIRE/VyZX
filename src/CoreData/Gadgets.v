@@ -158,4 +158,5 @@ Qed.
 (* Don't unfold zx_zero *)
 Global Opaque zx_zero.
 
-Notation "0" := zx_zero : ZX_scope.
+(* May add this back later *)
+(* Notation "0" := zx_zero : ZX_scope. *)

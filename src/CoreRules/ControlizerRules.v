@@ -665,19 +665,19 @@ Proof.
     rewrite Z_1_2_state_0, <- (@stack_compose_distr 0 1 _ 0 1 _).
     rewrite H00, H10.
     rewrite 5 uniform_state_split.
-    rewrite (@zx_invassoc_nat_r 0 0 0).
-    unfold zx_invassoc at 1; rewrite cast_id, nwire_removal_l.
+    rewrite (@invassociator_nat_r 0 0 0).
+    unfold invassociator at 1; rewrite cast_id, nwire_removal_l.
     rewrite <- (@stack_compose_distr 0 _ _ 0), nwire_removal_r.
     rewrite <- 2 compose_assoc.
-    rewrite (@zx_assoc_nat_r 0 0 0).
-    unfold zx_assoc at 1; rewrite cast_id, nwire_removal_l.
+    rewrite (@associator_nat_r 0 0 0).
+    unfold associator at 1; rewrite cast_id, nwire_removal_l.
     rewrite <- (@stack_compose_distr 0 _ _ 0).
     rewrite nwire_removal_r, (@zx_comm_commutes_r 0 _ 0).
     rewrite zx_comm_0_0, compose_empty_l.
-    rewrite (@zx_invassoc_nat_r 0 0 0).
-    unfold zx_invassoc at 1; rewrite cast_id, nwire_removal_l.
-    rewrite (@zx_assoc_nat_r 0 0 0).
-    unfold zx_assoc at 1; rewrite cast_id, nwire_removal_l.
+    rewrite (@invassociator_nat_r 0 0 0).
+    unfold invassociator at 1; rewrite cast_id, nwire_removal_l.
+    rewrite (@associator_nat_r 0 0 0).
+    unfold associator at 1; rewrite cast_id, nwire_removal_l.
     reflexivity.
   - unfold stack_controlizer.
     rewrite <- 4 compose_assoc.
@@ -694,20 +694,20 @@ Proof.
     }
     unfold proc_to_state.
     rewrite stack_compose_distr, (compose_assoc (n_cap n ↕ n_cap k)).
-    rewrite zx_invassoc_nat_r.
+    rewrite invassociator_nat_r.
     rewrite (compose_assoc _ (_ ⟷ _)), (compose_assoc _ (_↕_↕_)).
     rewrite <- stack_compose_distr, nwire_removal_r.
     rewrite <- 2 (compose_assoc (_↕_↕_)).
-    rewrite zx_assoc_nat_r.
-    rewrite (compose_assoc (zx_assoc _ _ _)).
+    rewrite associator_nat_r.
+    rewrite (compose_assoc (associator _ _ _)).
     rewrite <- stack_nwire_distribute_l, zx_comm_commutes_r, 
       stack_nwire_distribute_l.
-    rewrite 4 compose_assoc, zx_invassoc_nat_r.
+    rewrite 4 compose_assoc, invassociator_nat_r.
     rewrite <- (nwire_removal_l zx1).
     rewrite <- 4 compose_assoc.
     rewrite stack_compose_distr, <- compose_assoc.
 
-    rewrite compose_assoc, zx_assoc_nat_r, <- compose_assoc.
+    rewrite compose_assoc, associator_nat_r, <- compose_assoc.
     unfold state_to_proc.
     rewrite stack_nwire_distribute_l, cast_compose_distribute.
     rewrite stack_assoc_back, cast_contract.
@@ -722,10 +722,10 @@ Proof.
     rewrite <- nwire_removal_l  at 1.
     apply compose_simplify_eq; [symmetry|reflexivity].
     rewrite n_cup_plus_decomp.
-    rewrite cast_to_compose_zx_invassoc_l.
+    rewrite cast_to_compose_invassociator_l.
     rewrite cast_compose_l, cast_id.
 
-    unfold zx_assoc, zx_invassoc; simpl_casts.
+    unfold associator, invassociator; simpl_casts.
     rewrite cast_compose_l, nwire_removal_l, cast_contract.
     rewrite cast_compose_l,  cast_contract.
     rewrite cast_compose_l, nwire_removal_l, cast_contract.

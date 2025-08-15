@@ -128,84 +128,84 @@ Proof.
     reflexivity.
 Qed.
 
-(* Rules about zx_assoc and zx_invassoc *)
+(* Rules about associator and invassociator *)
 
-Lemma zx_assoc_nat_l {n m o n' m' o'} 
+Lemma associator_nat_l {n m o n' m' o'} 
   (zx0 : ZX n n') (zx1 : ZX m m') (zx2 : ZX o o') : 
-  zx_assoc n m o ⟷ (zx0 ↕ (zx1 ↕ zx2)) ∝=
-  zx0 ↕ zx1 ↕ zx2 ⟷ zx_assoc n' m' o'.
+  associator n m o ⟷ (zx0 ↕ (zx1 ↕ zx2)) ∝=
+  zx0 ↕ zx1 ↕ zx2 ⟷ associator n' m' o'.
 Proof.
   rewrite stack_assoc_back.
-  unfold zx_assoc.
+  unfold associator.
   rewrite cast_compose_eq_mid_join, nwire_removal_l.
   rewrite cast_compose_r, cast_id, nwire_removal_r.
   reflexivity.
   Unshelve. all: lia.
 Qed.
 
-Lemma zx_assoc_nat_r {n m o n' m' o'} 
+Lemma associator_nat_r {n m o n' m' o'} 
   (zx0 : ZX n n') (zx1 : ZX m m') (zx2 : ZX o o') : 
-  zx0 ↕ zx1 ↕ zx2 ⟷ zx_assoc n' m' o' ∝= 
-  zx_assoc n m o ⟷ (zx0 ↕ (zx1 ↕ zx2)).
+  zx0 ↕ zx1 ↕ zx2 ⟷ associator n' m' o' ∝= 
+  associator n m o ⟷ (zx0 ↕ (zx1 ↕ zx2)).
 Proof.
-  now rewrite zx_assoc_nat_l.
+  now rewrite associator_nat_l.
 Qed.
 
 
-Lemma zx_invassoc_nat_l {n m o n' m' o'} 
+Lemma invassociator_nat_l {n m o n' m' o'} 
   (zx0 : ZX n n') (zx1 : ZX m m') (zx2 : ZX o o') : 
-  zx_invassoc n m o ⟷ (zx0 ↕ zx1 ↕ zx2) ∝=
-  (zx0 ↕ (zx1 ↕ zx2)) ⟷ zx_invassoc n' m' o'.
+  invassociator n m o ⟷ (zx0 ↕ zx1 ↕ zx2) ∝=
+  (zx0 ↕ (zx1 ↕ zx2)) ⟷ invassociator n' m' o'.
 Proof.
   rewrite stack_assoc_back.
-  unfold zx_invassoc.
+  unfold invassociator.
   rewrite cast_compose_eq_mid_join, nwire_removal_r.
   rewrite cast_compose_l, cast_id, nwire_removal_l.
   reflexivity.
   Unshelve. all: lia.
 Qed.
 
-Lemma zx_invassoc_nat_r {n m o n' m' o'} 
+Lemma invassociator_nat_r {n m o n' m' o'} 
   (zx0 : ZX n n') (zx1 : ZX m m') (zx2 : ZX o o') : 
-  (zx0 ↕ (zx1 ↕ zx2)) ⟷ zx_invassoc n' m' o' ∝=
-  zx_invassoc n m o ⟷ (zx0 ↕ zx1 ↕ zx2) .
+  (zx0 ↕ (zx1 ↕ zx2)) ⟷ invassociator n' m' o' ∝=
+  invassociator n m o ⟷ (zx0 ↕ zx1 ↕ zx2) .
 Proof.
-  now rewrite zx_invassoc_nat_l.
+  now rewrite invassociator_nat_l.
 Qed.
 
-Lemma zx_invassoc_linv n m o : 
-  zx_invassoc n m o ⟷ zx_assoc n m o ∝= n_wire _.
+Lemma invassociator_linv n m o : 
+  invassociator n m o ⟷ associator n m o ∝= n_wire _.
 Proof.
-  unfold zx_assoc, zx_invassoc.
+  unfold associator, invassociator.
   rewrite cast_compose_eq_mid_join, nwire_removal_r.
   rewrite cast_n_wire.
   reflexivity.
 Qed.
 
-Lemma zx_invassoc_rinv n m o : 
-  zx_assoc n m o ⟷ zx_invassoc n m o ∝= n_wire _.
+Lemma invassociator_rinv n m o : 
+  associator n m o ⟷ invassociator n m o ∝= n_wire _.
 Proof.
-  unfold zx_assoc, zx_invassoc.
+  unfold associator, invassociator.
   rewrite cast_compose_eq_mid_join, nwire_removal_r.
   rewrite cast_id.
   reflexivity.
 Qed.
 
 
-Lemma cast_to_compose_zx_assoc_l {n m o p} (zx : ZX (n + (m + o)) p) prf1 prf2 :
+Lemma cast_to_compose_associator_l {n m o p} (zx : ZX (n + (m + o)) p) prf1 prf2 :
   cast (n + m + o) p prf1 prf2 zx ∝=
-  zx_assoc n m o ⟷ zx.
+  associator n m o ⟷ zx.
 Proof.
-  unfold zx_assoc.
+  unfold associator.
   rewrite cast_compose_l, cast_id, nwire_removal_l.
   cast_irrelevance.
 Qed.
 
-Lemma cast_to_compose_zx_invassoc_l {n m o p} (zx : ZX (n + m + o) p) prf1 prf2 :
+Lemma cast_to_compose_invassociator_l {n m o p} (zx : ZX (n + m + o) p) prf1 prf2 :
   cast (n + (m + o)) p prf1 prf2 zx ∝=
-  zx_invassoc n m o ⟷ zx.
+  invassociator n m o ⟷ zx.
 Proof.
-  unfold zx_invassoc.
+  unfold invassociator.
   rewrite cast_compose_l, cast_id, nwire_removal_l.
   cast_irrelevance.
 Qed.

@@ -1533,20 +1533,6 @@ Definition propotional_to_prop_by_sig {n m} (zx0 zx1 : ZX n m) :
 
 Module ProportionalDec.
 
-Lemma mat_eq_dec_WF {n m} {A B : Matrix n m} 
-  (HA : WF_Matrix A) (HB : WF_Matrix B) :
-  {A = B} + {A <> B}.
-Proof.
-  destruct (mat_equiv_dec A B) as [Heq | Hneq].
-  - left.
-    apply mat_equiv_eq; assumption.
-  - right.
-    intros ->.
-    apply Hneq.
-    reflexivity.
-(* Opaque because mat_equiv_dec is *)
-Qed.
-
 Local Notation "'Decidable' P" := ({P} + {~ P}) 
   (at level 10, P at level 9) : type_scope.
 

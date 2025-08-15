@@ -95,11 +95,11 @@ Definition stack_controlizer {n m k l} (czx0 : ZX 1 (n + m))
   (czx1 : ZX 1 (k + l)) : 
   ZX 1 ((n + k) + (m + l)) :=
   Z 1 2 0 ⟷ (czx0 ↕ czx1) ⟷
-  zx_invassoc (n + m) k l ⟷
-  ((zx_assoc n m k 
+  invassociator (n + m) k l ⟷
+  ((associator n m k 
     ⟷ (n_wire n ↕ zx_comm m k)
-    ⟷ zx_invassoc n k m) ↕ n_wire l) ⟷
-  zx_assoc (n + k) m l.
+    ⟷ invassociator n k m) ↕ n_wire l) ⟷
+  associator (n + k) m l.
 
 
 Definition wire_controlizer : ZX 1 (1 + 1) :=
