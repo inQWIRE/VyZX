@@ -5,6 +5,7 @@ Require Import CoreAutomation.
 Require Import SwapRules.
 Require Import ZXpermFacts.
 Require Import ZRules.
+Require Import ChoiJamiolchosky.
 
 Lemma grow_X_top_left : forall (nIn nOut : nat) α,
 	X (S (S nIn)) nOut α ∝=  
@@ -283,6 +284,66 @@ Proof. transpose_of X_n_wrap_under_r_base_unswapped. Qed.
 
 Lemma X_n_wrap_under_l_base : forall n m α, X 0 (m + n) α ∝= n_cap n ⟷ (X n m α ↕ n_wire n).
 Proof. transpose_of X_n_wrap_under_r_base. Qed.
+
+Local Opaque proc_to_state state_to_proc.
+Lemma X_proc_to_state n m α : proc_to_state (X n m α) ∝=
+  X 0 (n + m) α.
+Proof. colorswap_of (Z_proc_to_state n m α). Qed.
+Lemma X_state_to_proc n m α : state_to_proc (X 0 (n + m) α) ∝=
+  X n m α.
+Proof. colorswap_of (Z_state_to_proc n m α). Qed.
+Local Transparent proc_to_state state_to_proc.
+
+Lemma X_push_over_top_left {n m o p} 
+	(zx : ZX 0 n) (zx' : ZX p m) α : 
+	zx ↕ zx' ⟷ X (n + m) o α ∝= zx' ⟷ X m (n + o) α ⟷ (zx ⊤ ↕ n_wire o).
+Proof.
+	apply colorswap_diagrams_eq.
+	cbn [color_swap].
+	rewrite Z_push_over_top_left.
+	rewrite colorswap_transpose_commute, n_wire_colorswap.
+	reflexivity.
+Qed.
+
+Lemma X_push_over_top_right {n m o p} 
+	(zx : ZX m 0) (zx' : ZX o p) α : 
+	X n (m + o) α ⟷ (zx ↕ zx') ∝= zx ⊤ ↕ n_wire n ⟷ X (m + n) o α ⟷ zx'.
+Proof. 
+	apply colorswap_diagrams_eq.
+	cbn [color_swap].
+	rewrite Z_push_over_top_right.
+	rewrite colorswap_transpose_commute, n_wire_colorswap.
+	reflexivity.
+Qed.
+
+
+Lemma X_push_under_bottom_left {n m o p} 
+	(zx : ZX 0 m) (zx' : ZX p n) α : 
+	zx' ↕ zx ⟷ X (n + m) o α ∝= cast _ _ (Nat.add_0_r _) (eq_sym (Nat.add_0_r _))
+		(zx' ⟷ X n (o + m) α ⟷ (n_wire o ↕ zx ⊤)).
+Proof.
+	apply colorswap_diagrams_eq.
+	rewrite cast_colorswap.
+	cbn [color_swap].
+	rewrite Z_push_under_bottom_left.
+	rewrite colorswap_transpose_commute, n_wire_colorswap.
+	reflexivity.
+Qed.
+
+Lemma X_push_under_bottom_right {n m o p} 
+	(zx : ZX m 0) (zx' : ZX n p) α : 
+	X o (n + m) α ⟷ (zx' ↕ zx) ∝= 
+	cast _ _ (eq_sym (Nat.add_0_r _)) (Nat.add_0_r _)
+		((n_wire o ↕ zx ⊤) ⟷ X (o + m) n α ⟷ zx').
+Proof.
+	apply colorswap_diagrams_eq.
+	rewrite cast_colorswap.
+	cbn [color_swap].
+	rewrite Z_push_under_bottom_right.
+	rewrite colorswap_transpose_commute, n_wire_colorswap.
+	reflexivity.
+Qed.
+
 
 (* @nocheck name *)
 (* PI is captialized in Coq R *)

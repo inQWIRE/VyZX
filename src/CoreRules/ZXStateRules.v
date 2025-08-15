@@ -240,6 +240,14 @@ Proof.
   now rewrite X_spider_1_1_fusion.
 Qed.
 
+Lemma X_1_n_state_b {n} α b : 
+	state_b b ⟷ X 1 n α ∝= / √2 .* X 0 n (if b then PI + α else α).
+Proof.
+	destruct b.
+	- apply X_1_n_state_1.
+	- apply X_1_n_state_0.
+Qed.
+
 Lemma Z_1_n_state_plus {n} α : state_plus ⟷ Z 1 n α ∝= /√2 .* Z 0 n α.
 Proof.
   colorswap_of (@X_1_n_state_0 n α).

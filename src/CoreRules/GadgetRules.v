@@ -162,7 +162,7 @@ Qed.
 End ConstC.
 
 
-Require Import CoreData CastRules SemanticsComp ComposeRules.
+Require Import CoreData CastRules SemanticsComp ComposeRules ChoiJamiolchosky.
 
 
 Lemma gadget_semantics (zx : ZX 0 0) :
@@ -536,6 +536,27 @@ Create HintDb zxscale_db discriminated.
 Ltac distribute_zxscale := rewrite_strat (bottomup (hints zxscale_db)).
 Tactic Notation "distribute_zxscale" "in" hyp(H) :=
   rewrite_strat (bottomup (hints zxscale_db)) in H.
+
+
+
+Lemma zx_scale_proc_to_state {n m} (zx : ZX n m) c : 
+  proc_to_state (c .* zx) ∝= c .* proc_to_state zx.
+Proof.
+  unfold proc_to_state; distribute_zxscale.
+  reflexivity.
+Qed.
+
+Lemma zx_scale_state_to_proc {n m} (zx : ZX 0 (n + m)) c : 
+  state_to_proc (c .* zx) ∝= c .* state_to_proc zx.
+Proof.
+  unfold state_to_proc.
+  rewrite zx_scale_stack_distr_r, zx_scale_cast.
+  distribute_zxscale.
+  reflexivity.
+Qed.
+
+#[export] Hint Rewrite 
+  @zx_scale_proc_to_state @zx_scale_state_to_proc : zxscale_db.
 
 Lemma zx_scale_simplify_eq {n m} (c c' : C) (zx zx' : ZX n m) : 
   c = c' -> zx ∝= zx' -> c .* zx ∝= c' .* zx'.

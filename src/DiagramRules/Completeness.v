@@ -38,7 +38,7 @@ Proof.
 		simpl in H.
 		lra.
 Qed.
-	
+
 Local Open Scope matrix_scope.
 
 (* @nocheck name *)

@@ -1036,3 +1036,33 @@ Proof.
   rewrite kron_comm_perm_inv'.
   now rewrite n_stacked_caps_tranpose.
 Qed.
+
+
+
+Lemma n_cup_pullthrough_bot' {n n' m} (zx : ZX n m) (zx' : ZX n' m) : 
+	zx ↕ zx' ⟷ n_cup m ∝= (zx ⟷ zx' ⊤) ↕ n_wire n' ⟷ n_cup n'.
+Proof.
+	now rewrite stack_split_diag, compose_assoc, n_cup_pullthrough_bot, 
+		<- compose_assoc, <- stack_nwire_distribute_r.
+Qed.
+
+Lemma n_cup_pullthrough_top' {n n' m} (zx : ZX n m) (zx' : ZX n' m) : 
+	zx ↕ zx' ⟷ n_cup m ∝= n_wire n ↕ (zx' ⟷ zx ⊤) ⟷ n_cup n.
+Proof.
+	now rewrite stack_split_antidiag, compose_assoc, n_cup_pullthrough_top, 
+		<- compose_assoc, <- stack_nwire_distribute_l.
+Qed.
+
+Lemma n_cap_pullthrough_bot' {n n' m} (zx : ZX m n) (zx' : ZX m n') : 
+	n_cap m ⟷ (zx ↕ zx') ∝= n_cap n' ⟷ ((zx' ⊤ ⟷ zx) ↕ n_wire n').
+Proof.
+	now rewrite stack_split_antidiag, <- compose_assoc, n_cap_pullthrough_bot, 
+		compose_assoc, <- stack_nwire_distribute_r.
+Qed.
+
+Lemma n_cap_pullthrough_top' {n n' m} (zx : ZX m n) (zx' : ZX m n') : 
+	n_cap m ⟷ (zx ↕ zx') ∝= n_cap n ⟷ (n_wire n ↕ (zx ⊤ ⟷ zx')).
+Proof.
+	now rewrite stack_split_diag, <- compose_assoc, n_cap_pullthrough_top, 
+		compose_assoc, <- stack_nwire_distribute_l.
+Qed.

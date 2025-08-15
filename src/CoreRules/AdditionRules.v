@@ -1,4 +1,4 @@
-Require Import CoreData CapCupRules StackRules 
+Require Import CoreData CapCupRules StackRules StateRules 
   ChoiJamiolchosky GadgetRules ControlizerRules.
 Import Setoid.
 
@@ -68,6 +68,38 @@ Proof.
 Qed.
 
 (* TODO: Other distributivities *)
+
+Lemma compose_plus_distr_l {n m o} (zx zx' : ZX n m) (zx1 : ZX m o) : 
+	(zx .+ zx') ⟷ zx1 ∝= zx ⟷ zx1 .+ zx' ⟷ zx1.
+Proof.
+	prep_matrix_equivalence.
+	rewrite zx_plus_semantics, 3 zx_compose_spec, zx_plus_semantics.
+	now rewrite Mmult_plus_distr_l by auto_wf.
+Qed.
+
+Lemma compose_plus_distr_r {n m o} (zx : ZX n m) (zx1 zx1' : ZX m o) : 
+	zx ⟷ (zx1 .+ zx1') ∝= zx ⟷ zx1 .+ zx ⟷ zx1'.
+Proof.
+	prep_matrix_equivalence.
+	rewrite zx_plus_semantics, 3 zx_compose_spec, zx_plus_semantics.
+	now rewrite Mmult_plus_distr_r by auto_wf.
+Qed.
+
+Lemma stack_plus_distr_l {n m o p} (zx zx' : ZX n m) (zx1 : ZX o p) : 
+	(zx .+ zx') ↕ zx1 ∝= zx ↕ zx1 .+ zx' ↕ zx1.
+Proof.
+	prep_matrix_equivalence.
+	rewrite zx_plus_semantics, 3 zx_stack_spec, zx_plus_semantics.
+	now rewrite kron_plus_distr_r by auto_wf.
+Qed.
+
+Lemma stack_plus_distr_r {n m o p} (zx : ZX n m) (zx1 zx1' : ZX o p) : 
+	zx ↕ (zx1 .+ zx1') ∝= zx ↕ zx1 .+ zx ↕ zx1'.
+Proof.
+	prep_matrix_equivalence.
+	rewrite zx_plus_semantics, 3 zx_stack_spec, zx_plus_semantics.
+	now rewrite kron_plus_distr_l by auto_wf.
+Qed.
 
 Lemma zx_plus_comm {n m} (zx0 zx1 : ZX n m) : 
   zx0 .+ zx1 ∝= zx1 .+ zx0.

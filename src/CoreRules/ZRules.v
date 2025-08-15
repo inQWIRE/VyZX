@@ -7,6 +7,7 @@ Require Import SwapRules.
 Require Import WireRules.
 Require Import SpiderInduction.
 Require Import ZXpermFacts.
+Require Import ChoiJamiolchosky.
 
 Lemma grow_Z_top_left : forall (nIn nOut : nat) α,
 	Z (S (S nIn)) nOut α ∝=
@@ -921,6 +922,108 @@ Proof. transpose_of Z_n_wrap_under_r_base_unswapped. Qed.
 Lemma Z_n_wrap_under_l_base : forall n m α, 
 	Z 0 (m + n) α ∝= n_cap n ⟷ (Z n m α ↕ n_wire n).
 Proof. transpose_of Z_n_wrap_under_r_base. Qed.
+
+
+Lemma Z_proc_to_state n m α : proc_to_state (Z n m α) ∝=
+  Z 0 (n + m) α.
+Proof.
+  unfold proc_to_state.
+  now rewrite <- Z_n_wrap_over_l_base.
+Qed.
+
+Lemma Z_state_to_proc n m α : state_to_proc (Z 0 (n + m) α) ∝=
+  Z n m α.
+Proof.
+  now rewrite <- Z_proc_to_state, proc_to_state_to_proc.
+Qed.
+
+
+Lemma Z_push_over_top_left {n m o p} 
+	(zx : ZX 0 n) (zx' : ZX p m) α : 
+	zx ↕ zx' ⟷ Z (n + m) o α ∝= zx' ⟷ Z m (n + o) α ⟷ (zx ⊤ ↕ n_wire o).
+Proof.
+	apply wrap_over_right.
+	rewrite 2 stack_nwire_distribute_l, 2 compose_assoc.
+	rewrite <- Z_n_wrap_over_r_base.
+	rewrite n_cup_pullthrough_bot.
+	rewrite <- compose_assoc, <- stack_compose_distr.
+	cbn.
+	rewrite transpose_involutive_eq, n_wire_transpose, 
+		nwire_removal_l, nwire_removal_r.
+	rewrite <- (nwire_removal_r (zx ↕ n_wire o)), stack_compose_distr, 
+		compose_assoc. 
+	rewrite <- Z_n_wrap_over_r_base.
+	rewrite (stack_assoc_back (n_wire o) zx zx').
+	rewrite cast_compose_l, cast_Z.
+	rewrite (stack_comm (n_wire o) zx).
+	rewrite <- (nwire_removal_r zx') at 1.
+	rewrite stack_compose_distr, compose_assoc.
+	rewrite Z_zxperm_absorbtion_left by auto_zxperm.
+	rewrite zx_comm_0_r, cast_compose_l, nwire_removal_l, cast_contract_eq',
+		cast_stack_l, cast_compose_l, cast_contract_eq', cast_Z.
+	rewrite cast_id.
+	reflexivity.
+	Unshelve. all: lia.
+Qed.
+
+Lemma Z_push_over_top_right {n m o p} 
+	(zx : ZX m 0) (zx' : ZX o p) α : 
+	Z n (m + o) α ⟷ (zx ↕ zx') ∝= zx ⊤ ↕ n_wire n ⟷ Z (m + n) o α ⟷ zx'.
+Proof.
+	apply transpose_diagrams_eq.
+	cbn.
+	rewrite (Z_push_over_top_left (zx ⊤) (zx' ⊤)).
+	rewrite n_wire_transpose.
+	now rewrite compose_assoc.
+Qed.
+
+Lemma Z_push_under_bottom_left {n m o p} 
+	(zx : ZX 0 m) (zx' : ZX p n) α : 
+	zx' ↕ zx ⟷ Z (n + m) o α ∝= cast _ _ (Nat.add_0_r _) (eq_sym (Nat.add_0_r _))
+		(zx' ⟷ Z n (o + m) α ⟷ (n_wire o ↕ zx ⊤)).
+Proof.
+	apply wrap_under_right.
+	rewrite cast_stack_l_fwd, cast_compose_l.
+	rewrite compose_assoc, 2 stack_nwire_distribute_r, 2 compose_assoc.
+	rewrite <- Z_n_wrap_under_r_base.
+	rewrite cast_compose_r, cast_stack_distribute, 2 cast_id, 
+		(cast_compose_distribute _ _ _ _ _ _ _ (Z _ _ _)).
+	rewrite stack_nwire_distribute_r, compose_assoc.
+	rewrite n_cup_pullthrough_top.
+	rewrite cast_transpose, stack_transpose, n_wire_transpose, 
+		transpose_involutive_eq.
+	rewrite <- (compose_assoc _ _ (n_cup _)), <- stack_split_diag.
+	rewrite (stack_split_antidiag (cast _ _ _ _ _)).
+	rewrite cast_id, compose_assoc.
+	rewrite <- Z_n_wrap_under_r_base.
+	rewrite (stack_comm (n_wire o) zx), compose_assoc, 
+		zx_comm_0_r, cast_compose_l, nwire_removal_l, 
+			2 cast_contract_eq', cast_id.
+	rewrite stack_nwire_distribute_l, compose_assoc.
+	symmetry.
+	rewrite Z_zxperm_absorbtion_left by auto_zxperm.
+	rewrite <- compose_assoc.
+	rewrite <- stack_split_diag.
+	rewrite (stack_assoc_back_fwd _ (zx) (n_wire o)), 
+		cast_compose_l, cast_contract_eq', cast_Z, cast_id.
+	reflexivity.
+	Unshelve. all: reflexivity + lia.
+Qed.
+
+Lemma Z_push_under_bottom_right {n m o p} 
+	(zx : ZX m 0) (zx' : ZX n p) α : 
+	Z o (n + m) α ⟷ (zx' ↕ zx) ∝= 
+	cast _ _ (eq_sym (Nat.add_0_r _)) (Nat.add_0_r _)
+		((n_wire o ↕ zx ⊤) ⟷ Z (o + m) n α ⟷ zx').
+Proof.
+	apply transpose_diagrams_eq.
+	cbn.
+	rewrite (Z_push_under_bottom_left (zx ⊤) (zx' ⊤)).
+	autorewrite with transpose_db.
+	cbn [transpose].
+	rewrite n_wire_transpose.
+	now rewrite compose_assoc.
+Qed.
 
 (* @nocheck name *)
 (* PI is captialized in Coq R *)

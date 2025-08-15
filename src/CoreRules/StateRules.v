@@ -216,6 +216,36 @@ Qed.
 
 
 
+Lemma prop_eq_by_eq_on_states_b_step {n m} (zx zx' : ZX (S n) m) : 
+  (forall b, state_b b ↕ n_wire n ⟷ zx ∝= state_b b ↕ n_wire n ⟷ zx') ->
+  zx ∝= zx'.
+Proof.
+  intros Hb.
+  apply prop_eq_by_eq_on_states_step.
+  - apply (Hb false).
+  - apply (Hb true).
+Qed.
+
+
+Lemma prop_eq_by_eq_on_states {n m} (zx zx' : ZX n m) :
+  (forall f, f_to_state n f ⟷ zx ∝= f_to_state n f ⟷ zx') ->
+  zx ∝= zx'.
+Proof.
+  induction n.
+  - intros Hf.
+    specialize (Hf (fun _ => false)).
+    simpl in Hf.
+    now rewrite 2 compose_empty_l in Hf.
+  - intros Hf.
+    apply prop_eq_by_eq_on_states_b_step.
+    intros b.
+    apply IHn.
+    intros f.
+    rewrite <- 2 compose_assoc.
+    rewrite <- push_out_top.
+    generalize (Hf (fun n => match n with | O => b | S n' => f n' end)).
+    intros Heq; apply Heq.
+Qed.
 
 
 

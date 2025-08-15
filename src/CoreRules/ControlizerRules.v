@@ -473,7 +473,7 @@ Proof.
     simpl.
     rewrite zx_scale_state_to_proc.
     rewrite stack_empty_l, X_spider_1_1_fusion, Rplus_0_l.
-    rewrite state_to_proc_X.
+    rewrite X_state_to_proc.
     distribute_zxscale.
     rewrite <- zx_scale_1_l at 1.
     apply zx_scale_simplify_eq_l.
@@ -521,7 +521,7 @@ Proof.
     rewrite state_1_defn.
     simpl.
     distribute_zxscale.
-    rewrite zx_scale_state_to_proc, X_spider_1_1_fusion, state_to_proc_X.
+    rewrite zx_scale_state_to_proc, X_spider_1_1_fusion, X_state_to_proc.
     distribute_zxscale.
     rewrite <- zx_scale_1_l at 1.
     rewrite (X_eq_2_PI _ _ (_ + _)) by lra.
@@ -1002,7 +1002,7 @@ Proof.
     (eq_refl : (1 + 2 = 2 + 1)%nat) _ _ _ _ 
     (X_1_2_is_controlized)); [|reflexivity].
   cbn.
-  rewrite 2 proc_to_state_X.
+  rewrite 2 X_proc_to_state.
   reflexivity.
 Qed.
 
@@ -1013,7 +1013,7 @@ Proof.
     (eq_refl : (1 + 0 = 0 + 1)%nat) _ _ _ _ 
     (X_1_0_is_controlized β)); [|reflexivity].
   cbn.
-  rewrite 2 proc_to_state_X.
+  rewrite 2 X_proc_to_state.
   reflexivity.
 Qed.
 
@@ -1064,7 +1064,7 @@ Proof.
     (eq_refl : (O + (n + m) = (n + m))%nat) _ _ _ _ 
     (X_0_n_is_controlized (n + m) β)); [|reflexivity].
   cbn.
-  now rewrite 2 proc_to_state_X.
+  now rewrite 2 X_proc_to_state.
 Qed.
 
 Lemma Z_is_controlized n m β : 

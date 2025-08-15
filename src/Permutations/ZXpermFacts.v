@@ -1933,6 +1933,12 @@ Proof.
 	now rewrite nwire_removal_l, nwire_removal_r.
 Qed.
 
+Lemma stack_comm {n m o p} (zx : ZX n m) (zx' : ZX o p) :
+	zx ↕ zx' ∝= zx_comm n o ⟷ (zx' ↕ zx) ⟷ zx_comm p m.
+Proof.
+	rewrite zx_comm_commutes_l, compose_assoc, zx_comm_cancel, nwire_removal_r.
+	reflexivity.
+Qed.
 
 
 Lemma swap_nat_bot_l {n m} 

@@ -1,5 +1,5 @@
-Require Export CoreData StateRules CoreAutomation GadgetRules StateRules 
-  CastRules StackComposeRules CapCupRules ZXRules.
+Require Export CoreData CoreAutomation 
+  CastRules StackComposeRules CapCupRules.
 
 
 
@@ -55,25 +55,6 @@ Proof.
   Unshelve. all: lia.
 Qed.
 
-Lemma zx_scale_proc_to_state {n m} (zx : ZX n m) c : 
-  proc_to_state (c .* zx) ∝= c .* proc_to_state zx.
-Proof.
-  unfold proc_to_state; distribute_zxscale.
-  reflexivity.
-Qed.
-
-Lemma zx_scale_state_to_proc {n m} (zx : ZX 0 (n + m)) c : 
-  state_to_proc (c .* zx) ∝= c .* state_to_proc zx.
-Proof.
-  unfold state_to_proc.
-  rewrite zx_scale_stack_distr_r, zx_scale_cast.
-  distribute_zxscale.
-  reflexivity.
-Qed.
-
-#[export] Hint Rewrite 
-  @zx_scale_proc_to_state @zx_scale_state_to_proc : zxscale_db.
-
 Lemma colorswap_proc_to_state {n m} (zx : ZX n m) : 
   ⊙ (proc_to_state zx) ∝= proc_to_state (⊙ zx).
 Proof.
@@ -96,27 +77,7 @@ Qed.
   @colorswap_proc_to_state @colorswap_state_to_proc : colorswap_db.
 
 
-Lemma proc_to_state_Z n m α : proc_to_state (Z n m α) ∝=
-  Z 0 (n + m) α.
-Proof.
-  unfold proc_to_state.
-  now rewrite <- Z_n_wrap_over_l_base.
-Qed.
 
-Lemma state_to_proc_Z n m α : state_to_proc (Z 0 (n + m) α) ∝=
-  Z n m α.
-Proof.
-  now rewrite <- proc_to_state_Z, proc_to_state_to_proc.
-Qed.
-
-Local Opaque proc_to_state state_to_proc.
-Lemma proc_to_state_X n m α : proc_to_state (X n m α) ∝=
-  X 0 (n + m) α.
-Proof. colorswap_of (proc_to_state_Z n m α). Qed.
-Lemma state_to_proc_X n m α : state_to_proc (X 0 (n + m) α) ∝=
-  X n m α.
-Proof. colorswap_of (state_to_proc_Z n m α). Qed.
-Local Transparent proc_to_state state_to_proc.
 
 
 Lemma proc_to_state_state {n} (zx : ZX 0 n) : 
@@ -218,4 +179,50 @@ Qed.
 Lemma state_to_proc_n_cup n : proc_to_state (n_cup n) ∝= n_cap n ↕ ⦰.
 Proof.
   apply proc_to_state_effect.
+Qed.
+
+
+
+Lemma wrap_over_left {n m} (zx zx' : ZX n m) : 
+	n_cap n ⟷ (n_wire n ↕ zx) ∝= n_cap n ⟷ (n_wire n ↕ zx') ->
+	zx ∝= zx'.
+Proof.
+	intros Heq.
+	apply proc_to_state_diagrams.
+	apply Heq.
+Qed.
+
+Lemma wrap_over_right {n m} (zx zx' : ZX n m) : 
+	n_wire m ↕ zx ⟷ n_cup m ∝= n_wire m ↕ zx' ⟷ n_cup m ->
+	zx ∝= zx'.
+Proof.
+	intros Heq.
+	apply transpose_prop_by_1_proper in Heq.
+	cbn -[n_cup] in Heq.
+	autorewrite with transpose_db in Heq.
+	apply transpose_diagrams_eq.
+	now apply wrap_over_left.
+Qed.
+
+Lemma wrap_under_left {n m} (zx zx' : ZX n m) : 
+	n_cap n ⟷ (zx ↕ n_wire n) ∝= n_cap n ⟷ (zx' ↕ n_wire n) ->
+	zx ∝= zx'.
+Proof.
+	intros Heq.
+  apply transpose_diagrams_eq.
+	apply proc_to_state_diagrams.
+  rewrite 2 proc_to_state_alt.
+  now rewrite 2 transpose_involutive_eq.
+Qed.
+
+Lemma wrap_under_right {n m} (zx zx' : ZX n m) : 
+	(zx ↕ n_wire m) ⟷ n_cup m ∝= (zx' ↕ n_wire m) ⟷ n_cup m ->
+	zx ∝= zx'.
+Proof.
+	intros Heq.
+	apply transpose_prop_by_1_proper in Heq.
+	cbn -[n_cup] in Heq.
+	autorewrite with transpose_db in Heq.
+	apply transpose_diagrams_eq.
+	now apply wrap_under_left.
 Qed.
