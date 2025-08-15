@@ -103,3 +103,107 @@ Proof.
   simpl_casts.
   easy.
 Qed.
+
+
+Lemma n_stack_compose {n m o} k (zx0 : ZX n m) (zx1 : ZX m o) : 
+  k ⇑ (zx0 ⟷ zx1) ∝= k ⇑ zx0 ⟷ k ⇑ zx1.
+Proof.
+  induction k.
+  - simpl; now rewrite compose_empty_l.
+  - simpl.
+    rewrite IHk, <- stack_compose_distr.
+    reflexivity.
+Qed.
+
+
+Lemma n_stack1_compose k (zx0 : ZX 1 1) (zx1 : ZX 1 1) : 
+  k ↑ (zx0 ⟷ zx1) ∝= k ↑ zx0 ⟷ k ↑ zx1.
+Proof.
+  induction k.
+  - simpl; now rewrite compose_empty_l.
+  - simpl.
+    rewrite IHk, <- (@stack_compose_distr 1 1 1 k k).
+    reflexivity.
+Qed.
+
+(* Rules about zx_assoc and zx_invassoc *)
+
+Lemma zx_assoc_nat_l {n m o n' m' o'} 
+  (zx0 : ZX n n') (zx1 : ZX m m') (zx2 : ZX o o') : 
+  zx_assoc n m o ⟷ (zx0 ↕ (zx1 ↕ zx2)) ∝=
+  zx0 ↕ zx1 ↕ zx2 ⟷ zx_assoc n' m' o'.
+Proof.
+  rewrite stack_assoc_back.
+  unfold zx_assoc.
+  rewrite cast_compose_eq_mid_join, nwire_removal_l.
+  rewrite cast_compose_r, cast_id, nwire_removal_r.
+  reflexivity.
+  Unshelve. all: lia.
+Qed.
+
+Lemma zx_assoc_nat_r {n m o n' m' o'} 
+  (zx0 : ZX n n') (zx1 : ZX m m') (zx2 : ZX o o') : 
+  zx0 ↕ zx1 ↕ zx2 ⟷ zx_assoc n' m' o' ∝= 
+  zx_assoc n m o ⟷ (zx0 ↕ (zx1 ↕ zx2)).
+Proof.
+  now rewrite zx_assoc_nat_l.
+Qed.
+
+
+Lemma zx_invassoc_nat_l {n m o n' m' o'} 
+  (zx0 : ZX n n') (zx1 : ZX m m') (zx2 : ZX o o') : 
+  zx_invassoc n m o ⟷ (zx0 ↕ zx1 ↕ zx2) ∝=
+  (zx0 ↕ (zx1 ↕ zx2)) ⟷ zx_invassoc n' m' o'.
+Proof.
+  rewrite stack_assoc_back.
+  unfold zx_invassoc.
+  rewrite cast_compose_eq_mid_join, nwire_removal_r.
+  rewrite cast_compose_l, cast_id, nwire_removal_l.
+  reflexivity.
+  Unshelve. all: lia.
+Qed.
+
+Lemma zx_invassoc_nat_r {n m o n' m' o'} 
+  (zx0 : ZX n n') (zx1 : ZX m m') (zx2 : ZX o o') : 
+  (zx0 ↕ (zx1 ↕ zx2)) ⟷ zx_invassoc n' m' o' ∝=
+  zx_invassoc n m o ⟷ (zx0 ↕ zx1 ↕ zx2) .
+Proof.
+  now rewrite zx_invassoc_nat_l.
+Qed.
+
+Lemma zx_invassoc_linv n m o : 
+  zx_invassoc n m o ⟷ zx_assoc n m o ∝= n_wire _.
+Proof.
+  unfold zx_assoc, zx_invassoc.
+  rewrite cast_compose_eq_mid_join, nwire_removal_r.
+  rewrite cast_n_wire.
+  reflexivity.
+Qed.
+
+Lemma zx_invassoc_rinv n m o : 
+  zx_assoc n m o ⟷ zx_invassoc n m o ∝= n_wire _.
+Proof.
+  unfold zx_assoc, zx_invassoc.
+  rewrite cast_compose_eq_mid_join, nwire_removal_r.
+  rewrite cast_id.
+  reflexivity.
+Qed.
+
+
+Lemma cast_to_compose_zx_assoc_l {n m o p} (zx : ZX (n + (m + o)) p) prf1 prf2 :
+  cast (n + m + o) p prf1 prf2 zx ∝=
+  zx_assoc n m o ⟷ zx.
+Proof.
+  unfold zx_assoc.
+  rewrite cast_compose_l, cast_id, nwire_removal_l.
+  cast_irrelevance.
+Qed.
+
+Lemma cast_to_compose_zx_invassoc_l {n m o p} (zx : ZX (n + m + o) p) prf1 prf2 :
+  cast (n + (m + o)) p prf1 prf2 zx ∝=
+  zx_invassoc n m o ⟷ zx.
+Proof.
+  unfold zx_invassoc.
+  rewrite cast_compose_l, cast_id, nwire_removal_l.
+  cast_irrelevance.
+Qed.

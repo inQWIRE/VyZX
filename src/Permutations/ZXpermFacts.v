@@ -10,27 +10,6 @@ Require Export ZXpermSemantics.
 (* In this file, we develop some tools for showing things are ZXperms and
    prove some specific values of perm_of_zx *)
 
-(* Now that we have facts about insertion_sort_list, we can define: *)
-
-Definition zx_of_perm n f :=
-	cast n n 
-		(eq_sym (length_insertion_sort_list n (perm_inv n f))) 
-		(eq_sym (length_insertion_sort_list n (perm_inv n f)))
-	(zx_of_perm_uncast n f).
-
-(* Though redundant with cast, this makes for much better
-	 proof statements, e.g. with compose_zx_of_perm_cast. 
-	 Since many of our ZXperms are non-square, this is 
-	 a common application. *)
-Definition zx_of_perm_cast n m f (H : n = m) : ZX n m :=
-	cast n m eq_refl (eq_sym H) (zx_of_perm n f).
-
-Arguments zx_of_perm_cast : simpl never.
-
-Notation "'zx_of_perm_cast' n m f '$'" :=
-		(zx_of_perm_cast n m f _) 
-		(at level 10, n at level 9, m at level 9, f at level 9, 
-		only printing) : ZX_scope.
 
 (* Section on very general ZXperm facts *)
 
@@ -1453,10 +1432,6 @@ Ltac simpl_zx_of_perm_semantics :=
 	reflexivity : perm_inv_db perm_of_zx_cleanup_db. *)
 
 
-Definition zx_comm p q : (ZX (p + q) (q + p)) :=
-	zx_of_perm_cast (p + q) (q + p) (big_swap_perm q p) (Nat.add_comm p q).
-
-Arguments zx_comm : simpl never.
 
 Lemma zx_comm_zxperm p q : ZXperm (zx_comm p q).
 Proof.
@@ -1658,11 +1633,6 @@ Proof.
 	now rewrite (Nat.add_comm m n).
 Qed.	 *)
 
-Definition zx_gap_comm p m q : (ZX (p + m + q) (q + m + p)) :=
-	cast _ _ eq_refl (eq_sym (Nat.add_assoc _ _ _))
-	(zx_comm (p + m) q ⟷ (n_wire q ↕ zx_comm p m)).
-
-Arguments zx_gap_comm : simpl never.
 
 Lemma zx_gap_comm_zxperm p m q : ZXperm (zx_gap_comm p m q).
 Proof.
@@ -1799,7 +1769,125 @@ Notation a_swap_commutes_l := a_swap_pullthrough_r.
 Notation a_swap_commutes_r := a_swap_pullthrough_l.
 
 
+(* TODO: Move the following block of lemmas to the right places *)
 
+Lemma perm_of_zx_comm n m : 
+  perm_of_zx (zx_comm n m) = big_swap_perm m n.
+Proof.
+  apply perm_of_zx_of_perm_cast_eq_WF; auto_perm.
+Qed.
+#[export] Hint Rewrite perm_of_zx_comm : perm_of_zx_cleanup_db.
+Lemma zx_comm_0_l n : zx_comm 0 n ∝=
+  cast _ _ eq_refl (Nat.add_0_r n) (n_wire n).
+Proof.
+  by_perm_eq_nosimpl.
+  rewrite perm_of_zx_cast, perm_of_n_wire.
+  rewrite perm_of_zx_comm.
+  now rewrite big_swap_perm_0_r.
+Qed.
+Lemma zx_comm_0_r n : zx_comm n 0 ∝=
+  cast _ _ (Nat.add_0_r n) eq_refl (n_wire n).
+Proof.
+  by_perm_eq_nosimpl.
+  rewrite perm_of_zx_cast, perm_of_n_wire.
+  rewrite perm_of_zx_comm.
+  now rewrite big_swap_perm_0_l.
+Qed.
+Lemma zx_of_perm_0 f : zx_of_perm 0 f ∝= ⦰.
+Proof. by_perm_eq. Qed.
+Local Open Scope nat_scope.
+Lemma zx_mid_comm_commutes_r {n0 m0 n1 m1 n2 m2 n3 m3}
+  (zx0 : ZX n0 m0) (zx1 : ZX n1 m1)
+  (zx2 : ZX n2 m2) (zx3 : ZX n3 m3) : 
+  ((zx0 ↕ zx1) ↕ (zx2 ↕ zx3)) ⟷ zx_mid_comm m0 m1 m2 m3 ∝=
+  zx_mid_comm n0 n1 n2 n3 ⟷ ((zx0 ↕ zx2) ↕ (zx1 ↕ zx3)).
+Proof.
+  unfold zx_mid_comm.
+  rewrite stack_assoc_back_fwd, (stack_assoc_fwd zx0), cast_stack_l_fwd.
+  rewrite cast_contract_eq', cast_compose_eq_mid_join.
+  symmetry.
+  rewrite stack_assoc_back_fwd, (stack_assoc_fwd zx0), cast_stack_l_fwd.
+  rewrite cast_contract_eq', cast_compose_eq_mid_join.
+  apply cast_simplify_eq.
+  rewrite <- 4!stack_compose_distr.
+  rewrite 2!nwire_removal_l, 2!nwire_removal_r, zx_comm_commutes_r.
+  reflexivity.
+Qed.
+Lemma zx_mid_comm_transpose n0 n1 m0 m1 : 
+  (zx_mid_comm n0 n1 m0 m1) ⊤%ZX ∝=
+  zx_mid_comm n0 m0 n1 m1.
+Proof.
+  unfold zx_mid_comm.
+  rewrite cast_transpose, 2!stack_transpose, 
+    2!n_wire_transpose, zx_comm_transpose.
+  reflexivity.
+Qed.
+Lemma zx_mid_comm_0_first a b c : 
+  zx_mid_comm 0 a b c ∝=
+  cast _ _ (Nat.add_assoc _ _ _ ) (Nat.add_assoc _ _ _ ) 
+    (zx_comm a b ↕ n_wire c).
+Proof.
+  unfold zx_mid_comm.
+  rewrite stack_empty_l.
+  cast_irrelevance.
+Qed.
+Lemma zx_mid_comm_0_second a b c : 
+  zx_mid_comm a 0 b c ∝=
+  cast _ _ zx_mid_comm_prf eq_refl (n_wire _).
+Proof.
+  unfold zx_mid_comm.
+  rewrite zx_comm_0_l.
+  rewrite cast_stack_r_fwd, cast_stack_l_fwd.
+  rewrite cast_contract_eq'.
+  rewrite 2!n_wire_stack.
+  cast_irrelevance.
+Qed.
+Lemma zx_mid_comm_0_third a b c : 
+  zx_mid_comm a b 0 c ∝=
+  cast _ _ eq_refl (@zx_mid_comm_prf a 0 b c) (n_wire _).
+Proof.
+  unfold zx_mid_comm.
+  rewrite zx_comm_0_r.
+  rewrite cast_stack_r_fwd, cast_stack_l_fwd.
+  rewrite cast_contract_eq'.
+  rewrite 2!n_wire_stack.
+  cast_irrelevance.
+Qed.
+Lemma zx_mid_comm_0_fourth_prf {a b c} : a + b + (c + 0) = a + (b + c).
+Proof. lia. Qed.
+Lemma zx_mid_comm_0_fourth a b c : 
+  zx_mid_comm a b c 0 ∝= 
+   cast _ _ zx_mid_comm_0_fourth_prf zx_mid_comm_0_fourth_prf
+    (n_wire a ↕ zx_comm b c).
+Proof.
+  unfold zx_mid_comm.
+	rewrite stack_empty_r_fwd, cast_contract_eq'.
+  cast_irrelevance.
+Qed.
+Lemma zx_mid_comm_zxperm a b c d : ZXperm (zx_mid_comm a b c d).
+Proof.
+  unfold zx_mid_comm.
+  auto_zxperm.
+Qed.
+#[export] Hint Resolve zx_mid_comm_zxperm : zxperm_db.
+Lemma perm_of_zx_mid_comm a b c d : 
+  perm_of_zx (zx_mid_comm a b c d) = 
+  stack_perms (a + b + c) d 
+    (stack_perms a (b + c) idn (big_swap_perm c b)) idn.
+Proof.
+  unfold zx_mid_comm.
+  rewrite perm_of_zx_cast.
+  cbn.
+  rewrite 2!perm_of_n_wire, perm_of_zx_comm.
+  now rewrite Nat.add_assoc.
+Qed.
+
+
+
+Lemma zx_comm_0_0 : zx_comm 0 0 ∝= ⦰.
+Proof.
+  by_perm_eq.
+Qed.
 
 Lemma zx_comm_nat_bot_l {p q n m} 
 	(zxBot : ZX m q) (zxTop : ZX n p) :

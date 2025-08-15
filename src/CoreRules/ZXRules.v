@@ -94,8 +94,8 @@ Theorem X_state_copy : forall (r n : nat) (a : R) prfn prfm,
 	cast 0%nat n prfn prfm (n ⇑ (X 0 1 ((INR r) * PI))).
 Proof.
 	assert (X_Z_phase_value' : forall (a b : R),
-		⟦ X 0 1 a ⟷ Z 1 0 b ⟧ = 
-		(((C1 + Cexp a) * (C1 - Cexp b) + 2 * Cexp b) / √2) .* I 1). 1: {
+		(⟦ X 0 1 a ⟷ Z 1 0 b ⟧ = 
+		(((C1 + Cexp a) * (C1 - Cexp b) + 2 * Cexp b) / √2) .* I 1)%M). 1: {
 		intros a b.
 		prep_matrix_equivalence.
 		by_cell.
@@ -129,7 +129,7 @@ Proof.
 	- apply (stack_prop_by_compat_l
 		⦰ (X 0 1 (INR r * PI) ⟷ Z 1 0 a)
 		($ 0, n ::: n ⇑ X 0 1 (INR r * PI) ⟷ $ n * 1, n ::: n_wire n $ $)).
-		assert (Hnz : ((C1 + Cexp (INR r * PI)) * (C1 - Cexp a) + C2 * Cexp a) <> 0). 1: {
+		assert (Hnz : ((C1 + Cexp (INR r * PI)) * (C1 - Cexp a) + C2 * Cexp a) <> C0). 1: {
 			rewrite Cmult_plus_distr_r.
 			unfold Cminus at 1.
 			rewrite Cmult_plus_distr_l.

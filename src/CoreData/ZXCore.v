@@ -42,13 +42,13 @@ Notation "⊃" := Cap : ZX_scope. (* \supset *)
 Notation "⨉" := Swap : ZX_scope. (* \bigtimes *)
 Notation "—" := Wire : ZX_scope. (* \emdash *)
 Notation "□" := Box : ZX_scope. (* \square *)
-Notation "A ⟷ B" := (Compose A B) 
+Notation "A ⟷ B" := (Compose A%ZX B%ZX) 
   (left associativity, at level 40) : ZX_scope. (* \longleftrightarrow *)
-Notation "A ↕ B" := (Stack A B) 
+Notation "A ↕ B" := (Stack A%ZX B%ZX) 
   (left associativity, at level 40) : ZX_scope. (* \updownarrow *)
 Notation "'Z'" := Z_Spider (no associativity, at level 1) : ZX_scope.
 Notation "'X'" := X_Spider (no associativity, at level 1) : ZX_scope.
-Notation "$ n , m ::: A $" := (cast n m _ _ A) (at level 20) : ZX_scope.
+Notation "$ n , m ::: A $" := (cast n%nat m%nat _ _ A%ZX) (at level 20) : ZX_scope.
 
 (* 
 We provide two separate options for semantic functions, one based on sparse 
@@ -56,7 +56,6 @@ matrices and one based on dirac notation.
 *)
 
 (* @nocheck name *)
-Reserved Notation "⟦ zx ⟧" (at level 0, zx at level 200). (* = is 70, need to be below *)
 Fixpoint ZX_semantics {n m} (zx : ZX n m) : 
   Matrix (2 ^ m) (2 ^ n) := 
   match zx with
@@ -68,10 +67,13 @@ Fixpoint ZX_semantics {n m} (zx : ZX n m) :
   | ⨉ => swap
   | — => I 2
   | □ => hadamard
-  | zx0 ↕ zx1 => ⟦ zx0 ⟧ ⊗ ⟦ zx1 ⟧
-  | Compose zx0 zx1 => ⟦ zx1 ⟧ × ⟦ zx0 ⟧
-  end
-  where "⟦ zx ⟧" := (ZX_semantics zx).
+  | zx0 ↕ zx1 => ZX_semantics zx0 ⊗ ZX_semantics zx1
+  | Compose zx0 zx1 => ZX_semantics zx1 × ZX_semantics zx0
+  end.
+
+  
+Notation "⟦ zx ⟧" := (ZX_semantics zx%ZX) 
+  (at level 0, zx at level 200). (* = is 70, need to be below *)
 
 Lemma zx_compose_spec : forall n m o (zx0 : ZX n m) (zx1 : ZX m o),
 	⟦ zx0 ⟷ zx1 ⟧ = ⟦ zx1 ⟧ × ⟦ zx0 ⟧.
@@ -107,8 +109,8 @@ Qed.
 Ltac simpl_cast_semantics := 
   try repeat rewrite cast_semantics; 
   try repeat (rewrite cast_semantics_dim; unfold cast_semantics_dim_eqn).
-(* @nocheck name *)
 
+(* @nocheck name *)
 Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) : 
   Matrix (2 ^ m) (2 ^ n) := 
   match zx with
@@ -122,9 +124,9 @@ Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) :
   | □ => hadamard
   | zx0 ↕ zx1 => (ZX_dirac_sem zx0) ⊗ (ZX_dirac_sem zx1)
   | zx0 ⟷ zx1 => (ZX_dirac_sem zx1) × (ZX_dirac_sem zx0)
-(* @nocheck name *)
   end.
 
+(* @nocheck name *)
 Lemma ZX_semantic_equiv : forall n m (zx : ZX n m),
   ⟦ zx ⟧ = ZX_dirac_sem zx.
 Proof.
@@ -132,10 +134,10 @@ Proof.
   induction zx; try lma; simpl.
   rewrite X_semantics_equiv; reflexivity.
   rewrite Z_semantics_equiv; reflexivity.
-(* @nocheck name *)
   1,2: subst; rewrite IHzx1, IHzx2; reflexivity.
 Qed.
 
+(* @nocheck name *)
 Theorem WF_ZX : forall nIn nOut (zx : ZX nIn nOut), WF_Matrix (⟦ zx ⟧).
 Proof.
   intros.
@@ -443,6 +445,7 @@ Definition zx_triangle_left : ZX 1 1 :=
 
 Notation "▷" := zx_triangle : ZX_scope. (* \triangleright *)
 Notation "◁" := zx_triangle_left : ZX_scope. (* \triangleleft *)
+
 
 Lemma triangle_step_1 :
 	⟦ X 1 1 (PI/2) ⟷ Z 1 1 (PI/4) ⟧ = 

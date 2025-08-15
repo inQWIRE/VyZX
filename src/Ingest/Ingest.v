@@ -9,6 +9,7 @@ Require Import ZXPad.
 
 
 Local Open Scope ZX_scope.
+Local Open Scope matrix_scope. 
 
 (* Conversion  to base ZX diagrams *)
 

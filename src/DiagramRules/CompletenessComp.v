@@ -4,6 +4,8 @@ Require Import CoreRules.
 
 Import Complex.
 
+Local Open Scope matrix_scope.
+
 Lemma c_step_1 : forall α,
 	⟦ (Z 0 1 α ↕ —) ⟷ X 2 1 0 ⟧ = 
 	/(√2)%R .* (∣0⟩⟨0∣ .+ 

@@ -935,3 +935,65 @@ Proof.
 	rewrite Cexp_0.
 	easy.
 Qed.
+
+Lemma Z_phase_simplify n m α β : Cexp α = Cexp β -> 
+  Z n m α ∝= Z n m β.
+Proof.
+  intros Heq. 
+  hnf.
+  simpl.
+  unfold Z_semantics.
+  rewrite Heq.
+  reflexivity.
+Qed.
+
+(* @nocheck name *)
+(* PI is captialized in Coq R *)
+Lemma Z_add_2_PI_r n m α : 
+  Z n m (α + 2 * PI) ∝= Z n m α.
+Proof.
+  apply Z_phase_simplify.
+  rewrite Cexp_add, Cexp_2PI, Cmult_1_r.
+  reflexivity.
+Qed.
+
+(* @nocheck name *)
+(* PI is captialized in Coq R *)
+Lemma Z_add_2_PI_l n m α : 
+  Z n m (2 * PI + α) ∝= Z n m α.
+Proof.
+  apply Z_phase_simplify.
+  rewrite Cexp_add, Cexp_2PI, Cmult_1_l.
+  reflexivity.
+Qed.
+
+(* @nocheck name *)
+(* PI is captialized in Coq R *)
+Lemma Z_2_PI_r n m :
+  Z n m (2 * PI) ∝= Z n m 0.
+Proof.
+  apply Z_phase_simplify.
+  now rewrite Cexp_2PI, Cexp_0.
+Qed.
+
+(* @nocheck name *)
+(* PI is captialized in Coq R *)
+Lemma Z_eq_2_PI n m α : α = Rmult 2 PI ->
+  Z n m α ∝= Z n m 0.
+Proof.
+  intros ->.
+  apply Z_2_PI_r.
+Qed.
+
+Lemma Z_eq_0 n m α : α = R0 ->
+  Z n m α ∝= Z n m 0.
+Proof.
+  now intros ->.
+Qed.
+
+Lemma Z_is_wire : Z 1 1 0 ∝= —.
+Proof.
+  prep_matrix_equivalence.
+  by_cell; unfold I; simpl; 
+  now rewrite 1?Cexp_0.
+Qed.

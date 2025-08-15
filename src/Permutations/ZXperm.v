@@ -1,5 +1,5 @@
-Require Import CoreData.
-Require Import QuantumLib.PermutationsBase.
+Require Import ZXCore Swaps.
+Require Import QuantumLib.Permutations.
 
 Open Scope ZX_scope.
 
@@ -84,3 +84,48 @@ Definition zx_of_perm_uncast n f :=
 
 Definition zx_of_perm n f :=
     $ n, n ::: zx_of_perm_uncast n f $ *)
+
+
+(* Now that we have facts about insertion_sort_list, we can define: *)
+
+Definition zx_of_perm n f :=
+	cast n n 
+		(eq_sym (length_insertion_sort_list n (perm_inv n f))) 
+		(eq_sym (length_insertion_sort_list n (perm_inv n f)))
+	(zx_of_perm_uncast n f).
+
+(* Though redundant with cast, this makes for much better
+	 proof statements, e.g. with compose_zx_of_perm_cast. 
+	 Since many of our ZXperms are non-square, this is 
+	 a common application. *)
+Definition zx_of_perm_cast n m f (H : n = m) : ZX n m :=
+	cast n m eq_refl (eq_sym H) (zx_of_perm n f).
+
+Arguments zx_of_perm_cast : simpl never.
+
+Notation "'zx_of_perm_cast' n m f '$'" :=
+		(zx_of_perm_cast n m f _) 
+		(at level 10, n at level 9, m at level 9, f at level 9, 
+		only printing) : ZX_scope.
+
+
+Definition zx_comm p q : (ZX (p + q) (q + p)) :=
+	zx_of_perm_cast (p + q) (q + p) (big_swap_perm q p) (Nat.add_comm p q).
+
+Arguments zx_comm : simpl never.
+
+
+Definition zx_gap_comm p m q : (ZX (p + m + q) (q + m + p)) :=
+	cast _ _ eq_refl (eq_sym (Nat.add_assoc _ _ _))
+	(zx_comm (p + m) q ⟷ (n_wire q ↕ zx_comm p m)).
+
+Arguments zx_gap_comm : simpl never.
+
+
+Lemma zx_mid_comm_prf {a b c d : nat} : 
+  (a + b + (c + d) = a + (b + c) + d)%nat.
+Proof. lia. Qed.
+Definition zx_mid_comm n0 n1 m0 m1 : 
+  ZX (n0 + n1 + (m0 + m1)) (n0 + m0 + (n1 + m1)) :=
+  (cast _ _ zx_mid_comm_prf zx_mid_comm_prf
+  (n_wire _ ↕ zx_comm n1 m0 ↕ n_wire m1)).

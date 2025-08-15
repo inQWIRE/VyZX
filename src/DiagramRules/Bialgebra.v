@@ -104,7 +104,7 @@ Proof.
   replace (0%R) with (0 + 0)%R by lra.
   rewrite <- (@Z_spider_1_1_fusion 0 2).
   rewrite <- X_spider_1_1_fusion.
-  replace (0 + 0)%R with 0 by lra.
+  replace (0 + 0)%R with R0 by lra.
   repeat rewrite stack_wire_distribute_r.
   repeat rewrite compose_assoc.
   rewrite wire_to_n_wire.

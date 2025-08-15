@@ -288,3 +288,54 @@ Proof. transpose_of X_n_wrap_under_r_base. Qed.
 (* PI is captialized in Coq R *)
 Lemma X_2_PI : forall n m a, X n m (INR a * 2 * PI) ∝= X n m 0.
 Proof. colorswap_of Z_2_PI. Qed.
+
+Lemma X_phase_simplify n m α β : Cexp α = Cexp β -> 
+  X n m α ∝= X n m β.
+Proof.
+  intros Heq. 
+  colorswap_of (Z_phase_simplify n m α β Heq).
+Qed.
+
+(* @nocheck name *)
+(* PI is captialized in Coq R *)
+Lemma X_add_2_PI_r n m α : 
+  X n m (α + 2 * PI) ∝= X n m α.
+Proof.
+  colorswap_of (Z_add_2_PI_r n m α).
+Qed.
+
+(* @nocheck name *)
+(* PI is captialized in Coq R *)
+Lemma X_add_2_PI_l n m α : 
+  X n m (2 * PI + α) ∝= X n m α.
+Proof.
+  colorswap_of (Z_add_2_PI_l n m α).
+Qed.
+
+(* @nocheck name *)
+(* PI is captialized in Coq R *)
+Lemma X_2_PI_r n m :
+  X n m (2 * PI) ∝= X n m 0.
+Proof.
+  colorswap_of (Z_2_PI_r n m).
+Qed.
+
+(* @nocheck name *)
+(* PI is captialized in Coq R *)
+Lemma X_eq_2_PI n m α : α = Rmult 2 PI ->
+  X n m α ∝= X n m 0.
+Proof.
+  intros ->.
+  apply X_2_PI_r.
+Qed.
+
+Lemma X_eq_0 n m α : α = R0 ->
+  X n m α ∝= X n m 0.
+Proof.
+  now intros ->.
+Qed.
+
+Lemma X_is_wire : X 1 1 0 ∝= —.
+Proof.
+  colorswap_of Z_is_wire.
+Qed.

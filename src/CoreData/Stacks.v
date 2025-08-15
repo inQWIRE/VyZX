@@ -1,0 +1,9 @@
+Require Import ZXCore.
+
+(* TODO: Move n_stack / n_stack1 / n_wire / n_box in here *)
+
+Definition zx_assoc n m o : ZX (n + m + o) (n + (m + o)) :=
+  cast _ _ eq_refl (Nat.add_assoc _ _ _) (n_wire _).
+
+Definition zx_invassoc n m o : ZX (n + (m + o)) (n + m + o) :=
+  cast _ _ (Nat.add_assoc _ _ _) eq_refl (n_wire _).

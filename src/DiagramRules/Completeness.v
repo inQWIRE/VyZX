@@ -39,6 +39,7 @@ Proof.
 		lra.
 Qed.
 	
+Local Open Scope matrix_scope.
 
 (* @nocheck name *)
 (* Conventional name *)

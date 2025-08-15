@@ -5,6 +5,7 @@ Require Export DiagramRules.
 Require Export CoreRules.
 
 Local Open Scope ZX_scope.
+Local Open Scope matrix_scope.
 
 Lemma Z_is_Z : ⟦ _Z_ ⟧ = σz.
 Proof.
@@ -178,6 +179,7 @@ Import Kronecker.
 Require Import ZXpermFacts.
 Import CoreRules.
 
+Local Open Scope matrix_scope.
 
 Add Parametric Morphism n : (zx_of_perm n) with signature
   perm_eq n ==> eq as zx_of_perm_proper.

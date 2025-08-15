@@ -57,11 +57,12 @@ Proof.
   easy.
 Qed.
 
+Local Open Scope matrix_scope.
 Local Open Scope nat_scope.
 
 Lemma cap_f_to_vec f : 
   ⟦ ⊃ ⟧ × f_to_vec 2 f = 
-  b2R (eqb (f 0) ((f 1))) .* I (2 ^ 0).
+  (b2R (eqb (f 0) ((f 1))) .* I (2 ^ 0)).
 Proof.
   prep_matrix_equivalence.
   unfold scale, kron.
@@ -161,7 +162,7 @@ Proof.
 Qed.
 
 Lemma f_to_vec_transpose_f_to_vec n f g :
-  transpose (f_to_vec n f) × f_to_vec n g = 
+  (f_to_vec n f) ⊤%M × f_to_vec n g = 
   b2R (forallb (fun k => eqb (f k) (g k)) (seq 0 n)) .* I 1.
 Proof.
   prep_matrix_equivalence.
@@ -181,7 +182,7 @@ Proof.
 Qed.
 
 Lemma f_to_vec_transpose_f_to_vec' n f g :
-  transpose (f_to_vec n f) × f_to_vec n g = 
+  (f_to_vec n f) ⊤%M × f_to_vec n g = 
   (if funbool_to_nat n f =? funbool_to_nat n g then  
     C1 else C0) .* I 1.
 Proof.
@@ -197,7 +198,7 @@ Proof.
 Qed.
 
 Lemma f_to_vec_transpose_self n f :
-  transpose (f_to_vec n f) × f_to_vec n f = 
+  (f_to_vec n f) ⊤%M × f_to_vec n f = 
   I 1.
 Proof.
   rewrite f_to_vec_transpose_f_to_vec', Nat.eqb_refl.
@@ -263,7 +264,7 @@ Proof.
   rewrite Mmult_transpose.
   restore_dims.
   rewrite Nat.pow_add_r.
-  change (@transpose (2 ^ n)) with (@transpose (2^n * 2^0)).
+  change (@Matrix.transpose (2 ^ n)) with (@Matrix.transpose (2^n * 2^0)).
   rewrite (kron_transpose).
   unfold n_cap.
   rewrite semantics_transpose_comm.
@@ -281,11 +282,11 @@ Proof.
   rewrite Mmult_transpose.
   restore_dims.
   rewrite Nat.pow_add_r.
-  change (@transpose (2 ^ n)) with (@transpose (2^0 * 2^n)).
+  change (@Matrix.transpose (2 ^ n)) with (@Matrix.transpose (2^0 * 2^n)).
   rewrite (kron_transpose).
   unfold n_cap.
   rewrite semantics_transpose_comm.
-  change (transpose (transpose ?x)) with x.
+  change (Matrix.transpose (Matrix.transpose ?x)) with x.
   rewrite id_transpose_eq.
   unify_pows_two.
   apply n_cup_f_to_vec_pullthrough_top.
@@ -325,7 +326,7 @@ Lemma n_cup_matrix_pullthrough_bot n m (A : Matrix (2 ^ n) (2 ^ m))
   @Mmult _ (2^(m + m)) (2^(n + m)) (⟦ n_cup m ⟧) (A ⊤%M ⊗ I (2 ^ m)).
 Proof.
   now rewrite n_cup_matrix_pullthrough_top, 
-    transpose_involutive by auto_wf.
+    Matrix.transpose_involutive by auto_wf.
 Qed.
 
 Open Scope ZX_scope.
@@ -497,11 +498,11 @@ Proof.
   rewrite kron_mixed_product, Mmult_1_r by auto_wf.
   apply transpose_matrices.
   rewrite !Mmult_transpose.
-  change (transpose (?A ⊗ ?B)) with ((transpose A) ⊗ (transpose B)).
-  rewrite Mmult_transpose, transpose_involutive.
+  change (Matrix.transpose (?A ⊗ ?B)) with ((Matrix.transpose A) ⊗ (Matrix.transpose B)).
+  rewrite Mmult_transpose, Matrix.transpose_involutive.
   unfold n_cap.
   rewrite semantics_transpose_comm.
-  change (transpose (transpose ?x)) with x.
+  change (Matrix.transpose (Matrix.transpose ?x)) with x.
   rewrite id_transpose_eq.
   unify_pows_two.
   apply equal_on_basis_states_implies_equal';
@@ -668,3 +669,370 @@ Qed.
   (fun n => @n_cup_transpose n)
   (fun n => @n_cap_transpose n)
   : transpose_db.
+
+
+Lemma cap_is_n_cup : ⊃ ∝= n_cup 1.
+Proof.
+  unfold n_cup.
+  rewrite n_swap_1_is_wire.
+  cbn [n_cup_unswapped].
+  rewrite stack_empty_r, 2 cast_id.
+  bundle_wires.
+  rewrite 2 nwire_removal_l.
+  reflexivity.
+  Unshelve. all: reflexivity.
+Qed.
+Lemma cup_is_n_cap : ⊂ ∝= n_cap 1.
+Proof. transpose_of (cap_is_n_cup). Qed.
+
+Lemma cap_pullthrough_top_1 (zx zx' : ZX 1 1) : 
+  zx ↕ zx' ⟷ ⊃ ∝= — ↕ (zx' ⟷ zx ⊤) ⟷ ⊃.
+Proof.
+  rewrite <- nwire_stack_compose_topleft, compose_assoc.
+  rewrite cap_is_n_cup, wire_to_n_wire, n_cup_pullthrough_top.
+  rewrite <- compose_assoc, 
+    <- stack_nwire_distribute_l.
+  reflexivity.
+Qed.
+
+Lemma cap_pullthrough_bot_1 (zx zx' : ZX 1 1) : 
+  zx' ↕ zx ⟷ ⊃ ∝= ((zx' ⟷ zx ⊤)) ↕ — ⟷ ⊃.
+Proof.
+  rewrite cap_pullthrough_top_1, 
+    (cap_pullthrough_top_1 (_⟷_)), wire_removal_l.
+  cbn.
+  now rewrite transpose_involutive_eq.
+Qed.
+
+Lemma cup_pullthrough_top_1 (zx zx' : ZX 1 1) : 
+  ⊂ ⟷ (zx ↕ zx') ∝= ⊂ ⟷ (— ↕ (zx ⊤ ⟷ zx')).
+Proof. transpose_of (cap_pullthrough_top_1 (zx ⊤) (zx' ⊤)). Qed.
+
+Lemma cup_pullthrough_bot_1 (zx zx' : ZX 1 1) : 
+  ⊂ ⟷ (zx' ↕ zx) ∝= ⊂ ⟷ ((zx ⊤ ⟷ zx') ↕ —).
+Proof. transpose_of (cap_pullthrough_bot_1 (zx ⊤) (zx' ⊤)). Qed.
+
+
+Lemma cap_pullthrough_top {n m} (zx : ZX n 1) (zx' : ZX m 1) : 
+  zx ↕ zx' ⟷ ⊃ ∝= n_wire n ↕ (zx' ⟷ zx ⊤) ⟷ n_cup n.
+Proof.
+  rewrite <- nwire_stack_compose_topleft, compose_assoc.
+  rewrite cap_is_n_cup, n_cup_pullthrough_top.
+  rewrite <- compose_assoc, 
+    <- stack_nwire_distribute_l.
+  reflexivity.
+Qed.
+
+Lemma cap_pullthrough_bot {n m} (zx : ZX n 1) (zx' : ZX m 1) : 
+  zx' ↕ zx ⟷ ⊃ ∝= (zx' ⟷ zx ⊤) ↕ n_wire n ⟷ n_cup n.
+Proof.
+  rewrite cap_pullthrough_top, n_cup_pullthrough_top.
+  cbn.
+  now rewrite transpose_involutive_eq.
+Qed.
+
+Lemma cup_pullthrough_top {n m} (zx : ZX 1 n) (zx' : ZX 1 m) : 
+  ⊂ ⟷ (zx ↕ zx') ∝= n_cap n ⟷ (n_wire n ↕ (zx ⊤ ⟷ zx')).
+Proof. transpose_of (cap_pullthrough_top (zx ⊤) (zx' ⊤)). Qed.
+
+Lemma cup_pullthrough_bot {n m} (zx : ZX 1 n) (zx' : ZX 1 m) : 
+  ⊂ ⟷ (zx' ↕ zx) ∝= n_cap n ⟷ ((zx ⊤ ⟷ zx') ↕ n_wire n).
+Proof. transpose_of (cap_pullthrough_bot (zx ⊤) (zx' ⊤)). Qed.
+
+
+Lemma n_cup_plus_decomp n k : 
+  n_cup (n + k) ∝=
+  zx_invassoc _ _ _ ⟷
+  ((zx_assoc n k n ⟷ (n_wire n ↕ zx_comm k n)
+    ⟷ zx_invassoc n n k) ↕ n_wire k) ⟷
+  zx_assoc (n + n) k k ⟷
+  (n_cup n ↕ n_cup k).
+Proof.
+  apply equal_on_basis_states_implies_equal';
+  [auto_wf.. |].
+  intros f.
+  cbn -[cast n_cup].
+  unfold zx_assoc, zx_invassoc.
+  simpl_cast_semantics.
+  rewrite 6 n_wire_semantics; Msimpl.
+  rewrite n_cup_f_to_vec.
+  rewrite 3 f_to_vec_split'_eq.
+  rewrite Mmult_assoc.
+  restore_dims.
+  rewrite <- kron_assoc, kron_mixed_product' by 
+    solve [auto_wf | unify_pows_two; nia].
+  rewrite kron_assoc by auto_wf.
+  rewrite (kron_mixed_product' (2^n)) by 
+    solve [auto_wf | unify_pows_two; nia].
+  rewrite 2 Mmult_1_l by auto_wf.
+  rewrite zx_comm_semantics.
+  restore_dims.
+  rewrite Kronecker.kron_comm_commutes_l by auto_wf.
+  rewrite Kronecker.kron_comm_1_l, Mmult_1_r by auto_wf.
+  rewrite <- kron_assoc by auto_wf.
+  restore_dims.
+  rewrite (kron_assoc (_ ⊗ _)) by auto_wf.
+  rewrite kron_mixed_product' by 
+    solve [auto_wf | unify_pows_two; nia].
+  rewrite 2 f_to_vec_merge, 2 n_cup_f_to_vec.
+  restore_dims.
+  distribute_scale.
+  rewrite id_kron.
+  f_equal.
+  unfold b2R.
+  rewrite 3 (if_dist R C), (if_dist C C).
+  Csimpl.
+  rewrite <- andb_if.
+  apply f_equal_if; [|reflexivity..].
+  apply Bool.eq_iff_eq_true.
+  rewrite andb_true_iff, 3 forallb_seq0.
+  setoid_rewrite Bool.eqb_true_iff.
+  split.
+  - intros Hf.
+    split.
+    + intros s Hs.
+      do 2 simplify_bools_lia_one_kernel.
+      rewrite Hf; f_equal; lia.
+    + intros s Hs.
+      do 2 simplify_bools_lia_one_kernel.
+      rewrite Hf; f_equal; lia.
+  - intros [Hf0 Hf1].
+    intros s Hs.
+    bdestruct (s <? n).
+    + generalize (Hf1 s ltac:(lia)). 
+      do 2 simplify_bools_lia_one_kernel.
+      intros ->.
+      f_equal; lia.
+    + generalize (Hf0 (s - n)%nat ltac:(lia)).
+      simplify_bools_lia_one_kernel.
+      rewrite Nat.add_comm, Nat.sub_add by lia.
+      intros ->.
+      simplify_bools_lia_one_kernel.
+      f_equal; lia.
+Qed.
+
+Lemma n_cup_split_add n m : 
+  n_cup (n + m) ∝=
+  zx_mid_comm n m n m ⟷
+  (n_cup n ↕ n_cup m).
+Proof.
+  unfold proportional_by_1.
+  unfold zx_mid_comm.
+  rewrite zx_compose_spec.
+  simpl_cast_semantics.
+  rewrite 2!zx_stack_spec.
+  rewrite n_wire_semantics.
+  apply equal_on_basis_states_implies_equal; [now auto_wf..|].
+  intros f.
+  rewrite n_cup_f_to_vec.
+  rewrite Mmult_assoc.
+  rewrite (@zx_mid_comm_prf n m n m).
+  restore_dims.
+  rewrite kron_f_to_vec_eq by auto_wf.
+  rewrite zx_stack_spec.
+  rewrite n_wire_semantics.
+  restore_dims.
+  rewrite kron_f_to_vec_eq by auto_wf.
+  rewrite 2!Mmult_1_l by auto_wf.
+  rewrite zx_comm_semantics.
+  rewrite f_to_vec_split'_eq.
+  restore_dims.
+  rewrite Kronecker.kron_comm_commutes_l by auto_wf.
+  rewrite Kronecker.kron_comm_1_l, Mmult_1_r by auto_wf.
+  rewrite f_to_vec_merge.
+  restore_dims.
+  rewrite f_to_vec_merge.
+  restore_dims.
+  rewrite f_to_vec_merge.
+  rewrite <- (@zx_mid_comm_prf n n m m).
+  rewrite f_to_vec_split'_eq.
+  restore_dims.
+  rewrite kron_mixed_product.
+  rewrite 2!n_cup_f_to_vec.
+  restore_dims.
+  distribute_scale.
+  rewrite id_kron.
+  f_equal.
+  rewrite <- RtoC_mult, b2R_mult.
+  do 2 f_equal.
+  apply eq_iff_eq_true.
+  rewrite andb_true_iff, 3!forallb_seq0.
+  setoid_rewrite eqb_true_iff.
+  rewrite forall_nat_lt_add.
+  apply ZifyClasses.and_morph.
+  - apply forall_lt_iff.
+    intros k Hk.
+    do 5 simplify_bools_lia_one_kernel.
+    now rewrite add_sub', Nat.add_assoc.
+  - apply forall_lt_iff.
+    intros k Hk.
+    cbn.
+    do 4 simplify_bools_lia_one_kernel.
+    replace (n + n + k - n - n) with k by lia.
+    replace (n + n + (m + k) - (n + (n + m))) with k by lia.
+    now rewrite 2!Nat.add_assoc.
+Qed.
+
+Lemma n_cup_grow_l n : 
+  n_cup (S n) ∝=
+  zx_mid_comm 1 n 1 n ⟷
+  (⊃ ↕ n_cup n).
+Proof.
+  change (S n) with (1 + n).
+  rewrite n_cup_split_add.
+  now rewrite n_cup_1_cup.
+Qed.
+
+Lemma n_cap_split_add n m : 
+  n_cap (n + m) ∝=
+  (n_cap n ↕ n_cap m) ⟷
+  zx_mid_comm n n m m.
+Proof.
+  unfold n_cap.
+  rewrite n_cup_split_add.
+  rewrite compose_transpose. 
+  now rewrite zx_mid_comm_transpose.
+Qed.
+
+Lemma n_cup_add_natural {n0 n1 n2 n3 m0 m1} 
+  (zx0 : ZX n0 m0) (zx1 : ZX n1 m1)
+  (zx2 : ZX n2 m0) (zx3 : ZX n3 m1) : 
+  zx0 ↕ zx1 ↕ (zx2 ↕ zx3) ⟷ n_cup (m0 + m1) ∝=
+  zx_mid_comm _ _ _ _ ⟷
+  ((zx0 ↕ zx2 ⟷ n_cup m0) ↕ (zx1 ↕ zx3 ⟷ n_cup m1)).
+Proof.
+  rewrite stack_compose_distr.
+  rewrite n_cup_split_add.
+  rewrite <- 2!compose_assoc.
+  now rewrite zx_mid_comm_commutes_r.
+Qed.
+
+Lemma n_cap_add_natural {n0 n1 m0 m1 m2 m3} 
+  (zx0 : ZX n0 m0) (zx1 : ZX n1 m1)
+  (zx2 : ZX n0 m2) (zx3 : ZX n1 m3) : 
+  n_cap (n0 + n1) ⟷ (zx0 ↕ zx1 ↕ (zx2 ↕ zx3)) ∝=
+  ((n_cap n0 ⟷ (zx0 ↕ zx2)) ↕ (n_cap n1 ⟷ (zx1 ↕ zx3))) ⟷
+  zx_mid_comm _ _ _ _.
+Proof.
+  apply transpose_diagrams_eq.
+  rewrite 2!compose_transpose, 3!stack_transpose, n_cap_transpose.
+  rewrite n_cup_add_natural.
+  rewrite zx_mid_comm_transpose.
+  rewrite (@stack_transpose 0 _ 0), 2!compose_transpose, 2!n_cap_transpose.
+  reflexivity.
+Qed.
+
+
+
+Lemma n_stacked_caps_semantics n : 
+  ⟦ n_stacked_caps n ⟧ = kron_n n (⟦ ⊃ ⟧).
+Proof.
+  unfold n_stacked_caps.
+  rewrite cast_semantics_dim.
+  unfold cast_semantics_dim_eqn.
+  apply n_stack_semantics.
+Qed.
+
+Lemma n_stacked_cups_semantics n : 
+  ⟦ n_stacked_cups n ⟧ = kron_n n (⟦ ⊂ ⟧).
+Proof.
+  unfold n_stacked_cups.
+  rewrite cast_semantics_dim.
+  unfold cast_semantics_dim_eqn.
+  apply n_stack_semantics.
+Qed.
+
+
+Lemma n_stacked_caps_succ_prf {n} : 
+  (S n + S n = 2 + (n + n))%nat.
+Proof. lia. Qed.
+
+Lemma n_stacked_caps_succ n : 
+  n_stacked_caps (S n) ∝=
+  cast _ _ n_stacked_caps_succ_prf eq_refl
+    (⊃ ↕ n_stacked_caps n).
+Proof.
+  unfold n_stacked_caps.
+  cbn.
+  erewrite cast_stack_r, cast_contract_eq.
+  cast_irrelevance.
+  Unshelve. all: lia.
+Qed.
+
+Lemma n_cup_to_n_stacked_caps n : 
+  n_cup n ∝= 
+  zx_of_perm _ (kron_comm_perm 2 n) ⟷ n_stacked_caps n.
+Proof.
+  induction n.
+  - unfold n_cup, n_stacked_caps.
+    cbn.
+    rewrite zx_of_perm_0.
+    now rewrite stack_empty_l, cast_id.
+  - rewrite n_cup_grow_l.
+    rewrite n_stacked_caps_succ.
+    rewrite IHn.
+    rewrite <- (nwire_removal_l ⊃).
+    rewrite stack_compose_distr, <- compose_assoc.
+    apply compose_simplify_casted_abs;
+    [lia|intros H..].
+    + by_perm_eq_nosimpl.
+      rewrite perm_of_zx_cast.
+      cbn -[Nat.add].
+      rewrite perm_of_zx_mid_comm.
+      rewrite perm_of_zx_of_perm_eq_WF by 
+        (replace (n + n) with (2 * n) by lia; auto_perm).
+      rewrite 2!stack_perms_idn_idn.
+      rewrite perm_of_zx_of_perm_eq_WF by 
+        (replace (S n + S n) with (2 * S n) by lia; auto_perm).
+      rewrite (WF_Perm_rw (kron_comm_perm_2_n_succ_alt _)) by auto_perm.
+      replace (2 * n) with (n + n) by apply Nat.double_twice.
+      apply compose_perm_eq_proper_l; [|split; auto_perm].
+      rewrite <- Nat.add_assoc.
+      replace (n + 1) with (S n) by lia.
+      rewrite stack_perms_assoc.
+      now replace (n + S n) with (S n + n) by lia.
+    + rewrite cast_contract_eq', cast_id.
+      now rewrite nwire_removal_l.
+Qed.
+
+Lemma n_stacked_caps_tranpose n : 
+  (n_stacked_caps n) ⊤%ZX ∝= n_stacked_cups n.
+Proof.
+  unfold n_stacked_caps, n_stacked_cups.
+  now rewrite cast_transpose, nstack_transpose.
+Qed.
+
+Lemma n_stacked_cups_tranpose n : 
+  (n_stacked_cups n) ⊤%ZX ∝= n_stacked_caps n.
+Proof.
+  now rewrite <- n_stacked_caps_tranpose, 
+    Proportional.transpose_involutive.
+Qed.
+
+Lemma zx_of_perm_transpose n f (Hf : permutation n f) : 
+  (zx_of_perm n f) ⊤%ZX ∝=
+  zx_of_perm n (perm_inv' n f).
+Proof.
+  rewrite <- nwire_removal_l.
+  rewrite compose_zxperm_r_eq by auto_zxperm.
+  rewrite Proportional.transpose_involutive.
+  rewrite compose_zx_of_perm by auto_perm.
+  rewrite perm_inv'_eq, perm_inv_linv_of_permutation by auto_perm.
+  now rewrite zx_of_perm_idn.
+Qed.
+
+Lemma n_cap_to_n_stacked_cups n : 
+  n_cap n ∝= 
+  n_stacked_cups n ⟷ 
+  zx_of_perm _ (kron_comm_perm n 2).
+Proof. 
+  unfold n_cap.
+  rewrite n_cup_to_n_stacked_caps.
+  rewrite compose_transpose.
+  rewrite zx_of_perm_transpose by 
+    (replace (n + n) with (2 * n) by lia; auto_perm).
+  replace (perm_inv' (n + n)) with (perm_inv' (2 * n)) 
+    by (f_equal; lia).
+  rewrite kron_comm_perm_inv'.
+  now rewrite n_stacked_caps_tranpose.
+Qed.
