@@ -297,6 +297,28 @@ Qed.
 Lemma X_0_0_to_scalar β : X 0 0 β ∝= (1 + Cexp β) .* ⦰.
 Proof. colorswap_of (Z_0_0_to_scalar β). Qed.
 
+  
+
+Lemma X_2_1_states_b b b' α : 
+	state_b b ↕ state_b b' ⟷ X 2 1 α ∝=
+	/C2 .* X 0 1 (if b ⊕ b' then (α + PI) else α).
+Proof.
+	rewrite 2 state_b_defn'.
+	rewrite gadget_is_scaled_empty, const_of_zx_invsqrt2;
+	distribute_zxscale.
+	rewrite 2 stack_empty_l.
+	cbn.
+	distribute_zxscale.
+	rewrite <- Cinv_mult_distr, Csqrt2_sqrt, zx_scale_compose_distr_l.
+	apply zx_scale_simplify_eq_r.
+	rewrite <- (X_add_l 0 0).
+	apply X_phase_simplify.
+	destruct b, b'; cbn; 
+	rewrite 1?Rplus_0_l, 1?Rplus_0_r, 
+		2?Cexp_add, 1?Cexp_PI'; lca.
+Qed.
+
+
 
 
 
@@ -430,6 +452,42 @@ Proof.
 Qed.
 
 
+Lemma not_Z_state_b n β b : 
+	state_b b ⟷ NOT ⟷ Z 1 n β ∝=
+	(if b then C1 else Cexp β) .* 
+  cast _ _ (eq_sym (Nat.mul_0_r _)) (eq_sym (Nat.mul_1_r _)) (n ⇑ state_b (negb b)).
+Proof.
+	destruct b; cbn.
+	- now rewrite not_state_1, Z_1_n_state0, zx_scale_1_l.
+	- now rewrite not_state_0, Z_1_n_state1.
+Qed.
+
+Lemma if_b_not_state_0 (b : bool) : 
+	state_0 ⟷ (if b then NOT else —) ∝=
+	state_b b.
+Proof.
+	destruct b.
+	- apply not_state_0.
+	- apply wire_removal_r.
+Qed.
+
+Lemma if_b_not_state_1 (b : bool) : 
+	state_1 ⟷ (if b then NOT else —) ∝=
+	state_b (negb b).
+Proof.
+	destruct b.
+	- apply not_state_1.
+	- apply wire_removal_r.
+Qed.
+
+Lemma if_b_not_state_b (b b' : bool) : 
+	state_b b' ⟷ (if b then NOT else —) ∝=
+	state_b (b' ⊕ b).
+Proof.
+	destruct b'.
+	- apply if_b_not_state_1.
+	- rewrite if_b_not_state_0; now destruct b.
+Qed.
 
 
 

@@ -76,3 +76,19 @@ Proof.
   prep_matrix_equivalence.
   by_cell; reflexivity.
 Qed.
+
+
+Lemma X_semantics_0_1 β : 
+	X_semantics 0 1 β = 
+	((C1 + Cexp β)/√2 .* qubit0 .+ (C1 - Cexp β)/√2 .* qubit1)%M.
+Proof.
+	change (_ = ?x) with (⟦ ⊙ (Z 0 1 β) ⟧ = x).
+	rewrite colorswap_is_bihadamard.
+	cbn [n_stack1].
+	prep_matrix_equivalence.
+	cbn.
+	rewrite kron_1_r, Mmult_1_r by 
+    (apply WF_mult; [auto_wf | apply (@WF_Z_semantics 0 1)]).
+	unfold Mplus, scale;
+	by_cell; cbn; lca.
+Qed.

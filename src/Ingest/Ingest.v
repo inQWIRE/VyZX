@@ -545,13 +545,13 @@ Proof.
   replace (n + (1 + (m - n - 1) + 1))%nat with (S m) by lia.
   bdestruct (S m <=? dim); try (exfalso; lia).
   rewrite pad_bot_top_semantics.
-  repeat rewrite kron_assoc; try auto with wf_db; [| shelve].
+  repeat rewrite kron_assoc by auto with wf_db.
   rewrite <- unpadded_cnot_simpl_args_sem.
   rewrite Nat.sub_succ_l; try lia.
   destruct (m - n)%nat eqn:Hmn1; try (exfalso; lia).
   pose proof (unpadded_cnot_t_sem_equiv n0) as H_unpad_n0.
   rewrite <- H_unpad_n0.
-  autorewrite with scalar_move_db.
+  rewrite Mscale_kron_dist_l, Mscale_kron_dist_r.
   restore_dims.
   rewrite denote_cnot.
   unfold ueval_cnot.
@@ -570,14 +570,6 @@ Proof.
   replace ((2 * 2 ^ n0 * 2 * 2 ^ (dim - S m))%nat) with (2 * (2 ^ n0 * 2) * 2 ^ (dim - S m))%nat by lia.
   apply kron_simplify; try easy.
   repeat rewrite kron_assoc; auto with wf_db.
-Unshelve. 
-  + replace (2 * 2 ^ (m - n - 1) * 2)%nat with (2 ^ (1 + (m - n - 1) + 1))%nat.
-    auto with wf_db.
-    rewrite <- Nat.pow_succ_r; try lia.
-    rewrite Nat.mul_comm.
-    rewrite <- Nat.pow_succ_r; try lia.
-    rewrite Nat.add_1_r.
-    easy.
 Qed.
 
 Lemma cnot_m_n_equiv : forall dim n m, (n < dim)%nat -> (m < dim)%nat -> (m < n)%nat -> / (√ 2)%R .* uc_eval (@CNOT dim n m) = ⟦ @cnot_m_n_ingest dim n m ⟧.
@@ -595,13 +587,13 @@ Proof.
   replace (m + (1 + (n - m - 1) + 1))%nat with (S n) by lia.
   bdestruct (S n <=? dim); try (exfalso; lia).
   rewrite pad_bot_top_semantics.
-  repeat rewrite kron_assoc; try auto with wf_db; [| shelve].
+  repeat rewrite kron_assoc by auto_wf.
   rewrite <- unpadded_cnot_simpl_args_sem.
   rewrite Nat.sub_succ_l; try lia.
   destruct (n - m)%nat eqn:Hmn1; try (exfalso; lia).
   pose proof (unpadded_cnot_b_sem_equiv n0) as H_unpad_n0.
   rewrite <- H_unpad_n0.
-  autorewrite with scalar_move_db.
+  rewrite Mscale_kron_dist_l, Mscale_kron_dist_r.
   restore_dims.
   rewrite denote_cnot.
   unfold ueval_cnot.
@@ -620,14 +612,6 @@ Proof.
   replace (2 * 2 ^ n0 * 2 * 2 ^ (dim - S n))%nat with (2 * (2 ^ n0 * 2) * 2 ^ (dim - S n))%nat by lia.
   apply kron_simplify; try easy.
   repeat rewrite kron_assoc; auto with wf_db.
-Unshelve. 
-  + replace (2 * 2 ^ (n - m - 1) * 2)%nat with (2 ^ (1 + (n - m - 1) + 1))%nat.
-    auto with wf_db.
-    rewrite <- Nat.pow_succ_r; try lia.
-    rewrite Nat.mul_comm.
-    rewrite <- Nat.pow_succ_r; try lia.
-    rewrite Nat.add_1_r.
-    easy.
 Qed.
 
 Lemma cnot_ingest_correct : forall dim n m, (n < dim)%nat -> (m < dim)%nat -> (m <> n)%nat -> / (√ 2)%R .* uc_eval (@CNOT dim n m) = ⟦ @cnot_ingest dim n m ⟧.

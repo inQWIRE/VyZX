@@ -258,6 +258,11 @@ Qed.
 
 
 
+Lemma state_0_to_b : state_0 = state_b false.
+Proof. reflexivity. Qed.
+
+Lemma state_1_to_b : state_1 = state_b true.
+Proof. reflexivity. Qed.
 
 Lemma state_b_semantics b : 
   ⟦ state_b b ⟧ = ket (Nat.b2n b).
@@ -265,6 +270,18 @@ Proof.
   destruct b.
   - apply state_1_semantics.
   - apply state_0_semantics.
+Qed.
+
+
+Lemma state_b_state_b_transpose b b' : 
+	state_b b ⟷ (state_b b') ⊤ ∝=
+	(b2R (eqb b b')) .* ⦰.
+Proof.
+	prep_matrix_equivalence.
+	rewrite zx_compose_spec, semantics_transpose_comm, 
+		2 state_b_semantics, zx_scale_semantics.
+	by_cell. 
+	destruct b, b'; lca.
 Qed.
 
 Lemma f_to_state_semantics n f : 

@@ -1,285 +1,141 @@
 Require Import CoreData.
 From QuantumLib Require Import Polar.
-Require Import CoreRules.
-
 Import Complex.
+
+Require Import CoreRules.
 
 Local Open Scope matrix_scope.
 
-Lemma c_step_1 : forall α,
-	⟦ (Z 0 1 α ↕ —) ⟷ X 2 1 0 ⟧ = 
-	/(√2)%R .* (∣0⟩⟨0∣ .+ 
-	Cexp(α) .* ∣0⟩⟨1∣ .+ 
-	Cexp(α) .* ∣1⟩⟨0∣ .+ 
-	∣1⟩⟨1∣).
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma completeness_C_step1 β (b : bool) : 
+	X 0 2 (if b then (PI + PI)%R else PI)
+		⟷ (Z 1 0 β ↕ n_wire 1) ∝=
+	Z 0 1 β ⟷ if b then — else NOT.
 Proof.
-	intros.	autorewrite with scalar_move_db.
-	rewrite ZX_semantic_equiv.
-	simpl.
-	autorewrite with Cexp_db.
-	Msimpl.
-	rewrite kron_plus_distr_r.
-	repeat rewrite Mmult_plus_distr_r.
-	repeat rewrite Mmult_plus_distr_l.
-	repeat rewrite Mmult_assoc.
-	repeat rewrite kron_mixed_product.
-	Msimpl.
-	autorewrite with scalar_move_db.
-	autorewrite with ketbra_mult_db.
-	autorewrite with scalar_move_db.
-	Msimpl.
-	unfold xbasis_minus, xbasis_plus, braplus, braminus.
-	autorewrite with scalar_move_db.
-	
- 	assert (H : ((/ (√ 2)%R + Cexp α * / (√ 2)%R) * / (√ 2)%R * / (√ 2)%R)%C
- 		= ((1 + Cexp α) / (2 * (√2)%R)) )by C_field.
-	rewrite H.
- 	replace ((/ (√ 2)%R + Cexp α * - / (√ 2)%R) * / (√ 2)%R * / (√ 2)%R) 
-		with ((1 - Cexp α) / (2 * (√2)%R)) by C_field.
-	repeat rewrite Mmult_plus_distr_r.
-	repeat rewrite Mmult_plus_distr_l.
-	remember ((C1 + Cexp α) / (C2 * (√ 2)%R)) as σ1.
-	remember ((C1 - Cexp α) / (C2 * (√ 2)%R)) as σ2.
-	autorewrite with scalar_move_db.
-	repeat rewrite Mscale_plus_distr_r.
-	repeat rewrite Mscale_assoc.
-	replace (σ2 * -1) with (- σ2) by lca.
-	replace (- σ2 * -1) with σ2 by lca.
-	restore_dims.
-	replace (σ1 .* ∣0⟩⟨0∣ .+ σ1 .* ∣0⟩⟨1∣ .+ (σ1 .* ∣1⟩⟨0∣ .+ σ1 .* ∣1⟩⟨1∣) .+ (σ2 .* ∣0⟩⟨0∣ .+ - σ2 .* ∣0⟩⟨1∣ .+ (- σ2 .* ∣1⟩⟨0∣ .+ σ2 .* ∣1⟩⟨1∣))) with ((σ1 + σ2) .* ∣0⟩⟨0∣ .+ (σ1 - σ2) .* ∣0⟩⟨1∣ .+ (σ1 - σ2) .* ∣1⟩⟨0∣ .+ (σ1 + σ2) .* ∣1⟩⟨1∣) by lma.
-	replace (σ1 + σ2) with (1 / (√2)%R) by (subst; C_field_simplify; [lca | C_field]).
-	replace (σ1 - σ2) with ((Cexp α) / (√2)%R) by (subst; C_field_simplify; [lca | C_field]).
-	lma.
+	destruct b.
+	- rewrite X_eq_2_PI, <- cap_X by lra.
+		rewrite cup_pullthrough_top, n_cap_0_empty, compose_empty_l, stack_empty_l, 
+			nwire_removal_r, wire_removal_r.
+		reflexivity.
+	- rewrite X_0_2_PI_to_cup_not, compose_assoc, wire_to_n_wire,
+			<- (@stack_split_antidiag 1 0 1 1), stack_split_diag.
+		rewrite <- compose_assoc, cup_pullthrough_top, n_cap_0_empty, 
+			compose_empty_l, stack_empty_l, nwire_removal_r, stack_empty_l.
+		reflexivity.
 Qed.
 
-Lemma c_step_1_pi : forall α,
-	⟦ (Z 0 1 α ↕ —) ⟷ X 2 1 PI ⟧ = 
-	/(√2)%R .* (Cexp(α) .* ∣0⟩⟨0∣ .+ 
-	∣0⟩⟨1∣ .+ 
-	∣1⟩⟨0∣ .+ 
-	Cexp(α) .* ∣1⟩⟨1∣).
+(* @nocheck name *)
+(* Conventional name *)
+Lemma completeness_C_step1' β (b : bool) : 
+	X 0 2 (if b then PI else 0)
+		⟷ (Z 1 0 β ↕ n_wire 1) ∝=
+	Z 0 1 β ⟷ if b then NOT else —.
 Proof.
-	intros.
-	rewrite ZX_semantic_equiv.
-	simpl.
-	autorewrite with scalar_move_db.
-	Msimpl.
-	autorewrite with Cexp_db.
-	rewrite kron_plus_distr_r.
-	autorewrite with scalar_move_db.
-	repeat rewrite Mmult_plus_distr_r.
-	repeat rewrite Mmult_plus_distr_l.
-	autorewrite with scalar_move_db.
-	repeat rewrite Mmult_assoc.
-	repeat rewrite kron_mixed_product.
-	Msimpl.
-	autorewrite with scalar_move_db.
-	autorewrite with ketbra_mult_db.
-	autorewrite with scalar_move_db.
-	Msimpl.
-	unfold xbasis_minus, xbasis_plus, braplus, braminus.
-	autorewrite with scalar_move_db.
- replace ((/ (√ 2)%R + Cexp α * / (√ 2)%R) * / (√ 2)%R * / (√ 2)%R) with ((1 + Cexp α) / (2 * (√2)%R)) by C_field.
- replace ((-1 * / (√ 2)%R + Cexp α * -1 * - / (√ 2)%R) * / (√ 2)%R * / (√ 2)%R) with (-(1 - Cexp α) / (2 * (√2)%R)) by (C_field_simplify; [lca | C_field]).
-	repeat rewrite Mmult_plus_distr_r.
-	repeat rewrite Mmult_plus_distr_l.
-	remember ((C1 + Cexp α) / (C2 * (√ 2)%R)) as σ1.
-	remember (-(C1 - Cexp α) / (C2 * (√ 2)%R)) as σ2.
-	autorewrite with scalar_move_db.
-	repeat rewrite Mscale_plus_distr_r.
-	repeat rewrite Mscale_assoc.
-	replace (σ2 * -1) with (- σ2) by lca.
-	replace (- σ2 * -1) with σ2 by lca.
-	restore_dims.
-	replace (σ1 .* ∣0⟩⟨0∣ .+ σ1 .* ∣0⟩⟨1∣ .+ (σ1 .* ∣1⟩⟨0∣ .+ σ1 .* ∣1⟩⟨1∣) .+ (σ2 .* ∣0⟩⟨0∣ .+ - σ2 .* ∣0⟩⟨1∣ .+ (- σ2 .* ∣1⟩⟨0∣ .+ σ2 .* ∣1⟩⟨1∣))) with ((σ1 + σ2) .* ∣0⟩⟨0∣ .+ (σ1 - σ2) .* ∣0⟩⟨1∣ .+ (σ1 - σ2) .* ∣1⟩⟨0∣ .+ (σ1 + σ2) .* ∣1⟩⟨1∣) by lma.
-	replace (σ1 + σ2) with (Cexp α / (√2)%R) by (subst; C_field_simplify; [lca | C_field]).
-	replace (σ1 - σ2) with (1 / (√2)%R) by (subst; C_field_simplify; [lca | C_field]).
-	lma.
+	generalize (completeness_C_step1 β (negb b)).
+	destruct b; cbn -[n_wire].
+	- easy.
+	- intros <-.
+		symmetry.
+		now rewrite X_eq_2_PI by lra.
 Qed.
 
-Lemma c_step_2 : forall α β γ,
-	⟦ (Z 1 2 α ↕ Z 1 2 β) ⟷ (— ↕ X 2 1 γ ↕ —) ⟧ = 
-	/ C2 .* (∣0⟩ ⊗ ∣+⟩ ⊗ ∣0⟩ × (⟨0∣ ⊗ ⟨0∣) .+ Cexp γ .* (∣0⟩ ⊗ ∣-⟩ ⊗ ∣0⟩ × (⟨0∣ ⊗ ⟨0∣)) .+ Cexp α .* (∣1⟩ ⊗ ∣+⟩ ⊗ ∣0⟩ × (⟨1∣ ⊗ ⟨0∣) .+ - Cexp γ .* (∣1⟩ ⊗ ∣-⟩ ⊗ ∣0⟩ × (⟨1∣ ⊗ ⟨0∣))) .+ Cexp β .* (∣0⟩ ⊗ ∣+⟩ ⊗ ∣1⟩ × (⟨0∣ ⊗ ⟨1∣) .+ - Cexp γ .* (∣0⟩ ⊗ ∣-⟩ ⊗ ∣1⟩ × (⟨0∣ ⊗ ⟨1∣))) .+ Cexp α * Cexp β .* (∣1⟩ ⊗ ∣+⟩ ⊗ ∣1⟩ × (⟨1∣ ⊗ ⟨1∣) .+ Cexp γ .* (∣1⟩ ⊗ ∣-⟩ ⊗ ∣1⟩ × (⟨1∣ ⊗ ⟨1∣)))).
+(* @nocheck name *)
+(* Conventional name *)
+Lemma completeness_C_step2 b0 b1 b2 b3 γ c : 
+	c .* (state_b b0 ↕ state_b b1 ↕ (state_b b2 ↕ state_b b3)) ⟷
+	(n_wire 1 ↕ X 2 1 γ ↕ n_wire 1) ∝=
+	c/C2 .* (state_b b0 ↕ X 0 1 (if b1 ⊕ b2 then (γ + PI) else γ) ↕ state_b b3).
 Proof.
-	intros.
-	remember (/ C2 .* (∣0⟩ ⊗ ∣+⟩ ⊗ ∣0⟩ × (⟨0∣ ⊗ ⟨0∣) .+ Cexp γ .* (∣0⟩ ⊗ ∣-⟩ ⊗ ∣0⟩ × (⟨0∣ ⊗ ⟨0∣)) .+ Cexp α .* (∣1⟩ ⊗ ∣+⟩ ⊗ ∣0⟩ × (⟨1∣ ⊗ ⟨0∣) .+ - Cexp γ .* (∣1⟩ ⊗ ∣-⟩ ⊗ ∣0⟩ × (⟨1∣ ⊗ ⟨0∣))) .+ Cexp β .* (∣0⟩ ⊗ ∣+⟩ ⊗ ∣1⟩ × (⟨0∣ ⊗ ⟨1∣) .+ - Cexp γ .* (∣0⟩ ⊗ ∣-⟩ ⊗ ∣1⟩ × (⟨0∣ ⊗ ⟨1∣))) .+ Cexp α * Cexp β .* (∣1⟩ ⊗ ∣+⟩ ⊗ ∣1⟩ × (⟨1∣ ⊗ ⟨1∣) .+ Cexp γ .* (∣1⟩ ⊗ ∣-⟩ ⊗ ∣1⟩ × (⟨1∣ ⊗ ⟨1∣))))) as solution.
-	remember (Z 1 2 α ↕ Z 1 2 β) as lhs.
-	remember (— ↕ X 2 1 γ ↕ —) as rhs.
-	assert (Hlhs : ⟦ lhs ⟧ = 
-	(∣0⟩⊗∣0⟩⊗∣0⟩⊗∣0⟩) × (⟨0∣⊗⟨0∣) .+ 
-	Cexp α .* (∣1⟩⊗∣1⟩⊗∣0⟩⊗∣0⟩) × (⟨1∣⊗⟨0∣) .+ 
-	Cexp β .* (∣0⟩⊗∣0⟩⊗∣1⟩⊗∣1⟩) × (⟨0∣⊗⟨1∣) .+ 
-	(Cexp β * Cexp α) .* (∣1⟩⊗∣1⟩⊗∣1⟩⊗∣1⟩) × (⟨1∣⊗⟨1∣)).
-	{
-		subst.
-		rewrite ZX_semantic_equiv.
-		unfold_dirac_spider.
-		repeat rewrite kron_plus_distr_l.
-		repeat rewrite kron_plus_distr_r.
-		autorewrite with scalar_move_db.
-		repeat rewrite <- kron_mixed_product.
-		restore_dims.
-		repeat rewrite kron_assoc by auto with wf_db.
-		rewrite Mscale_plus_distr_r.
-		rewrite Mscale_assoc.
-		repeat rewrite Mplus_assoc.
-		easy.
-	}
-	rewrite zx_compose_spec.
-	rewrite Hlhs.
-	rewrite Heqrhs.
-	clear Heqlhs. clear Hlhs. clear Heqrhs. clear lhs. clear rhs.
-	rewrite ZX_semantic_equiv.
-	unfold_dirac_spider.
-	rewrite <- kron_mixed_product.
-	rewrite kron_plus_distr_l.
-	rewrite kron_plus_distr_r.
-	autorewrite with scalar_move_db.
-	repeat rewrite Mmult_plus_distr_l.
-	autorewrite with scalar_move_db.
-	repeat rewrite Mmult_plus_distr_r.
-	autorewrite with scalar_move_db.
-	repeat rewrite kron_id_dist_l by auto with wf_db.
-	repeat rewrite kron_id_dist_r by auto with wf_db.
-	repeat rewrite Mmult_assoc.
-	rewrite <- 2 (Mmult_assoc _ (∣0⟩⊗∣0⟩⊗∣0⟩⊗∣0⟩)).
-	rewrite <- 2 (Mmult_assoc _ (∣1⟩⊗∣1⟩⊗∣0⟩⊗∣0⟩)).
-	rewrite <- 2 (Mmult_assoc _ (∣0⟩⊗∣0⟩⊗∣1⟩⊗∣1⟩)).
-	rewrite <- 2 (Mmult_assoc _ (∣1⟩⊗∣1⟩⊗∣1⟩⊗∣1⟩)).
-	repeat rewrite kron_assoc by auto with wf_db.
-	restore_dims.
-	repeat rewrite (kron_mixed_product (I 2) _ (∣0⟩)).
-	repeat rewrite (kron_mixed_product (I 2) _ (∣1⟩)).
-	repeat rewrite (kron_mixed_product (⟨+∣) _ (∣0⟩)).
-	repeat rewrite (kron_mixed_product (⟨+∣) _ (∣1⟩)).
-	repeat rewrite (kron_mixed_product (⟨-∣) _ (∣0⟩)).
-	repeat rewrite (kron_mixed_product (⟨-∣) _ (∣1⟩)).
-	repeat rewrite (kron_mixed_product (⟨+∣) _ (∣0⟩)).
-	repeat rewrite (kron_mixed_product (⟨+∣) _ (∣1⟩)).
-	repeat rewrite (kron_mixed_product (⟨-∣) _ (∣0⟩)).
-	repeat rewrite (kron_mixed_product (⟨-∣) _ (∣1⟩)).
-	repeat rewrite Mmult_1_l by auto with wf_db.
-	repeat rewrite (kron_mixed_product (I 2) _ (∣0⟩)).
-	repeat rewrite (kron_mixed_product (I 2) _ (∣1⟩)).
-	repeat rewrite (kron_mixed_product (I 2) _ (∣0⟩)).
-	repeat rewrite (kron_mixed_product (I 2) _ (∣1⟩)).
-	autorewrite with ketbra_mult_db.
-	autorewrite with scalar_move_db.
-	Msimpl.
-	repeat rewrite <- kron_mixed_product.
-	repeat rewrite <- kron_assoc by auto with wf_db.
-	Msimpl.
-	replace (/ (√ 2)%R * / (√ 2)%R) with (/2) by C_field.
-	replace (- / (√ 2)%R * / (√ 2)%R) with (-/2) by C_field.
-	replace (/ (√ 2)%R * - / (√ 2)%R) with (-/2) by C_field.
-	replace (- / (√ 2)%R * - / (√ 2)%R) with (/2) by C_field.
-	restore_dims.
-	repeat rewrite <- kron_mixed_product.
-	replace (Cexp γ * - / C2) with (/ C2 * - Cexp γ) by lca.
-	replace (Cexp γ * / C2) with (/ C2 * Cexp γ) by lca.
-	repeat rewrite <- (Mscale_assoc _ _ (/C2)).
-	autorewrite with scalar_move_db.
-	replace (Cexp α * / C2) with (/C2 * Cexp α) by lca.
-	replace (Cexp β * / C2) with (/C2 * Cexp β) by lca.
-	replace (Cexp β * Cexp α * / C2) with (/C2 * Cexp α * Cexp β) by lca.
-	repeat rewrite <- Mscale_assoc.
-	autorewrite with scalar_move_db.
-	symmetry.
-	apply Heqsolution.
+	distribute_zxscale.
+	rewrite stack_assoc_back_fwd, cast_id.
+	rewrite <- (@stack_compose_distr 0 3 2 0 1 1).
+	rewrite nwire_removal_r.
+	rewrite stack_assoc_fwd, cast_id.
+	rewrite <- (@stack_compose_distr 0 1 1 0 2 1).
+	rewrite nwire_removal_r.
+	rewrite X_2_1_states_b.
+	rewrite zx_scale_stack_distr_r, zx_scale_stack_distr_l, zx_scale_assoc.
+	reflexivity.
 Qed.
 
-Lemma c_step_3 : forall γ,
-	⟦ (Z 1 2 0 ↕ —) ⟷ (— ↕ X 2 1 γ) ⟧ = 
-	/(√2)%R .* (I 2 ⊗ (∣+⟩×⟨+∣ .+ Cexp γ .* ∣-⟩×⟨-∣)) × cnot.
+(* @nocheck name *)
+(* Conventional name *)
+Lemma completeness_C_step3 b0 b1 α c γ : 
+	(c .* (state_b b0 ↕ X 0 1 α ↕ state_b b1))
+		⟷ (n_wire 1 ↕ Z 1 2 0 ⟷ (X 2 1 (- γ) ↕ n_wire 1) ↕ n_wire 1) ∝=
+	c / (√ 2 * C2) .* ((
+	(C1 + Cexp α) .* (X 0 1 (if b0 then (PI - γ)%R else (- γ)%R) ↕ state_0)
+	.+ (C1 - Cexp α) .* (X 0 1 (if b0 then (- γ)%R else (PI - γ)%R) ↕ state_1)
+	) ↕ state_b b1).
 Proof.
-	intros.
-	rewrite ZX_semantic_equiv.
-	unfold_dirac_spider.
-	autorewrite with Cexp_db.
-	Msimpl.
-	rewrite kron_plus_distr_r.
-	rewrite kron_plus_distr_l.
-	repeat rewrite Mmult_plus_distr_l.
-	repeat rewrite Mmult_plus_distr_r.
-	autorewrite with scalar_move_db.
-	repeat rewrite kron_id_dist_l by auto with wf_db.
-	repeat rewrite kron_id_dist_r by auto with wf_db.
-	repeat rewrite Mmult_assoc.
-	repeat rewrite kron_assoc by auto with wf_db.
-	repeat rewrite <- (Mmult_assoc _ (∣0⟩ ⊗ (∣0⟩ ⊗ I 2))).
-	repeat rewrite <- (Mmult_assoc _ (∣1⟩ ⊗ (∣1⟩ ⊗ I 2))).
-	repeat rewrite kron_mixed_product.
-	Msimpl.
-	autorewrite with ketbra_mult_db.
-	autorewrite with scalar_move_db.
-	Msimpl.
-	restore_dims.
-	autorewrite with ketbra_mult_db.
-	replace (Cexp γ * / (√ 2)%R) with (/ (√ 2)%R * Cexp γ) by lca.
-	replace (Cexp γ * - / (√ 2)%R) with (/ (√ 2)%R * - Cexp γ) by lca.
-	repeat rewrite <- (Mscale_assoc _ _ (/ (√2)%R)).
-	autorewrite with scalar_move_db.
-	apply Mscale_simplify; [| easy].
-	rewrite <- cnot_decomposition.
-	repeat rewrite kron_plus_distr_l.
-	repeat rewrite Mmult_plus_distr_l.
-	repeat rewrite Mmult_plus_distr_r.
-	autorewrite with scalar_move_db.
-	repeat rewrite kron_mixed_product.
-	Msimpl.
-	repeat rewrite Mmult_assoc.
-	replace (⟨-∣×σx) with (-1 .* ⟨-∣) by lma'.
-	replace (⟨+∣×σx) with (⟨+∣) by lma'.
-	autorewrite with scalar_move_db.
-	lma.
+	distribute_zxscale.
+	rewrite <- stack_compose_distr.
+	rewrite <- 2 zx_scale_stack_distr_l.
+	apply stack_simplify_eq; [|now rewrite nwire_removal_r].
+	rewrite <- compose_assoc.
+	rewrite <- stack_compose_distr, nwire_removal_r.
+	rewrite X_0_1_decomp, compose_plus_distr_l.
+	distribute_zxscale.
+	rewrite Z_1_2_state_0, Z_1_2_state_1, Cexp_0, zx_scale_1_l.
+	rewrite stack_plus_distr_r, compose_plus_distr_l.
+	distribute_zxscale.
+	rewrite 2 (@stack_assoc_back_fwd 0 0 0 1 1 1), 2 cast_id.
+	rewrite <- 2 (@stack_compose_distr 0 2 1 0 1 1), 2 nwire_removal_r.
+	rewrite state_0_to_b, state_1_to_b.
+	rewrite 2 X_2_1_states_b.
+	rewrite xorb_false_r, xorb_true_r.
+	distribute_zxscale.
+	rewrite 2 zx_scale_plus_distr_r.
+	distribute_zxscale.
+	replace (-γ + PI)%R with (PI - γ)%R by lra.
+	rewrite negb_if.
+	apply zx_plus_mor; 
+	apply zx_scale_simplify_eq_l; C_field.
 Qed.
 
-Lemma c_step_3_flipped : forall γ,
-	⟦ (— ↕ Z 1 2 0) ⟷ (X 2 1 γ ↕ —) ⟧ = 
-	/(√2)%R .* ((∣+⟩×⟨+∣ .+ Cexp γ .* ∣-⟩×⟨-∣) ⊗ I 2) × notc.
+
+(* @nocheck name *)
+(* Conventional name *)
+Lemma completeness_C_step3' b0 b1 α c γ : 
+	(c .* (state_b b0 ↕ X 0 1 α ↕ state_b b1))
+		⟷ (n_wire 1 ↕ (Z 1 2 0 ↕ n_wire 1 ⟷ (n_wire 1 ↕ X 2 1 γ))) ∝=
+	c / (√ 2 * C2) .* (state_b b0 ↕ (
+	(C1 + Cexp α) .* (state_0 ↕ X 0 1 (if b1 then (γ + PI)%R else γ))
+	.+ (C1 - Cexp α) .* (state_1 ↕ X 0 1 (if b1 then γ else (γ + PI)%R))
+	)).
 Proof.
-	intros.
-	rewrite ZX_semantic_equiv.
-	unfold_dirac_spider.
-	rewrite Cexp_0.
-	Msimpl.
-	rewrite kron_plus_distr_r.
-	rewrite kron_plus_distr_l.
-	repeat rewrite Mmult_plus_distr_l.
-	repeat rewrite Mmult_plus_distr_r.
-	autorewrite with scalar_move_db.
-	repeat rewrite kron_id_dist_l by auto with wf_db.
-	repeat rewrite kron_id_dist_r by auto with wf_db.
-	repeat rewrite Mmult_assoc.
-	restore_dims.
-	repeat rewrite kron_assoc by auto with wf_db.
-	repeat rewrite <- (Mmult_assoc _ (I 2 ⊗ (∣0⟩ ⊗ (∣0⟩)))).
-	repeat rewrite <- (Mmult_assoc _ (I 2 ⊗ (∣1⟩ ⊗ (∣1⟩)))).
-	repeat rewrite kron_mixed_product.
-	Msimpl.
-	autorewrite with ketbra_mult_db.
-	autorewrite with scalar_move_db.
-	Msimpl.
-	restore_dims.
-	autorewrite with ketbra_mult_db.
-	replace (Cexp γ * / (√ 2)%R) with (/ (√ 2)%R * Cexp γ) by lca.
-	replace (Cexp γ * - / (√ 2)%R) with (/ (√ 2)%R * - Cexp γ) by lca.
-	repeat rewrite <- (Mscale_assoc _ _ (/ (√2)%R)).
-	autorewrite with scalar_move_db.
-	apply Mscale_simplify; [| easy].
-	rewrite <- notc_decomposition.
-	repeat rewrite kron_plus_distr_r.
-	repeat rewrite Mmult_plus_distr_l.
-	repeat rewrite Mmult_plus_distr_r.
-	autorewrite with scalar_move_db.
-	repeat rewrite kron_mixed_product.
-	Msimpl.
-	repeat rewrite Mmult_assoc.
-	replace (⟨-∣×σx) with (-1 .* ⟨-∣) by lma'.
-	replace (⟨+∣×σx) with (⟨+∣) by lma'.
-	autorewrite with scalar_move_db.
-	lma.
+	distribute_zxscale.
+	rewrite stack_assoc_fwd, cast_id.
+	rewrite <- (@stack_compose_distr 0 1 1 0 2 _).
+	rewrite <- 4 zx_scale_stack_distr_r.
+	apply stack_simplify_eq; [now rewrite nwire_removal_r|].
+
+	rewrite <- compose_assoc.
+	rewrite <- (@stack_compose_distr 0 1 2 0 1 1), nwire_removal_r.
+	rewrite X_0_1_decomp, compose_plus_distr_l.
+	distribute_zxscale.
+	rewrite Z_1_2_state_0, Z_1_2_state_1, Cexp_0, zx_scale_1_l.
+	rewrite stack_plus_distr_l, compose_plus_distr_l.
+	distribute_zxscale.
+	rewrite 2 (@stack_assoc_fwd 0 0 0 1 1 1), 2 cast_id, 
+		2 zx_scale_compose_distr_l.
+	rewrite <- 2 (@stack_compose_distr 0 1 1 0 2 1), 2 nwire_removal_r.
+	rewrite state_0_to_b, state_1_to_b.
+	rewrite 2 X_2_1_states_b.
+	rewrite xorb_false_l, xorb_true_l.
+	distribute_zxscale.
+	rewrite 2 zx_scale_plus_distr_r.
+	distribute_zxscale.
+	rewrite 2zx_scale_assoc.
+	replace (-γ + PI)%R with (PI - γ)%R by lra.
+	rewrite negb_if.
+	apply zx_plus_mor; 
+	apply zx_scale_simplify_eq_l; C_field.
 Qed.
+
+
 
 (* @nocheck name *)
 (* Conventional name *)

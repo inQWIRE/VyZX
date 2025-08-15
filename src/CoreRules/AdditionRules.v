@@ -1,4 +1,4 @@
-Require Import CoreData CapCupRules StackRules StateRules 
+Require Import CoreData CapCupRules StackRules StateRules ZXStateRules 
   ChoiJamiolchosky GadgetRules ControlizerRules.
 Import Setoid.
 
@@ -100,6 +100,24 @@ Proof.
 	rewrite zx_plus_semantics, 3 zx_stack_spec, zx_plus_semantics.
 	now rewrite kron_plus_distr_l by auto_wf.
 Qed.
+
+Lemma zx_scale_plus_distr_r {n m} c (zx0 zx1 : ZX n m) : 
+	c .* (zx0 .+ zx1) ∝= c .* zx0 .+ c .* zx1.
+Proof.
+	prep_matrix_equivalence.
+	rewrite zx_plus_semantics, 3 zx_scale_semantics, zx_plus_semantics.
+	now rewrite Mscale_plus_distr_r.
+Qed.
+
+Lemma zx_scale_plus_distr_l {n m} c d (zx : ZX n m) : 
+	(c + d) .* zx ∝= c .* zx .+ d .* zx.
+Proof.
+	prep_matrix_equivalence.
+	rewrite zx_plus_semantics, 3 zx_scale_semantics.
+	now rewrite Mscale_plus_distr_l.
+Qed.
+
+
 
 Lemma zx_plus_comm {n m} (zx0 zx1 : ZX n m) : 
   zx0 .+ zx1 ∝= zx1 .+ zx0.
@@ -222,4 +240,26 @@ Proof.
   rewrite Hrw.
   unify_pows_two.
   reflexivity.
+Qed.
+
+
+Lemma X_0_1_decomp α : 
+	X 0 1 α ∝= (1 + Cexp α)/√2 .* state_0 .+ 
+		(1 - Cexp α)/√2 .* state_1.
+Proof.
+	rewrite X_to_Z, compose_empty_l.
+	cbn.
+	rewrite stack_empty_r_fwd, cast_id.
+	prep_matrix_equivalence.
+	rewrite zx_plus_semantics, 2 zx_scale_semantics, 
+		state_0_semantics, state_1_semantics.
+	by_cell; autounfold with U_db; cbn; lca.
+Qed.
+
+Lemma Z_0_1_decomp β : Z 0 1 β ∝= state_0 .+ Cexp β .* state_1.
+Proof.
+	prep_matrix_equivalence.
+	rewrite zx_plus_semantics, zx_scale_semantics, 
+		state_0_semantics, state_1_semantics.
+	by_cell; cbn; lca.
 Qed.
