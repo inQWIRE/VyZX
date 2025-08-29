@@ -192,3 +192,4 @@ Proof.
   rewrite <- notc_r_is_swapp_cnot_r.
   easy.
 Qed.
+
