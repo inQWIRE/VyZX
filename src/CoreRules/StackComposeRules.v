@@ -98,7 +98,8 @@ Proof.
   rewrite stack_empty_l.
   auto_cast_eqn (rewrite stack_empty_r).
   rewrite cast_compose_l. 
-  simpl_casts.
+  rewrite cast_id.
+  apply cast_simplify.
   easy.
 Qed.
 

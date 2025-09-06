@@ -58,7 +58,7 @@ class Violation:
     return f"{b_color_yellow}Violation found: \"{self.keyword}\" command should not be committed. {b_color_reset}({self._fmt_file()}:{self.line_no} - {self.line})"
     pass
 
-  def remove(self):
+  def fix(self):
     with open(self.file, "r") as f:
       lines = f.readlines()
     del lines[self.line_no - 1]
@@ -116,7 +116,7 @@ for (n, violation) in enumerate(all_violations, 1):
   while True: # Do until a valid input comes along
     option = input(f"What do you want to do? Remove(R)/Skip(S)/Ignore(I) permanently? ").lower()
     if option == "r":
-      violation.remove()
+      violation.fix()
       break
     elif option == "i":
       violation.ignore()

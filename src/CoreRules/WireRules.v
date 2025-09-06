@@ -82,33 +82,25 @@ Proof.
   induction p.
   - repeat rewrite stack_empty_r.
     eapply (cast_diagrams n o).
-    repeat rewrite cast_contract.
-    rewrite cast_id.
-    rewrite cast_compose_distribute.
-    simpl_casts.
-    erewrite (cast_compose_mid m _ _ ($ n, m + 0 ::: zx0 $)).
-    simpl_casts.
-    easy.
+    Hint Rewrite <- @cast_compose_mid_contract : test_db.
+    symmetry.
+    idtac "acdc-solution". (* Begin ACDC generated solution *)
+    erewrite <- (cast_compose_mid_contract _ _ _ _ _ _ _ _ _ (zx0) (zx1)). (* (cast (n) (o) (cast ((n) + 0)%nat ((o) + 0)%nat (Compose (zx0) (zx1))})}) *) (* FROM *) (* (cast (n) (o) (Compose (cast ((n) + 0)%nat ((m) + 0)%nat (zx0)}) (cast ((m) + 0)%nat ((o) + 0)%nat (zx1)}))}) *)
+    reflexivity. (* End ACDC generated solution *)
+
+    
+    
+
+    (* rewrite cast_contract. *)
+    (* easy. *)
     Unshelve.
     all: lia.
   - rewrite n_stack1_r.
     repeat rewrite cast_stack_r.
     eapply (cast_diagrams (n + (p + 1)) (o + (p + 1))).
-    rewrite cast_contract.
-    rewrite cast_id.
-    rewrite cast_compose_distribute.
-    simpl_casts.
-    erewrite (cast_compose_mid (m + (p + 1)) _ _
-                  ($ n + (p + 1), m + (S p) ::: zx0 ↕ (n_wire p ↕ —)$)).
+    simpl.
     simpl_casts.
     rewrite 3 stack_assoc_back.
-    eapply (cast_diagrams (n + p + 1) (o + p + 1)).
-    rewrite cast_contract.
-    rewrite cast_id.
-    rewrite cast_compose_distribute.
-    rewrite 2 cast_contract.
-    erewrite (cast_compose_mid (m + p + 1) _ _
-                  ($ n + p + 1, m + (p + 1) ::: zx0 ↕ n_wire p ↕ — $)).
     simpl_casts.
     rewrite <- stack_wire_distribute_r.
     rewrite <- IHp.

@@ -7,6 +7,7 @@ Definition bi_alg_X_Z := ((X_Spider 1 2 0) ↕ (X_Spider 1 2 0) ⟷ (— ↕ ⨉
 Theorem bi_algebra_rule_Z_X : 
  (X_Spider 2 1 0) ⟷ (Z_Spider 1 2 0) ∝ bi_alg_Z_X.
 Proof.
+  unfold bi_alg_Z_X.
   prop_exists_nonzero 1.
   simpl.
   rewrite X_semantics_equiv, Z_semantics_equiv.
@@ -52,11 +53,11 @@ Proof.
   restore_dims.
   rewrite bra0_equiv, bra1_equiv, ket0_equiv, ket1_equiv.
   repeat rewrite H; try auto with wf_db.
-  2-9: apply transpose_matrices; try rewrite braplus_transpose_ketplus; try rewrite braminus_transpose_ketminus; rewrite Matrix.transpose_involutive; easy.
-  restore_dims.
-  repeat rewrite (kron_mixed_product (xbasis_plus × (_ ⊗ _)) (xbasis_plus × (_ ⊗ _))  ((ket _ ⊗ ket _) × bra _) ((ket _ ⊗ ket _) × bra _)).
-  repeat rewrite (kron_mixed_product (xbasis_minus × (_ ⊗ _)) (xbasis_minus × (_ ⊗ _))  ((ket _ ⊗ ket _) × bra _) ((ket _ ⊗ ket _) × bra _)).
-  repeat rewrite Mmult_assoc.
+  (* 2-9: apply transpose_matrices; try rewrite braplus_transpose_ketplus; try rewrite braminus_transpose_ketminus; rewrite Matrix.transpose_involutive. *)
+  (* restore_dims. *)
+  (* repeat rewrite (kron_mixed_product (xbasis_plus × (_ ⊗ _)) (xbasis_plus × (_ ⊗ _))  ((ket _ ⊗ ket _) × bra _) ((ket _ ⊗ ket _) × bra _)). *)
+  (* repeat rewrite (kron_mixed_product (xbasis_minus × (_ ⊗ _)) (xbasis_minus × (_ ⊗ _))  ((ket _ ⊗ ket _) × bra _) ((ket _ ⊗ ket _) × bra _)). *)
+  (* repeat rewrite Mmult_assoc. *)
 Admitted.
 
 Theorem bi_algebra_rule_X_Z : 
@@ -81,6 +82,7 @@ Proof.
   rewrite <- (@Z_spider_1_1_fusion 0 2).
   rewrite <- X_spider_1_1_fusion.
   replace (0 + 0)%R with 0 by lra.
+  Set Printing All.
   repeat rewrite stack_wire_distribute_r.
   repeat rewrite compose_assoc.
   rewrite wire_to_n_wire.
@@ -93,9 +95,10 @@ Proof.
 Opaque n_stack1.
   simpl.
   repeat rewrite <- compose_assoc.
+  Unset Printing All.
   rewrite <- (push_out_top (Z 0 1 0)).
   assert (Hl : (Z 0 1 0 ↕ Z 1 2 0) ⟷ ((Z) 1 2 0 ↕ n_wire 2) ∝ Z 0 1 0 ↕ n_wire 1 ⟷ (Z 1 2 0 ↕ Z 1 2 0)).
-  {
+  { (* prob 16 *)
     rewrite <- stack_compose_distr.
     rewrite nwire_removal_r.
     rewrite <- (nwire_removal_l (Z 1 2 0)) at 2.
@@ -118,7 +121,9 @@ Opaque n_stack1.
   assert (HBiAlgAssoc : (Z) 0 1 0 ↕ n_wire 1 ⟷ ((Z) 1 2 0 ↕ (Z) 1 2 0) ⟷ (n_wire 1 ↕ ⨉ ↕ n_wire 1) ⟷ ((X) 2 1 0 ↕ (X) 2 1 0) ⟷ ((X) 1 0 0 ↕ n_wire 1) ∝ 
     (Z) 0 1 0 ↕ n_wire 1 ⟷ (((Z) 1 2 0 ↕ (Z) 1 2 0) ⟷ (n_wire 1 ↕ ⨉ ↕ n_wire 1) ⟷ ((X) 2 1 0 ↕ (X) 2 1 0)) ⟷ ((X) 1 0 0 ↕ n_wire 1)).
   {
-    repeat rewrite compose_assoc.
+    Set Printing All.
+    (*prob 17*)
+    do 6 rewrite compose_assoc.
     easy.
   }
   rewrite HBiAlgAssoc.

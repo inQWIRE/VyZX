@@ -175,6 +175,9 @@ Proof.
   intros. subst. simpl_casts. reflexivity.
 Qed.
 
+(* #[export] Hint Rewrite @cast_compose_r @cast_compose_l: cast_simpl_db. *)
+
+
 Lemma cast_compose_mid :
   forall {n m o} m' prfm prfm' (zx0 : ZX n m) (zx1 : ZX m o),
   zx0 ⟷ zx1 ∝ cast n m' eq_refl prfm zx0 ⟷ cast m' o prfm' eq_refl zx1.
@@ -194,6 +197,8 @@ Proof.
   simpl_casts.
   reflexivity.
 Qed.
+
+#[export] Hint Rewrite <- @cast_compose_mid_contract: cast_simpl_db.
 
 Lemma cast_compose_partial_contract_r : forall {n m o} n' m' o' o'' prfn prfm prfo prfo' prfo'' prfo''' (zx0 : ZX n m') (zx1 : ZX m o),
   cast n' o' prfn prfo (zx0 ⟷ cast m' o' prfm prfo' zx1) ∝ cast n' o' prfn prfo'' (zx0 ⟷ cast m' o'' prfm prfo''' zx1).
@@ -345,7 +350,10 @@ Lemma cast_n_box : forall {n n'} prfn prfm,
 Proof.
   intros.
   apply cast_n_stack1.
+  
 Qed.
 
 
 #[export] Hint Rewrite @cast_n_stack1 @cast_n_wire @cast_n_box : cast_simpl_db.
+
+Print Rewrite HintDb cast_simpl_db.

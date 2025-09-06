@@ -6,6 +6,10 @@ Require Import StackComposeRules.
 Require Import SwapRules.
 Require Import WireRules.
 Require Import SpiderInduction.
+Lemma test : Wire ↕ (Wire ⟷ Wire) ∝ Wire ↕ (n_wire 1 ⟷ n_wire 1).
+ 
+
+Abort.
 
 Lemma grow_Z_top_left : forall (nIn nOut : nat) α,
 	Z (S (S nIn)) nOut α ∝  
@@ -134,9 +138,14 @@ Proof.
 	induction m.
 	- intros.
 		rewrite <- Z_wrap_over_top_right_0.
-		cleanup_zx.
-		simpl_casts.
-		reflexivity.
+		simpl.
+		rewrite stack_empty_r.
+		Unshelve.
+		2,3: rewrite Nat.add_0_r; reflexivity.
+    idtac "acdc-solution". (* Begin ACDC generated solution *)
+    erewrite -> (cast_id _ _ (Cap)). (* (Compose (Stack (Wire) (Z (n) (1 + 0)%nat (α))) (cast undefined undefined (Cap)})) *) (* FROM *) (* (Compose (Stack (Wire) (Z (n) (1 + 0)%nat (α))) (Cap)) *)
+    reflexivity. (* End ACDC generated solution *)
+		
 	- intros.
 		destruct m.
 		+ rewrite <- Z_wrap_over_top_right_base.
@@ -173,6 +182,7 @@ Proof.
 			simpl_casts.
 			rewrite <- (stack_compose_distr (Z 1 2 0) (— ↕ Z 1 2 0) 
 																					(n_wire m) (n_wire m)).
+			Unset Printing All.
 			rewrite <- grow_Z_right_bot_1_2_base.
 			rewrite grow_Z_top_right.
 			rewrite stack_compose_distr.
@@ -298,10 +308,11 @@ Qed.
 Lemma dominated_Z_spider_fusion_bot_right : forall n m0 m1 o α β,
 	((n_wire m1 ↕ (Z n (S m0) α)) ⟷ Z (m1 + (S m0)) o β) ∝
 	Z (m1 + n) o (α + β).
-Proof.
+(* Proof. *)
 	intros.
 	replace β%R with (0 + β + 0)%R at 1 by lra.
 	rewrite Z_add_l.
+	(* Set Printing All. *)
 	rewrite <- compose_assoc.
 	rewrite <- stack_compose_distr.
 	rewrite Z_absolute_fusion.
@@ -333,7 +344,6 @@ Proof.
 	rewrite stack_nwire_distribute_r.
 	rewrite compose_assoc.
 	rewrite (stack_assoc (Z 1 top 0)).
-	rewrite cast_compose_r.
 	simpl_casts.
 	rewrite <- (stack_compose_distr (Z 1 top 0) (n_wire top) (Z 1 (S mid) 0 ↕ n_wire bot)).
 	cleanup_zx.
@@ -343,6 +353,7 @@ Proof.
 	simpl.
 	cleanup_zx.
 	rewrite Z_wrap_over_top_right.
+	Set Printing All.
 	rewrite stack_nwire_distribute_r.
 	rewrite (stack_assoc — (Z (S input) 1 α) (n_wire bot)).
 	simpl_casts.
@@ -352,13 +363,16 @@ Proof.
 	rewrite wire_to_n_wire at 4.
 	rewrite <- compose_assoc.
 	rewrite (nwire_stack_compose_botleft (Z (S input) 1 α)).
+	Unset Printing All.
 	rewrite <- Z_add_l.
 	rewrite <- (wire_removal_l (Z 1 top 0)).
 	rewrite <- (nwire_removal_r (Z (S input + bot) _ _)).
+	(* Set Printing All. Prob 12 *)
 	rewrite stack_compose_distr.
 	rewrite <- compose_assoc.
 	rewrite (stack_assoc ⊂ (n_wire input)).
 	simpl_casts.
+	Unset Printing All.
 	rewrite <- nstack1_split.
 	rewrite <- (Z_wrap_over_top_right (input + bot)).
 	rewrite (Z_add_r 1%nat output).
@@ -387,6 +401,7 @@ Proof.
 Opaque cast.
 	simpl.
 Transparent cast.
+	(* GYM 8 *)
 	rewrite cast_compose_l.
 	simpl_casts.
 	autorewrite with transpose_db.
@@ -509,21 +524,24 @@ Proof.
 	rewrite <- compose_assoc.
 	simpl.
 	eapply (cast_diagrams (n + 0) (m + 1)).
+	(* GYM 9 *)
 	repeat rewrite cast_compose_distribute.
 	simpl_casts.
-	erewrite (@cast_compose_mid (n + 0) (n + 1 + 1) 3 (n + 2) _ _ ($ n + 0, n + 1 + 1 ::: n_wire n ↕ ⊂ $)).
+	rewrite cast_compose_l.
 	simpl_casts.
 	rewrite <- Z_0_2_0_is_cup.
 	bundle_wires.
 	rewrite <- (stack_compose_distr
 		(n_wire n) (Z n 1 0)
 		(Z 0 2 0)  (n_wire 2)).
+	Set Printing All. (*prob 13*)
 	cleanup_zx.
 	rewrite <- (nwire_removal_r (Z n 1 0)).
 	rewrite <- (nwire_removal_l (Z 0 2 0)).
 	rewrite stack_compose_distr.
 	rewrite compose_assoc.
 	rewrite wire_to_n_wire at 3.
+	Unset Printing All.
 	specialize (Z_spider_fusion_bot_left_top_right 
 		1 0 1 0 m 0 α); intros.
 	specialize (H eq_refl eq_refl).
@@ -567,10 +585,13 @@ Proof.
 	- rewrite top_to_bottom_grow_r.
 		erewrite <- (@cast_Z n _  ((S (S m)) + 1)).
 		rewrite Z_add_r_base_rot.
+			(* GYM 10*)
 		rewrite (cast_compose_mid ((S (S m)) + 1)).
 		rewrite cast_contract.
 		simpl_casts.
 		rewrite compose_assoc.
+			(* GYM *)
+
 		rewrite cast_compose_l.
 		simpl_casts.
 		rewrite <- (compose_assoc (Z 1 (S (S m)) 0 ↕ Z 1 1 0)).
@@ -612,6 +633,7 @@ Proof.
 	- rewrite bottom_to_top_grow_r.
 		erewrite <- (@cast_Z n _  (1 + (S (S m)))).
 		rewrite Z_add_r_base_rot.
+			(* GYM *)
 		rewrite (cast_compose_mid (1 + (S (S m)))).
 		rewrite cast_contract.
 		simpl_casts.
@@ -713,7 +735,6 @@ Proof.
 	simpl.
 	rewrite (stack_assoc_back (Z 1 1 0) — (n_wire m)).
 	simpl_casts.
-	erewrite <- cast_compose_mid_contract.
 	simpl_casts.
 	erewrite <- (@cast_id (2 + m) (2 + m) _ _ (Z 1 1 0 ↕ — ↕ (n_wire m))).
 	rewrite <- (stack_compose_distr (Z 1 m 0) (n_wire m) _ (⊃ ↕ n_wire m)).
@@ -795,6 +816,7 @@ Proof.
 	rewrite (stack_empty_r_rev ⊃).
 	simpl_casts.
 	replace ⦰ with (n_wire 0) by easy.
+	Unset Printing All.
 	rewrite <- (Z_wrap_over_top_left 1 0).
 	cleanup_zx.
 	rewrite Z_2_0_0_is_cap.
@@ -862,3 +884,17 @@ Proof.
 	rewrite Cexp_0.
 	easy.
 Qed.
+
+Print Rewrite HintDb cast_simpl_db.
+
+Lemma test2 : Wire ⟷ Wire ∝ n_wire 1.
+Proof.
+   idtac "acdc-solution". (* Begin ACDC generated solution *)
+	 remember (— ⟷ —) as LHS.
+   rewrite <- (wire_to_n_wire). (* (Wire) *) (* FROM *) (* (nwire 1) *)
+ rewrite <- (nwire_removal_l (Wire)) at 1. (* (Compose (nwire undefined) (Wire)) *) (* FROM *) (* (Wire) *)
+ rewrite <- (wire_to_n_wire). (* (Compose (Wire) (Wire)) *) (* FROM *) (* (Compose (nwire 1) (Wire)) *)
+ rewrite HeqLHS.
+   reflexivity. (* End ACDC generated solution *)
+	
+Qed. 

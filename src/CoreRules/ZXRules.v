@@ -42,6 +42,7 @@ Proof.
 		cleanup_zx.
 		easy.
 	- eapply (cast_diagrams (S (S n) * 0) (S (S n) * 1)).
+		(* GYM *)
 		rewrite cast_contract.
 		rewrite cast_compose_distribute.
 		simpl_casts.
@@ -158,6 +159,7 @@ Proof.
 		all: nonzero.
 	} 
 	eapply (cast_diagrams 1 (n * 1)).
+		(* GYM *)
 	rewrite 2 cast_compose_distribute.
 	simpl_casts.
 	erewrite (@cast_compose_mid _ _ _ (n * 1)%nat _ _ (X 1 n 0)).

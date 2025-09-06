@@ -15,10 +15,15 @@ Proof.
     rewrite colorswap_is_bihadamard; simpl; cleanup_zx; simpl_casts.
     rewrite compose_assoc; cleanup_zx; easy.
   }
-  rewrite H; cleanup_zx.
+  rewrite H.
+  Set Printing All. (*prob 14*)
+  cleanup_zx.
   rewrite <- compose_assoc.
   rewrite <- (stack_compose_distr (Z 0 1 0) (Z 1 2 0) (X 0 1 0) —); cleanup_zx.
+  Unset Printing All.
   rewrite Z_spider_1_1_fusion.
+  rewrite Rplus_0_r.
+
   rewrite <- nwire_stack_compose_botleft.
   rewrite compose_assoc.
   rewrite <- (n_wire_stack 1 1); rewrite wire_to_n_wire at 4.
@@ -52,12 +57,17 @@ Proof.
   simpl_casts.
   rewrite <- (stack_compose_distr (X 2 1 0) (X 1 0 _) (Z 1 0 _) ⦰).
   rewrite X_spider_1_1_fusion.
+  Set Printing All.
   cleanup_zx.
   rewrite (stack_assoc_back (X 1 1 _ ⟷ Z 1 1 _) (X 2 0 _) (Z 1 0 _)).
   simpl_casts.
+  Unset Printing All.
+  Set Printing All. (*prob 15*)
+    Unset Printing All.
   rewrite <- (nwire_removal_l (X 2 0 _)).
   simpl; rewrite stack_empty_r; simpl_casts.
   rewrite stack_compose_distr.
+  Unset Printing All.
   rewrite (stack_assoc_back (X 1 1 _) — —).
   simpl_casts.
   rewrite <- (compose_empty_r (Z 1 0 _)).
@@ -66,6 +76,7 @@ Proof.
   rewrite (stack_assoc (X 1 1 _ ↕ —) — (Z 1 0 _)).
   simpl_casts.
   rewrite <- (stack_compose_distr ⊂ (X 1 1 _ ↕ —) (Z 1 2 0) (— ↕ Z 1 0 _)).
+  Unset Printing All.
   rewrite cap_X.
   rewrite wire_to_n_wire at 1 2.
   rewrite (dominated_X_spider_fusion_top_left 1 0).

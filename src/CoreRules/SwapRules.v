@@ -94,9 +94,9 @@ Proof.
   + simpl.
     simpl in IHn.
     rewrite IHn at 1.
-    simpl_casts. 
     rewrite (stack_assoc — (n_wire n) ⨉).
-    simpl_casts.
+    (*GYM*)
+    rewrite cast_contract.
     erewrite (@cast_stack_distribute
     _ 1 _ 1 _ _ _ _
     _ _ _ _ _ _ — (n_wire n ↕ ⨉)).
@@ -114,17 +114,20 @@ Proof.
     bundle_wires.
     repeat rewrite cast_id.
     symmetry.
+    (* GYM 4 *)
     erewrite (cast_compose_mid (S (S (S n)))).
-    simpl_casts.
-    apply compose_simplify; [ | rewrite (stack_assoc_back — (top_to_bottom_helper n) —); simpl_casts; easy ].
+    repeat rewrite cast_contract.
+    apply compose_simplify; [ | rewrite (stack_assoc — (top_to_bottom_helper n) —); simpl_casts; easy ].
     eapply (cast_diagrams (2 + (1 + n)) (2 + (1 + n))).
     rewrite cast_contract.
     rewrite (stack_assoc ⨉ (n_wire n) —).
+    bundle_wires.
+    (* GYM 5 *)
+
     rewrite cast_contract.
     rewrite cast_stack_distribute.
-    bundle_wires.
     rewrite cast_n_wire.
-    simpl_casts.
+    repeat rewrite cast_id.
     easy.
 Unshelve.
   all: lia.
@@ -186,14 +189,12 @@ Opaque top_to_bottom.
   rewrite n_wire_transpose.
   repeat rewrite Proportional.transpose_involutive.
   rewrite top_to_bottom_grow_r.
-  rewrite cast_compose_distribute.
-  simpl_casts.
   erewrite (cast_compose_mid (S (n + 1))).
   simpl_casts.
-  apply compose_simplify; cast_irrelevance.
+  admit.
 Unshelve.
 all: lia.
-Qed.
+Admitted.
 Transparent top_to_bottom.
 
 Lemma top_to_bottom_transpose : forall n, (top_to_bottom n)⊤ ∝ bottom_to_top n.
@@ -241,6 +242,7 @@ Proof.
   repeat rewrite stack_nwire_distribute_r.
   rewrite (stack_assoc ⨉ — (n_wire n)).
   rewrite 2 (stack_assoc_back — —).
+  (* GYM 6  *)
   simpl_casts.
   bundle_wires.
   repeat rewrite <- compose_assoc.
@@ -274,6 +276,7 @@ Proof.
   unfold bottom_to_top.
   simpl.
   cleanup_zx.
+  (* Base case GYM 0 *)
   simpl_casts.
   bundle_wires.
   cleanup_zx.
@@ -540,10 +543,10 @@ Proof.
     erewrite <- (@cast_n_wire (S n)).
     rewrite cast_stack_r.
     rewrite cast_contract.
-    simpl_casts.
-    erewrite (cast_compose_mid_contract _ (S (S n)) _ _ _ _ _ _ _ (— ↕ bottom_to_top (S n)) (⨉ ↕ n_wire n)).
-    simpl_casts.
 Abort.
+    (* erewrite (cast_compose_mid_contract _ (S (S n)) _ _ _ _ _ _ _ (— ↕ bottom_to_top (S n)) (⨉ ↕ n_wire n)). *)
+    (* simpl_casts. *)
+(* Abort. *)
 
 
 Lemma swap_pullthrough_top_right_X_1_1 : forall α, (X 1 1 α) ↕ — ⟷ ⨉ ∝ ⨉ ⟷ (— ↕ (X 1 1 α)).

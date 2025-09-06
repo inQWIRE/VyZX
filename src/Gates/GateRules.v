@@ -53,15 +53,26 @@ Proof.
   all: lca.
 Qed.
 
+Lemma x : — ⟷ — ∝ n_wire 1 ⟷ —.
+Proof.
+rewrite wire_to_n_wire at 1.
+reflexivity.
+Defined.
+
+Check cast.
+
 Lemma cnot_involutive : _CNOT_R ⟷ _CNOT_ ∝ n_wire 2. 
 Proof.
+  Set Printing All. (*prob 18*)
   rewrite <- compose_assoc.
   rewrite (compose_assoc (— ↕ (X 1 2 0))).
   rewrite <- (stack_compose_distr (Z 2 1 0) (Z 1 2 0) — —).
+  Unset Printing All.
   rewrite Z_spider_1_1_fusion.
   cleanup_zx.
   rewrite (X_wrap_over_top_left 1 1).
   rewrite (X_wrap_over_top_right 1 1) at 1.
+  Set Printing All. (* prob 19 *)
   rewrite <- wire_to_n_wire.
   rewrite <- (wire_removal_l —) at 1.
   rewrite <- (wire_removal_l —) at 6.
@@ -77,6 +88,7 @@ Proof.
   repeat rewrite <- compose_assoc.
   rewrite (compose_assoc _ (n_wire 2 ↕ (X 2 1 0))).
   rewrite <- (stack_compose_distr (n_wire 2) (n_wire (1 + 1)) (X 2 1 0) (X 1 2 0)).
+  Unset Printing All.
   rewrite X_spider_1_1_fusion.
   rewrite Rplus_0_r.
   simpl; cleanup_zx; simpl_casts.
@@ -100,6 +112,7 @@ Proof.
   rewrite wire_to_n_wire.
   rewrite grow_Z_bot_right.
   rewrite grow_X_top_left.
+  Set Printing All.
   rewrite stack_nwire_distribute_r.
   rewrite stack_nwire_distribute_l.
   repeat rewrite <- compose_assoc.
@@ -109,12 +122,22 @@ Proof.
   rewrite <- wire_to_n_wire.
   rewrite <- (stack_compose_distr — — (Z 1 2 0 ↕ —)).
   rewrite <- stack_compose_distr.
+  Unset Printing All.
   cleanup_zx.
   rewrite hopf_rule_Z_X.
-  rewrite wire_to_n_wire.
-  rewrite stack_nwire_distribute_r.
-  rewrite stack_nwire_distribute_l.
-  repeat rewrite <- compose_assoc.
+(* Set Printing ALl *)
+rewrite (compose_assoc (Stack (Z ((1 + 0)%nat)%nat ((1)%nat + (1)%nat)%nat (0%R)) (Wire)) (Stack (Wire) (Stack (Compose (Z (1)%nat 0 (0%R)) (X 0 (1)%nat (0%R))) (Wire))) (Stack (Wire) (X (1 + (1)%nat)%nat (1)%nat (0%R)))).
+rewrite -> (wire_to_n_wire).
+rewrite <- (nwire_removal_l (n_wire (1 + 0)%nat)).
+rewrite <- (stack_compose_distr (Z (1 + 0)%nat 0 (0%R)) (X 0 (1 + 0)%nat (0%R)) (n_wire (1 + 0)%nat) (n_wire (1 + 0)%nat)).
+rewrite -> (wire_to_nwire).
+rewrite <- (stack_nwire_distribute_l (Stack (Z (1 + 0)%nat 0 (0%R)) (n_wire (1 + 0)%nat)) (Stack (X 0 (1 + 0)%nat (0%R)) (n_wire (1 + 0)%nat))).
+rewrite -> (wire_to_nwire).
+rewrite <- (compose_assoc (Stack (Z ((1 + 0)%nat + 0)%nat ((1 + 0)%nat + (1 + 0)%nat)%nat (0%R)) (n_wire (1 + 0)%nat)) (Compose (Stack (n_wire (1 + 0)%nat) (Stack (Z (1 + 0)%nat 0 (0%R)) (n_wire (1 + 0)%nat))) (Stack (n_wire (1 + 0)%nat) (Stack (X 0 (1 + 0)%nat (0%R)) (n_wire (1 + 0)%nat)))) (Stack (n_wire (1 + 0)%nat) (X (1 + (1 + 0)%nat)%nat (1 + 0)%nat (0%R)))).
+
+rewrite <- (compose_assoc (Stack (Z ((1 + 0)%nat + 0)%nat ((1 + 0)%nat + (1 + 0)%nat)%nat (0%R)) (n_wire (1 + 0)%nat)) (Stack (n_wire (1 + 0)%nat) (Stack (Z (1 + 0)%nat 0 (0%R)) (n_wire (1 + 0)%nat))) (Stack (n_wire (1 + 0)%nat) (Stack (X 0 (1 + 0)%nat (0%R)) (n_wire (1 + 0)%nat)))).
+
+  Unset Printing All.
   rewrite stack_assoc_back.
   simpl_casts.
   rewrite <- (stack_nwire_distribute_r (Z 1 (1 + 1) 0) (n_wire 1 ↕ Z 1 0 0 )).
@@ -139,6 +162,7 @@ Proof.
   rewrite (Z_wrap_under_bot_left 1 1).
   rewrite (X_wrap_over_top_left 1 1).
   simpl_casts.
+  Set Printing All.
   rewrite wire_to_n_wire at 2 3 4 5.
   rewrite stack_nwire_distribute_l.
   rewrite stack_nwire_distribute_r.
@@ -147,6 +171,7 @@ Proof.
   rewrite stack_assoc.
   simpl_casts.
   rewrite n_wire_stack.
+  Unset Printing All.
   rewrite (nwire_stack_compose_botleft (Z (1 + 1) 1 0) (n_wire 1 ↕ X 1 2 0)).
   rewrite <- (nwire_stack_compose_topleft (n_wire 1 ↕ X 1 2 0)).
   rewrite <- compose_assoc.
