@@ -290,6 +290,12 @@ Module Type ZXGraphM (GraphInstance :  ZXGModule).
   Parameter edges_add_vertex : forall v zx,
     edges (v +v zx) = edges zx.
 
+  Parameter vertices_add_edge : forall e zx,
+    vertices (e +e zx) = (vertices zx).
+  
+  Parameter edges_add_edge : forall e zx,
+    edges (e +e zx) = EdgeSetM.add e (edges zx).
+
   Lemma add_vertex_compat_eq : forall v zx0 zx1,
   zx0 [=] zx1 -> v +v zx0 [=] v +v zx1.
   Proof.
@@ -340,7 +346,6 @@ Module Type ZXGraphM (GraphInstance :  ZXGModule).
         rewrite He.
         auto.
   Qed.
-    
 
   Lemma add_vertex_comm : forall v0 v1 zxg, 
     v0 +v v1 +v zxg [=] v1 +v v0 +v zxg.
@@ -359,6 +364,35 @@ Module Type ZXGraphM (GraphInstance :  ZXGModule).
         repeat rewrite VertexSetM.add_spec in H.
         destruct H as [ | [ | ]]; auto.
     - repeat rewrite edges_add_vertex.
+      reflexivity.
+  Qed.
+
+  Lemma add_edge_comm : forall e0 e1 zxg,
+    e0 +e e1 +e zxg [=] e1 +e e0 +e zxg.
+  Proof.
+    intros e0 e1 zxg.
+    split.
+    - repeat rewrite vertices_add_edge.
+      repeat rewrite vertices_add_edge in H.
+      reflexivity.
+    - repeat rewrite edges_add_edge.
+      split;
+      repeat rewrite EdgeSetM.add_spec; intros;
+      destruct H as [ | []]; auto.
+  Qed.
+
+  Lemma add_vertex_edge_comm : forall v e zxg,
+    v +v e +e zxg [=] e +e v +v zxg.
+  Proof.
+    intros.
+    split; intros.
+    - rewrite vertices_add_edge.
+      repeat rewrite vertices_add_vertex.
+      rewrite vertices_add_edge.
+      reflexivity.
+    - rewrite edges_add_vertex.
+      rewrite 2 edges_add_edge.
+      rewrite edges_add_vertex.
       reflexivity.
   Qed.
 
