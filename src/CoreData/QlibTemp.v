@@ -105,6 +105,37 @@ Proof.
   apply kron_f_to_vec.
 Qed.
 
+
+Lemma mat_equiv_iff_conj {n m} (A B : Matrix n m) : 
+  A ≡ B <-> fold_right (fun i P => 
+    fold_right (fun j => and (A i j = B i j)) P (seq 0 m)) 
+    True (seq 0 n).
+Proof.
+  transitivity (Forall (fun i => Forall (fun j => 
+    (A i j) = (B i j)) (seq 0 m))
+    (seq 0 n)).
+  - rewrite Forall_seq.
+    setoid_rewrite Forall_seq.
+    unfold mat_equiv.
+    cbn.
+    intuition auto.
+  - rewrite Forall_fold_right.
+    unfold Matrix in A, B.
+    generalize (seq 0 n) as l.
+    intros l.
+    induction l; [reflexivity|].
+    cbn.
+    rewrite IHl.
+    rewrite Forall_fold_right.
+    generalize 
+      (fold_right (fun i P => 
+        fold_right (fun j => and (A i j = B i j)) P (seq 0 m)) True l).
+    intros P.
+    generalize (seq 0 m) as l'.
+    intros l'.
+    induction l'; cbn; intuition fail.
+Qed.
+
 Lemma equal_on_basis_states_implies_equal' : (* FIXME: Replace 
   equal_on_basis_states_implies_equal with this *)
   forall {m dim : nat} (A B : Matrix m (2 ^ dim)),
