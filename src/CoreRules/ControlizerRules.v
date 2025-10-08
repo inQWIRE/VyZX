@@ -236,7 +236,7 @@ Proof.
       rewrite kron_I_r, kron_I_l_eq by 
         (apply show_WF_list2D_to_matrix; reflexivity).
       rewrite kron_I_r.
-      by_cell; cbn -[INR]; lca.
+      by_cell; cbn; lca.
     }
     rewrite 2 make_WF_equiv.
     rewrite (make_WF_equiv 16 1).
@@ -318,7 +318,7 @@ Proof.
     rewrite cast_id, stack_empty_l.
     rewrite const_of_zx_X_0_1_0_Z_1_0_0.
     rewrite triangle_state_0.
-    assert (Hrw : (0 = INR 0 * PI)%R) by (simpl; lra).
+    assert (Hrw : (0 = 0%nat * PI)%R) by (simpl; lra).
     rewrite Hrw.
     auto_cast_eqn (rewrite (to_scale Z_state_copy), cast_id, zx_scale_assoc).
     rewrite uniform_state_defn, cast_id.

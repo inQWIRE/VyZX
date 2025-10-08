@@ -349,7 +349,7 @@ Qed.
 
 (* @nocheck name *)
 (* PI is captialized in Coq R *)
-Lemma X_2_PI : forall n m a, X n m (INR a * 2 * PI) ∝= X n m 0.
+Lemma X_2_PI : forall (n m a : nat), X n m (a * 2 * PI) ∝= X n m 0.
 Proof. colorswap_of Z_2_PI. Qed.
 
 Lemma X_phase_simplify n m α β : Cexp α = Cexp β -> 
