@@ -204,7 +204,7 @@ Proof.
 	zxrefl.
 Qed.
 
-Theorem X_state_0_copy : forall n prfn prfm,
+Theorem X_state_0_copy : forall (n : nat) prfn prfm,
 	X 0 1 0 ⟷ Z 1 n 0 ∝[(√2 * (/√2 ^ n))%R]
 	cast 0 n prfn prfm (n ⇑ (X 0 1 0)).
 Proof.
@@ -216,7 +216,7 @@ Proof.
 	zxrefl.
 Qed.
 
-Theorem Z_state_pi_copy : forall n prfn prfm,
+Theorem Z_state_pi_copy : forall (n : nat) prfn prfm,
 	Z 0 1 PI ⟷ X 1 n 0 ∝[(√2 * (/√2 ^ n))%R]
 	cast 0 n prfn prfm (n ⇑ (Z 0 1 PI)).
 Proof.
@@ -226,7 +226,7 @@ Proof.
 	zxrefl.
 Qed.
 
-Theorem Z_state_0_copy : forall n prfn prfm,
+Theorem Z_state_0_copy : forall (n : nat) prfn prfm,
 	Z 0 1 0 ⟷ X 1 n 0 ∝[(√2 * (/√2 ^ n))%R]
 	cast 0 n prfn prfm (n ⇑ (Z 0 1 0)).
 Proof.
@@ -238,7 +238,7 @@ Proof.
 	zxrefl.
 Qed.
 
-Lemma Z_copy : forall n r, 
+Lemma Z_copy : forall (n r : nat), 
 	Z 1 1 (r * PI) ⟷ X 1 n 0 ∝=
 	X 1 n 0 ⟷ n ↑ Z 1 1 (r * PI).
 Proof.
@@ -293,7 +293,7 @@ Proof.
 	all: reflexivity.
 Qed.
 
-Lemma X_copy : forall n r,
+Lemma X_copy : forall (n r : nat),
 	X 1 1 (r * PI) ⟷ Z 1 n 0 ∝=
 	Z 1 n 0 ⟷ n ↑ X 1 1 (r * PI).
 Proof.
@@ -301,7 +301,7 @@ Proof.
 	colorswap_of (Z_copy n r).
 Qed.
 
-Lemma Z_0_copy : forall n, 
+Lemma Z_0_copy : forall (n : nat), 
 	Z 1 1 0 ⟷ X 1 n 0 ∝=
 	X 1 n 0 ⟷ n ↑ Z 1 1 0.
 Proof.
@@ -313,7 +313,7 @@ Proof.
 	apply H.
 Qed.
 
-Lemma Z_pi_copy : forall n, 
+Lemma Z_pi_copy : forall (n : nat), 
 	Z 1 1 PI ⟷ X 1 n 0 ∝=
 	X 1 n 0 ⟷ n ↑ Z 1 1 PI.
 Proof.
@@ -325,7 +325,7 @@ Proof.
 	apply H.
 Qed.
 
-Lemma X_0_copy : forall n, 
+Lemma X_0_copy : forall (n : nat), 
 	X 1 1 0 ⟷ Z 1 n 0 ∝=
 	Z 1 n 0 ⟷ n ↑ X 1 1 0.
 Proof.
@@ -337,7 +337,7 @@ Proof.
 	apply H.
 Qed.
 
-Lemma X_pi_copy : forall n, 
+Lemma X_pi_copy : forall (n : nat), 
 	X 1 1 PI ⟷ Z 1 n 0 ∝=
 	Z 1 n 0 ⟷ n ↑ X 1 1 PI.
 Proof.
