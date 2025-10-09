@@ -1029,13 +1029,13 @@ Qed.
 
 (* @nocheck name *)
 (* PI is captialized in Coq R *)
-Lemma Z_2_PI : forall n m a, 
-	Z n m (INR a * 2 * PI) ∝= Z n m 0.
+Lemma Z_2_PI : forall (n m a : nat), 
+	Z n m (a * 2 * PI) ∝= Z n m 0.
 Proof.
 	intros.
 	prep_matrix_equivalence.
 	simpl.
-	unfold Z_semantics. 
+	unfold Z_semantics.
 	rewrite Cexp_2_PI.
 	rewrite Cexp_0.
 	easy.

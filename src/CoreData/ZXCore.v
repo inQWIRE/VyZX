@@ -14,6 +14,11 @@ Declare Scope ZX_scope.
 Delimit Scope ZX_scope with ZX.
 Open Scope ZX_scope.
 
+Coercion INR : nat >-> R.
+Coercion Nat.b2n : bool >-> nat.
+#[reversible] Coercion INR.
+#[reversible] Coercion Nat.b2n.
+
 Inductive ZX : nat -> nat -> Type :=
   | Empty : ZX 0 0
   | Cup  : ZX 0 2

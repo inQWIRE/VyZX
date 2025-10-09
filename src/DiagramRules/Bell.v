@@ -38,14 +38,14 @@ all: reflexivity.
 Qed.
 
 Definition teleportation (a b : nat) :=
-  (⊂ ↕ Z 1 2 0) ⟷ ((X 1 1 (INR b * PI) ⟷ Z 1 1 (INR a * PI)) ↕ (((X 2 1 0) ↕ (Z 1 0 (INR a * PI)) ⟷ (□ ⟷ Z 1 0 (INR b * PI))))).
+  (⊂ ↕ Z 1 2 0) ⟷ ((X 1 1 (b * PI) ⟷ Z 1 1 (a * PI)) ↕ (((X 2 1 0) ↕ (Z 1 0 (a * PI)) ⟷ (□ ⟷ Z 1 0 (b * PI))))).
 
 Lemma teleportation_correct : forall a b, teleportation a b ∝= —.
 Proof.
   intros; unfold teleportation.
-  assert (□ ⟷ Z 1 0 (INR b * PI) ∝= (X 1 0 (INR b * PI))).
+  assert (□ ⟷ Z 1 0 (b * PI) ∝= (X 1 0 (b * PI))).
   {
-    replace (X 1 0 (INR b * PI)) with (⊙ (Z 1 0 (INR b * PI))) by easy.
+    replace (X 1 0 (b * PI)) with (⊙ (Z 1 0 (b * PI))) by easy.
     rewrite colorswap_is_bihadamard.
     simpl; cleanup_zx; simpl_casts.
     easy.
@@ -74,7 +74,7 @@ Proof.
   rewrite <- (nwire_removal_l (Z 1 1 _)).
   rewrite <- (nwire_removal_r (X 2 0 _)).
   rewrite stack_compose_distr.
-  replace (0 + INR b * PI)%R with ((INR b * PI) + 0 +0)%R by lra.
+  replace (0 + b * PI)%R with ((b * PI) + 0 +0)%R by lra.
   rewrite (X_add_l 1 1).
   rewrite stack_nwire_distribute_l.
   rewrite (stack_assoc_back (n_wire 1) (X 1 1 _)).
@@ -84,7 +84,7 @@ Proof.
   rewrite <- (stack_compose_distr (X 0 (1 + 1) _) (n_wire 1 ↕ X 1 1 _) 
     (Z 1 (1 + 0) _) (X 1 1 _)).
   rewrite (dominated_X_spider_fusion_bot_left 1 0).
-  replace ((INR b * PI + (INR b * PI + 0)))%R with (INR b * 2 * PI)%R by lra.
+  replace ((b * PI + (b * PI + 0)))%R with (b * 2 * PI)%R by lra.
   rewrite X_2_PI.
   rewrite X_0_is_wire.
   rewrite <- (nwire_removal_l (X 0 _ _)).
@@ -92,11 +92,11 @@ Proof.
   rewrite stack_compose_distr.
   rewrite <- wire_to_n_wire.
   repeat rewrite <- compose_assoc.
-  rewrite (compose_assoc (n_wire 0 ↕ Z 1 (1 + 0) (INR a * PI + 0))).
+  rewrite (compose_assoc (n_wire 0 ↕ Z 1 (1 + 0) (a * PI + 0))).
   rewrite yank_r.
   cleanup_zx. rewrite cast_id.
   rewrite Z_spider_1_1_fusion.
-  replace (INR a * PI + 0 + INR a * PI)%R with ((INR a * 2 * PI))%R by lra.
+  replace (a * PI + 0 + a * PI)%R with ((a * 2 * PI))%R by lra.
   rewrite Z_2_PI.
   rewrite Z_0_is_wire.
   easy.

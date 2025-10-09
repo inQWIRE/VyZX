@@ -9,13 +9,13 @@ Require Export CoreRules.XRules.
 (** Rules relating Z and X spiders *)
 
 Theorem X_state_copy_phase_0 : forall (r n : nat) prfn prfm,
-	X 0 1 ((INR r) * PI) ⟷ Z 1 n 0 
+	(X 0 1 (r * PI) ⟷ Z 1 n 0) 
 	∝[(√2 * (/√2 ^ n))%R]
-	cast 0%nat n prfn prfm (n ⇑ (X 0 1 ((INR r) * PI))).
+	cast 0%nat n prfn prfm (n ⇑ (X 0 1 (r * PI))).
 Proof.
 	intros.
-	assert (X_state_copy_ind : (X 0 1 (INR r * PI) ⟷ Z 1 2 0) ∝[/(√2)%R]
-		X 0 1 (INR r * PI) ↕ X 0 1 (INR r * PI)).
+	assert (X_state_copy_ind : (X 0 1 (r * PI) ⟷ Z 1 2 0) ∝[/(√2)%R]
+		X 0 1 (r * PI) ↕ X 0 1 (r * PI)).
 	{ 
 		zxsymmetry.
 		split; [|C_field].
@@ -68,10 +68,10 @@ Proof.
 		rewrite <- compose_assoc.
 		zxrewrite IHn.
 		rewrite <- (stack_compose_distr
-			(X 0 1 (INR r * PI)) (Z 1 2 0) (n ⇑ X 0 1 (INR r * PI)) (n_wire (n * 1))).
+			(X 0 1 (r * PI)) (Z 1 2 0) (n ⇑ X 0 1 (r * PI)) (n_wire (n * 1))).
 		zxrewrite X_state_copy_ind.
 		cleanup_zx.
-		rewrite (stack_assoc (X 0 1 (INR r * PI)) (X 0 1 (INR r * PI))).
+		rewrite (stack_assoc (X 0 1 (r * PI)) (X 0 1 (r * PI))).
 		simpl_casts.
 		zxrefl.
 		autorewrite with RtoC_db.
@@ -81,19 +81,19 @@ Proof.
 Qed.
 
 Theorem Z_state_copy_phase_0 : forall (r n : nat) prfn prfm,
-	Z 0 1 ((INR r) * PI) ⟷ X 1 n 0 
+	(Z 0 1 (r * PI) ⟷ X 1 n 0) 
 	∝[(√2 * (/√2 ^ n))%R]
-	cast 0%nat n prfn prfm (n ⇑ (Z 0 1 ((INR r) * PI))).
+	cast 0%nat n prfn prfm (n ⇑ (Z 0 1 (r * PI))).
 Proof.
 	intros r n prfn prfm.
 	colorswap_of (X_state_copy_phase_0 r n prfn prfm).
 Qed.
 
 Theorem X_state_copy : forall (r n : nat) (a : R) prfn prfm,
-	X 0 1 ((INR r) * PI) ⟷ Z 1 n a 
+	(X 0 1 (r * PI) ⟷ Z 1 n a) 
 	∝[((/√2 ^ S n))%R *
-	(((C1 + Cexp ((INR r) * PI)) * (C1 - Cexp a) + 2 * Cexp a))]
-	cast 0%nat n prfn prfm (n ⇑ (X 0 1 ((INR r) * PI))).
+	(((C1 + Cexp (r * PI)) * (C1 - Cexp a) + 2 * Cexp a))]
+	cast 0%nat n prfn prfm (n ⇑ (X 0 1 (r * PI))).
 Proof.
 	assert (X_Z_phase_value' : forall (a b : R),
 		(⟦ X 0 1 a ⟷ Z 1 0 b ⟧ = 
@@ -107,8 +107,8 @@ Proof.
 		lca.
 	}
 	intros r n a prfn prfm.
-	replace (((/√2 ^ S n))%R * (((C1 + Cexp ((INR r) * PI)) * (C1 - Cexp a) + 2 * Cexp a))) 
-		with  (((/√2 ^ n))%R * (((C1 + Cexp ((INR r) * PI)) * (C1 - Cexp a) + 2 * Cexp a) / √2))
+	replace (((/√2 ^ S n))%R * (((C1 + Cexp (r * PI)) * (C1 - Cexp a) + 2 * Cexp a))) 
+		with  (((/√2 ^ n))%R * (((C1 + Cexp (r * PI)) * (C1 - Cexp a) + 2 * Cexp a) / √2))
 		by (simpl; unfold Cdiv; rewrite Rinv_mult, Cmult_assoc, Cmult_comm, 
 			Cmult_assoc, RtoC_mult, !RtoC_inv; reflexivity).
 	replace (Z 1 n a) with (Z 1 n (a + 0)) by (f_equal; lra).
@@ -122,16 +122,16 @@ Proof.
 	rewrite <- (stack_compose_distr (X 0 1 _) (Z 1 0 a) (n ⇑ X 0 1 _)
 		($ n * 1, n ::: n_wire n $)).
 	erewrite (cast_stack_distribute (n':=0) (m' := 0) (o' := 0) (p' := n)
-		_ _ _ _ _ _ (X 0 1 (INR r * PI) ⟷ Z 1 0 a)
-		((n ⇑ X 0 1 (INR r * PI) ⟷ $ n * 1, n ::: n_wire n $))).
+		_ _ _ _ _ _ (X 0 1 (r * PI) ⟷ Z 1 0 a)
+		((n ⇑ X 0 1 (r * PI) ⟷ $ n * 1, n ::: n_wire n $))).
 	rewrite cast_id.
 	zxsymmetry.
 	rewrite <- stack_empty_l.
 	erewrite (proportional_by_trans_iff_l _ _ _ 1).
 	- apply (stack_prop_by_compat_l
-		⦰ (X 0 1 (INR r * PI) ⟷ Z 1 0 a)
-		($ 0, n ::: n ⇑ X 0 1 (INR r * PI) ⟷ $ n * 1, n ::: n_wire n $ $)).
-		assert (Hnz : ((C1 + Cexp (INR r * PI)) * (C1 - Cexp a) + C2 * Cexp a) <> C0). 1: {
+		⦰ (X 0 1 (r * PI) ⟷ Z 1 0 a)
+		($ 0, n ::: n ⇑ X 0 1 (r * PI) ⟷ $ n * 1, n ::: n_wire n $ $)).
+		assert (Hnz : ((C1 + Cexp (r * PI)) * (C1 - Cexp a) + C2 * Cexp a) <> C0). 1: {
 			rewrite Cmult_plus_distr_r.
 			unfold Cminus at 1.
 			rewrite Cmult_plus_distr_l.
@@ -183,10 +183,10 @@ Proof.
 Qed.
 
 Theorem Z_state_copy : forall (r n : nat) (a : R) prfn prfm,
-	Z 0 1 ((INR r) * PI) ⟷ X 1 n a 
+	(Z 0 1 (r * PI) ⟷ X 1 n a) 
 	∝[((/√2 ^ S n))%R *
-	(((C1 + Cexp ((INR r) * PI)) * (C1 - Cexp a) + 2 * Cexp a))]
-	cast 0%nat n prfn prfm (n ⇑ (Z 0 1 ((INR r) * PI))).
+	(((C1 + Cexp (r * PI)) * (C1 - Cexp a) + 2 * Cexp a))]
+	cast 0%nat n prfn prfm (n ⇑ (Z 0 1 (r * PI))).
 Proof.
 	intros r n a prfn prfm.
 	colorswap_of (X_state_copy r n a prfn prfm).
@@ -199,6 +199,7 @@ Proof.
 	intros.
 	replace (PI)%R with (1 * PI)%R by lra.
 	replace (1)%R with (INR 1)%R by reflexivity.
+  (* rewrite (X_state_copy_phase_0 1). *)
 	zxrewrite X_state_copy_phase_0.
 	zxrefl.
 Qed.
@@ -220,8 +221,7 @@ Theorem Z_state_pi_copy : forall n prfn prfm,
 	cast 0 n prfn prfm (n ⇑ (Z 0 1 PI)).
 Proof.
 	intros.
-	replace (PI)%R with (1 * PI)%R by lra.
-	replace (1)%R with (INR 1)%R by reflexivity.
+	replace (PI)%R with (INR 1 * PI)%R by (simpl; lra).
 	zxrewrite Z_state_copy_phase_0.
 	zxrefl.
 Qed.
@@ -239,19 +239,19 @@ Proof.
 Qed.
 
 Lemma Z_copy : forall n r, 
-	Z 1 1 (INR r * PI) ⟷ X 1 n 0 ∝=
-	X 1 n 0 ⟷ n ↑ Z 1 1 (INR r * PI).
+	Z 1 1 (r * PI) ⟷ X 1 n 0 ∝=
+	X 1 n 0 ⟷ n ↑ Z 1 1 (r * PI).
 Proof.
 	intros.
-	assert (Z_copy_ind : (Z 1 1 (INR r * PI) ⟷ X 1 2 0) ∝=
-		X 1 2 0 ⟷ (Z 1 1 (INR r * PI) ↕ Z 1 1 (INR r * PI))).
+	assert (Z_copy_ind : (Z 1 1 (r * PI) ⟷ X 1 2 0) ∝=
+		X 1 2 0 ⟷ (Z 1 1 (r * PI) ↕ Z 1 1 (r * PI))).
 	{ 
 		prep_matrix_equivalence.
 		change (X 1 2 0) with ((X 2 1 0) ⊤).
 		rewrite 2 zx_compose_spec.
 		rewrite semantics_transpose_comm.
 		simpl.
-		compute_matrix (Z_semantics 1 1 (INR r * PI)).
+		compute_matrix (Z_semantics 1 1 (r * PI)).
 		rewrite X_2_1_0_semantics.
 		rewrite !make_WF_equiv.
 		destruct (INR_pi_exp r) as [H|H]; rewrite H; by_cell;
@@ -279,14 +279,14 @@ Proof.
 		rewrite IHn by lia.
 		rewrite compose_assoc.
 		rewrite <- (stack_compose_distr 
-			(Z 1 1 (INR r * PI)) 				(X 1 2 0) 
-			(n ↑ (Z 1 1 (INR r * PI))) (n_wire n)).
+			(Z 1 1 (r * PI)) 				(X 1 2 0) 
+			(n ↑ (Z 1 1 (r * PI))) (n_wire n)).
 		rewrite Z_copy_ind.
 		rewrite nwire_removal_r.
-		rewrite <- (nwire_removal_l (n ↑ Z 1 1 (INR r * PI))) at 1.
+		rewrite <- (nwire_removal_l (n ↑ Z 1 1 (r * PI))) at 1.
 		rewrite stack_compose_distr.
 		rewrite compose_assoc.
-		rewrite (stack_assoc (Z 1 1 (INR r * PI))).
+		rewrite (stack_assoc (Z 1 1 (r * PI))).
 		rewrite cast_id.
 		easy.
 	Unshelve.
@@ -294,8 +294,8 @@ Proof.
 Qed.
 
 Lemma X_copy : forall n r,
-	X 1 1 (INR r * PI) ⟷ Z 1 n 0 ∝=
-	Z 1 n 0 ⟷ n ↑ X 1 1 (INR r * PI).
+	X 1 1 (r * PI) ⟷ Z 1 n 0 ∝=
+	Z 1 n 0 ⟷ n ↑ X 1 1 (r * PI).
 Proof.
 	intros n r.
 	colorswap_of (Z_copy n r).
