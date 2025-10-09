@@ -267,7 +267,7 @@ Lemma state_1_to_b : state_1 = state_b true.
 Proof. reflexivity. Qed.
 
 Lemma state_b_semantics b : 
-  ⟦ state_b b ⟧ = ket (Nat.b2n b).
+  ⟦ state_b b ⟧ = ket b.
 Proof.
   destruct b.
   - apply state_1_semantics.

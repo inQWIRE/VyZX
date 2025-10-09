@@ -23,7 +23,7 @@ Proof.
   rewrite X_2_1_states_b.
   rewrite Rplus_0_l.
   assert (Hrw : (if b0 ⊕ b1 then PI else 0%R) = 
-    (INR (Nat.b2n (b0 ⊕ b1)) * PI)%R)
+    ((b0 ⊕ b1) * PI)%R)
     by (destruct (b0 ⊕ b1); cbn; lra).
   rewrite Hrw.
   distribute_zxscale.
