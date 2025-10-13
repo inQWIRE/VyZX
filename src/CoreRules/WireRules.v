@@ -4,6 +4,8 @@ Require Import CastRules.
 
 Local Open Scope ZX_scope.
 
+(** Rules relating to wires ([—]) and [n_wire]s *)
+
 Lemma Z_0_is_wire : Z 1 1 0 ∝= —.
 Proof.
   lma'.

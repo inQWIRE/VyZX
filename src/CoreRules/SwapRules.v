@@ -1,14 +1,17 @@
+Require Import QuantumLib.Kronecker QuantumLib.Modulus. 
 Require Import CoreData.
 Require Import WireRules.
 Require Import CoreAutomation.
 Require Import StackComposeRules.
 Require Import CastRules.
+Require Import ZXpermFacts.
 
+(** Rules for manipulating swaps *)
 
 Lemma swap_compose :
   ⨉ ⟷ ⨉ ∝= n_wire 2.
-Proof.
-  lma'.
+Proof. 
+  by_perm_eq_nosimpl; by_perm_cell; reflexivity.
 Qed.
 
 Global Hint Rewrite swap_compose : cleanup_zx_db.
@@ -77,7 +80,7 @@ Proof.
 Qed.
 
 Lemma swap_spec' : swap = ((ket 0 × bra 0)  ⊗ (ket 0 × bra 0) .+ (ket 0 × bra 1)  ⊗ (ket 1 × bra 0)
-  .+ (ket 1 × bra 0)  ⊗ (ket 0 × bra 1) .+ (ket 1 × bra 1)  ⊗ (ket 1 × bra 1)).
+  .+ (ket 1 × bra 0)  ⊗ (ket 0 × bra 1) .+ (ket 1 × bra 1)  ⊗ (ket 1 × bra 1))%M.
 Proof.
   prep_matrix_equivalence.
   by_cell; lazy; lca.
@@ -93,59 +96,40 @@ Lemma top_to_bottom_grow_r : forall n prf prf',
     (cast _ _ prf prf (n_wire n ↕ ⨉)).
 Proof.
   intros.
-  induction n.
-  + cbn. 
-    rewrite stack_empty_r, stack_empty_l, !cast_id_eq.
-    bundle_wires.
-    now rewrite nwire_removal_l, nwire_removal_r.
-  + simpl.
-    simpl in IHn.
-    rewrite IHn at 1. 
-    rewrite (stack_assoc — (n_wire n) ⨉).
-    rewrite cast_id_eq.
-    erewrite (@cast_stack_distribute
-    _ 1 _ 1 _ _ _ _
-    _ _ _ _ _ _ — (n_wire n ↕ ⨉)).
-    rewrite (cast_id _ _ —).
-    erewrite (cast_compose_mid (S (S n)) _ _ (⨉ ↕ n_wire n)).
-    erewrite (@cast_stack_distribute
-      _ 1 _ 1 _ _ _ _
-      _ _ _ _ _ _ — (top_to_bottom_helper n)).
-    rewrite cast_id.
-    rewrite stack_wire_distribute_r.
-    rewrite cast_compose_distribute.
-    rewrite stack_wire_distribute_l.
-    rewrite <- compose_assoc.
-    apply compose_simplify_eq; [ | easy ].
-    bundle_wires.
-    repeat rewrite cast_id.
-    symmetry.
-    erewrite (cast_compose_mid (S (S (S n)))).
-    simpl_casts.
-    apply compose_simplify_eq; 
-    [ | rewrite (stack_assoc_back — (top_to_bottom_helper n) —), !cast_id_eq; 
-      cast_irrelevance ].
-    eapply (cast_diagrams_eq (2 + (1 + n)) (2 + (1 + n))).
-    rewrite cast_contract.
-    rewrite (stack_assoc ⨉ (n_wire n) —).
-    rewrite cast_contract.
-    rewrite cast_stack_distribute.
-    bundle_wires.
-    rewrite cast_n_wire.
-    now rewrite !cast_id_eq.
-Unshelve.
-  all: lia.
+  by_perm_eq_nosimpl.
+  rewrite perm_of_top_to_bottom_eq.
+  cbn.
+  rewrite 2!perm_of_zx_cast.
+  cbn.
+  rewrite perm_of_top_to_bottom_helper_eq, perm_of_n_wire.
+  intros i Hi.
+  rewrite stack_perms_WF_idn by cleanup_perm.
+  rewrite stack_perms_idn_f.
+  unfold compose.
+  bdestructΩ';
+  unfold top_to_bottom_perm; [bdestructΩ'|].
+  unfold swap_2_perm, swap_perm.
+  do 2 simplify_bools_lia_one_kernel.
+  bdestructΩ'.
 Qed.
-  
+
+
+
 Lemma offset_swaps_comm_top_left : 
   ⨉ ↕ — ⟷ (— ↕ ⨉) ∝=
   — ↕ ⨉ ⟷ (⨉ ↕ —) ⟷ (— ↕ ⨉) ⟷ (⨉ ↕ —).
-Proof. (* solve_prop 1. Qed. *) Admitted.
+Proof.
+  by_perm_eq_nosimpl.
+  by_perm_cell; reflexivity.
+Qed.
 
 Lemma offset_swaps_comm_bot_right : 
  — ↕ ⨉ ⟷ (⨉ ↕ —)  ∝=
  ⨉ ↕ — ⟷ (— ↕ ⨉) ⟷ (⨉ ↕ —) ⟷ (— ↕ ⨉). 
-Proof. (* solve_prop 1. Qed. *) Admitted.
+Proof. 
+  by_perm_eq_nosimpl.
+  by_perm_cell; reflexivity.
+Qed.
 
 Lemma bottom_wire_to_top_ind : forall n, 
   bottom_wire_to_top (S (S n)) = 
@@ -220,72 +204,21 @@ Lemma a_swap_grow : forall n, a_swap (S (S (S n))) ∝=
   (⨉ ↕ n_wire (S n)) ⟷ (— ↕ a_swap (S (S n))) ⟷ (⨉ ↕ n_wire (S n)). 
 Proof.
   intros.
-  remember (⨉ ↕ n_wire (S n) ⟷ (— ↕ a_swap (S (S n))) ⟷ (⨉ ↕ n_wire (S n))) 
-    as right_side.
-  unfold a_swap at 1.
-  rewrite bottom_to_top_grow_r.
-  rewrite top_to_bottom_grow_l.
-  simpl.
-  rewrite compose_assoc.
-  rewrite stack_wire_distribute_l.
-  rewrite <- (compose_assoc (⨉ ↕ (— ↕ n_wire n))).
-  rewrite stack_assoc_back.
-  rewrite (stack_assoc_back — ⨉ (n_wire n)).
-  simpl_casts.
-  rewrite <- (@stack_nwire_distribute_r _ _ _ n (⨉ ↕ —) (— ↕ ⨉)).
-  rewrite offset_swaps_comm_top_left.
-  rewrite bottom_to_top_grow_r.
-  rewrite stack_wire_distribute_l.
-  rewrite (compose_assoc _ (— ↕ (⨉ ↕ n_wire n))).
-  rewrite (stack_assoc_back — ⨉ (n_wire n)).
-  simpl_casts.
-  rewrite <- (compose_assoc (— ↕ ⨉ ↕ n_wire n)).
-  rewrite <- (@stack_nwire_distribute_r _ _ _ n (— ↕ ⨉) (— ↕ ⨉ ⟷ (⨉ ↕ —) ⟷ (— ↕ ⨉) ⟷ (⨉ ↕ —))).
-  repeat rewrite <- compose_assoc.
-  rewrite <- stack_wire_distribute_l.
-  rewrite swap_compose.
-  cleanup_zx.
-  repeat rewrite stack_nwire_distribute_r.
-  rewrite (stack_assoc ⨉ — (n_wire n)).
-  rewrite 2 (stack_assoc_back — —).
-  simpl_casts.
-  bundle_wires.
-  repeat rewrite <- compose_assoc.
-  rewrite (nwire_stack_compose_topleft (bottom_to_top (S n)) ⨉).
-  rewrite <- nwire_stack_compose_botleft.
-  repeat rewrite compose_assoc.
-  rewrite (nwire_stack_compose_botleft ⨉ (top_to_bottom_helper n)).
-  rewrite <- (nwire_stack_compose_topleft (top_to_bottom_helper n) ⨉).
-  unfold n_wire.
-  simpl.
-  rewrite stack_empty_r.
-  simpl_casts.
-  rewrite 3 (stack_assoc —).
-  simpl_casts.
-  rewrite Heqright_side.
-  repeat rewrite compose_assoc.
-  apply compose_simplify_eq; [ easy | ].
-  repeat rewrite <- compose_assoc.
-  apply compose_simplify_eq; [ | easy ].
-  simpl.
-  rewrite <- 2 stack_wire_distribute_l.
-  apply stack_simplify_eq; [ easy | ].
-  rewrite <- bottom_to_top_grow_r.
-  easy. 
-Unshelve.
-all: lia.
+  by_perm_eq_nosimpl.
+  cbn -[a_swap n_stack1].
+  rewrite 2!perm_of_a_swap, perm_of_n_wire.
+  rewrite 2!swap_perm_defn by lia.
+  rewrite (stack_perms_defn 1).
+  rewrite stack_perms_WF_idn by cleanup_perm.
+  unfold swap_2_perm, swap_perm.
+  intros i Hi.
+  unfold compose at 1.
+  bdestructΩ'; unfold compose; bdestructΩ'.
 Qed.
 
 Lemma a_swap_2_is_swap : a_swap 2 ∝= ⨉.
 Proof.
-  unfold a_swap.
-  unfold bottom_to_top.
-  simpl.
-  cleanup_zx.
-  simpl_casts.
-  bundle_wires.
-  cleanup_zx.
-  easy.
+  by_perm_eq_nosimpl; by_perm_cell; reflexivity.
 Qed.
 
 
@@ -293,80 +226,62 @@ Lemma a_swap_3_order_indep :
   I 2 ⊗ swap × (swap ⊗ I 2) × (I 2 ⊗ swap) = 
   (swap ⊗ I 2) × (I 2 ⊗ swap) × (swap ⊗ I 2).
 Proof.
-  (* solve_matrix *) (* Commented out for performance*)
-Admitted.
+  rewrite swap_eq_kron_comm.
+  change 2%nat with (2^1)%nat.
+  rewrite <- perm_to_matrix_idn.
+  rewrite kron_comm_pows2_eq_perm_to_matrix_big_swap.
+  restore_dims.
+  rewrite <- !perm_to_matrix_of_stack_perms by auto with perm_db.
+  restore_dims.
+  rewrite <- !perm_to_matrix_compose by auto with perm_db.
+  apply perm_to_matrix_eq_of_perm_eq.
+  by_perm_cell; reflexivity.
+Qed.
 
 Lemma a_swap_semantics_ind : forall n, a_swap_semantics (S (S (S n))) = 
   swap ⊗ (I (2 ^ (S n))) × (I 2 ⊗ a_swap_semantics (S (S n))) × (swap ⊗ (I (2 ^ (S n)))).
 Proof.
-  intros.
-  rewrite <- 2 a_swap_correct.
-  simpl.
-  fold (n_wire n).
-  repeat rewrite kron_id_dist_l by shelve.
+  intros n.
+  rewrite <- a_swap_correct.
+  rewrite <- n_wire_semantics.
+  change (I 2) with (⟦ — ⟧).
+  rewrite <- a_swap_correct.
+  change (swap ⊗ ⟦n_wire (S n)⟧) with
+    (⟦ ⨉ ↕ n_wire (S n)⟧).
   restore_dims.
-  rewrite <- 2 (kron_assoc (I 2) (I 2) (_)) by shelve.
-  repeat rewrite id_kron.
-  replace ((2 ^ n + (2 ^ n + 0)))%nat with (2 ^ (S n))%nat by (simpl; lia).
-  restore_dims.
-  repeat rewrite <- Mmult_assoc.
-  restore_dims.
-  rewrite (kron_mixed_product swap (I _) (I (2 * 2)) (_)).
-  Msimpl.
-  repeat rewrite Mmult_assoc.
-  restore_dims.
-  repeat rewrite Mmult_assoc.
-  remember (⟦ (top_to_bottom_helper n) ⊤%ZX ⟧) as ZX_tb_t.
-  remember (⟦ top_to_bottom_helper n ⟧) as ZX_tb.
-  restore_dims.
-  rewrite (kron_mixed_product (I (2 * 2)) ZX_tb_t swap (I (2 ^ (S n)))) .
-  Msimpl; [ | shelve].
-  rewrite <- (Mmult_1_r _ _ (swap ⊗ ZX_tb)) by shelve.
-  rewrite n_wire_transpose.
-  rewrite n_wire_semantics.
-  rewrite <- 2 kron_assoc by shelve.
-  restore_dims.
-  repeat rewrite <- Mmult_assoc by shelve.
-  rewrite <- 2 kron_id_dist_r by shelve.
-  rewrite a_swap_3_order_indep.
-  rewrite 2 kron_id_dist_r by shelve.
-  repeat rewrite <- Mmult_assoc by shelve.
-  restore_dims.
-  rewrite (kron_assoc _ (I 2) (I (2 ^ n))) by shelve.
-  rewrite id_kron.
-  replace (2 * (2 ^ n))%nat with (2 ^ (S n))%nat by (simpl; lia).
-  restore_dims.
-  repeat rewrite <- Mmult_assoc by shelve.
-  rewrite kron_mixed_product.
-  Msimpl.
-  2,3: shelve.
-  restore_dims.
-  repeat rewrite Mmult_assoc by shelve.
-  restore_dims.
-  rewrite kron_mixed_product.
-  Msimpl; [ | shelve].
-  easy.
-Unshelve.
-all: subst; auto with wf_db.
-all: try (apply WF_kron; try lia; replace (2 ^ n + (2 ^ n + 0))%nat with (2 ^ (S n))%nat by (simpl; lia); auto with wf_db).
-  apply WF_mult.
-  auto with wf_db.
-  apply WF_kron; try lia; replace (2 ^ n + (2 ^ n + 0))%nat with (2 ^ (S n))%nat by (simpl; lia); auto with wf_db.
+  change (⟦ a_swap (S (S (S n))) ⟧ = ⟦
+    (⨉ ↕ n_wire (S n)) ⟷ ((— ↕ a_swap (S (S n)))
+    ⟷ (⨉ ↕ n_wire (S n))) ⟧).
+  rewrite 2!perm_of_zx_permutation_semantics by auto_zxperm.
+  apply perm_to_matrix_eq_of_perm_eq.
+  cbn [perm_of_zx].
+  rewrite perm_of_n_wire, 2!perm_of_a_swap.
+  rewrite swap_perm_defn by lia.
+  rewrite stack_perms_idn_f, stack_perms_WF_idn by auto_perm.
+  unfold swap_2_perm.
+  intros k Hk.
+  rewrite <- Combinators.compose_assoc.
+  unfold compose at 1.
+  bdestruct (k =? 0); 
+  [unfold swap_perm; bdestructΩ'; 
+    unfold compose; bdestructΩ'|].
+  bdestruct (k =? 1); 
+  [unfold swap_perm; bdestructΩ'; 
+    unfold compose; bdestructΩ'|].
+  unfold swap_perm.
+  simplify_bools_lia_one_kernel.
+  unfold compose.
+  bdestructΩ'.
 Qed. 
 
 Lemma a_swap_transpose : forall n,
   (a_swap n) ⊤ ∝= a_swap n.
 Proof.
-  intros.
-  induction n using strong_induction.
-  destruct n; [ easy | ].
-  destruct n; [ simpl; cleanup_zx; simpl_casts; easy | ].
-  destruct n; [ rewrite a_swap_2_is_swap; easy | ].
-  rewrite a_swap_grow.
-  cbn -[a_swap].
-  repeat rewrite n_wire_transpose.
-  rewrite compose_assoc.
-  rewrite H by lia.
+  by_perm_eq_nosimpl.
+  rewrite perm_of_zx_transpose by auto with zxperm_db.
+  rewrite perm_of_a_swap.
+  bdestruct (n =? 0); [subst; now intros i Hi|].
+  rewrite swap_perm_inv' by lia.
   easy.
 Qed.
 
@@ -376,23 +291,14 @@ Opaque a_swap a_swap_semantics. (* For n_swap proofs we don't want a_swap to unf
 
 Lemma n_swap_2_is_swap : n_swap 2 ∝= ⨉.
 Proof.
-  intros.
-  simpl.
-  unfold bottom_to_top.
-  simpl.
-  cleanup_zx.
-  simpl_casts.
-  bundle_wires.
-  cleanup_zx.
-  easy.
+  by_perm_eq_nosimpl.
+  by_perm_cell; reflexivity.
 Qed.
 
 Lemma n_swap_1_is_wire : n_swap 1 ∝= —.
 Proof.
-  simpl.
-  cleanup_zx.
-  simpl_casts.
-  easy.
+  by_perm_eq_nosimpl.
+  by_perm_cell; reflexivity.
 Qed.
 
 Lemma n_swap_grow_l : forall n,
@@ -408,49 +314,20 @@ Qed.
 Lemma n_swap_grow_r : forall n,
   n_swap (S n) ∝= (— ↕ n_swap n) ⟷ top_to_bottom (S n).
 Proof.
-  induction n.
-  - simpl.
-    cleanup_zx.
-    easy.
-  - simpl.
-    fold (top_to_bottom (S n)).
-    rewrite <- (n_swap_grow_l n).
-    rewrite IHn at 1.
-    rewrite bottom_to_top_grow_r.
-    rewrite stack_wire_distribute_l.
-    rewrite (stack_assoc_back — —).
-    simpl_casts.
-    bundle_wires.
-    repeat rewrite compose_assoc.
-    rewrite <- (compose_assoc (⨉ ↕ n_wire n)).
-    rewrite (nwire_stack_compose_botleft ⨉ (n_swap n)).
-    rewrite <- (nwire_stack_compose_topleft (n_swap n) ⨉).
-    repeat rewrite <- compose_assoc.
-    simpl.
-    cleanup_zx.
-    simpl_casts.
-    rewrite stack_wire_distribute_l.
-    repeat rewrite compose_assoc.
-    rewrite (stack_assoc_back — — (n_swap _)).
-    cleanup_zx.
-    simpl_casts.
-    bundle_wires.
-    reflexivity.
-Unshelve.
-all: lia.
+  by_perm_eq.
+  rewrite !reflect_perm_defn, stack_perms_defn.
+  change (S n) with (1 + n)%nat.
+  rewrite (rotr_add_l 1 n).
+  unfold big_swap_perm, compose.
+  intros i Hi.
+  bdestructΩ'.
 Qed.
 
 Lemma n_swap_transpose : forall n,
   (n_swap n) ⊤ ∝= n_swap n.
 Proof.
-  induction n; try easy.
-  - simpl.
-    rewrite IHn.
-    unfold bottom_to_top at 1.
-    rewrite Proportional.transpose_involutive.
-    rewrite <- n_swap_grow_l.
-    rewrite <- n_swap_grow_r.
-    easy.
+  intros.
+  by_perm_eq.
 Qed.
 
 #[export] Hint Rewrite
@@ -463,54 +340,29 @@ Qed.
 Lemma top_to_bottom_colorswap : forall n,
   ⊙ (top_to_bottom n) = top_to_bottom n.
 Proof.
-  destruct n; [ easy | ].
-  induction n.
-  - easy.
-  - simpl.
-    fold (top_to_bottom (S n)).
-    rewrite IHn.
-    rewrite n_wire_colorswap.
-    easy.
+  intros n.
+  now rewrite zxperm_colorswap_eq by auto with zxperm_db.
 Qed.
 
 Lemma bottom_to_top_colorswap : forall n,
   ⊙ (bottom_to_top n) = bottom_to_top n.
 Proof.
-  destruct n; [easy | ].
-  induction n.
-    - easy.
-    - unfold bottom_to_top.
-      rewrite top_to_bottom_grow_l.
-      simpl.
-      fold (top_to_bottom (S n)).
-      fold (bottom_to_top (S n)).
-      rewrite IHn.
-      rewrite n_wire_transpose.
-      rewrite n_wire_colorswap.
-      easy.
+  intros n.
+  now rewrite zxperm_colorswap_eq by auto with zxperm_db.
 Qed.
 
 Lemma a_swap_colorswap : forall n,
   ⊙ (a_swap n) = a_swap n.
 Proof.
-  induction n.
-  - easy.
-  - Local Transparent a_swap.
-    simpl.
-    rewrite bottom_to_top_colorswap.
-    rewrite top_to_bottom_colorswap.
-    easy.
+  intros n.
+  now rewrite zxperm_colorswap_eq by auto with zxperm_db.
 Qed.
 
 Lemma n_swap_colorswap : forall n,
   ⊙ (n_swap n) = n_swap n.
 Proof.
-  induction n.
-  - easy.
-  - simpl.
-    rewrite IHn.
-    rewrite bottom_to_top_colorswap.
-    easy.
+  intros n.
+  now rewrite zxperm_colorswap_eq by auto with zxperm_db.
 Qed.
 
 #[export] Hint Rewrite
@@ -520,16 +372,12 @@ Qed.
   (fun n => @n_swap_colorswap n)
   : colorswap_db.
 
-Lemma swap_pullthrough_top_right_Z_1_1 : forall α, 
-  (Z 1 1 α) ↕ — ⟷ ⨉ ∝= ⨉ ⟷ (— ↕ (Z 1 1 α)).
-Proof. intros. lma'. Qed.
-
-
-Lemma swap_pullthrough_top_right_Z : forall n α prfn prfm, 
-  ((Z (S n) 1 α) ↕ —) ⟷ ⨉ ∝= 
-  cast _ _ prfn prfm (n_swap _ ⟷ (— ↕ (Z (S n) 1 α))).
-Proof.
-Abort.
+Lemma swap_pullthrough_top_right_Z_1_1 : forall α, (Z 1 1 α) ↕ — ⟷ ⨉ ∝= ⨉ ⟷ (— ↕ (Z 1 1 α)).
+Proof. 
+  intros.
+  rewrite <- zx_comm_1_1_swap.
+  now rewrite zx_comm_commutes_r.
+Qed.
 
 
 Lemma swap_pullthrough_top_right_X_1_1 : forall α, 

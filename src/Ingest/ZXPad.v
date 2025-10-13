@@ -1,6 +1,8 @@
 Require Import CoreData.
 Require Import CoreRules.
 
+(** Results about padding ZX-diagrams *)
+
 Definition pad_bot {n m} pad (zx : ZX n m) : ZX (n + pad) (m + pad) := zx ↕ (n_wire pad).
 
 Definition pad_top {n m} pad (zx : ZX n m) : ZX (pad + n) (pad + m) := (n_wire pad) ↕ zx.
@@ -11,7 +13,7 @@ Notation padbt zx := (pad_bot _ (pad_top _ zx)).
 Notation padtb zx := (pad_top _ (pad_bot _ zx)).
 
 Lemma pad_top_contract : forall {n m} (zx : ZX n m) pad1 pad2 prfn prfm, 
-  pad_top pad1 (pad_top pad2 zx)  ∝ cast (pad1 + (pad2 + n)) (pad1 + (pad2 + m)) prfn prfm (pad_top (pad1 + pad2) zx).
+  pad_top pad1 (pad_top pad2 zx)  ∝= cast (pad1 + (pad2 + n)) (pad1 + (pad2 + m)) prfn prfm (pad_top (pad1 + pad2) zx).
 Proof.
   intros.
   unfold pad_top.
@@ -24,7 +26,7 @@ all: lia.
 Qed.
 
 Lemma pad_bot_1_simpl : forall {n m} (zx : ZX n m) prfn prfm, 
-  pad_bot 1 zx ∝ cast _ _ prfn prfm (pad_bot_1 zx).
+  pad_bot 1 zx ∝= cast _ _ prfn prfm (pad_bot_1 zx).
 Proof.
   intros.
   unfold pad_bot_1.
@@ -32,7 +34,7 @@ Proof.
   easy.
 Qed.
 
-Lemma pad_bot_contract : forall {n m} (zx : ZX n m) pad1 pad2 prfn prfm, pad_bot pad2 (pad_bot pad1 zx) ∝ cast (n + pad1 + pad2) (m + pad1 + pad2) prfn prfm (pad_bot (pad1 + pad2) zx).
+Lemma pad_bot_contract : forall {n m} (zx : ZX n m) pad1 pad2 prfn prfm, pad_bot pad2 (pad_bot pad1 zx) ∝= cast (n + pad1 + pad2) (m + pad1 + pad2) prfn prfm (pad_bot (pad1 + pad2) zx).
 Proof.
   intros.
   unfold pad_bot.
@@ -45,7 +47,7 @@ all: lia.
 Qed.
 
 Lemma pad_top_bot_comm : forall {n m} (zx : ZX n m) padT padB prfn prfm, 
-  (pad_top padT (pad_bot padB zx)) ∝ cast (padT + (n + padB)) (padT + (m + padB)) prfn prfm (pad_bot padB (pad_top padT zx)).
+  (pad_top padT (pad_bot padB zx)) ∝= cast (padT + (n + padB)) (padT + (m + padB)) prfn prfm (pad_bot padB (pad_top padT zx)).
 Proof.
   intros.
   unfold pad_top, pad_bot.
@@ -58,7 +60,7 @@ Qed.
 
 
 Lemma pad_bot_top_comm : forall {n m} (zx : ZX n m) padT padB prfn prfm, 
-  (pad_bot padB (pad_top padT zx)) ∝ cast (padT + n + padB) (padT + m + padB) prfn prfm (pad_top padT (pad_bot padB zx)).
+  (pad_bot padB (pad_top padT zx)) ∝= cast (padT + n + padB) (padT + m + padB) prfn prfm (pad_top padT (pad_bot padB zx)).
 Proof.
   intros.
   unfold pad_top, pad_bot.

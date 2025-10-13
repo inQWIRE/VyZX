@@ -18,7 +18,7 @@
  )
 
  (depends
-   (coq-quantumlib (>= 1.3.0))
-   (coq-sqir (>= 1.3.0))
-   (coq-voqc (>= 1.3.0))
+   (coq-quantumlib (>= 1.6.0))
+   (coq-sqir (>= 1.3.2))
+   (coq-voqc (>= 1.3.2))
    (coq (>= 8.16))))

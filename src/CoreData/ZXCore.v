@@ -1,9 +1,9 @@
 Require Import QuantumLib.Quantum.
 Require Import QuantumLib.Proportional.
 Require Import QuantumLib.VectorStates.
+Require Import QuantumLib.Kronecker.
 
 Require Export SemanticCore.
-Require Export QlibTemp.
 
 (* 
 Base constructions for the ZX calculus, lets us build every diagram inductively.
@@ -13,6 +13,11 @@ We have included some "unnecessary" objects because they are common and useful.
 Declare Scope ZX_scope.
 Delimit Scope ZX_scope with ZX.
 Open Scope ZX_scope.
+
+Coercion INR : nat >-> R.
+Coercion Nat.b2n : bool >-> nat.
+#[reversible] Coercion INR.
+#[reversible] Coercion Nat.b2n.
 
 Inductive ZX : nat -> nat -> Type :=
   | Empty : ZX 0 0
@@ -42,13 +47,13 @@ Notation "⊃" := Cap : ZX_scope. (* \supset *)
 Notation "⨉" := Swap : ZX_scope. (* \bigtimes *)
 Notation "—" := Wire : ZX_scope. (* \emdash *)
 Notation "□" := Box : ZX_scope. (* \square *)
-Notation "A ⟷ B" := (Compose A B) 
+Notation "A ⟷ B" := (Compose A%ZX B%ZX) 
   (left associativity, at level 40) : ZX_scope. (* \longleftrightarrow *)
-Notation "A ↕ B" := (Stack A B) 
+Notation "A ↕ B" := (Stack A%ZX B%ZX) 
   (left associativity, at level 40) : ZX_scope. (* \updownarrow *)
 Notation "'Z'" := Z_Spider (no associativity, at level 1) : ZX_scope.
 Notation "'X'" := X_Spider (no associativity, at level 1) : ZX_scope.
-Notation "$ n , m ::: A $" := (cast n m _ _ A) (at level 20) : ZX_scope.
+Notation "$ n , m ::: A $" := (cast n%nat m%nat _ _ A%ZX) (at level 20) : ZX_scope.
 
 (* 
 We provide two separate options for semantic functions, one based on sparse 
@@ -56,7 +61,6 @@ matrices and one based on dirac notation.
 *)
 
 (* @nocheck name *)
-Reserved Notation "⟦ zx ⟧" (at level 0, zx at level 200). (* = is 70, need to be below *)
 Fixpoint ZX_semantics {n m} (zx : ZX n m) : 
   Matrix (2 ^ m) (2 ^ n) := 
   match zx with
@@ -68,10 +72,13 @@ Fixpoint ZX_semantics {n m} (zx : ZX n m) :
   | ⨉ => swap
   | — => I 2
   | □ => hadamard
-  | zx0 ↕ zx1 => ⟦ zx0 ⟧ ⊗ ⟦ zx1 ⟧
-  | Compose zx0 zx1 => ⟦ zx1 ⟧ × ⟦ zx0 ⟧
-  end
-  where "⟦ zx ⟧" := (ZX_semantics zx).
+  | zx0 ↕ zx1 => ZX_semantics zx0 ⊗ ZX_semantics zx1
+  | Compose zx0 zx1 => ZX_semantics zx1 × ZX_semantics zx0
+  end.
+
+  
+Notation "⟦ zx ⟧" := (ZX_semantics zx%ZX) 
+  (at level 0, zx at level 200). (* = is 70, need to be below *)
 
 Lemma zx_compose_spec : forall n m o (zx0 : ZX n m) (zx1 : ZX m o),
 	⟦ zx0 ⟷ zx1 ⟧ = ⟦ zx1 ⟧ × ⟦ zx0 ⟧.
@@ -107,8 +114,8 @@ Qed.
 Ltac simpl_cast_semantics := 
   try repeat rewrite cast_semantics; 
   try repeat (rewrite cast_semantics_dim; unfold cast_semantics_dim_eqn).
-(* @nocheck name *)
 
+(* @nocheck name *)
 Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) : 
   Matrix (2 ^ m) (2 ^ n) := 
   match zx with
@@ -122,9 +129,9 @@ Fixpoint ZX_dirac_sem {n m} (zx : ZX n m) :
   | □ => hadamard
   | zx0 ↕ zx1 => (ZX_dirac_sem zx0) ⊗ (ZX_dirac_sem zx1)
   | zx0 ⟷ zx1 => (ZX_dirac_sem zx1) × (ZX_dirac_sem zx0)
-(* @nocheck name *)
   end.
 
+(* @nocheck name *)
 Lemma ZX_semantic_equiv : forall n m (zx : ZX n m),
   ⟦ zx ⟧ = ZX_dirac_sem zx.
 Proof.
@@ -132,10 +139,10 @@ Proof.
   induction zx; try lma; simpl.
   rewrite X_semantics_equiv; reflexivity.
   rewrite Z_semantics_equiv; reflexivity.
-(* @nocheck name *)
   1,2: subst; rewrite IHzx1, IHzx2; reflexivity.
 Qed.
 
+(* @nocheck name *)
 Theorem WF_ZX : forall nIn nOut (zx : ZX nIn nOut), WF_Matrix (⟦ zx ⟧).
 Proof.
   intros.
@@ -182,6 +189,11 @@ Qed.
 
 Definition n_wire := fun n => n ↑ Wire.
 Definition n_box := fun n => n ↑ Box.
+
+#[global]
+Arguments n_wire !_%nat_scope /. 
+#[global]
+Arguments n_box !_%nat_scope /. 
 
 Lemma n_wire_semantics {n} : ⟦ n_wire n ⟧ = I (2^n).
 Proof.
@@ -245,8 +257,8 @@ Lemma semantics_transpose_comm {nIn nOut} : forall (zx : ZX nIn nOut),
 Proof.
   induction zx.
   - Msimpl; reflexivity.
-  - simpl; solve_matrix.
-  - simpl; solve_matrix.
+  - lma'.
+  - lma'.
   - simpl; lma.
   - simpl; rewrite id_transpose_eq; reflexivity.
   - simpl; rewrite hadamard_st; reflexivity.
@@ -263,8 +275,8 @@ Proof.
   intros.
   induction zx.
   - simpl; Msimpl; reflexivity.
-  - simpl; solve_matrix.
-  - simpl; solve_matrix.
+  - lma'. 
+  - lma'. 
   - simpl; lma.
   - simpl; Msimpl; reflexivity.
   - simpl; lma.
@@ -309,11 +321,34 @@ Lemma semantics_colorswap_comm {nIn nOut} : forall (zx : ZX nIn nOut),
 Proof.
   induction zx.
   - simpl; Msimpl; reflexivity.
-  - solve_matrix.
-  - solve_matrix.
-  - simpl.
+  - cbn.
+    apply mat_equiv_eq; 
+    [auto using show_WF_list2D_to_matrix with wf_db..|].
+    rewrite kron_1_l_mat_equiv.
+    rewrite Mmult_assoc, Mmult_1_r by now apply show_WF_list2D_to_matrix.
+    compute_matrix (hadamard ⊗ hadamard).
+    group_radicals.
+    rewrite make_WF_equiv.
+    unfold Mmult.
+    by_cell; lca.
+  - cbn.
+    apply mat_equiv_eq; 
+    [auto using show_WF_list2D_to_matrix with wf_db..|].
+    rewrite kron_1_l_mat_equiv.
+    rewrite Mmult_1_l by now apply show_WF_list2D_to_matrix.
+    compute_matrix (hadamard ⊗ hadamard).
+    group_radicals.
+    rewrite make_WF_equiv.
+    unfold Mmult.
+    by_cell; lca.
+  - cbn.
     Msimpl.
-    solve_matrix.
+    restore_dims.
+    rewrite swap_eq_kron_comm.
+    rewrite kron_comm_commutes_r by auto_wf.
+    rewrite Mmult_assoc.
+    rewrite kron_mixed_product, MmultHH, id_kron.
+    now rewrite Mmult_1_r by auto_wf.
   - simpl; Msimpl; restore_dims; rewrite MmultHH; reflexivity.
   - simpl; Msimpl; restore_dims; rewrite MmultHH; Msimpl; reflexivity.
   - simpl. unfold X_semantics.
@@ -391,14 +426,20 @@ Qed.
 
 Lemma z_1_1_pi_σz :
 	⟦ Z 1 1 PI ⟧ = σz.
-Proof. solve_matrix. autorewrite with Cexp_db. lca. Qed.
+Proof. lma'. autorewrite with Cexp_db. lca. Qed.
 
 Lemma x_1_1_pi_σx :
 	⟦ X 1 1 PI ⟧ = σx.
-Proof. 
-	simpl. 
-	unfold X_semantics. simpl; Msimpl. solve_matrix; autorewrite with Cexp_db. 
-	all: C_field_simplify; [lca | C_field].
+Proof.
+  prep_matrix_equivalence.
+  cbn [ZX_semantics].
+  unfold X_semantics.
+  rewrite kron_n_1 by auto_wf.
+  simpl_rewrite z_1_1_pi_σz.
+  restore_dims.
+  compute_matrix (hadamard × σz × hadamard).
+  autorewrite with C_db.
+  by_cell; reflexivity.
 Qed.
 
 Definition zx_triangle : ZX 1 1 :=
@@ -409,6 +450,7 @@ Definition zx_triangle_left : ZX 1 1 :=
 
 Notation "▷" := zx_triangle : ZX_scope. (* \triangleright *)
 Notation "◁" := zx_triangle_left : ZX_scope. (* \triangleleft *)
+
 
 Lemma triangle_step_1 :
 	⟦ X 1 1 (PI/2) ⟷ Z 1 1 (PI/4) ⟧ = 

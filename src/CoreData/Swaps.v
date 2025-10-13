@@ -5,6 +5,8 @@ Require Export QuantumLib.Permutations.
 
 Open Scope ZX_scope.
 
+(** Definitions about generalized swaps *)
+
 Fixpoint top_to_bottom_helper (n : nat) : ZX (S n) (S n) :=
   match n with 
   | 0   => Wire

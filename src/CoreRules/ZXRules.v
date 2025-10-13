@@ -6,15 +6,16 @@ Require Import CoreRules.CoreAutomation.
 Require Export CoreRules.ZRules.
 Require Export CoreRules.XRules.
 
+(** Rules relating Z and X spiders *)
 
 Theorem X_state_copy_phase_0 : forall (r n : nat) prfn prfm,
-	(X 0 1 ((INR r) * PI) ⟷ Z 1 n 0) 
+	(X 0 1 (r * PI) ⟷ Z 1 n 0) 
 	∝[(√2 * (/√2 ^ n))%R]
-	cast 0%nat n prfn prfm (n ⇑ (X 0 1 ((INR r) * PI))).
+	cast 0%nat n prfn prfm (n ⇑ (X 0 1 (r * PI))).
 Proof.
 	intros.
-	assert (X_state_copy_ind : (X 0 1 (INR r * PI) ⟷ Z 1 2 0) ∝[/(√2)%R]
-		X 0 1 (INR r * PI) ↕ X 0 1 (INR r * PI)).
+	assert (X_state_copy_ind : (X 0 1 (r * PI) ⟷ Z 1 2 0) ∝[/(√2)%R]
+		X 0 1 (r * PI) ↕ X 0 1 (r * PI)).
 	{ 
 		zxsymmetry.
 		split; [|C_field].
@@ -43,9 +44,9 @@ Proof.
 		autorewrite with Cexp_db; lca.
 	-	simpl. (* n = 1 --> 1 *)
 		rewrite Z_0_is_wire.
-		simpl_casts.
+		rewrite cast_id.
 		rewrite stack_empty_r.
-		simpl_casts.
+		rewrite cast_id.
 		cleanup_zx.
 		zxrefl.
 	  rewrite Rmult_1_r.
@@ -54,7 +55,7 @@ Proof.
 	- eapply (cast_diagrams_by (S (S n) * 0) (S (S n) * 1)).
 		rewrite cast_contract.
 		rewrite cast_compose_distribute.
-		simpl_casts.
+		rewrite cast_X, cast_Z, cast_id.
 		simpl.
 		eapply (@cast_simplify_by 0 (S n * 0)%nat (S n) (S n * 1)%nat) in IHn.
 		rewrite cast_compose_distribute in IHn.
@@ -67,10 +68,10 @@ Proof.
 		rewrite <- compose_assoc.
 		zxrewrite IHn.
 		rewrite <- (stack_compose_distr
-			(X 0 1 (INR r * PI)) (Z 1 2 0) (n ⇑ X 0 1 (INR r * PI)) (n_wire (n * 1))).
+			(X 0 1 (r * PI)) (Z 1 2 0) (n ⇑ X 0 1 (r * PI)) (n_wire (n * 1))).
 		zxrewrite X_state_copy_ind.
 		cleanup_zx.
-		rewrite (stack_assoc (X 0 1 (INR r * PI)) (X 0 1 (INR r * PI))).
+		rewrite (stack_assoc (X 0 1 (r * PI)) (X 0 1 (r * PI))).
 		simpl_casts.
 		zxrefl.
 		autorewrite with RtoC_db.
@@ -80,23 +81,23 @@ Proof.
 Qed.
 
 Theorem Z_state_copy_phase_0 : forall (r n : nat) prfn prfm,
-	(Z 0 1 ((INR r) * PI) ⟷ X 1 n 0) 
+	(Z 0 1 (r * PI) ⟷ X 1 n 0) 
 	∝[(√2 * (/√2 ^ n))%R]
-	cast 0%nat n prfn prfm (n ⇑ (Z 0 1 ((INR r) * PI))).
+	cast 0%nat n prfn prfm (n ⇑ (Z 0 1 (r * PI))).
 Proof.
 	intros r n prfn prfm.
 	colorswap_of (X_state_copy_phase_0 r n prfn prfm).
 Qed.
 
 Theorem X_state_copy : forall (r n : nat) (a : R) prfn prfm,
-	(X 0 1 ((INR r) * PI) ⟷ Z 1 n a) 
+	(X 0 1 (r * PI) ⟷ Z 1 n a) 
 	∝[((/√2 ^ S n))%R *
-	(((C1 + Cexp ((INR r) * PI)) * (C1 - Cexp a) + 2 * Cexp a))]
-	cast 0%nat n prfn prfm (n ⇑ (X 0 1 ((INR r) * PI))).
+	(((C1 + Cexp (r * PI)) * (C1 - Cexp a) + 2 * Cexp a))]
+	cast 0%nat n prfn prfm (n ⇑ (X 0 1 (r * PI))).
 Proof.
 	assert (X_Z_phase_value' : forall (a b : R),
-		⟦ X 0 1 a ⟷ Z 1 0 b ⟧ = 
-		(((C1 + Cexp a) * (C1 - Cexp b) + 2 * Cexp b) / √2) .* I 1). 1: {
+		(⟦ X 0 1 a ⟷ Z 1 0 b ⟧ = 
+		(((C1 + Cexp a) * (C1 - Cexp b) + 2 * Cexp b) / √2) .* I 1)%M). 1: {
 		intros a b.
 		prep_matrix_equivalence.
 		by_cell.
@@ -106,8 +107,8 @@ Proof.
 		lca.
 	}
 	intros r n a prfn prfm.
-	replace (((/√2 ^ S n))%R * (((C1 + Cexp ((INR r) * PI)) * (C1 - Cexp a) + 2 * Cexp a))) 
-		with  (((/√2 ^ n))%R * (((C1 + Cexp ((INR r) * PI)) * (C1 - Cexp a) + 2 * Cexp a) / √2))
+	replace (((/√2 ^ S n))%R * (((C1 + Cexp (r * PI)) * (C1 - Cexp a) + 2 * Cexp a))) 
+		with  (((/√2 ^ n))%R * (((C1 + Cexp (r * PI)) * (C1 - Cexp a) + 2 * Cexp a) / √2))
 		by (simpl; unfold Cdiv; rewrite Rinv_mult, Cmult_assoc, Cmult_comm, 
 			Cmult_assoc, RtoC_mult, !RtoC_inv; reflexivity).
 	replace (Z 1 n a) with (Z 1 n (a + 0)) by (f_equal; lra).
@@ -121,16 +122,16 @@ Proof.
 	rewrite <- (stack_compose_distr (X 0 1 _) (Z 1 0 a) (n ⇑ X 0 1 _)
 		($ n * 1, n ::: n_wire n $)).
 	erewrite (cast_stack_distribute (n':=0) (m' := 0) (o' := 0) (p' := n)
-		_ _ _ _ _ _ (X 0 1 (INR r * PI) ⟷ Z 1 0 a)
-		((n ⇑ X 0 1 (INR r * PI) ⟷ $ n * 1, n ::: n_wire n $))).
+		_ _ _ _ _ _ (X 0 1 (r * PI) ⟷ Z 1 0 a)
+		((n ⇑ X 0 1 (r * PI) ⟷ $ n * 1, n ::: n_wire n $))).
 	rewrite cast_id.
 	zxsymmetry.
 	rewrite <- stack_empty_l.
 	erewrite (proportional_by_trans_iff_l _ _ _ 1).
 	- apply (stack_prop_by_compat_l
-		⦰ (X 0 1 (INR r * PI) ⟷ Z 1 0 a)
-		($ 0, n ::: n ⇑ X 0 1 (INR r * PI) ⟷ $ n * 1, n ::: n_wire n $ $)).
-		assert (Hnz : ((C1 + Cexp (INR r * PI)) * (C1 - Cexp a) + C2 * Cexp a) <> 0). 1: {
+		⦰ (X 0 1 (r * PI) ⟷ Z 1 0 a)
+		($ 0, n ::: n ⇑ X 0 1 (r * PI) ⟷ $ n * 1, n ::: n_wire n $ $)).
+		assert (Hnz : ((C1 + Cexp (r * PI)) * (C1 - Cexp a) + C2 * Cexp a) <> C0). 1: {
 			rewrite Cmult_plus_distr_r.
 			unfold Cminus at 1.
 			rewrite Cmult_plus_distr_l.
@@ -182,29 +183,30 @@ Proof.
 Qed.
 
 Theorem Z_state_copy : forall (r n : nat) (a : R) prfn prfm,
-	(Z 0 1 ((INR r) * PI) ⟷ X 1 n a) 
+	(Z 0 1 (r * PI) ⟷ X 1 n a) 
 	∝[((/√2 ^ S n))%R *
-	(((C1 + Cexp ((INR r) * PI)) * (C1 - Cexp a) + 2 * Cexp a))]
-	cast 0%nat n prfn prfm (n ⇑ (Z 0 1 ((INR r) * PI))).
+	(((C1 + Cexp (r * PI)) * (C1 - Cexp a) + 2 * Cexp a))]
+	cast 0%nat n prfn prfm (n ⇑ (Z 0 1 (r * PI))).
 Proof.
 	intros r n a prfn prfm.
 	colorswap_of (X_state_copy r n a prfn prfm).
 Qed.
 
 Theorem X_state_pi_copy : forall n prfn prfm,
-	((X 0 1 PI) ⟷ Z 1 n 0) ∝[(√2 * (/√2 ^ n))%R]
-	(cast 0 n prfn prfm (n ⇑ (X 0 1 PI))).
+	X 0 1 PI ⟷ Z 1 n 0 ∝[(√2 * (/√2 ^ n))%R]
+	cast 0 n prfn prfm (n ⇑ (X 0 1 PI)).
 Proof.
 	intros.
 	replace (PI)%R with (1 * PI)%R by lra.
 	replace (1)%R with (INR 1)%R by reflexivity.
+  (* rewrite (X_state_copy_phase_0 1). *)
 	zxrewrite X_state_copy_phase_0.
 	zxrefl.
 Qed.
 
-Theorem X_state_0_copy : forall n prfn prfm,
-	((X 0 1 0) ⟷ Z 1 n 0) ∝[(√2 * (/√2 ^ n))%R]
-	(cast 0 n prfn prfm (n ⇑ (X 0 1 0))).
+Theorem X_state_0_copy : forall (n : nat) prfn prfm,
+	X 0 1 0 ⟷ Z 1 n 0 ∝[(√2 * (/√2 ^ n))%R]
+	cast 0 n prfn prfm (n ⇑ (X 0 1 0)).
 Proof.
 	intros.
 	replace (0)%R with (0 * PI)%R at 1 by lra.
@@ -214,20 +216,19 @@ Proof.
 	zxrefl.
 Qed.
 
-Theorem Z_state_pi_copy : forall n prfn prfm,
-	((Z 0 1 PI) ⟷ X 1 n 0) ∝[(√2 * (/√2 ^ n))%R]
-	(cast 0 n prfn prfm (n ⇑ (Z 0 1 PI))).
+Theorem Z_state_pi_copy : forall (n : nat) prfn prfm,
+	Z 0 1 PI ⟷ X 1 n 0 ∝[(√2 * (/√2 ^ n))%R]
+	cast 0 n prfn prfm (n ⇑ (Z 0 1 PI)).
 Proof.
 	intros.
-	replace (PI)%R with (1 * PI)%R by lra.
-	replace (1)%R with (INR 1)%R by reflexivity.
+	replace (PI)%R with (INR 1 * PI)%R by (simpl; lra).
 	zxrewrite Z_state_copy_phase_0.
 	zxrefl.
 Qed.
 
-Theorem Z_state_0_copy : forall n prfn prfm,
-	((Z 0 1 0) ⟷ X 1 n 0) ∝[(√2 * (/√2 ^ n))%R]
-	(cast 0 n prfn prfm (n ⇑ (Z 0 1 0))).
+Theorem Z_state_0_copy : forall (n : nat) prfn prfm,
+	Z 0 1 0 ⟷ X 1 n 0 ∝[(√2 * (/√2 ^ n))%R]
+	cast 0 n prfn prfm (n ⇑ (Z 0 1 0)).
 Proof.
 	intros.
 	replace (0)%R with (0 * PI)%R at 1 by lra.
@@ -237,31 +238,30 @@ Proof.
 	zxrefl.
 Qed.
 
-Lemma Z_copy : forall n r prfn prfm, 
-	(Z 1 1 (INR r * PI) ⟷ X 1 n 0) ∝=
-	X 1 n 0 ⟷ 
-		(cast n n prfn prfm
-			(n ⇑ (Z 1 1 (INR r * PI)))).
+Lemma Z_copy : forall (n r : nat), 
+	Z 1 1 (r * PI) ⟷ X 1 n 0 ∝=
+	X 1 n 0 ⟷ n ↑ Z 1 1 (r * PI).
 Proof.
 	intros.
-	assert (Z_copy_ind : (Z 1 1 (INR r * PI) ⟷ X 1 2 0) ∝=
-		X 1 2 0 ⟷ (Z 1 1 (INR r * PI) ↕ Z 1 1 (INR r * PI))).
+	assert (Z_copy_ind : (Z 1 1 (r * PI) ⟷ X 1 2 0) ∝=
+		X 1 2 0 ⟷ (Z 1 1 (r * PI) ↕ Z 1 1 (r * PI))).
 	{ 
 		prep_matrix_equivalence.
-		Msimpl; simpl.
-		unfold X_semantics, Z_semantics.
-		rewrite Cexp_0.
-		destruct (INR_pi_exp r); rewrite H;
-		cbv delta [kron_n kron hadamard Mmult scale I];
-		by_cell; simpl; C_field; lca.
-	} 
-	eapply (cast_diagrams_eq 1 (n * 1)).
-	rewrite 2 cast_compose_distribute.
-	simpl_casts.
-	erewrite (@cast_compose_mid _ _ _ (n * 1)%nat _ _ (X 1 n 0)).
-	simpl_casts.
+		change (X 1 2 0) with ((X 2 1 0) ⊤).
+		rewrite 2 zx_compose_spec.
+		rewrite semantics_transpose_comm.
+		simpl.
+		compute_matrix (Z_semantics 1 1 (r * PI)).
+		rewrite X_2_1_0_semantics.
+		rewrite !make_WF_equiv.
+		destruct (INR_pi_exp r) as [H|H]; rewrite H; by_cell;
+		cbv [kron_n kron hadamard Mmult scale I Matrix.transpose 
+			list2D_to_matrix nth Nat.div Nat.modulo Nat.divmod Nat.mul 
+			Nat.sub fst snd big_sum]; lca.
+	}
 	induction n; [ | destruct n].
 	- simpl.
+		rewrite compose_empty_r.
 		prep_matrix_equivalence.
 		simpl.
 		unfold X_semantics, Z_semantics;
@@ -271,45 +271,39 @@ Proof.
 	- simpl.
 		repeat rewrite X_0_is_wire.
 		cleanup_zx.
-		simpl_casts.
-		easy.
+		now rewrite cast_id.
 	- simpl.
 		rewrite grow_X_top_right.
 		simpl in IHn.
 		rewrite <- compose_assoc.
-		rewrite IHn.
+		rewrite IHn by lia.
 		rewrite compose_assoc.
 		rewrite <- (stack_compose_distr 
-			(Z 1 1 (INR r * PI)) 				(X 1 2 0) 
-			(n ⇑ (Z 1 1 (INR r * PI))) (n_wire (n * 1))).
+			(Z 1 1 (r * PI)) 				(X 1 2 0) 
+			(n ↑ (Z 1 1 (r * PI))) (n_wire n)).
 		rewrite Z_copy_ind.
 		rewrite nwire_removal_r.
-		rewrite <- (nwire_removal_l (n ⇑ Z 1 1 (INR r * PI))) at 1.
+		rewrite <- (nwire_removal_l (n ↑ Z 1 1 (r * PI))) at 1.
 		rewrite stack_compose_distr.
 		rewrite compose_assoc.
-		rewrite (stack_assoc (Z 1 1 (INR r * PI))).
-		simpl_casts.
+		rewrite (stack_assoc (Z 1 1 (r * PI))).
+		rewrite cast_id.
 		easy.
 	Unshelve.
-	all: lia.
+	all: reflexivity.
 Qed.
 
-Lemma X_copy : forall n r prfn prfm,
-	(X 1 1 (INR r * PI) ⟷ Z 1 n 0) ∝=
-	Z 1 n 0 ⟷ 
-		(cast n n
-			prfn prfm
-			(n ⇑ (X 1 1 (INR r * PI)))).
+Lemma X_copy : forall (n r : nat),
+	X 1 1 (r * PI) ⟷ Z 1 n 0 ∝=
+	Z 1 n 0 ⟷ n ↑ X 1 1 (r * PI).
 Proof.
-	intros n r prfn prfm.
-	colorswap_of (Z_copy n r prfn prfm).
+	intros n r.
+	colorswap_of (Z_copy n r).
 Qed.
 
-Lemma Z_0_copy : forall n prfn prfm, 
-	(Z 1 1 0 ⟷ X 1 n 0) ∝=
-	X 1 n 0 ⟷ 
-		(cast n n prfn prfm
-			(n ⇑ (Z 1 1 0))).
+Lemma Z_0_copy : forall (n : nat), 
+	Z 1 1 0 ⟷ X 1 n 0 ∝=
+	X 1 n 0 ⟷ n ↑ Z 1 1 0.
 Proof.
 	intros.
 	specialize (Z_copy n 0).
@@ -319,11 +313,9 @@ Proof.
 	apply H.
 Qed.
 
-Lemma Z_pi_copy : forall n prfn prfm, 
-	(Z 1 1 PI ⟷ X 1 n 0) ∝=
-	X 1 n 0 ⟷ 
-		(cast n n prfn prfm
-			(n ⇑ (Z 1 1 PI))).
+Lemma Z_pi_copy : forall (n : nat), 
+	Z 1 1 PI ⟷ X 1 n 0 ∝=
+	X 1 n 0 ⟷ n ↑ Z 1 1 PI.
 Proof.
 	intros.
 	specialize (Z_copy n 1).
@@ -333,11 +325,9 @@ Proof.
 	apply H.
 Qed.
 
-Lemma X_0_copy : forall n prfn prfm, 
-	(X 1 1 0 ⟷ Z 1 n 0) ∝=
-	Z 1 n 0 ⟷ 
-		(cast n n prfn prfm
-			(n ⇑ (X 1 1 0))).
+Lemma X_0_copy : forall (n : nat), 
+	X 1 1 0 ⟷ Z 1 n 0 ∝=
+	Z 1 n 0 ⟷ n ↑ X 1 1 0.
 Proof.
 	intros.
 	specialize (X_copy n 0).
@@ -347,11 +337,9 @@ Proof.
 	apply H.
 Qed.
 
-Lemma X_pi_copy : forall n prfn prfm, 
-	(X 1 1 PI ⟷ Z 1 n 0) ∝=
-	Z 1 n 0 ⟷ 
-		(cast n n prfn prfm
-			(n ⇑ (X 1 1 PI))).
+Lemma X_pi_copy : forall (n : nat), 
+	X 1 1 PI ⟷ Z 1 n 0 ∝=
+	Z 1 n 0 ⟷ n ↑ X 1 1 PI.
 Proof.
 	intros.
 	specialize (X_copy n 1).
@@ -359,4 +347,56 @@ Proof.
 	simpl in H.
 	rewrite Rmult_1_l in H.
 	apply H.
+Qed.
+
+
+Lemma Z_pi_copy_1_1_gen α : 
+  Z 1 1 PI ⟷ X 1 1 α ∝[Cexp α] X 1 1 (-α) ⟷ Z 1 1 PI.
+Proof.
+	split; [|nonzero].
+  prep_matrix_equivalence.
+	simpl.
+	unfold X_semantics.
+	rewrite kron_n_1 by auto_wf.
+  compute_matrix (Z_semantics 1 1 α).
+  compute_matrix (Z_semantics 1 1 (-α)).
+	rewrite <- Mscale_mult_dist_r, <- Mscale_mult_dist_l, 
+		<- Mscale_mult_dist_r.
+	rewrite scalar_make_WF.
+	unfold scale.
+	let t := type of (@Mscale_list2D_to_matrix) in 
+	let lem := eval unfold scale in t in 
+	rewrite (@Mscale_list2D_to_matrix : lem).
+	cbn [map].
+	Csimpl.
+	rewrite <- Cexp_add, Rplus_opp_r, Cexp_0.
+  compute_matrix (Z_semantics 1 1 PI).
+	rewrite Cexp_PI', 2 make_WF_equiv.
+	by_cell; lca.
+Qed.
+
+Lemma X_pi_copy_1_1_gen α : 
+  X 1 1 PI ⟷ Z 1 1 α ∝[Cexp α] Z 1 1 (-α) ⟷ X 1 1 PI.
+Proof.
+  colorswap_of (Z_pi_copy_1_1_gen α).
+Qed.
+
+Lemma Z_pi_copy_gen n α : 
+	Z 1 1 PI ⟷ X 1 n α ∝[Cexp α] X 1 n (-α) ⟷ 
+		n ↑ Z 1 1 PI.
+Proof.
+	rewrite <- (Rplus_0_r α).
+	rewrite <- (X_absolute_fusion (m:=0)), <- compose_assoc.
+	zxrewrite Z_pi_copy_1_1_gen.
+	rewrite Rplus_0_r, Cdiv_unfold, Cinv_r by nonzero.
+	rewrite compose_assoc, Z_pi_copy, <- compose_assoc.
+	rewrite X_absolute_fusion, Rplus_0_r.	
+	zxrefl.
+Qed.
+
+Lemma X_pi_copy_gen n α : 
+	X 1 1 PI ⟷ Z 1 n α ∝[Cexp α] Z 1 n (-α) ⟷ 
+		n ↑ X 1 1 PI.
+Proof.
+	colorswap_of (Z_pi_copy_gen n α).
 Qed.

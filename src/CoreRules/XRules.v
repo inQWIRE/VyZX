@@ -3,7 +3,11 @@ Require Import WireRules.
 Require Import CapCupRules.
 Require Import CoreAutomation.
 Require Import SwapRules.
+Require Import ZXpermFacts.
 Require Import ZRules.
+Require Import ChoiJamiolchosky.
+
+(** Rules about X spiders *)
 
 Lemma grow_X_top_left : forall (nIn nOut : nat) α,
 	X (S (S nIn)) nOut α ∝=  
@@ -25,6 +29,9 @@ Lemma grow_X_bot_right : forall {n m} o {α},
 	X n (m + 1) α ⟷ (n_wire m ↕ X 1 o 0).
 Proof. intros. colorswap_of (@grow_Z_bot_right n m o α). Qed.
 
+Lemma X_rot_passthrough : forall α β, 
+	(X 1 1 α ↕ — ⟷ X 2 1 β) ∝= X 2 1 β ⟷ X 1 1 α.
+Proof. intros. colorswap_of Z_rot_passthrough. Qed.
 
 Lemma X_rot_l : forall n m α β,
 	X (S n) m (α + β) ∝= X 1 1 α ↕ n_wire n ⟷ X (S n) m β.
@@ -39,6 +46,10 @@ Proof. intros. colorswap_of (@Z_add_r_base_rot n). Qed.
 
 Lemma X_add_l_base_rot : forall {n} m o {α}, X (n + m) o α ∝= (X n 1 0 ↕ X m 1 0) ⟷ X 2 o α.
 Proof. intros. colorswap_of (@Z_add_l_base_rot n). Qed.
+
+Lemma X_appendix_base : forall α β,
+	(X 0 1 α ↕ — ⟷ X 2 1 β) ∝= X 1 1 (α + β).
+Proof. intros. colorswap_of (Z_appendix_base α β). Qed.
 
 Lemma X_appendix_rot_l : forall n m α β,
 	X n m (α + β) ∝= (X 0 1 α ↕ n_wire n) ⟷ X (S n) m β.
@@ -72,6 +83,14 @@ Lemma X_absolute_fusion : forall {n m o} α β,
 	(X n (S m) α ⟷ X (S m) o β) ∝=
 	X n o (α + β).
 Proof. intros. colorswap_of (@Z_absolute_fusion n m o). Qed.
+
+Lemma X_split_left : forall n m α,
+	X n m α ∝= X n 1 α ⟷ X 1 m 0.
+Proof. intros n m α. colorswap_of (Z_split_left n m α). Qed.
+
+Lemma X_split_right : forall n m α,
+	X n m α ∝= X n 1 0 ⟷ X 1 m α.
+Proof. intros n m α. colorswap_of (Z_split_right n m α). Qed.
 
 Lemma dominated_X_spider_fusion_top_right : forall n m0 m1 o α β,
 	(X n (S m0) α ↕ n_wire m1 ⟷ X (S m0 + m1) o β) ∝=
@@ -169,8 +188,80 @@ Proof. colorswap_of Z_self_bottom_to_top_absorbtion_right_base. Qed.
 Lemma X_a_swap_absorbtion_right_base : forall n m α, X n m α ⟷ a_swap m ∝= X n m α.
 Proof. colorswap_of Z_a_swap_absorbtion_right_base. Qed.
 
+Lemma X_stacked_a_swap_absorbtion_right n m0 m1 m2 α : 
+	X n (m0 + m1 + m2) α ⟷ (n_wire m0 ↕ a_swap m1 ↕ n_wire m2) ∝=
+	X n (m0 + m1 + m2) α.
+Proof. colorswap_of (Z_stacked_a_swap_absorbtion_right n m0 m1 m2 α). Qed.
+
+Lemma X_zx_to_bot_absorbtion_right n m α a : 
+	X n m α ⟷ zx_to_bot a m ∝= X n m α.
+Proof. colorswap_of (Z_zx_to_bot_absorbtion_right n m α a). Qed.
+
+Lemma X_zx_of_swap_list_absorbtion_right n α l : 
+	X n (length l) α ⟷ zx_of_swap_list l ∝= X n (length l) α.
+Proof. colorswap_of (Z_zx_of_swap_list_absorbtion_right n α l). Qed.
+
+Section Absorbtion.
+(* This is a section only to localize the following hint, 
+	which may be too costly to want to use globally *)
+
+Local Hint Rewrite @zxperm_colorswap_eq using auto with zxperm_db : 
+	colorswap_db.
+
+Lemma X_zx_of_perm_absorbtion_right n m α f : 
+	X n m α ⟷ zx_of_perm m f ∝= X n m α.
+Proof. colorswap_of (Z_zx_of_perm_absorbtion_right n m α f). Qed.
+
+Lemma X_zx_of_perm_cast_absorbtion_right n m o α f H : 
+	X n m α ⟷ zx_of_perm_cast m o f H ∝= X n o α.
+Proof. colorswap_of (Z_zx_of_perm_cast_absorbtion_right n m o α f H). Qed.
+
+Lemma X_zxperm_absorbtion_right n m o α (zx : ZX m o) (Hzx : ZXperm zx) :
+	X n m α ⟷ zx ∝= X n o α.
+Proof. colorswap_of (Z_zxperm_absorbtion_right n m o α zx Hzx). Qed.
+
+Lemma X_zxperm_absorbtion_left n m o α (zx : ZX n m) (Hzx : ZXperm zx) : 
+	zx ⟷ X m o α ∝= X n o α.
+Proof. colorswap_of (Z_zxperm_absorbtion_left n m o α (zx) (Hzx)). Qed.
+
+End Absorbtion.
+
+Lemma X_zx_comm_absorbtion_right n p q α : 
+	X n (p + q) α ⟷ zx_comm p q ∝=
+	X n (q + p) α.
+Proof. colorswap_of (Z_zx_comm_absorbtion_right n p q α). Qed.
+
+Lemma X_zx_comm_absorbtion_left p q m α :
+	zx_comm p q ⟷ X (q + p) m α ∝=
+	X (p + q) m α.
+Proof. colorswap_of (Z_zx_comm_absorbtion_left p q m α). Qed.
+
+Lemma X_zx_gap_comm_absorbtion_right n p m q α : 
+	X n (p + m + q) α ⟷ zx_gap_comm p m q ∝=
+	X n (q + m + p) α.
+Proof. colorswap_of (Z_zx_gap_comm_absorbtion_right n p m q α). Qed.
+
+Lemma X_zx_gap_comm_absorbtion_left p n q m α : 
+	zx_gap_comm p n q ⟷ X (q + n + p) m α ∝=
+	X (p + n + q) m α.
+Proof. colorswap_of (Z_zx_gap_comm_absorbtion_left p n q m α). Qed.
+
+Lemma X_swap_pullthrough_top_right : forall n α prfn prfm, 
+	((X (S n) 1 α) ↕ —) ⟷ ⨉ ∝=
+	cast _ _ prfn prfm (n_swap _ ⟷ (— ↕ (X (S n) 1 α))).
+Proof. intros. (* colorswap_of fails because it simplifies too aggressively *)
+	apply colorswap_diagrams_eq.
+	autorewrite with colorswap_db.
+	cbn [color_swap].
+	autorewrite with colorswap_db.
+	exact (Z_swap_pullthrough_top_right n α prfn prfm). 
+Qed.
+
 Lemma X_n_swap_absorbtion_right_base : forall n m α, X n m α ⟷ n_swap m ∝= X n m α.
 Proof. colorswap_of Z_n_swap_absorbtion_right_base. Qed.
+	
+Lemma X_n_swap_absorbtion_left_base : forall n m α, n_swap n ⟷ X n m α ∝= X n m α.
+Proof. colorswap_of Z_n_swap_absorbtion_left_base. Qed.
 
 Lemma X_n_wrap_under_r_base_unswapped : forall n m α, X (n + m) 0 α ∝= (X n m α ↕ n_wire m) ⟷ n_cup_unswapped m.
 Proof. colorswap_of Z_n_wrap_under_r_base_unswapped. Qed.
@@ -196,7 +287,118 @@ Proof. transpose_of X_n_wrap_under_r_base_unswapped. Qed.
 Lemma X_n_wrap_under_l_base : forall n m α, X 0 (m + n) α ∝= n_cap n ⟷ (X n m α ↕ n_wire n).
 Proof. transpose_of X_n_wrap_under_r_base. Qed.
 
+Local Opaque proc_to_state state_to_proc.
+Lemma X_proc_to_state n m α : proc_to_state (X n m α) ∝=
+  X 0 (n + m) α.
+Proof. colorswap_of (Z_proc_to_state n m α). Qed.
+Lemma X_state_to_proc n m α : state_to_proc (X 0 (n + m) α) ∝=
+  X n m α.
+Proof. colorswap_of (Z_state_to_proc n m α). Qed.
+Local Transparent proc_to_state state_to_proc.
+
+Lemma X_push_over_top_left {n m o p} 
+	(zx : ZX 0 n) (zx' : ZX p m) α : 
+	zx ↕ zx' ⟷ X (n + m) o α ∝= zx' ⟷ X m (n + o) α ⟷ (zx ⊤ ↕ n_wire o).
+Proof.
+	apply colorswap_diagrams_eq.
+	cbn [color_swap].
+	rewrite Z_push_over_top_left.
+	rewrite colorswap_transpose_commute, n_wire_colorswap.
+	reflexivity.
+Qed.
+
+Lemma X_push_over_top_right {n m o p} 
+	(zx : ZX m 0) (zx' : ZX o p) α : 
+	X n (m + o) α ⟷ (zx ↕ zx') ∝= zx ⊤ ↕ n_wire n ⟷ X (m + n) o α ⟷ zx'.
+Proof. 
+	apply colorswap_diagrams_eq.
+	cbn [color_swap].
+	rewrite Z_push_over_top_right.
+	rewrite colorswap_transpose_commute, n_wire_colorswap.
+	reflexivity.
+Qed.
+
+
+Lemma X_push_under_bottom_left {n m o p} 
+	(zx : ZX 0 m) (zx' : ZX p n) α : 
+	zx' ↕ zx ⟷ X (n + m) o α ∝= cast _ _ (Nat.add_0_r _) (eq_sym (Nat.add_0_r _))
+		(zx' ⟷ X n (o + m) α ⟷ (n_wire o ↕ zx ⊤)).
+Proof.
+	apply colorswap_diagrams_eq.
+	rewrite cast_colorswap.
+	cbn [color_swap].
+	rewrite Z_push_under_bottom_left.
+	rewrite colorswap_transpose_commute, n_wire_colorswap.
+	reflexivity.
+Qed.
+
+Lemma X_push_under_bottom_right {n m o p} 
+	(zx : ZX m 0) (zx' : ZX n p) α : 
+	X o (n + m) α ⟷ (zx' ↕ zx) ∝= 
+	cast _ _ (eq_sym (Nat.add_0_r _)) (Nat.add_0_r _)
+		((n_wire o ↕ zx ⊤) ⟷ X (o + m) n α ⟷ zx').
+Proof.
+	apply colorswap_diagrams_eq.
+	rewrite cast_colorswap.
+	cbn [color_swap].
+	rewrite Z_push_under_bottom_right.
+	rewrite colorswap_transpose_commute, n_wire_colorswap.
+	reflexivity.
+Qed.
+
+
 (* @nocheck name *)
 (* PI is captialized in Coq R *)
-Lemma X_2_PI : forall n m a, X n m (INR a * 2 * PI) ∝= X n m 0.
+Lemma X_2_PI : forall (n m a : nat), X n m (a * 2 * PI) ∝= X n m 0.
 Proof. colorswap_of Z_2_PI. Qed.
+
+Lemma X_phase_simplify n m α β : Cexp α = Cexp β -> 
+  X n m α ∝= X n m β.
+Proof.
+  intros Heq. 
+  colorswap_of (Z_phase_simplify n m α β Heq).
+Qed.
+
+(* @nocheck name *)
+(* PI is captialized in Coq R *)
+Lemma X_add_2_PI_r n m α : 
+  X n m (α + 2 * PI) ∝= X n m α.
+Proof.
+  colorswap_of (Z_add_2_PI_r n m α).
+Qed.
+
+(* @nocheck name *)
+(* PI is captialized in Coq R *)
+Lemma X_add_2_PI_l n m α : 
+  X n m (2 * PI + α) ∝= X n m α.
+Proof.
+  colorswap_of (Z_add_2_PI_l n m α).
+Qed.
+
+(* @nocheck name *)
+(* PI is captialized in Coq R *)
+Lemma X_2_PI_r n m :
+  X n m (2 * PI) ∝= X n m 0.
+Proof.
+  colorswap_of (Z_2_PI_r n m).
+Qed.
+
+(* @nocheck name *)
+(* PI is captialized in Coq R *)
+Lemma X_eq_2_PI n m α : α = Rmult 2 PI ->
+  X n m α ∝= X n m 0.
+Proof.
+  intros ->.
+  apply X_2_PI_r.
+Qed.
+
+Lemma X_eq_0 n m α : α = R0 ->
+  X n m α ∝= X n m 0.
+Proof.
+  now intros ->.
+Qed.
+
+Lemma X_is_wire : X 1 1 0 ∝= —.
+Proof.
+  colorswap_of Z_is_wire.
+Qed.
