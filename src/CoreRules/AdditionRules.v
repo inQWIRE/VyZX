@@ -245,6 +245,59 @@ Proof.
 Qed.
 
 
+Require Import ZXpermFacts.
+
+
+Lemma zx_of_matrix'_semantics {n m} (A : Matrix (2^m) (2^n)) : WF_Matrix A -> 
+  ⟦ zx_of_matrix' A ⟧ = A.
+Proof.
+  intros HA.
+  prep_matrix_equivalence.
+  unfold zx_of_matrix'.
+  rewrite zx_sum_semantics.
+  erewrite big_sum_eq_bounded. 2:{
+    intros i Hi.
+    rewrite zx_sum_semantics.
+    eapply big_sum_eq_bounded.
+    intros j Hj.
+    rewrite zx_scale_semantics.
+    rewrite zx_compose_spec, semantics_transpose_comm.
+    rewrite 2 f_to_state_semantics, <- 2 basis_f_to_vec_alt by easy.
+    rewrite 2 basis_vector_eq_e_i by easy.
+    reflexivity.
+  }
+  intros i' j' Hi' Hj'.
+  rewrite Msum_Csum.
+  erewrite big_sum_eq_bounded. 2:{
+    intros i Hi.
+    rewrite Msum_Csum.
+    erewrite big_sum_eq_bounded. 2:{
+      intros j Hj.
+      unfold scale.
+      cbn.
+      unfold Matrix.transpose.
+      rewrite Cplus_0_l.
+      unfold e_i.
+      cbn.
+      replace_bool_lia (i' <? 2 ^ m) true.
+      replace_bool_lia (j' <? 2 ^ n) true.
+      rewrite 4 andb_true_r.
+      rewrite Kronecker.if_mult_and, Kronecker.if_mult_dist_l.
+      rewrite andb_comm, andb_if, (Nat.eqb_sym j'), (Nat.eqb_sym i').
+      reflexivity.
+    }
+    etransitivity; 
+    [refine (big_sum_if_eq _ _ j')|].
+    replace_bool_lia (j' <? 2 ^ n) true.
+    reflexivity.
+  }
+  etransitivity; 
+  [refine (big_sum_if_eq _ _ i')|].
+  replace_bool_lia (i' <? 2 ^ m) true.
+  reflexivity.
+Qed.
+
+
 Lemma X_0_1_decomp α : 
 	X 0 1 α ∝= (1 + Cexp α)/√2 .* state_0 .+ 
 		(1 - Cexp α)/√2 .* state_1.
@@ -264,4 +317,14 @@ Proof.
 	rewrite zx_plus_semantics, zx_scale_semantics, 
 		state_0_semantics, state_1_semantics.
 	by_cell; cbn; lca.
+Qed.
+
+
+Lemma wire_decomp : — ∝= state_0 ⊤ ⟷ state_0 .+ 
+  state_1 ⊤ ⟷ state_1.
+Proof.
+  prep_matrix_equivalence.
+  rewrite zx_plus_semantics, 2 zx_compose_spec, 2 semantics_transpose_comm, 
+    state_0_semantics, state_1_semantics.
+  by_cell; lca.
 Qed.

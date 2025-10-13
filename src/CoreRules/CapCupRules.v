@@ -28,6 +28,26 @@ Proof. colorswap_of cup_Z. Qed.
 Lemma cap_X : ⊂ ∝= X 0 2 0.
 Proof. colorswap_of cap_Z. Qed. 
 
+Lemma cup_swap : ⊂ ⟷ ⨉ ∝= ⊂.
+Proof.
+  prep_matrix_equivalence.
+  by_cell; cbn; lca.
+Qed.
+
+Lemma swap_cap : ⨉ ⟷ ⊃ ∝= ⊃.
+Proof.
+  prep_matrix_equivalence.
+  by_cell; cbn; lca.
+Qed.
+
+Lemma cup_cap : ⊂ ⟷ ⊃ ∝[C2] ⦰.
+Proof.
+  constructor; [|nonzero].
+  prep_matrix_equivalence.
+  by_cell; cbn.
+  lca.
+Qed.
+
 Lemma n_cup_0_empty : n_cup 0 ∝= ⦰.
 Proof.
   etransitivity; [apply compose_empty_r|];
