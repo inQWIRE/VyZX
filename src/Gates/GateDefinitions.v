@@ -76,7 +76,9 @@ Proof.
   rewrite <- cup_X.
   rewrite 2 Rplus_0_r.
   rewrite <- compose_assoc.
-  rewrite <- (stack_compose_distr (Z 1 1 _) (X 1 1 _) (n_wire 1) (n_wire 1)).
+  simpl_casts.
+  bundle_wires.
+  rewrite <- (stack_compose_distr (Z 1 1 _) (X 1 1 _) (—) (—)).
   cleanup_zx.
   reflexivity.
   Unshelve.
@@ -86,6 +88,24 @@ Definition teleportation_2
   (a b : nat) :=
   (— ↕ bell_state_prep) ⟷ ((bell_measurement a b) ↕ 
                           (X 1 1 (INR b * PI) ⟷ (Z 1 1 (INR a * PI)))).
+
+Lemma yank_l' {n m} : forall (zx0 : ZX n 1) (zx1 : ZX 1 m),
+  (zx0 ↕ ⊂) ⟷ (⊃ ↕ zx1) ∝= cast (n + 0) (0 + m) (Nat.add_0_r n) (eq_refl) (zx0 ⟷ zx1).
+Proof.
+  intros.
+  rewrite <- (compose_empty_l ⊂).
+  rewrite <- (wire_removal_r zx0).
+  rewrite stack_compose_distr.
+  rewrite <- (compose_empty_r ⊃).
+  rewrite <- (wire_removal_l zx1).
+  rewrite stack_compose_distr.
+  repeat rewrite compose_assoc.
+  rewrite <- (compose_assoc (— ↕ ⊂)).
+  rewrite yank_l.
+  cleanup_zx.
+  rewrite cast_compose_l.
+  simpl_casts.
+  reflexivity. Qed.
 
 Lemma teleportation_2_correct : forall a b, teleportation_2 a b ∝= —.
 Proof.
@@ -101,16 +121,7 @@ Proof.
   rewrite wire_removal_l.
   bundle_wires.
   cleanup_zx.
-  rewrite <- (wire_removal_r (Z 1 1 _ ⟷ X 1 1 _)).
-  rewrite <- compose_empty_l.
-  rewrite stack_compose_distr.
-  rewrite <- (wire_removal_l (X 1 1 _ ⟷ Z 1 1 _)).
-  rewrite <- (compose_empty_r ⊃).
-  rewrite stack_compose_distr.
-  repeat rewrite compose_assoc.
-  rewrite <- (compose_assoc (— ↕ ⊂)).
-  rewrite yank_l.
-  cleanup_zx.
+  rewrite yank_l'.
   simpl_casts.
   repeat rewrite compose_assoc.
   rewrite <- (compose_assoc (X 1 1 _) (X 1 1 _) (Z 1 1 _)).
@@ -119,6 +130,7 @@ Proof.
   rewrite X_2_PI.
   cleanup_zx.
   rewrite Z_spider_1_1_fusion.
+  simpl.
   replace (INR a * PI + INR a * PI)%R with (INR a * 2 * PI)%R by lra.
   rewrite Z_2_PI.
   cleanup_zx.
