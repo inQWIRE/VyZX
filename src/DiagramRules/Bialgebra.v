@@ -59,6 +59,113 @@ Proof.
   colorswap_of bi_algebra_rule_Z_X.
 Qed.
 
+Theorem bi_algebra_rule_X_over_Z : 
+  X 1 2 0 ↕ — ⟷ (— ↕ Z 2 1 0) ⟷ ⨉
+  ⟷ (X 1 2 0 ↕ —) ⟷ (— ↕ Z 2 1 0) ∝[/ (√2)%R]
+  Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0).
+Proof.
+  apply prop_by_iff_zx_scale.
+  split; [|rewrite <- RtoC_inv; nonzero].
+  apply prop_eq_by_eq_on_states_b_step.
+  intros b.
+  apply prop_eq_by_eq_on_states_b_step.
+  intros c.
+  rewrite <- 2 (compose_assoc (state_b c↕n_wire 0) (state_b b↕n_wire 1)).
+  rewrite <- (stack_empty_l (state_b c ↕ _)).
+  rewrite <- (@stack_compose_distr 0 0 1 0 1 1).
+  rewrite nwire_removal_r, compose_empty_l, stack_empty_r_fwd, cast_id.
+  distribute_zxscale.
+  rewrite <- !compose_assoc.
+  rewrite <- 2 stack_compose_distr.
+  rewrite wire_removal_r.
+  rewrite X_1_n_state_b.
+  distribute_zxscale.
+  apply zx_scale_simplify_eq_r.
+
+  rewrite stack_split_diag.
+  rewrite <- (n_wire_stack 1 1), (@stack_assoc_fwd 1 1 0 1 1 1), cast_id.
+  rewrite stack_empty_r_fwd, cast_id.
+  rewrite (compose_assoc (X 0 2 _)).
+  rewrite <- (@stack_compose_distr 1 1 1 1 2 1).
+  rewrite nwire_removal_l, <- wire_to_n_wire, Z_2_1_state_b_bot.
+  rewrite Cexp_0, Tauto.if_same, zx_scale_1_l.
+
+  rewrite stack_wire_distribute_l, <- compose_assoc.
+  
+  rewrite <- (Rplus_0_r (if b then _ else _)).
+  rewrite <- (dominated_X_spider_fusion_top_left 1 0 1 0).
+  rewrite <- cap_X.
+  rewrite (compose_assoc ⊂), wire_to_n_wire.
+  (* rewrite <- (@compose_assoc 2 2 1). *)
+  rewrite <- (@stack_split_diag 1 1 1 0).
+  rewrite stack_split_antidiag, <- ! compose_assoc, <- wire_to_n_wire.
+  rewrite cup_pullthrough_bot, n_cap_0_empty, transpose_involutive, 
+    compose_empty_l, wire_removal_r.
+  rewrite <- (@stack_compose_distr 0 1 1 0 0 0).
+  rewrite X_1_n_state_b.
+  rewrite (X_0_1_to_state_b' _ (b ⊕ c)). 
+  2: {
+    (destruct b, c; cbn); rewrite 1?Rplus_0_r; try reflexivity.
+    rewrite Cexp_0, <- Cexp_2PI; f_equal; lra.
+  }
+  rewrite nwire_removal_l, <- (@stack_compose_distr 0 1 1 0 0 1).
+  rewrite wire_removal_r, nwire_removal_l.
+  rewrite swap_commutes_r, zx_comm_0_0, compose_empty_l.
+  change 2%nat with (1 + 1)%nat.
+  rewrite <- stack_compose_distr.
+
+  
+  rewrite X_1_n_state_b.
+  distribute_zxscale.
+
+  rewrite stack_split_diag.
+  rewrite <- (n_wire_stack 1 1), (@stack_assoc_fwd 1 1 0 1 1 1), cast_id.
+  rewrite stack_empty_r_fwd, cast_id.
+  rewrite (compose_assoc (X 0 (1+1) _)).
+  rewrite <- (@stack_compose_distr 1 1 1 1 2 1).
+  rewrite 2 wire_removal_r, <- wire_to_n_wire, Z_2_1_state_b_bot.
+  rewrite Cexp_0, Tauto.if_same, zx_scale_1_l.
+
+  rewrite stack_wire_distribute_l, <- compose_assoc.
+  
+  rewrite <- (Rplus_0_r (if c then _ else _)).
+  rewrite <- (dominated_X_spider_fusion_top_left 1 0 1 0).
+  rewrite <- cap_X.
+  rewrite (compose_assoc ⊂), wire_to_n_wire.
+  (* rewrite <- (@compose_assoc 2 2 1). *)
+  rewrite <- (@stack_split_diag 1 1 1 0).
+  rewrite stack_split_antidiag, <- ! compose_assoc, <- wire_to_n_wire.
+  rewrite cup_pullthrough_bot, n_cap_0_empty, transpose_involutive, 
+    compose_empty_l, wire_removal_r.
+  rewrite <- (@stack_compose_distr 0 1 1 0 0 0).
+  rewrite X_1_n_state_b.
+  rewrite (X_0_1_to_state_b' _ (b)). 
+  2: {
+    (destruct b, c; cbn); rewrite 1?Rplus_0_r; try reflexivity.
+    rewrite Cexp_0, <- Cexp_2PI; f_equal; lra.
+  }
+  rewrite nwire_removal_l, <- (@stack_compose_distr 0 1 1 0 0 1).
+  rewrite wire_removal_r, nwire_removal_l.
+  rewrite Z_1_n_state_b.
+  rewrite Cexp_0, Tauto.if_same, zx_scale_1_l.
+  cbn [Nat.add n_stack].
+  rewrite cast_id.
+  rewrite stack_empty_r_fwd, cast_id.
+  rewrite (@stack_assoc_fwd 0 0 0 1 1 1), cast_id.
+  rewrite <- (@stack_compose_distr 0 1 1 0 2 1).
+  rewrite X_2_1_states_b, Rplus_0_l.
+  erewrite (X_0_1_to_state_b) by reflexivity.
+  distribute_zxscale.
+  rewrite wire_removal_r.
+  apply zx_scale_simplify_eq_l.
+  C_field.
+Qed.
+
+Theorem bi_algebra_rule_Z_over_X : 
+  Z 1 2 0 ↕ — ⟷ (— ↕ X 2 1 0) ⟷ ⨉
+  ⟷ (Z 1 2 0 ↕ —) ⟷ (— ↕ X 2 1 0) ∝[/ (√2)%R]
+  X 1 2 0 ↕ — ⟷ (— ↕ Z 2 1 0).
+Proof. colorswap_of bi_algebra_rule_X_over_Z. Qed.
 
 Theorem hopf_rule_Z_X : 
   (Z_Spider 1 2 0) ⟷ (X_Spider 2 1 0) ∝[/C2] (Z_Spider 1 0 0) ⟷ (X_Spider 0 1 0).
@@ -204,3 +311,87 @@ Theorem hopf_rule_X_Z :
 Proof.
   colorswap_of hopf_rule_Z_X.
 Qed.
+
+Theorem hopf_rule_Z_X_vert n m top bot α β prf : 
+  Z n (top + 2) α ↕ n_wire bot ⟷
+  cast _ _ prf eq_refl 
+    (n_wire top ↕ X (2 + bot) m β) ∝[/ C2] Z n top α ↕ X bot m β.
+Proof.
+  rewrite <- (Rplus_0_l α), <- (dominated_Z_spider_fusion_bot_left _ 0).
+  rewrite <- (Rplus_0_l β), <- (dominated_X_spider_fusion_top_right _ 0).
+  rewrite stack_nwire_distribute_l.
+  rewrite stack_assoc_back_fwd, cast_compose_l, cast_contract_eq'.
+  rewrite cast_compose_distribute, cast_id.
+  rewrite <- compose_assoc.
+  rewrite <- stack_nwire_distribute_r.
+  rewrite compose_assoc, <- stack_nwire_distribute_l.
+  zxrewrite hopf_rule_Z_X.
+  rewrite stack_nwire_distribute_l, <- compose_assoc.
+  rewrite stack_nwire_distribute_r.
+  rewrite compose_assoc.
+  rewrite stack_assoc_fwd, cast_contract_eq'.
+  rewrite cast_compose_eq_mid_join.
+  rewrite <- stack_nwire_distribute_l.
+  rewrite dominated_Z_spider_fusion_bot_left,
+    dominated_X_spider_fusion_top_right.
+  cbn.
+  rewrite cast_stack_distribute, cast_id.
+  rewrite <- stack_compose_distr.
+  rewrite cast_Z_contract_r, nwire_removal_r, cast_Z.
+  rewrite nwire_removal_l.
+  zxrefl.
+  Unshelve.
+  all: lia.
+Qed.
+
+
+Theorem hopf_rule_X_Z_vert n m top bot α β prf : 
+  X n (top + 2) α ↕ n_wire bot ⟷
+  cast _ _ prf eq_refl 
+    (n_wire top ↕ Z (2 + bot) m β) ∝[/ C2] X n top α ↕ Z bot m β.
+Proof.
+  colorswap_of (hopf_rule_Z_X_vert n m top bot α β prf).
+Qed.
+
+Lemma hopf_rule_Z_X_mod n m o α β : 
+  Z n m α ⟷ X m o β ∝[/ C2 ^ (m / 2)] 
+  Z n (m mod 2) α ⟷ X (m mod 2) o β.
+Proof.
+  induction (eq_sym (Nat.div_mod_eq m 2)).
+  pose proof (Nat.mod_upper_bound m 2 ltac:(easy)) as Hmod.
+  revert Hmod.
+  generalize (m / 2)%nat (m mod 2).
+  intros mdiv mmod Hmod.
+  rewrite (Nat.mul_comm 2 mdiv), Nat.div_add_l by lia.
+  rewrite Nat.div_small, Nat.add_0_r by lia.
+  rewrite Nat.add_comm, Nat.mod_add by lia.
+  rewrite Nat.mod_small by lia.
+  induction mdiv.
+  - cbn.
+    rewrite Nat.add_0_r.
+    zxrefl.
+  - rewrite Nat.mul_succ_l, Nat.add_assoc.
+    rewrite <- (Rplus_0_l α).
+    rewrite <- (dominated_Z_spider_fusion_bot_left _ 0).
+    rewrite <- (Rplus_0_l β).
+    rewrite <- (dominated_X_spider_fusion_bot_right _ 0).
+    rewrite <- compose_assoc, (compose_assoc (Z _ _ _)), 
+      <- stack_nwire_distribute_l.
+    zxrewrite hopf_rule_Z_X.
+    rewrite stack_nwire_distribute_l.
+    rewrite <- compose_assoc.
+    rewrite dominated_Z_spider_fusion_bot_left.
+    rewrite compose_assoc.
+    rewrite dominated_X_spider_fusion_bot_right.
+    rewrite Nat.add_0_r, 2 Rplus_0_l.
+    zxrewrite IHmdiv.
+    zxrefl.
+Qed.
+
+Lemma hopf_rule_X_Z_mod n m o α β : 
+  X n m α ⟷ Z m o β ∝[/ C2 ^ (m / 2)] 
+  X n (m mod 2) α ⟷ Z (m mod 2) o β.
+Proof.
+  colorswap_of (hopf_rule_Z_X_mod n m o α β).
+Qed.
+  
