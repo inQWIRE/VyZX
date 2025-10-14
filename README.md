@@ -29,6 +29,14 @@ Finally, build VyZX:
 make
 ```
 
+## Using the visualizer
+
+To use the integrated visualization, two things will need to be installed and you must be using VSCode.
+
+First, install [rocq-lsp](https://github.com/ejgallego/rocq-lsp) and install the associated VSCode extension.
+
+Then install our VSCode extension, [ZXViz](https://marketplace.visualstudio.com/items?itemName=inQWIRE.vizx). It can also be built from source following the instructions [here](https://github.com/inQWIRE/ViZX/).
+
 ## Contributing
 
 To contribute please make sure you use our validator hooks.
