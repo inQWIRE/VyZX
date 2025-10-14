@@ -51,6 +51,15 @@ Proof.
   [lca | C_field; lca].
 Qed.
 
+Lemma state_b_defn'' b : 
+  state_b b ∝= / √ 2 .* X 0 1 (if b then PI else 0).
+Proof.
+  rewrite state_b_defn'.
+  rewrite gadget_is_scaled_empty, const_of_zx_invsqrt2.
+  distribute_zxscale.
+  now rewrite stack_empty_l.
+Qed.
+
 Lemma state_plus_defn : 
   state_plus ∝= /√2 .* Z 0 1 0. 
 Proof.

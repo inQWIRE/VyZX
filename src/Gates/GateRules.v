@@ -289,6 +289,15 @@ Proof.
   easy.
 Qed.
 
+Lemma cnot_is_swapp_notc : _CNOT_ ∝= ⨉ ⟷ _NOTC_ ⟷ ⨉. 
+Proof.
+  rewrite notc_is_swapp_cnot.
+  rewrite compose_assoc, (compose_assoc _ ⨉).
+  rewrite swap_compose, nwire_removal_r.
+  rewrite <- compose_assoc.
+  now rewrite swap_compose, nwire_removal_l.
+Qed.
+
 Lemma notc_r_is_swapp_cnot_r : _NOTC_R ∝= ⨉ ⟷ _CNOT_R ⟷ ⨉. 
 Proof.
   rewrite <- cnot_is_cnot_r.

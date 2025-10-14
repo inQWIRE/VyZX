@@ -42,3 +42,13 @@ Definition state_of_vector {n} (v : Vector (2^n)) : ZX 0 n :=
 Definition zx_of_matrix {n m} (A : Matrix (2^m) (2^n)) : ZX n m :=
   state_to_proc (state_of_vector 
     (@Mmult _ (2^(n+n)) _ (I (2^n) ⊗ A) (⟦ n_cap n ⟧))).
+
+(* An alternate definition of a ZX-diagram, whose semantic is 
+  a given matrix, which does not use the Choi-Jamiolchosky isomorphism *)
+Definition zx_of_matrix' {n m} (A : Matrix (2^m) (2^n)) : ZX n m :=
+  zx_sum (fun i => 
+    zx_sum (fun j => 
+    A i j .* 
+    ((f_to_state n (nat_to_funbool n j)) ⊤ ⟷ 
+    f_to_state m (nat_to_funbool m i))
+    )%ZX (2^n)) (2^m).

@@ -245,6 +245,59 @@ Proof.
 Qed.
 
 
+Require Import ZXpermFacts.
+
+
+Lemma zx_of_matrix'_semantics {n m} (A : Matrix (2^m) (2^n)) : WF_Matrix A -> 
+  ⟦ zx_of_matrix' A ⟧ = A.
+Proof.
+  intros HA.
+  prep_matrix_equivalence.
+  unfold zx_of_matrix'.
+  rewrite zx_sum_semantics.
+  erewrite big_sum_eq_bounded. 2:{
+    intros i Hi.
+    rewrite zx_sum_semantics.
+    eapply big_sum_eq_bounded.
+    intros j Hj.
+    rewrite zx_scale_semantics.
+    rewrite zx_compose_spec, semantics_transpose_comm.
+    rewrite 2 f_to_state_semantics, <- 2 basis_f_to_vec_alt by easy.
+    rewrite 2 basis_vector_eq_e_i by easy.
+    reflexivity.
+  }
+  intros i' j' Hi' Hj'.
+  rewrite Msum_Csum.
+  erewrite big_sum_eq_bounded. 2:{
+    intros i Hi.
+    rewrite Msum_Csum.
+    erewrite big_sum_eq_bounded. 2:{
+      intros j Hj.
+      unfold scale.
+      cbn.
+      unfold Matrix.transpose.
+      rewrite Cplus_0_l.
+      unfold e_i.
+      cbn.
+      replace_bool_lia (i' <? 2 ^ m) true.
+      replace_bool_lia (j' <? 2 ^ n) true.
+      rewrite 4 andb_true_r.
+      rewrite Kronecker.if_mult_and, Kronecker.if_mult_dist_l.
+      rewrite andb_comm, andb_if, (Nat.eqb_sym j'), (Nat.eqb_sym i').
+      reflexivity.
+    }
+    etransitivity; 
+    [refine (big_sum_if_eq _ _ j')|].
+    replace_bool_lia (j' <? 2 ^ n) true.
+    reflexivity.
+  }
+  etransitivity; 
+  [refine (big_sum_if_eq _ _ i')|].
+  replace_bool_lia (i' <? 2 ^ m) true.
+  reflexivity.
+Qed.
+
+
 Lemma X_0_1_decomp α : 
 	X 0 1 α ∝= (1 + Cexp α)/√2 .* state_0 .+ 
 		(1 - Cexp α)/√2 .* state_1.
@@ -264,4 +317,80 @@ Proof.
 	rewrite zx_plus_semantics, zx_scale_semantics, 
 		state_0_semantics, state_1_semantics.
 	by_cell; cbn; lca.
+Qed.
+
+
+Lemma wire_decomp : — ∝= state_0 ⊤ ⟷ state_0 .+ 
+  state_1 ⊤ ⟷ state_1.
+Proof.
+  prep_matrix_equivalence.
+  rewrite zx_plus_semantics, 2 zx_compose_spec, 2 semantics_transpose_comm, 
+    state_0_semantics, state_1_semantics.
+  by_cell; lca.
+Qed.
+
+Lemma X_0_2_decomp α : 
+  X 0 2 α ∝= (C1 + Cexp α) / C2 .* (state_0 ↕ state_0 .+ state_1 ↕ state_1) .+ 
+    (C1 - Cexp α) / C2 .* (state_0 ↕ state_1 .+ state_1 ↕ state_0).
+Proof.
+  rewrite X_to_Z, compose_empty_l.
+  cbn.
+  rewrite stack_empty_r_fwd, cast_id.
+  prep_matrix_equivalence.
+  rewrite zx_plus_semantics, 2 zx_scale_semantics, 2 zx_plus_semantics.
+  rewrite 4 (zx_stack_spec 0 1 0 1), state_0_semantics, state_1_semantics.
+  by_cell; 
+  lazy -[Cplus Cminus Cmult Cdiv Cinv RtoC sqrt 
+    Q2R IZR Cexp PI sin cos Copp];
+    unfold Cdiv; Csimpl; group_radicals; try lca.
+Qed.
+
+
+Lemma Z_2_1_state_b_bot b α : 
+  — ↕ state_b b ⟷ Z 2 1 α ∝= 
+  (if b then Cexp α else C1) .* ((state_b b) ⊤ ⟷ state_b b).
+Proof.
+  rewrite wire_decomp.
+  rewrite stack_plus_distr_l, compose_plus_distr_l.
+  rewrite <- (compose_empty_l (state_b b)) at 1 2.
+  rewrite 2 stack_compose_distr.
+  rewrite 2 compose_assoc.
+  change state_0 with (state_b false).
+  change state_1 with (state_b true).
+  rewrite 2 Z_2_1_states_b.
+  cbn.
+  rewrite 2 stack_empty_r_fwd, 2 cast_id.
+  distribute_zxscale.
+  destruct b; rewrite zx_scale_0_l, 1?zx_plus_0_r, 1?zx_plus_0_l;
+  reflexivity.
+Qed.
+
+Lemma Z_2_1_state_b_top b α : 
+  state_b b ↕ — ⟷ Z 2 1 α ∝= 
+  (if b then Cexp α else C1) .* ((state_b b) ⊤ ⟷ state_b b).
+Proof.
+  rewrite stack_comm, zx_comm_0_l, cast_id, nwire_removal_l,
+    compose_assoc, Z_zx_comm_absorbtion_left.
+  apply Z_2_1_state_b_bot.
+Qed.
+
+Lemma X_2_1_state_b_bot b α : 
+  — ↕ state_b b ⟷ X 2 1 α ∝= 
+  (/ √ 2) .* X 1 1 (if b then PI + α else α).
+Proof.
+  rewrite state_b_defn', gadget_is_scaled_empty, const_of_zx_invsqrt2.
+  distribute_zxscale.
+  rewrite stack_empty_l.
+  rewrite zx_scale_stack_distr_r, zx_scale_compose_distr_l.
+  rewrite wire_to_n_wire, dominated_X_spider_fusion_bot_right.
+  now destruct b; rewrite ?Rplus_0_l.
+Qed.
+
+Lemma X_2_1_state_b_top b α : 
+  state_b b ↕ — ⟷ X 2 1 α ∝= 
+  (/ √ 2) .* X 1 1 (if b then PI + α else α).
+Proof.
+  rewrite stack_comm, zx_comm_0_l, cast_id, nwire_removal_l,
+    compose_assoc, X_zx_comm_absorbtion_left.
+  apply X_2_1_state_b_bot.
 Qed.

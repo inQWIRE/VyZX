@@ -289,6 +289,16 @@ Proof.
   now subst; rewrite !cast_id_eq.
 Qed.
 
+Lemma cast_compose_mid_distribute {n n' m o o' : nat} 
+  (m' : nat) (prfm : m' = m) (zx0 : ZX n m) (zx1 : ZX m o) 
+  prfn prfo : 
+  cast n' o' prfn prfo (zx0 ⟷ zx1) =
+  cast n' m' prfn prfm zx0 ⟷ cast m' o' prfm prfo zx1.
+Proof.
+  subst.
+  reflexivity.
+Qed.
+
 Lemma cast_compose_l :
   forall {n n' m m' o} prfn prfm (zx0 : ZX n m) (zx1 : ZX m' o),
     cast n' m' prfn prfm zx0 ⟷ zx1 =
