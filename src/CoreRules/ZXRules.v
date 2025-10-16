@@ -8,10 +8,10 @@ Require Export CoreRules.XRules.
 
 (** Rules relating Z and X spiders *)
 
-Theorem X_state_copy_phase_0 : forall (r n : nat) prfn prfm,
+Theorem X_state_copy_phase_0 : forall (r n : nat),
 	(X 0 1 (r * PI) ⟷ Z 1 n 0) 
 	∝[(√2 * (/√2 ^ n))%R]
-	cast 0%nat n prfn prfm (n ⇑ (X 0 1 (r * PI))).
+	cast' 0%nat n (Nat.mul_0_r n) (Nat.mul_1_r n) (n ⇑ (X 0 1 (r * PI))).
 Proof.
 	intros.
 	assert (X_state_copy_ind : (X 0 1 (r * PI) ⟷ Z 1 2 0) ∝[/(√2)%R]
@@ -80,20 +80,20 @@ Proof.
 		all: lia.
 Qed.
 
-Theorem Z_state_copy_phase_0 : forall (r n : nat) prfn prfm,
+Theorem Z_state_copy_phase_0 : forall (r n : nat),
 	(Z 0 1 (r * PI) ⟷ X 1 n 0) 
 	∝[(√2 * (/√2 ^ n))%R]
-	cast 0%nat n prfn prfm (n ⇑ (Z 0 1 (r * PI))).
+	cast' 0%nat n (Nat.mul_0_r n) (Nat.mul_1_r n) (n ⇑ (Z 0 1 (r * PI))).
 Proof.
-	intros r n prfn prfm.
-	colorswap_of (X_state_copy_phase_0 r n prfn prfm).
+	intros r n.
+	colorswap_of (X_state_copy_phase_0 r n).
 Qed.
 
-Theorem X_state_copy : forall (r n : nat) (a : R) prfn prfm,
+Theorem X_state_copy : forall (r n : nat) (a : R),
 	(X 0 1 (r * PI) ⟷ Z 1 n a) 
 	∝[((/√2 ^ S n))%R *
 	(((C1 + Cexp (r * PI)) * (C1 - Cexp a) + 2 * Cexp a))]
-	cast 0%nat n prfn prfm (n ⇑ (X 0 1 (r * PI))).
+	cast' 0%nat n (Nat.mul_0_r n) (Nat.mul_1_r n) (n ⇑ (X 0 1 (r * PI))).
 Proof.
 	assert (X_Z_phase_value' : forall (a b : R),
 		(⟦ X 0 1 a ⟷ Z 1 0 b ⟧ = 
@@ -106,7 +106,7 @@ Proof.
 		C_field_simplify; [|nonzero].
 		lca.
 	}
-	intros r n a prfn prfm.
+	intros r n a.
 	replace (((/√2 ^ S n))%R * (((C1 + Cexp (r * PI)) * (C1 - Cexp a) + 2 * Cexp a))) 
 		with  (((/√2 ^ n))%R * (((C1 + Cexp (r * PI)) * (C1 - Cexp a) + 2 * Cexp a) / √2))
 		by (simpl; unfold Cdiv; rewrite Rinv_mult, Cmult_assoc, Cmult_comm, 
@@ -117,14 +117,11 @@ Proof.
 	zxrewrite X_state_copy_phase_0.
 	simpl.
 	rewrite cast_compose_l.
-	erewrite <- (cast_stack_r (nBot' := n * 1) (mBot' := n) 
-		_ _ _ _ (Z 1 0 a) (n_wire n)).
+	rewrite (cast_stack_r_back (nBot' := n * 1) (mBot' := n) _ _ 
+		(Z 1 0 a) (n_wire n)).
 	rewrite <- (stack_compose_distr (X 0 1 _) (Z 1 0 a) (n ⇑ X 0 1 _)
 		($ n * 1, n ::: n_wire n $)).
-	erewrite (cast_stack_distribute (n':=0) (m' := 0) (o' := 0) (p' := n)
-		_ _ _ _ _ _ (X 0 1 (r * PI) ⟷ Z 1 0 a)
-		((n ⇑ X 0 1 (r * PI) ⟷ $ n * 1, n ::: n_wire n $))).
-	rewrite cast_id.
+	rewrite (@cast_stack_r_back 0 0 (n * 0) 0 (n) n).
 	zxsymmetry.
 	rewrite <- stack_empty_l.
 	erewrite (proportional_by_trans_iff_l _ _ _ 1).
@@ -178,23 +175,21 @@ Proof.
 		rewrite cast_compose_r, nwire_removal_r.
 		rewrite 2!cast_contract.
 		cast_irrelevance.
-	Unshelve.
-	all: lia.
 Qed.
 
-Theorem Z_state_copy : forall (r n : nat) (a : R) prfn prfm,
+Theorem Z_state_copy : forall (r n : nat) (a : R),
 	(Z 0 1 (r * PI) ⟷ X 1 n a) 
 	∝[((/√2 ^ S n))%R *
 	(((C1 + Cexp (r * PI)) * (C1 - Cexp a) + 2 * Cexp a))]
-	cast 0%nat n prfn prfm (n ⇑ (Z 0 1 (r * PI))).
+	cast' 0%nat n (Nat.mul_0_r n) (Nat.mul_1_r n) (n ⇑ (Z 0 1 (r * PI))).
 Proof.
-	intros r n a prfn prfm.
-	colorswap_of (X_state_copy r n a prfn prfm).
+	intros r n a.
+	colorswap_of (X_state_copy r n a).
 Qed.
 
-Theorem X_state_pi_copy : forall n prfn prfm,
+Theorem X_state_pi_copy : forall n,
 	X 0 1 PI ⟷ Z 1 n 0 ∝[(√2 * (/√2 ^ n))%R]
-	cast 0 n prfn prfm (n ⇑ (X 0 1 PI)).
+	cast' 0 n (Nat.mul_0_r n) (Nat.mul_1_r n) (n ⇑ (X 0 1 PI)).
 Proof.
 	intros.
 	replace (PI)%R with (1 * PI)%R by lra.
@@ -204,9 +199,9 @@ Proof.
 	zxrefl.
 Qed.
 
-Theorem X_state_0_copy : forall (n : nat) prfn prfm,
+Theorem X_state_0_copy : forall (n : nat),
 	X 0 1 0 ⟷ Z 1 n 0 ∝[(√2 * (/√2 ^ n))%R]
-	cast 0 n prfn prfm (n ⇑ (X 0 1 0)).
+	cast' 0 n (Nat.mul_0_r n) (Nat.mul_1_r n) (n ⇑ (X 0 1 0)).
 Proof.
 	intros.
 	replace (0)%R with (0 * PI)%R at 1 by lra.
@@ -216,9 +211,9 @@ Proof.
 	zxrefl.
 Qed.
 
-Theorem Z_state_pi_copy : forall (n : nat) prfn prfm,
+Theorem Z_state_pi_copy : forall (n : nat),
 	Z 0 1 PI ⟷ X 1 n 0 ∝[(√2 * (/√2 ^ n))%R]
-	cast 0 n prfn prfm (n ⇑ (Z 0 1 PI)).
+	cast' 0 n (Nat.mul_0_r n) (Nat.mul_1_r n) (n ⇑ (Z 0 1 PI)).
 Proof.
 	intros.
 	replace (PI)%R with (INR 1 * PI)%R by (simpl; lra).
@@ -226,9 +221,9 @@ Proof.
 	zxrefl.
 Qed.
 
-Theorem Z_state_0_copy : forall (n : nat) prfn prfm,
+Theorem Z_state_0_copy : forall (n : nat),
 	Z 0 1 0 ⟷ X 1 n 0 ∝[(√2 * (/√2 ^ n))%R]
-	cast 0 n prfn prfm (n ⇑ (Z 0 1 0)).
+	cast' 0 n (Nat.mul_0_r n) (Nat.mul_1_r n) (n ⇑ (Z 0 1 0)).
 Proof.
 	intros.
 	replace (0)%R with (0 * PI)%R at 1 by lra.

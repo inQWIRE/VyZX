@@ -67,27 +67,19 @@ Qed.
 Lemma n_stack_1_n_stack : forall {n} (zx : ZX 1 1), (n ↑ zx) ∝= (cast _ _ (eq_sym (Nat.mul_1_r _)) (eq_sym (Nat.mul_1_r _)) (n ⇑ zx)).
 Proof.
   intros.
-  unfold eq_rect.
-  destruct (Nat.mul_1_r n).
   induction n.
   - reflexivity.
   - simpl.
     rewrite IHn.
+    rewrite cast_stack_r.
     reflexivity.
 Qed.
 
 Lemma n_stack_n_stack_1 : forall {n} (zx : ZX 1 1), (n ⇑ zx) ∝= (cast _ _ (Nat.mul_1_r _) (Nat.mul_1_r _) (n ↑ zx)).
 Proof.
   intros.
-  symmetry.
-  unfold eq_sym.
-  unfold eq_rect.
-  destruct (Nat.mul_1_r n).
-  induction n.
-  - reflexivity.
-  - simpl.
-    rewrite IHn.
-    reflexivity.
+  rewrite n_stack_1_n_stack.
+  now rewrite cast_contract_eq, cast_id_eq.
 Qed. 
 
 Lemma n_stack1_compose : forall (zx0 zx1 : ZX 1 1) {n}, 
@@ -221,13 +213,9 @@ Qed.
 Lemma Z_spider_angle_2pi : forall {nIn nOut} α k, Z_Spider nIn nOut α ∝= (Z_Spider nIn nOut (α + IZR (2 * k) * PI)).
 Proof.
   intros.
-  hnf.
-  unfold ZX_semantics, Z_semantics.
-  rewrite Cexp_add.
-  rewrite Cexp_2nPI.
-  rewrite Cmult_1_r.
-  Msimpl.
-  reflexivity.
+  apply Z_phase_simplify.
+  rewrite Cexp_add, Cexp_2nPI.
+  lca.
 Qed.
 
 Lemma X_spider_angle_2pi : forall {nIn nOut} α k, X_Spider nIn nOut α ∝= (X_Spider nIn nOut (α + IZR (2 * k) * PI)).
