@@ -8,9 +8,9 @@ Local Open Scope ZX_scope.
 
 Lemma stack_assoc : 
 forall {n0 n1 n2 m0 m1 m2} 
-	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2) prfn prfm,
+	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2),
 	(zx0 ↕ zx1) ↕ zx2 ∝= 
-		cast _ _ prfn prfm (zx0 ↕ (zx1 ↕ zx2)).
+		cast' _ _ (Nat.add_assoc _ _ _) (Nat.add_assoc _ _ _) (zx0 ↕ (zx1 ↕ zx2)).
 Proof.
 	intros.
 	unfold proportional_by_1.
@@ -22,9 +22,9 @@ Qed.
 
 Lemma stack_assoc_back : 
 forall {n0 n1 n2 m0 m1 m2}
-	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2) prfn prfm,
+	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2),
 	zx0 ↕ (zx1 ↕ zx2) ∝=
-		cast (n0 + (n1 + n2)) (m0 + (m1 + m2)) prfn prfm
+		cast (n0 + (n1 + n2)) (m0 + (m1 + m2)) (Nat.add_assoc _ _ _) (Nat.add_assoc _ _ _)
 				((zx0 ↕ zx1) ↕ zx2).
 Proof.
 	intros.
