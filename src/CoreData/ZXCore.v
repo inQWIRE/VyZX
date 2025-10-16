@@ -44,9 +44,11 @@ Proof.
 Defined.
 
 
+(* @nocheck name *)
 Definition False_rect' {A : Type} (f : False) : A :=
 	StrictProp.sEmpty_rect (fun _ => A) (False_sind _ f).
 
+(* @nocheck name *)
 Lemma False_rect'_irrel {A} (f f' : False) : 
 	@False_rect' A f = False_rect' f'.
 Proof.

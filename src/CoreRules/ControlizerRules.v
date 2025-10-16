@@ -137,6 +137,7 @@ Local Ltac simpl_mult :=
     unfold Mmult at 1
   end.
 
+(* @nocheck name *)
 Lemma ZX_semantics_mor {n m} (zx zx' : ZX n m) : zx ∝= zx' -> 
   ⟦ zx ⟧ = ⟦ zx' ⟧.
 Proof.
