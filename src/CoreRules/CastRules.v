@@ -9,6 +9,7 @@ Open Scope ZX_scope.
 Lemma cast_id_eq {n m} prfn prfm (zx : ZX n m) : 
   cast n m prfn prfm zx = zx.
 Proof.
+  rewrite fn_cast_eq_cast_core.
   rewrite (UIP_nat m _ _ eq_refl), (UIP_nat _ _ _ eq_refl).
   reflexivity.
 Qed.
@@ -144,38 +145,82 @@ Tactic Notation "simpl_casts_in" hyp(H) :=
 
 
 Lemma cast_stack_l_eq {nTop nTop' mTop mTop' nBot mBot} 
-  prfnTop prfmTop prfn prfm (zxTop : ZX nTop mTop) (zxBot : ZX nBot mBot) : 
+  prfnTop prfmTop (zxTop : ZX nTop mTop) (zxBot : ZX nBot mBot) : 
   (cast nTop' mTop' prfnTop prfmTop zxTop) ↕ zxBot =
-  cast (nTop' + nBot) (mTop' + mBot) prfn prfm (zxTop ↕ zxBot).
+  cast (nTop' + nBot) (mTop' + mBot) 
+    (f_equal (fun x => x + nBot)%nat prfnTop) 
+    (f_equal (fun x => x + mBot)%nat prfmTop) (zxTop ↕ zxBot).
 Proof.
   now subst; rewrite !cast_id_eq.
 Qed.
 
-Lemma cast_stack_l : forall {nTop nTop' mTop mTop' nBot mBot} prfnTop prfmTop prfn prfm
+Lemma cast_stack_l : forall {nTop nTop' mTop mTop' nBot mBot} prfnTop prfmTop
                           (zxTop : ZX nTop mTop) (zxBot : ZX nBot mBot),
   (cast nTop' mTop' prfnTop prfmTop zxTop) ↕ zxBot ∝= 
-  cast (nTop' + nBot) (mTop' + mBot) prfn prfm (zxTop ↕ zxBot).
+  cast (nTop' + nBot) (mTop' + mBot) 
+    (f_equal (fun x => x + nBot)%nat prfnTop) 
+    (f_equal (fun x => x + mBot)%nat prfmTop) (zxTop ↕ zxBot).
 Proof.
   intros.
   now subst; rewrite !cast_id_eq.
 Qed.
 
-Lemma cast_stack_r_eq : forall {nTop mTop nBot nBot' mBot mBot'} prfnBot prfmBot prfn prfm
+Lemma cast_stack_l_eq_back {nTop nTop' mTop mTop' nBot mBot} 
+  prfn prfm (zxTop : ZX nTop mTop) (zxBot : ZX nBot mBot) : 
+  cast (nTop' + nBot) (mTop' + mBot) prfn prfm (zxTop ↕ zxBot)
+    = (cast nTop' mTop' (proj1 (Nat.add_cancel_r _ _ _) prfn)
+    (proj1 (Nat.add_cancel_r _ _ _) prfm) zxTop) ↕ zxBot.
+Proof.
+  now rewrite cast_stack_l_eq.
+Qed.
+
+Lemma cast_stack_l_back {nTop nTop' mTop mTop' nBot mBot} 
+  prfn prfm (zxTop : ZX nTop mTop) (zxBot : ZX nBot mBot) : 
+  cast (nTop' + nBot) (mTop' + mBot) prfn prfm (zxTop ↕ zxBot)
+    ∝= (cast nTop' mTop' (proj1 (Nat.add_cancel_r _ _ _) prfn)
+    (proj1 (Nat.add_cancel_r _ _ _) prfm) zxTop) ↕ zxBot.
+Proof.
+  now rewrite cast_stack_l_eq.
+Qed.
+
+Lemma cast_stack_r_eq : forall {nTop mTop nBot nBot' mBot mBot'} prfnBot prfmBot 
                           (zxTop : ZX nTop mTop) (zxBot : ZX nBot mBot),
   zxTop ↕ (cast nBot' mBot' prfnBot prfmBot zxBot) = 
-  cast (nTop + nBot') (mTop + mBot') prfn prfm (zxTop ↕ zxBot).
+  cast (nTop + nBot') (mTop + mBot') (f_equal (Nat.add nTop) prfnBot) 
+    (f_equal (Nat.add mTop) prfmBot) (zxTop ↕ zxBot).
 Proof.
   intros.
   now subst; rewrite !cast_id_eq.
 Qed.
 
-Lemma cast_stack_r : forall {nTop mTop nBot nBot' mBot mBot'} prfnBot prfmBot prfn prfm
+Lemma cast_stack_r : forall {nTop mTop nBot nBot' mBot mBot'} prfnBot prfmBot 
                           (zxTop : ZX nTop mTop) (zxBot : ZX nBot mBot),
-  zxTop ↕ (cast nBot' mBot' prfnBot prfmBot zxBot) ∝=
-  cast (nTop + nBot') (mTop + mBot') prfn prfm (zxTop ↕ zxBot).
+  zxTop ↕ (cast nBot' mBot' prfnBot prfmBot zxBot) ∝= 
+  cast (nTop + nBot') (mTop + mBot') (f_equal (Nat.add nTop) prfnBot) 
+    (f_equal (Nat.add mTop) prfmBot) (zxTop ↕ zxBot).
 Proof.
   intros.
   now subst; rewrite !cast_id_eq.
+Qed.
+
+Lemma cast_stack_r_eq_back : forall {nTop mTop nBot nBot' mBot mBot'} prfn prfm 
+                          (zxTop : ZX nTop mTop) (zxBot : ZX nBot mBot),
+  cast (nTop + nBot') (mTop + mBot') prfn prfm (zxTop ↕ zxBot) = 
+  zxTop ↕ (cast nBot' mBot' (proj1 (Nat.add_cancel_l _ _ _) prfn)
+    (proj1 (Nat.add_cancel_l _ _ _) prfm) zxBot).
+Proof.
+  intros.
+  now rewrite cast_stack_r_eq.
+Qed.
+
+Lemma cast_stack_r_back : forall {nTop mTop nBot nBot' mBot mBot'} prfn prfm 
+                          (zxTop : ZX nTop mTop) (zxBot : ZX nBot mBot),
+  cast (nTop + nBot') (mTop + mBot') prfn prfm (zxTop ↕ zxBot) ∝= 
+  zxTop ↕ (cast nBot' mBot' (proj1 (Nat.add_cancel_l _ _ _) prfn)
+    (proj1 (Nat.add_cancel_l _ _ _) prfm) zxBot).
+Proof.
+  intros.
+  now rewrite cast_stack_r_eq.
 Qed.
 
 Lemma cast_stack_distribute_eq : 
@@ -203,11 +248,12 @@ Qed.
 
 
 Lemma cast_contract_eq : 
-  forall {n0 m0 n1 m1 n2 m2} prfn01 prfm01 prfn12 prfm12 prfn prfm (zx : ZX n0 m0),
+  forall {n0 m0 n1 m1 n2 m2} prfn01 prfm01 prfn12 prfm12 (zx : ZX n0 m0),
     cast n2 m2 prfn12 prfm12 
       (cast n1 m1 prfn01 prfm01
         zx) =
-    cast n2 m2 prfn prfm zx.
+    cast n2 m2 (eq_trans prfn12 prfn01) 
+      (eq_trans prfm12 prfm01) zx.
 Proof.
   intros.
   now subst; rewrite !cast_id_eq.
@@ -215,11 +261,12 @@ Qed.
 
 
 Lemma cast_contract : 
-  forall {n0 m0 n1 m1 n2 m2} prfn01 prfm01 prfn12 prfm12 prfn prfm (zx : ZX n0 m0),
+  forall {n0 m0 n1 m1 n2 m2} prfn01 prfm01 prfn12 prfm12 (zx : ZX n0 m0),
     cast n2 m2 prfn12 prfm12 
       (cast n1 m1 prfn01 prfm01
         zx) ∝=
-    cast n2 m2 prfn prfm zx.
+    cast n2 m2 (eq_trans prfn12 prfn01) 
+      (eq_trans prfm12 prfm01) zx.
 Proof.
   intros.
   now subst; rewrite !cast_id_eq.
@@ -229,38 +276,41 @@ Qed.
 #[export] Hint Rewrite @cast_contract : cast_simpl_db.
 
 Lemma cast_symm :
-  forall {n0 m0 n1 m1} prfn prfm prfn' prfm' (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
+  forall {n0 m0 n1 m1} prfn prfm (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
     cast n1 m1 prfn prfm zx0 ∝ zx1 <->
-    zx0 ∝ cast n0 m0 prfn' prfm' zx1.
+    zx0 ∝ cast' n0 m0 prfn prfm zx1.
 Proof.
   intros.
   now subst; rewrite !cast_id_eq.
 Qed.
 
 
-Lemma cast_contract_l_eq : forall {n m n0 m0 n1 m1} prfn0 prfm0 prfn1 prfm1 prfn prfm
+Lemma cast_contract_l_eq : forall {n m n0 m0 n1 m1} prfn0 prfm0 prfn1 prfm1
                                        (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
   cast n m prfn0 prfm0 zx0 ∝= cast n m prfn1 prfm1 zx1 <->
-  cast n1 m1 prfn prfm zx0 ∝= zx1.
+  cast n1 m1 (eq_trans (eq_sym prfn1) prfn0)
+    (eq_trans (eq_sym prfm1) prfm0) zx0 ∝= zx1.
 Proof.
   intros.
   now subst; rewrite !cast_id_eq.
 Qed.
 
-Lemma cast_contract_l_by : forall {n m n0 m0 n1 m1} prfn0 prfm0 prfn1 prfm1 prfn prfm
+Lemma cast_contract_l_by : forall {n m n0 m0 n1 m1} prfn0 prfm0 prfn1 prfm1
                                        (zx0 : ZX n0 m0) (zx1 : ZX n1 m1) c,
   cast n m prfn0 prfm0 zx0 ∝[c] cast n m prfn1 prfm1 zx1 <->
-  cast n1 m1 prfn prfm zx0
+  cast n1 m1 (eq_trans (eq_sym prfn1) prfn0)
+    (eq_trans (eq_sym prfm1) prfm0) zx0
     ∝[c] zx1.
 Proof.
   intros.
   now subst; rewrite !cast_id_eq.
 Qed.
 
-Lemma cast_contract_l : forall {n m n0 m0 n1 m1} prfn0 prfm0 prfn1 prfm1 prfn prfm
+Lemma cast_contract_l : forall {n m n0 m0 n1 m1} prfn0 prfm0 prfn1 prfm1
                                        (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
   cast n m prfn0 prfm0 zx0 ∝ cast n m prfn1 prfm1 zx1 <->
-  cast n1 m1 prfn prfm zx0
+  cast n1 m1 (eq_trans (eq_sym prfn1) prfn0)
+    (eq_trans (eq_sym prfm1) prfm0) zx0
     ∝ zx1.
 Proof.
   intros.
@@ -271,10 +321,11 @@ Qed.
   @cast_contract_l : cast_simpl_db.
 
 
-Lemma cast_contract_r : forall {n m n0 m0 n1 m1} prfn0 prfm0 prfn1 prfm1 prfn prfm
+Lemma cast_contract_r : forall {n m n0 m0 n1 m1} prfn0 prfm0 prfn1 prfm1
                                        (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
   cast n m prfn0 prfm0 zx0 ∝ cast n m prfn1 prfm1 zx1 <->
-  zx0 ∝ cast n0 m0 prfn prfm zx1.
+  zx0 ∝ cast n0 m0 (eq_trans (eq_sym prfn0) prfn1)
+    (eq_trans (eq_sym prfm0) prfm1) zx1.
 Proof.
   intros.
   now subst; rewrite !cast_id_eq.
@@ -295,6 +346,7 @@ Lemma cast_compose_mid_distribute {n n' m o o' : nat}
   cast n' o' prfn prfo (zx0 ⟷ zx1) =
   cast n' m' prfn prfm zx0 ⟷ cast m' o' prfm prfo zx1.
 Proof.
+  rewrite fn_cast_eq_cast_core.
   subst.
   reflexivity.
 Qed.
@@ -326,49 +378,52 @@ Proof.
 Qed.
 
 Lemma cast_compose_mid_contract :
-  forall {n m o} n' m' o' prfn prfn' prfm prfm' prfo prfo' (zx0 : ZX n m) (zx1 : ZX m o),
-  cast n' o' prfn prfo (zx0 ⟷ zx1) = cast n' m' prfn' prfm zx0 ⟷ cast m' o' prfm' prfo' zx1.
+  forall {n m o} n' m' o' prfn prfm prfo (zx0 : ZX n m) (zx1 : ZX m o),
+  cast n' o' prfn prfo (zx0 ⟷ zx1) = cast n' m' prfn prfm zx0 ⟷ cast m' o' prfm prfo zx1.
 Proof.
   intros.
   now subst; rewrite !cast_id_eq.
 Qed.
 
-Lemma cast_compose_partial_contract_r : forall {n m o} n' m' o' o'' prfn prfm prfo prfo' prfo'' prfo''' (zx0 : ZX n m') (zx1 : ZX m o),
-  cast n' o' prfn prfo (zx0 ⟷ cast m' o' prfm prfo' zx1) = cast n' o' prfn prfo'' (zx0 ⟷ cast m' o'' prfm prfo''' zx1).
+Lemma cast_compose_partial_contract_r : forall {n m o} n' m' o' o'' prfn prfm prfo prfo'' (zx0 : ZX n m') (zx1 : ZX m o),
+  cast n' o' prfn eq_refl (zx0 ⟷ cast m' o' prfm prfo zx1) = 
+    cast n' o' prfn prfo'' (zx0 ⟷ cast m' o'' prfm (eq_trans (eq_sym prfo'') prfo) 
+      zx1).
 Proof.
   intros.
   now subst; rewrite !cast_id_eq.
 Qed.
 
-Lemma cast_compose_partial_contract_l : forall {n m o} n' n'' m' o' prfn prfn' prfn'' prfn''' prfm prfo (zx0 : ZX n m) (zx1 : ZX m' o),
-  cast n' o' prfn prfo (cast n' m' prfn' prfm zx0 ⟷ zx1) = cast n' o' prfn'' prfo (cast n'' m' prfn''' prfm zx0 ⟷ zx1).
+Lemma cast_compose_partial_contract_l : forall {n m o} n' n'' m' o' prfn' prfn'' prfm prfo (zx0 : ZX n m) (zx1 : ZX m' o),
+  cast n' o' eq_refl prfo (cast n' m' prfn' prfm zx0 ⟷ zx1) = cast n' o' prfn'' prfo (cast n'' m' (eq_trans (eq_sym prfn'') prfn') prfm zx0 ⟷ zx1).
 Proof.
   intros.
   now subst; rewrite !cast_id_eq.
 Qed.
 
 Lemma change_cast :
-  forall {n m} n' m' n'' m'' {prfn prfm prfn' prfm' prfn'' prfm''} (zx : ZX n m),
+  forall {n m} n' m' n'' m'' {prfn prfm  prfn'' prfm''} (zx : ZX n m),
   cast n' m' prfn prfm zx =
-  cast n' m' prfn' prfm' (cast n'' m'' prfn'' prfm'' zx).
+  cast n' m' (eq_trans_r prfn prfn'') (eq_trans_r prfm prfm'') 
+    (cast n'' m'' prfn'' prfm'' zx).
 Proof.
   intros.
   now subst; rewrite !cast_id_eq.
 Qed.
 
 Lemma cast_backwards :
-  forall {n0 m0 n1 m1} prfn prfm prfn' prfm' (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
+  forall {n0 m0 n1 m1} prfn prfm (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
   cast n1 m1 prfn prfm zx0 ∝ zx1 <->
-  cast n0 m0 prfn' prfm' zx1 ∝ zx0.
+  cast' n0 m0 prfn prfm zx1 ∝ zx0.
 Proof.
   intros.
   now subst; rewrite !cast_id_eq.
 Qed.
 
 Lemma cast_backwards_eq :
-  forall {n0 m0 n1 m1} prfn prfm prfn' prfm' (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
+  forall {n0 m0 n1 m1} prfn prfm (zx0 : ZX n0 m0) (zx1 : ZX n1 m1),
   cast n1 m1 prfn prfm zx0 ∝= zx1 <->
-  cast n0 m0 prfn' prfm' zx1 ∝= zx0.
+  cast' n0 m0 prfn prfm zx1 ∝= zx0.
 Proof.
   intros.
   now subst; rewrite !cast_id_eq.
@@ -452,8 +507,8 @@ Proof.
   now subst; rewrite !cast_id_eq.
 Qed.
 
-Lemma cast_fn_eq_dim : forall {n n'} prfn prfn' (f : forall n : nat, ZX n n), 
-  cast n' n' prfn prfn' (f n) = f n'.
+Lemma cast_fn_eq_dim : forall {n n'} prfn prfm (f : forall n : nat, ZX n n), 
+  cast n' n' prfn prfm (f n) = f n'.
 Proof.
   intros.
   now subst; rewrite !cast_id_eq.
@@ -480,22 +535,42 @@ Qed.
 Lemma cast_Z_to_refl_r n m α {m' o' o} (zx : ZX m' o') Hm Ho : 
 	Z n m α ⟷ cast m o Hm Ho zx = 
 	Z n m' α ⟷ cast m' o eq_refl Ho zx.
-Proof. now subst. Qed.
+Proof. rewrite fn_cast_eq_cast_core; now subst. Qed.
 
 Lemma cast_X_to_refl_r n m α {m' o' o} (zx : ZX m' o') Hm Ho : 
 	X n m α ⟷ cast m o Hm Ho zx = 
 	X n m' α ⟷ cast m' o eq_refl Ho zx.
-Proof. now subst. Qed.
+Proof. rewrite fn_cast_eq_cast_core; now subst. Qed.
+
+Lemma cast_Z_to_refl_l n m α {n' o' o} (zx : ZX o' n') Ho Hn : 
+	cast o n Ho Hn zx ⟷ Z n m α = 
+	cast o n' Ho eq_refl zx ⟷ Z n' m α.
+Proof. rewrite fn_cast_eq_cast_core; now subst. Qed.
+
+Lemma cast_X_to_refl_l n m α {n' o' o} (zx : ZX o' n') Ho Hn : 
+	cast o n Ho Hn zx ⟷ X n m α = 
+	cast o n' Ho eq_refl zx ⟷ X n' m α.
+Proof. rewrite fn_cast_eq_cast_core; now subst. Qed.
 
 Lemma cast_Z_contract_r n m α {m' o' o} (zx : ZX m' o') Hm Ho : 
 	Z n m α ⟷ cast m o Hm Ho zx = 
 	cast n o eq_refl Ho (Z n m' α ⟷ zx).
-Proof. now subst. Qed.
+Proof. rewrite fn_cast_eq_cast_core; now subst. Qed.
 
 Lemma cast_X_contract_r n m α {m' o' o} (zx : ZX m' o') Hm Ho : 
 	X n m α ⟷ cast m o Hm Ho zx = 
 	cast n o eq_refl Ho (X n m' α ⟷ zx).
-Proof. now subst. Qed.
+Proof. rewrite fn_cast_eq_cast_core; now subst. Qed.
+
+Lemma cast_Z_contract_l n m α {n' o' o} (zx : ZX o' n') Ho Hn : 
+	cast o n Ho Hn zx ⟷ Z n m α = 
+	cast o m Ho eq_refl (zx ⟷ Z n' m α).
+Proof. rewrite fn_cast_eq_cast_core; now subst. Qed.
+
+Lemma cast_X_contract_l n m α {n' o' o} (zx : ZX o' n') Ho Hn : 
+	cast o n Ho Hn zx ⟷ X n m α = 
+	cast o m Ho eq_refl (zx ⟷ X n' m α).
+Proof. rewrite fn_cast_eq_cast_core; now subst. Qed.
 
 Lemma cast_n_stack1 : forall {n n'} prfn prfm (zx : ZX 1 1),
   cast n' n' prfn prfm (n ↑ zx) = n' ↑ zx.
@@ -529,41 +604,41 @@ Lemma cast_compose_eq_mid_join n m o n' m' o'
 	cast n' o' Hn Ho (zx0 ⟷ zx1).
 Proof.
 	subst.
-	now rewrite (Peano_dec.UIP_nat _ _ Hm' eq_refl).
+  now rewrite !cast_id_eq.
 Qed.
 
 Lemma cast_compose_l_eq_mid {n m o n'} (zx0 : ZX n m) (zx1 : ZX m o) 
   prfn prfm : 
-  cast n' m prfn prfm zx0 ⟷ zx1 ∝=
+  cast n' m prfn prfm zx0 ⟷ zx1 =
   cast n' o prfn eq_refl (zx0 ⟷ zx1).
 Proof.
   subst.
-  now rewrite cast_id.
+  now rewrite !cast_id_eq.
 Qed.
 
 Lemma cast_compose_r_eq_mid {n m o o'} (zx0 : ZX n m) (zx1 : ZX m o) 
   prfm prfo : 
-  zx0 ⟷ cast m o' prfm prfo zx1 ∝=
+  zx0 ⟷ cast m o' prfm prfo zx1 =
   cast n o' eq_refl prfo (zx0 ⟷ zx1).
 Proof.
   subst.
-  now rewrite cast_id.
+  now rewrite !cast_id_eq.
 Qed.
 
 Lemma cast_compose_distribute_l_eq_mid {n m o n'} (zx0 : ZX n m) (zx1 : ZX m o)
   prfn prfo : 
-  cast n' o prfn prfo (zx0 ⟷ zx1) ∝=
+  cast n' o prfn prfo (zx0 ⟷ zx1) =
   cast n' m prfn eq_refl zx0 ⟷ zx1.
 Proof.
-  subst; now rewrite cast_id.
+  subst; now rewrite !cast_id_eq.
 Qed.
 
 Lemma cast_compose_distribute_r_eq_mid {n m o o'} (zx0 : ZX n m) (zx1 : ZX m o)
   prfn prfo : 
-  cast n o' prfn prfo (zx0 ⟷ zx1) ∝=
+  cast n o' prfn prfo (zx0 ⟷ zx1) =
   zx0 ⟷ cast m o' eq_refl prfo zx1.
 Proof.
-  subst; now rewrite cast_id.
+  subst; now rewrite !cast_id_eq.
 Qed.
 
 Lemma cast_contract_eq' {n0 m0 n1 m1 n2 m2}
@@ -571,7 +646,7 @@ Lemma cast_contract_eq' {n0 m0 n1 m1 n2 m2}
   cast n2 m2 prfn12 prfm12 (cast n1 m1 prfn01 prfm01 zx) = 
   cast n2 m2 (eq_trans prfn12 prfn01) (eq_trans prfm12 prfm01) zx.
 Proof.
-  now subst.
+  now subst; rewrite !cast_id_eq.
 Qed.
 
 Lemma compose_simplify_casted {n m m' o} 
@@ -582,7 +657,7 @@ Lemma compose_simplify_casted {n m m' o}
   zx0 ⟷ zx1 ∝= zx0' ⟷ zx1'.
 Proof.
   subst.
-  now intros -> ->.
+  now intros -> ->; rewrite !cast_id_eq.
 Qed.
 
 Lemma compose_simplify_casted_abs {n m m' o : nat} 
@@ -594,5 +669,5 @@ Lemma compose_simplify_casted_abs {n m m' o : nat}
 Proof.
   subst.
   intros H H'.
-  now rewrite (H eq_refl), (H' eq_refl).
+  now rewrite (H eq_refl), (H' eq_refl), fn_cast_eq_cast_core.
 Qed.

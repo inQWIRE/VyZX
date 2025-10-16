@@ -2,6 +2,7 @@ Require Import QuantumLib.Quantum.
 Require Import QuantumLib.Proportional.
 Require Import QuantumLib.VectorStates.
 Require Import QuantumLib.Kronecker.
+Require StrictProp.
 
 Require Export SemanticCore.
 
@@ -32,13 +33,52 @@ Inductive ZX : nat -> nat -> Type :=
           ZX (n_0 + n_1) (m_0 + m_1)
   | Compose {n m o} (zx0 : ZX n m) (zx1 : ZX m o) : ZX n o.
 
-Definition cast (n m : nat) {n' m'} 
+
+
+Definition cast_core (n m : nat) {n' m'} 
               (prfn : n = n') (prfm : m = m') (zx : ZX n' m') : ZX n m.
 Proof.
   destruct prfn.
   destruct prfm.
   exact zx.
 Defined.
+
+
+Definition False_rect' {A : Type} (f : False) : A :=
+	StrictProp.sEmpty_rect (fun _ => A) (False_sind _ f).
+
+Lemma False_rect'_irrel {A} (f f' : False) : 
+	@False_rect' A f = False_rect' f'.
+Proof.
+	reflexivity.
+Qed.
+
+Definition canon_nateq {n m} (H : n = m) : n = m :=
+  match Nat.eq_dec n m with 
+  | left Hnm => Hnm
+  | right HF => False_rect' (HF H)
+  end.
+
+Definition cast (n m : nat) {n' m'} (Hn : n = n') (Hm : m = m') 
+	(zx : ZX n' m') : ZX n m :=
+	cast_core n m (canon_nateq Hn) (canon_nateq Hm) zx.
+
+Notation cast' n m prfn prfm zx := (cast n m (eq_sym prfn) (eq_sym prfm) zx)
+  (only parsing).
+
+Lemma cast_eq_cast_core {n m n' m'} (Hn : n = n') (Hm : m = m') (zx : ZX n' m') :
+	cast n m Hn Hm zx = cast_core n m Hn Hm zx.
+Proof.
+  unfold cast.
+  f_equal; apply UIP_nat.
+Qed.
+
+Lemma fn_cast_eq_cast_core : @cast = @cast_core.
+Proof.
+	repeat (apply functional_extensionality_dep; intros).
+	apply cast_eq_cast_core.
+Qed.
+
 
 (* Notations for the ZX diagrams *)
 Notation "⦰" := Empty : ZX_scope. (* \revemptyset *)
@@ -91,6 +131,7 @@ Proof. easy. Qed.
 Lemma cast_semantics : forall {n m n' m'} {eqn eqm} (zx : ZX n m),
   ⟦ cast n' m' eqn eqm zx ⟧ = ⟦ zx ⟧.
 Proof.
+  rewrite fn_cast_eq_cast_core.
   intros.
   subst.
   easy.

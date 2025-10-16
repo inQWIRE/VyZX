@@ -847,6 +847,7 @@ Lemma cast_compat :
     cast n' m' prfn0 prfm0 zx0 ∝ cast n' m' prfn0 prfm0 zx1.
 Proof.
   intros n m n' m' Hn Hm zx0 zx1 [x [Hzx0 Hx]].
+  rewrite fn_cast_eq_cast_core.
   subst.
   prop_exists_nonzero x; auto.
 Qed.

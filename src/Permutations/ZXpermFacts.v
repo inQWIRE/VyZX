@@ -348,7 +348,7 @@ Proof. easy. Qed.
 Lemma perm_of_zx_cast {n m n' m'} {zx : ZX n' m'} 
   (Hn : n = n') (Hm : m = m') :
   perm_of_zx (cast _ _ Hn Hm zx) = perm_of_zx zx.
-Proof. subst. easy. Qed.
+Proof. subst. now rewrite cast_id_eq. Qed.
 
 #[export] Hint Rewrite 
   @perm_of_zx_compose_spec
@@ -1225,9 +1225,10 @@ Proof.
 		(perm_inv_eq_of_perm_eq n f g Hperm)) as Hkey.
 	simpl_casts.
 	unfold zx_of_perm_uncast.
+	erewrite cast_simplify_eq by reflexivity.
 	instantiate (1 := (f_equal (@length nat) (eq_sym Hkey))).
 	instantiate (1 := (f_equal (@length nat) (eq_sym Hkey))).
-	now case Hkey.
+	now case Hkey; rewrite ?cast_id_eq.
 Qed.
 
 Lemma zx_of_perm_eq_of_perm_eq n f g : 
@@ -1315,7 +1316,7 @@ Lemma cast_zx_of_perm n n' f (H H' : n = n') :
 	cast _ _ H H' (zx_of_perm _ f) = zx_of_perm _ f.
 Proof.
 	subst.
-	now rewrite (Peano_dec.UIP_nat _ _ H' eq_refl).
+	now rewrite cast_id_eq.
 Qed.
 
 #[export] Hint Rewrite cast_zx_of_perm : cast_simpl_db
@@ -1333,7 +1334,8 @@ Lemma cast_zx_of_perm_cast n' m' n m f H H' prf :
 	cast n' m' H H' (zx_of_perm_cast n m f prf) = 
 	zx_of_perm_cast n' m' f (eq_trans H (eq_trans prf (eq_sym H'))).
 Proof.
-	now subst.
+	subst; rewrite cast_id_eq.
+	reflexivity.
 Qed.
 
 #[export] Hint Rewrite cast_zx_of_perm_cast : perm_of_zx_cleanup_db.
@@ -1411,6 +1413,7 @@ Lemma zx_of_perm_cast_semantics f n m H
 	perm_to_matrix n f.
 Proof.
 	subst.
+	rewrite zx_of_perm_cast_id.
 	now apply zx_of_perm_semantics.
 Qed.
 
@@ -1548,7 +1551,7 @@ Lemma cast_compose_eq_mid_join n m o n' m' o'
 	cast n' o' Hn Ho (zx0 ⟷ zx1).
 Proof.
 	subst.
-	now rewrite (Peano_dec.UIP_nat _ _ Hm' eq_refl).
+	now rewrite ?cast_id_eq.
 Qed.
 
 Lemma zx_of_perm_compose_cast_r n n' m' Hn Hm f g 

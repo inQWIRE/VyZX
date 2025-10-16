@@ -112,17 +112,14 @@ Proof.
   split.
   - unfold is_controlled_state.
     rewrite H0.
-    unfold uniform_state; cbn.
-    now rewrite cast_id.
+    reflexivity.
   - simpl.
     rewrite H1.
     rewrite zx_scale_state_to_proc.
     distribute_zxscale; rewrite Cmult_1_l.
     apply zx_scale_simplify_eq_r.
-    unfold state_to_proc.
-    rewrite cast_id, n_cup_0_empty.
-    simpl.
-    now rewrite stack_empty_l, compose_empty_l.
+    cbv -[proportional_by_1].
+    now rewrite stack_empty_l, 2 compose_empty_l, stack_empty_l.
 Qed.
 
 
@@ -139,6 +136,12 @@ Local Ltac simpl_mult :=
     set (PA := A);
     unfold Mmult at 1
   end.
+
+Lemma ZX_semantics_mor {n m} (zx zx' : ZX n m) : zx ∝= zx' -> 
+  ⟦ zx ⟧ = ⟦ zx' ⟧.
+Proof.
+  easy.
+Qed.
 
 Lemma box_is_controlized : 
   is_controlized □ 
@@ -176,8 +179,8 @@ Proof.
       split; [nonzero | split; [nonzero|]].
       intros H%(f_equal fst); simpl in H; lra.
     }
-    unfold uniform_state; cbn.
-    rewrite stack_empty_r, 2 cast_id.
+    cbn.
+    rewrite stack_empty_r; cbn.
     rewrite <- compose_assoc.
     rewrite X_1_n_state_0.
     distribute_zxscale.
@@ -220,23 +223,22 @@ Proof.
       rewrite make_WF_equiv.
       unfold n_cap.
       rewrite semantics_transpose_comm.
-      unfold n_cup, n_cup_unswapped.
-      rewrite 2 cast_id_eq.
-      assert (Hrw : — ↕ ⦰ ↕ — ∝= n_wire 2) by by_perm_eq.
-      rewrite zx_compose_spec, zx_stack_spec.
-      rewrite n_swap_2_is_swap.
-      rewrite n_wire_semantics.
-      rewrite zx_compose_spec.
-      rewrite (zx_stack_spec 3 1 1 1 _ —).
-      rewrite (zx_stack_spec 1 1 2 0).
-      cbn [Nat.add] in *.
-      rewrite zx_compose_spec, Hrw.
-      rewrite n_wire_semantics, Mmult_1_r by auto_wf.
+      unfold n_cup, n_cup_unswapped; cbn -[ZX_semantics Nat.modulo].
+      erewrite ZX_semantics_mor.
+      2: {
+        cleanup_zx; cbn.
+        bundle_wires; cleanup_zx.
+        reflexivity.
+      }
       cbn.
-      rewrite kron_I_r, kron_I_l_eq by 
+      rewrite kron_1_r by auto_wf.
+      rewrite id_kron.
+      rewrite 2 kron_I_r, kron_I_l_eq by 
         (apply show_WF_list2D_to_matrix; reflexivity).
-      rewrite kron_I_r.
-      by_cell; cbn; lca.
+      by_cell; 
+      cbv [kron_n kron hadamard Mmult scale I Matrix.transpose 
+        list2D_to_matrix nth Nat.div Nat.modulo Nat.divmod Nat.mul 
+        Nat.sub fst snd big_sum]; lca.
     }
     rewrite 2 make_WF_equiv.
     rewrite (make_WF_equiv 16 1).
@@ -377,19 +379,19 @@ Proof.
     rewrite zx_scale_compose_distr_r.
     rewrite <- compose_assoc.
     rewrite Z_1_n_state0.
-    cbn.
-    rewrite stack_empty_r, cast_id, (@stack_assoc_back 0 0 0 1 1 1), 2 cast_id.
+    cbn -[uniform_state].
+    rewrite stack_empty_r, cast_id, (@stack_assoc_back_fwd 0 0 0 1 1 1), cast_id.
     rewrite <- (@stack_compose_distr 0 2 0 0 1 4).
     rewrite <- (@stack_compose_distr 0 1 0 0 1 0).
     rewrite <- 2 compose_assoc, left_triangle_state_0, Z_1_n_state0.
-    cbn.
-    rewrite cast_id, 2 stack_empty_l.
+    cbn -[uniform_state].
+    rewrite 2 stack_empty_l.
     rewrite <- 2 compose_assoc.
     rewrite <- not_defn, not_state_0.
     rewrite Z_1_n_state1.
     rewrite (zx_scale_eq_1_l (Cexp 0)) by apply Cexp_0.
-    cbn.
-    rewrite stack_empty_r, 2 cast_id.
+    cbn -[uniform_state].
+    rewrite stack_empty_r, cast_id.
     rewrite <- (@stack_compose_distr 0 1 2 0 1 2).
     rewrite <- compose_assoc.
     rewrite left_triangle_state_1.
@@ -408,7 +410,7 @@ Proof.
     rewrite Z_1_n_state1.
     rewrite Cexp_0, zx_scale_1_l.
     cbn -[Cpow].
-    rewrite stack_empty_r, cast_id, (@stack_assoc_back 0 0 0 1 1 1), 2 cast_id.
+    rewrite stack_empty_r, cast_id, (@stack_assoc_back_fwd 0 0 0 1 1 1), cast_id.
     rewrite <- (@stack_compose_distr 0 2 0 0 1 4).
     rewrite <- (@stack_compose_distr 0 1 0 0 1 0).
     rewrite <- 2 compose_assoc, left_triangle_state_1. 
@@ -424,7 +426,7 @@ Proof.
     rewrite <- not_defn, not_state_1.
     rewrite Z_1_n_state0.
     cbn -[Cpow].
-    rewrite stack_empty_r, 2 cast_id.
+    rewrite stack_empty_r, cast_id.
     rewrite <- (@stack_compose_distr 0 1 2 0 1 2).
     rewrite <- compose_assoc.
     rewrite left_triangle_state_0.
@@ -438,14 +440,13 @@ Proof.
     unfold proc_to_state.
     rewrite n_cap_to_n_stacked_cups.
     unfold n_stacked_cups.
-    cbn; rewrite stack_empty_r, 2 cast_id.
+    cbn -[zx_of_perm]; rewrite stack_empty_r, cast_id.
     rewrite compose_assoc. 
     apply compose_simplify_eq; [reflexivity|].
-    change 4 with (2 * 2).
-    by_perm_eq.
-    rewrite perm_of_zx_of_perm_eq by (change 4%nat with (2*2)%nat; auto_perm).
+    (* change 4 with (2 * 2). *)
+    by_perm_eq_nosimpl.
+    (* rewrite perm_of_zx_of_perm_eq by (change 4%nat with (2*2)%nat; auto_perm). *)
     by_perm_cell; reflexivity.
-  Unshelve. all: lia.
 Qed.
 
 
@@ -465,7 +466,7 @@ Proof.
     rewrite left_triangle_state_1.
     unfold uniform_state.
     cbn.
-    rewrite stack_empty_r, 2 cast_id.
+    rewrite stack_empty_r, cast_id.
     now rewrite Z_0_1_copy.
   - rewrite <- compose_assoc, Z_1_2_state_1.
     rewrite Cexp_0, zx_scale_1_l.
@@ -484,7 +485,6 @@ Proof.
     rewrite <- zx_scale_1_l at 1.
     apply zx_scale_simplify_eq_l.
     C_field; lca.
-  Unshelve. all: reflexivity.
 Qed.
 
 Lemma X_1_2_is_controlized : 
@@ -503,13 +503,12 @@ Proof.
     rewrite Z_0_0_to_scalar, Cexp_0.
     distribute_zxscale.
     cbn.
-    rewrite cast_id, compose_empty_r, stack_empty_l.
+    rewrite compose_empty_r, stack_empty_l.
     rewrite triangle_state_0.
     
     assert (Hrw : (0 = INR 0 * PI)%R) by (simpl; lra).
     rewrite Hrw.
     auto_cast_eqn (rewrite (to_scale Z_state_copy), cast_id, zx_scale_assoc).
-    rewrite uniform_state_defn, cast_id.
     rewrite <- Hrw.
     apply zx_scale_eq_1_l.
     rewrite Cexp_0, Cexp_PI'.
@@ -841,7 +840,7 @@ Proof.
     restore_dims.
     rewrite ! Nat.mul_1_l.
     rewrite (n_cup_matrix_pullthrough_top k 0) by auto_wf.
-    rewrite n_cup_0_empty.
+    rewrite (n_cup_0_empty : ⟦ _ ⟧ = _).
     cbn [ZX_semantics].
     Msimpl.
     rewrite kron_assoc by auto_wf.
@@ -873,7 +872,7 @@ Proof.
     restore_dims.
     unify_pows_two.
     rewrite (n_cup_matrix_pullthrough_top n 0) by auto_wf.
-    rewrite n_cup_0_empty.
+    rewrite (n_cup_0_empty : ⟦ _ ⟧ = _).
     Msimpl.
     rewrite Matrix.transpose_involutive.
     rewrite <- id_transpose_eq, <- kron_transpose.
@@ -883,7 +882,7 @@ Proof.
     restore_dims.
     unify_pows_two.
     rewrite (n_cup_matrix_pullthrough_top k 0) by auto_wf.
-    rewrite n_cup_0_empty.
+    rewrite (n_cup_0_empty : ⟦ _ ⟧ = _).
     Msimpl.
     rewrite Matrix.transpose_involutive.
     rewrite <- f_to_vec_split'_eq.
@@ -1068,8 +1067,8 @@ Lemma X_is_controlized n m β :
 Proof.
   refine (is_controlized_of_eq_proc_to_state _ _ 
     (eq_refl : (O + (n + m) = (n + m))%nat) _ _ _ _ 
-    (X_0_n_is_controlized (n + m) β)); [|reflexivity].
-  cbn.
+    (X_0_n_is_controlized (n + m) β)); [|rewrite cast_id_eq; reflexivity].
+  rewrite cast_id_eq. 
   now rewrite 2 X_proc_to_state.
 Qed.
 

@@ -112,7 +112,7 @@ Lemma cast_permutations_semantics {n0 n1} {zx : ZX n0 n0}
   (Hn : n1 = n0)
   (Hzx : ⟦ zx ⟧ = zxperm_to_matrix n1 zx) :
   ⟦ cast _ _ Hn Hn zx ⟧ = zxperm_to_matrix n1 (cast _ _ Hn Hn zx).
-Proof. subst; easy. Qed.
+Proof. subst; rewrite ?cast_id_eq; easy. Qed.
 
 Lemma perm_of_zx_permutation_semantics {n m} (zx : ZX n m) : 
   ZXperm zx -> ⟦ zx ⟧ = zxperm_to_matrix n zx.
