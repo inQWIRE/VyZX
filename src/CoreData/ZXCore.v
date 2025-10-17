@@ -384,44 +384,27 @@ Lemma Z_spider_1_1_fusion_eq : forall {nIn nOut} α β,
   ⟦ (Z_Spider nIn 1 α) ⟷ (Z_Spider 1 nOut β) ⟧ =
   ⟦ Z_Spider nIn nOut (α + β) ⟧.
 Proof.
-  assert (expnonzero : forall a, exists b, (2 ^ a + (2 ^ a + 0) - 1)%nat = S b).
-  { 
-    intros.
-    destruct (2^a)%nat eqn:E.
-      - contradict E.
-        apply Nat.pow_nonzero; easy.
-      - simpl.
-        rewrite <- plus_n_Sm.
-        exists (n + n)%nat.
-        lia.
-  }
   intros.
-  prep_matrix_equality.
+  rewrite 2 ZX_semantic_equiv.
   simpl.
-  unfold Mmult.
-  simpl.
-  rewrite Cplus_0_l.
-  destruct nIn, nOut.
-  - simpl.
-    destruct x,y; [simpl; autorewrite with Cexp_db | | | ]; lca.
-  - destruct x,y; simpl; destruct (expnonzero nOut); 
-                       rewrite H; [ lca | lca | | ].
-    + destruct (x =? x0)%nat.
-      * simpl.
-        autorewrite with Cexp_db.
-        lca.
-      * simpl.
-        lca.
-    + destruct (x =? x0)%nat; lca.
-  - destruct x,y; simpl; destruct (expnonzero nIn); 
-                    rewrite H; [lca | | lca | lca].
-    + destruct (y =? x)%nat; [autorewrite with Cexp_db | ]; lca.
-  - destruct x,y; simpl; destruct (expnonzero nIn), (expnonzero nOut); 
-                                       rewrite H,H0; [lca | lca | | ].
-    + destruct (x =? x1)%nat; lca.
-    + destruct (x =? x1)%nat, (y =? x0)%nat; [| lca | lca | lca].
-      autorewrite with Cexp_db.
-      lca.
+  Msimpl.
+  restore_dims.
+  autorewrite with scalar_move_db.
+  repeat rewrite Mmult_plus_distr_l.
+  repeat rewrite Mmult_plus_distr_r.
+  autorewrite with scalar_move_db.
+  restore_dims.
+  repeat rewrite Mmult_assoc.
+  restore_dims.
+  repeat rewrite <- (Mmult_assoc ⟨0∣).
+  repeat rewrite <- (Mmult_assoc ⟨1∣).
+  repeat rewrite Mmult00, Mmult10, Mmult01, Mmult11.
+  Msimpl.
+  restore_dims.
+  Msimpl.
+  autorewrite with scalar_move_db.
+  rewrite Cexp_add.
+  reflexivity. 
 Qed.
 
 Lemma z_1_1_pi_σz :
