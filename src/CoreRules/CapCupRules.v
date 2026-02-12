@@ -58,7 +58,8 @@ Lemma n_cup_1_cup : n_cup 1 ∝= ⊃.
 Proof.
   unfold n_cup.
   cbn.
-  rewrite stack_empty_r_fwd, 2 cast_id.
+  rewrite stack_empty_r.
+  cbn.
   rewrite wire_removal_l.
   bundle_wires.
   now rewrite 2!nwire_removal_l.
@@ -591,13 +592,14 @@ Proof.
     repeat rewrite cast_contract.
     apply compose_simplify_eq; [ | apply cast_simplify_eq; easy].
     simpl_casts.
-    rewrite 2 stack_assoc.
+    rewrite 2 stack_assoc_fwd.
     simpl_casts.
     rewrite wire_to_n_wire, n_wire_stack.
-    rewrite 2 stack_assoc_back.
+    rewrite 2 stack_assoc_back_fwd.
     simpl_casts.
-    erewrite <- (@cast_n_wire (n + 1) (S n)) at 2.
+    erewrite <- (@cast_n_wire (n + 1) (1 + n)).
     rewrite cast_stack_r.
+    rewrite cast_n_wire.
     rewrite n_wire_stack.
     cast_irrelevance.
 Unshelve.
@@ -983,8 +985,7 @@ Proof.
   induction n.
   - unfold n_cup, n_stacked_caps.
     cbn.
-    rewrite zx_of_perm_0.
-    now rewrite stack_empty_l, cast_id.
+    now rewrite stack_empty_l.
   - rewrite n_cup_grow_l.
     rewrite n_stacked_caps_succ.
     rewrite IHn.

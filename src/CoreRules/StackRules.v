@@ -8,9 +8,9 @@ Local Open Scope ZX_scope.
 
 Lemma stack_assoc : 
 forall {n0 n1 n2 m0 m1 m2} 
-	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2) prfn prfm,
+	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2),
 	(zx0 ↕ zx1) ↕ zx2 ∝= 
-		cast _ _ prfn prfm (zx0 ↕ (zx1 ↕ zx2)).
+		cast' _ _ (Nat.add_assoc _ _ _) (Nat.add_assoc _ _ _) (zx0 ↕ (zx1 ↕ zx2)).
 Proof.
 	intros.
 	unfold proportional_by_1.
@@ -22,9 +22,9 @@ Qed.
 
 Lemma stack_assoc_back : 
 forall {n0 n1 n2 m0 m1 m2}
-	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2) prfn prfm,
+	(zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2),
 	zx0 ↕ (zx1 ↕ zx2) ∝=
-		cast (n0 + (n1 + n2)) (m0 + (m1 + m2)) prfn prfm
+		cast (n0 + (n1 + n2)) (m0 + (m1 + m2)) (Nat.add_assoc _ _ _) (Nat.add_assoc _ _ _)
 				((zx0 ↕ zx1) ↕ zx2).
 Proof.
 	intros.
@@ -45,9 +45,9 @@ Proof.
 	now rewrite kron_1_l by auto_wf.
 Qed.
 
-Lemma stack_empty_r : forall {n m : nat} (zx : ZX n m) prfn prfm,
+Lemma stack_empty_r : forall {n m : nat} (zx : ZX n m),
 	zx ↕ ⦰ ∝= 
-		cast (n + 0) (m + 0) prfn prfm zx.
+		cast (n + 0) (m + 0) (Nat.add_0_r n) (Nat.add_0_r m) zx.
 Proof.
 	intros.
 	unfold proportional_by_1.
@@ -57,9 +57,9 @@ Proof.
 	now rewrite kron_1_r by auto_wf.
 Qed.
 
-Lemma stack_empty_r_back : forall {n m : nat} (zx : ZX n m) prfn prfm,
+Lemma stack_empty_r_back : forall {n m : nat} (zx : ZX n m),
 	zx ∝= 
-		cast _ _ prfn prfm (zx ↕ ⦰).
+		cast' _ _ (Nat.add_0_r n) (Nat.add_0_r m) (zx ↕ ⦰).
 Proof.
 	intros.
 	unfold proportional_by_1.
@@ -102,7 +102,7 @@ Lemma cast_stack_l_fwd {n0 m0 n0' m0' n1 m1}
   cast _ _ (f_equal (fun k => k + n1)%nat prfn)
     (f_equal (fun k => k + m1)%nat prfm)
     (zx0 ↕ zx1).
-Proof. now subst. Qed.
+Proof. now subst; rewrite ?cast_id_eq. Qed.
 
 Lemma cast_stack_r_fwd {n0 m0 n1 m1 n1' m1'} 
   (zx0 : ZX n0 m0) (zx1 : ZX n1 m1) prfn prfm :
@@ -110,7 +110,7 @@ Lemma cast_stack_r_fwd {n0 m0 n1 m1 n1' m1'}
   cast _ _ (f_equal (Nat.add n0) prfn)
     (f_equal (Nat.add m0) prfm)
     (zx0 ↕ zx1).
-Proof. now subst. Qed.
+Proof. now subst; rewrite ?cast_id_eq. Qed.
 
 Lemma stack_assoc_fwd {n0 n1 n2 m0 m1 m2} 
   (zx0 : ZX n0 m0) (zx1 : ZX n1 m1) (zx2 : ZX n2 m2) :
@@ -163,24 +163,22 @@ Lemma n_stack1_succ_l : forall n (zx : ZX 1 1),
 	(S n) ↑ zx = zx ↕ (n ↑ zx).
 Proof. easy. Qed.
 
-Lemma n_stack1_succ_r : forall n (zx : ZX 1 1) prfn prfm, 
+Lemma n_stack1_succ_r : forall n (zx : ZX 1 1), 
 	(S n) ↑ zx ∝=
-	cast (S n) (S n) prfn prfm ((n ↑ zx) ↕ zx).
+	cast (S n) (S n) (Nat.add_comm 1 n) 
+		(Nat.add_comm 1 n) ((n ↑ zx) ↕ zx).
 Proof.
 	intros.
 	induction n.	
 	- cbn. 
-		now rewrite stack_empty_r, 2!cast_id_eq, stack_empty_l.
+		now rewrite stack_empty_r, stack_empty_l.
 	- rewrite n_stack1_succ_l.
 		rewrite IHn at 1.
-		rewrite cast_stack_r.
+		rewrite cast_stack_r_fwd.
 		simpl.
-		simpl_casts.
-		rewrite stack_assoc_back.
+		rewrite stack_assoc_back_fwd.
 		simpl_casts.
 		easy.
-Unshelve.
-all: lia.
 Qed.
 
 Lemma stack_wire_distribute_l : forall {n m o} (zx0 : ZX n m) (zx1 : ZX m o),

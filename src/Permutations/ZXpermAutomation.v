@@ -1,5 +1,5 @@
 Require Import ZXCore.
-Require CastRules ComposeRules.
+Require Import CastRules ComposeRules.
 Require Export ZXperm.
 
 (** Automation for [ZXperm]'s *)
@@ -43,6 +43,7 @@ Lemma prop_iff_double_cast : forall {n0 m0} n1 m1 (zx0 zx1 : ZX n0 m0)
 Proof.
   intros.
   subst.
+  rewrite !cast_id_eq.
   reflexivity.
 Qed.
 
@@ -62,6 +63,7 @@ Lemma cast_compose_eq : forall n0 n1 m o0 o1 (zx0 : ZX n0 m) (zx1 : ZX m o0) Hn0
   cast n1 o1 Hn0n1 Ho0o1 (zx0 ⟷ zx1) = 
   (cast n1 m Hn0n1 (@eq_refl _ m) zx0) ⟷ (cast m o1 (@eq_refl _ m) Ho0o1 zx1).
 Proof.
+  rewrite fn_cast_eq_cast_core.
   intros.
   subst.
   reflexivity.
@@ -73,16 +75,8 @@ Lemma cast_cast_eq : forall n0 m0 n1 m1 n2 m2 (zx : ZX n0 m0) Hn0n1 Hm0m1 Hn1n2 
   cast n2 m2 Hn1n2 Hm1m2 (cast n1 m1 Hn0n1 Hm0m1 zx) =
   cast n2 m2 Hn0n2 Hm0m2 zx.
 Proof.
+  rewrite fn_cast_eq_cast_core.
   intros; subst.
-  reflexivity.
-Qed.
-
-Lemma cast_id_eq : forall n m (prfn : n = n) (prfm : m = m) zx,
-  cast n m prfn prfm zx = zx.
-Proof.
-  intros; subst.
-  rewrite (Eqdep_dec.UIP_refl_nat n prfn). (* Replace prfn with (@eq_refl nat n) *)
-  rewrite (Eqdep_dec.UIP_refl_nat m prfm). (* Replace prfn with (@eq_refl nat m) *)
   reflexivity.
 Qed.
 
@@ -90,6 +84,7 @@ Lemma zxperm_iff_cast' n m n' m'
   (zx : ZX n m) (Hn : n' = n) (Hm : m' = m) :
   ZXperm (cast n' m' Hn Hm zx) <-> ZXperm zx.
 Proof.
+  rewrite fn_cast_eq_cast_core.
   intros.
   now subst.
 Qed.

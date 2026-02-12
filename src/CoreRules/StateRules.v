@@ -1,4 +1,4 @@
-Require Import CoreData GadgetRules CoreAutomation StackComposeRules.
+Require Import CoreData GadgetRules CoreAutomation StackComposeRules CastRules.
 
 Open Scope ZX_scope.
 
@@ -392,7 +392,7 @@ Qed.
 Lemma cast_0 n m {n' m'} prfn prfm : 
   cast n m prfn prfm (@zx_zero n' m') = zx_zero.
 Proof.
-  now subst.
+  now subst; rewrite cast_id_eq.
 Qed.
 
 Lemma n_stack_zx_zero k n m : k <> O ->

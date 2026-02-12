@@ -762,6 +762,7 @@ Lemma Z_zx_of_perm_cast_absorbtion_right n m o α f H :
 	Z n o α.
 Proof.
 	subst.
+	rewrite zx_of_perm_cast_id.
 	apply Z_zx_of_perm_absorbtion_right.
 Qed.
 

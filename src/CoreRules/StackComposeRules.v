@@ -53,7 +53,7 @@ Lemma push_out_bot : forall {nIn nOut nOutAppendix}
   zx ↕ appendix ∝= (cast _ _ prfn prfm zx) ⟷ ((n_wire nOut) ↕ appendix).
 Proof.
   intros.
-  rewrite <- stack_empty_r.
+  setoid_rewrite <- stack_empty_r.
   now rewrite <- stack_compose_distr, compose_empty_l, nwire_removal_r.
 Qed.
 
@@ -72,7 +72,7 @@ Lemma pull_out_bot : forall {nIn nOut nInAppendix}
   zx ↕ appendix ∝= ((n_wire nIn) ↕ appendix) ⟷ (cast _ _ prfn prfm zx).
 Proof.
   intros.
-  rewrite <- stack_empty_r.
+  setoid_rewrite <- stack_empty_r.
   rewrite <- stack_compose_distr.
   now rewrite nwire_removal_l, compose_empty_r.
 Qed.

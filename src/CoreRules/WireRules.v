@@ -84,8 +84,15 @@ Proof.
   intros. rewrite <- wire_to_n_wire. reflexivity.
 Qed.
 
-Lemma n_wire_grow_r : forall n prfn prfm, n_wire (S n) ∝= 
-  cast _ _ prfn prfm (n_wire n ↕ —).
+Import Setoid.
+
+Lemma ereflexivity {A} {R : relation A} `{!Reflexive R} x y : x = y -> R x y.
+Proof.
+  now intros ->.
+Qed.
+
+Lemma n_wire_grow_r : forall n, n_wire (S n) ∝= 
+  cast _ _ (Nat.add_comm 1 n) (ltac:(lia) : 1 + n = n + 1)%nat (n_wire n ↕ —).
 Proof.
   intros.
   rewrite wire_to_n_wire.

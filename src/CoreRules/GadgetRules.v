@@ -515,7 +515,7 @@ Qed.
 Lemma zx_scale_cast {n m n' m'} c (zx : ZX n' m') H H' : 
   cast n m H H' (c .* zx) = c .* cast n m H H' zx.
 Proof.
-  now subst.
+  now subst; rewrite ?cast_id_eq.
 Qed.
 
 (* NB: This is entirely unnecessary, as rewrite databases are completely
