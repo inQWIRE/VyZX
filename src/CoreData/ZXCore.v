@@ -305,7 +305,7 @@ Qed.
 
 Opaque adjoint.
 
-Reserved Notation "⊙ zx" (at level 0). (* \odot *) 
+Reserved Notation "⊙ zx" (at level 0, zx at level 35). (* \odot *) 
 Fixpoint color_swap {nIn nOut} (zx : ZX nIn nOut) : ZX nIn nOut := 
   match zx with
   | X n m α   => Z n m α
